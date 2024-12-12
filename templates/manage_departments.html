@@ -1,0 +1,294 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <header>
+        <h1>Department Budget Management</h1>
+        <div class="header-actions">
+            <a href="{{ url_for('manager_dashboard') }}" class="button secondary">Back to Dashboard</a>
+            <a href="{{ url_for('logout') }}" class="logout-btn">Logout</a>
+        </div>
+    </header>
+
+    {% if current_user.username == 'admin' %}
+    <div class="admin-controls">
+        <button onclick="showAddDepartmentModal()" class="button primary">Add New Department</button>
+    </div>
+    {% endif %}
+
+    <div class="budget-grid">
+        {% for department in departments %}
+        <div class="budget-card">
+            <div class="budget-header">
+                <h3>{{ department.name }}</h3>
+                {% if current_user.username == 'admin' %}
+                <div class="department-actions">
+                    <button onclick="showEditDepartmentModal({{ department.id }}, '{{ department.name }}', {{ department.budget }})" class="button small">Edit</button>
+                    <button onclick="deleteDepartment({{ department.id }})" class="button small danger">Delete</button>
+                </div>
+                {% endif %}
+            </div>
+            <div class="budget-body">
+                <div class="budget-info">
+                    <p><strong>Current Budget:</strong> {{ department.budget|format_currency }}</p>
+                    <p><strong>Total Employees:</strong> {{ department.users|length }}</p>
+                </div>
+                <div class="budget-progress">
+                    {% set total_expenses = namespace(value=0) %}
+                    {% for user in department.users %}
+                        {% for expense in user.expenses %}
+                            {% if expense.status == 'approved' %}
+                                {% set total_expenses.value = total_expenses.value + expense.amount %}
+                            {% endif %}
+                        {% endfor %}
+                    {% endfor %}
+                    {% set usage_percent = (total_expenses.value / department.budget * 100) if department.budget > 0 else 0 %}
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: {{ usage_percent|min_value(100) }}%" data-usage="{{ "%.1f"|format(usage_percent) }}%"></div>
+                    </div>
+                </div>
+                <div class="budget-form">
+                    <div class="budget-input">
+                        <input type="number" step="0.01" min="0" value="{{ department.budget }}" id="budget-{{ department.id }}" class="form-control">
+                        <button onclick="updateBudget({{ department.id }})" class="button primary">Update</button>
+                    </div>
+                </div>
+                <div class="budget-actions">
+                    <a href="{{ url_for('manage_categories', dept_id=department.id) }}" class="button secondary">Manage Categories</a>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Add Department Modal -->
+<div id="addDepartmentModal" class="modal">
+    <div class="modal-content">
+        <h2>Add New Department</h2>
+        <form id="addDepartmentForm">
+            <div class="form-group">
+                <label for="newDepartmentName">Department Name:</label>
+                <input type="text" id="newDepartmentName" required>
+            </div>
+            <div class="form-group">
+                <label for="newDepartmentBudget">Initial Budget:</label>
+                <input type="number" id="newDepartmentBudget" step="0.01" min="0" required>
+            </div>
+            <div class="form-actions">
+                <button type="button" onclick="closeAddDepartmentModal()" class="button secondary">Cancel</button>
+                <button type="submit" class="button primary">Add Department</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Edit Department Modal -->
+<div id="editDepartmentModal" class="modal">
+    <div class="modal-content">
+        <h2>Edit Department</h2>
+        <form id="editDepartmentForm">
+            <input type="hidden" id="editDepartmentId">
+            <div class="form-group">
+                <label for="editDepartmentName">Department Name:</label>
+                <input type="text" id="editDepartmentName" required>
+            </div>
+            <div class="form-group">
+                <label for="editDepartmentBudget">Budget:</label>
+                <input type="number" id="editDepartmentBudget" step="0.01" min="0" required>
+            </div>
+            <div class="form-actions">
+                <button type="button" onclick="closeEditDepartmentModal()" class="button secondary">Cancel</button>
+                <button type="submit" class="button primary">Save Changes</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function updateBudget(departmentId) {
+    const budgetInput = document.getElementById(`budget-${departmentId}`);
+    const budget = parseFloat(budgetInput.value);
+    
+    if (isNaN(budget) || budget < 0) {
+        alert('Please enter a valid budget amount');
+        return;
+    }
+
+    fetch(`/manager/departments/${departmentId}/budget`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ budget: budget })
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Failed to update budget');
+        }
+        location.reload();
+    })
+    .catch(error => {
+        alert('Error updating budget: ' + error.message);
+    });
+}
+
+// Add Department Modal Functions
+function showAddDepartmentModal() {
+    document.getElementById('addDepartmentModal').style.display = 'block';
+}
+
+function closeAddDepartmentModal() {
+    document.getElementById('addDepartmentModal').style.display = 'none';
+}
+
+// Edit Department Modal Functions
+function showEditDepartmentModal(id, name, budget) {
+    document.getElementById('editDepartmentId').value = id;
+    document.getElementById('editDepartmentName').value = name;
+    document.getElementById('editDepartmentBudget').value = budget;
+    document.getElementById('editDepartmentModal').style.display = 'block';
+}
+
+function closeEditDepartmentModal() {
+    document.getElementById('editDepartmentModal').style.display = 'none';
+}
+
+// Delete Department Function
+function deleteDepartment(departmentId) {
+    if (!confirm('Are you sure you want to delete this department? This action cannot be undone.')) {
+        return;
+    }
+
+    fetch(`/manager/departments/${departmentId}`, {
+        method: 'DELETE',
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Failed to delete department');
+        }
+        location.reload();
+    })
+    .catch(error => {
+        alert('Error deleting department: ' + error.message);
+    });
+}
+
+// Form Submit Handlers
+document.getElementById('addDepartmentForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const name = document.getElementById('newDepartmentName').value;
+    const budget = parseFloat(document.getElementById('newDepartmentBudget').value);
+
+    fetch('/manager/departments', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ name, budget })
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Failed to add department');
+        }
+        location.reload();
+    })
+    .catch(error => {
+        alert('Error adding department: ' + error.message);
+    });
+});
+
+document.getElementById('editDepartmentForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const id = document.getElementById('editDepartmentId').value;
+    const name = document.getElementById('editDepartmentName').value;
+    const budget = parseFloat(document.getElementById('editDepartmentBudget').value);
+
+    fetch(`/manager/departments/${id}`, {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ name, budget })
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Failed to update department');
+        }
+        location.reload();
+    })
+    .catch(error => {
+        alert('Error updating department: ' + error.message);
+    });
+});
+</script>
+
+<style>
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.5);
+}
+
+.modal-content {
+    background-color: #fff;
+    margin: 15% auto;
+    padding: 20px;
+    border-radius: 8px;
+    width: 80%;
+    max-width: 500px;
+}
+
+.form-group {
+    margin-bottom: 15px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 5px;
+}
+
+.form-group input {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+.form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+.admin-controls {
+    margin-bottom: 20px;
+}
+
+.department-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 8px;
+}
+
+.button.small {
+    padding: 4px 8px;
+    font-size: 0.9em;
+}
+
+.button.danger {
+    background-color: #dc3545;
+    color: white;
+}
+
+.button.danger:hover {
+    background-color: #c82333;
+}
+</style>
+{% endblock %}

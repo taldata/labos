@@ -10,6 +10,7 @@
         <header>
             <h1>Manager Dashboard</h1>
             <div class="header-actions">
+                <a href="{{ url_for('manage_departments') }}" class="button primary">Manage Budgets</a>
                 <a href="{{ url_for('expense_history') }}" class="button secondary">View History</a>
                 <a href="{{ url_for('logout') }}" class="logout-btn">Logout</a>
             </div>

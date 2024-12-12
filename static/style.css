@@ -6,6 +6,7 @@
     --text-color: #333;
     --bg-color: #f5f5f5;
     --card-bg: #ffffff;
+    --background-light: #f8f9fa;
 }
 
 * {
@@ -302,6 +303,149 @@ tr:hover {
     text-align: center;
 }
 
+/* Budget Grid Styles */
+.budget-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1.5rem;
+    margin-top: 1.5rem;
+}
+
+.budget-card {
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    overflow: hidden;
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+}
+
+.budget-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+}
+
+.budget-header {
+    padding: 1rem;
+    background: var(--primary-color);
+    color: white;
+}
+
+.budget-header h3 {
+    margin: 0;
+    font-size: 1.2rem;
+}
+
+.budget-body {
+    padding: 1.5rem;
+}
+
+.budget-info {
+    margin-bottom: 1.5rem;
+}
+
+.budget-info p {
+    margin: 0.5rem 0;
+    color: var(--text-color);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.budget-info p strong {
+    font-weight: 500;
+}
+
+.budget-progress {
+    margin: 1.5rem 0;
+}
+
+.progress-bar {
+    width: 100%;
+    height: 10px;
+    background-color: var(--background-light);
+    border-radius: 5px;
+    overflow: hidden;
+    position: relative;
+}
+
+.progress-fill {
+    height: 100%;
+    background-color: var(--primary-color);
+    border-radius: 5px;
+    position: relative;
+}
+
+.progress-fill::after {
+    content: attr(data-usage);
+    position: absolute;
+    right: 0;
+    top: -20px;
+    font-size: 0.875rem;
+    color: var(--text-color);
+}
+
+.budget-form {
+    margin-top: 1.5rem;
+}
+
+.budget-input {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.budget-input input {
+    flex: 1;
+}
+
+.budget-actions {
+    margin-top: 1.5rem;
+    display: flex;
+    justify-content: flex-end;
+}
+
+.budget-overview {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.5rem;
+    margin: 2rem 0;
+}
+
+.budget-stat {
+    text-align: center;
+    padding: 1.5rem;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.stat-label {
+    display: block;
+    color: #666;
+    font-size: 0.875rem;
+    margin-bottom: 0.5rem;
+}
+
+.stat-value {
+    display: block;
+    font-size: 1.5rem;
+    font-weight: 500;
+    color: var(--text-color);
+}
+
+.budget-progress-container {
+    margin-top: 2rem;
+}
+
+.budget-progress.large .progress-bar {
+    height: 20px;
+}
+
+.progress-label {
+    text-align: center;
+    margin-top: 0.5rem;
+    color: var(--text-color);
+}
+
 @keyframes slideIn {
     from {
         transform: translateY(-10px);
@@ -347,4 +491,66 @@ tr:hover {
         flex-direction: column;
         gap: 0.5rem;
     }
+    
+    .budget-overview {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+    
+    .budget-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .budget-input {
+        flex-direction: column;
+    }
+}
+
+/* Welcome Page Styles */
+.welcome-content {
+    max-width: 800px;
+    margin: 2rem auto;
+    text-align: center;
+}
+
+.welcome-content h2 {
+    color: var(--primary-color);
+    margin-bottom: 1rem;
+}
+
+.welcome-content p {
+    color: var(--text-color);
+    font-size: 1.1rem;
+    line-height: 1.6;
+    margin-bottom: 2rem;
+}
+
+.login-prompt {
+    background: var(--background-light);
+    padding: 2rem;
+    border-radius: 8px;
+    margin-top: 2rem;
+}
+
+.login-prompt p {
+    margin-bottom: 1rem;
+}
+
+/* Flash Messages */
+.flash-messages {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 1000;
+}
+
+.flash-message {
+    background: var(--primary-color);
+    color: white;
+    padding: 1rem 2rem;
+    border-radius: 4px;
+    margin-bottom: 0.5rem;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    opacity: 1;
+    transition: opacity 0.5s ease-in-out;
 }

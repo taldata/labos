@@ -1,0 +1,291 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <header>
+        <h1>{{ category.name }} - Subcategories Management</h1>
+        <div class="header-actions">
+            <a href="{{ url_for('manage_categories', dept_id=category.department.id) }}" class="button secondary">Back to Categories</a>
+            <a href="{{ url_for('logout') }}" class="logout-btn">Logout</a>
+        </div>
+    </header>
+
+    {% if current_user.username == 'admin' or (current_user.is_manager and current_user.department_id == category.department.id) %}
+    <div class="admin-controls">
+        <button onclick="showAddSubcategoryModal()" class="button primary">Add New Subcategory</button>
+    </div>
+    {% endif %}
+
+    <div class="budget-grid">
+        {% for subcategory in category.subcategories %}
+        <div class="budget-card">
+            <div class="budget-header">
+                <h3>{{ subcategory.name }}</h3>
+                {% if current_user.username == 'admin' or (current_user.is_manager and current_user.department_id == category.department.id) %}
+                <div class="subcategory-actions">
+                    <button onclick="showEditSubcategoryModal({{ subcategory.id }}, '{{ subcategory.name }}', {{ subcategory.budget }})" class="button small">Edit</button>
+                    <button onclick="deleteSubcategory({{ subcategory.id }})" class="button small danger">Delete</button>
+                </div>
+                {% endif %}
+            </div>
+            <div class="budget-body">
+                <div class="budget-info">
+                    <p><strong>Current Budget:</strong> {{ subcategory.budget|format_currency }}</p>
+                    <p><strong>Total Expenses:</strong> {{ subcategory.expenses|length }}</p>
+                </div>
+                <div class="budget-progress">
+                    {% set total_expenses = namespace(value=0) %}
+                    {% for expense in subcategory.expenses %}
+                        {% if expense.status == 'approved' %}
+                            {% set total_expenses.value = total_expenses.value + expense.amount %}
+                        {% endif %}
+                    {% endfor %}
+                    {% set usage_percent = (total_expenses.value / subcategory.budget * 100) if subcategory.budget > 0 else 0 %}
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: {{ usage_percent|min_value(100) }}%" data-usage="{{ "%.1f"|format(usage_percent) }}%"></div>
+                    </div>
+                </div>
+                {% if current_user.username == 'admin' or (current_user.is_manager and current_user.department_id == category.department.id) %}
+                <div class="budget-form">
+                    <div class="budget-input">
+                        <input type="number" step="0.01" min="0" value="{{ subcategory.budget }}" id="budget-{{ subcategory.id }}" class="form-control">
+                        <button onclick="updateBudget({{ subcategory.id }})" class="button primary">Update</button>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Add Subcategory Modal -->
+<div id="addSubcategoryModal" class="modal">
+    <div class="modal-content">
+        <h2>Add New Subcategory</h2>
+        <form id="addSubcategoryForm">
+            <div class="form-group">
+                <label for="newSubcategoryName">Subcategory Name:</label>
+                <input type="text" id="newSubcategoryName" required>
+            </div>
+            <div class="form-group">
+                <label for="newSubcategoryBudget">Initial Budget:</label>
+                <input type="number" id="newSubcategoryBudget" step="0.01" min="0" required>
+            </div>
+            <div class="form-actions">
+                <button type="button" onclick="closeAddSubcategoryModal()" class="button secondary">Cancel</button>
+                <button type="submit" class="button primary">Add Subcategory</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Edit Subcategory Modal -->
+<div id="editSubcategoryModal" class="modal">
+    <div class="modal-content">
+        <h2>Edit Subcategory</h2>
+        <form id="editSubcategoryForm">
+            <input type="hidden" id="editSubcategoryId">
+            <div class="form-group">
+                <label for="editSubcategoryName">Subcategory Name:</label>
+                <input type="text" id="editSubcategoryName" required>
+            </div>
+            <div class="form-group">
+                <label for="editSubcategoryBudget">Budget:</label>
+                <input type="number" id="editSubcategoryBudget" step="0.01" min="0" required>
+            </div>
+            <div class="form-actions">
+                <button type="button" onclick="closeEditSubcategoryModal()" class="button secondary">Cancel</button>
+                <button type="submit" class="button primary">Save Changes</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function updateBudget(subcategoryId) {
+    const budgetInput = document.getElementById(`budget-${subcategoryId}`);
+    const budget = parseFloat(budgetInput.value);
+    
+    if (isNaN(budget) || budget < 0) {
+        alert('Please enter a valid budget amount');
+        return;
+    }
+
+    fetch(`/manager/subcategories/${subcategoryId}/budget`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ budget: budget })
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Failed to update budget');
+        }
+        location.reload();
+    })
+    .catch(error => {
+        alert('Error updating budget: ' + error.message);
+    });
+}
+
+// Add Subcategory Modal Functions
+function showAddSubcategoryModal() {
+    document.getElementById('addSubcategoryModal').style.display = 'block';
+}
+
+function closeAddSubcategoryModal() {
+    document.getElementById('addSubcategoryModal').style.display = 'none';
+}
+
+// Edit Subcategory Modal Functions
+function showEditSubcategoryModal(id, name, budget) {
+    document.getElementById('editSubcategoryId').value = id;
+    document.getElementById('editSubcategoryName').value = name;
+    document.getElementById('editSubcategoryBudget').value = budget;
+    document.getElementById('editSubcategoryModal').style.display = 'block';
+}
+
+function closeEditSubcategoryModal() {
+    document.getElementById('editSubcategoryModal').style.display = 'none';
+}
+
+// Delete Subcategory Function
+function deleteSubcategory(subcategoryId) {
+    if (!confirm('Are you sure you want to delete this subcategory? This action cannot be undone.')) {
+        return;
+    }
+
+    fetch(`/manager/subcategories/${subcategoryId}`, {
+        method: 'DELETE',
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Failed to delete subcategory');
+        }
+        location.reload();
+    })
+    .catch(error => {
+        alert('Error deleting subcategory: ' + error.message);
+    });
+}
+
+// Form Submit Handlers
+document.getElementById('addSubcategoryForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const name = document.getElementById('newSubcategoryName').value;
+    const budget = parseFloat(document.getElementById('newSubcategoryBudget').value);
+
+    fetch(`/manager/categories/{{ category.id }}/subcategories`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ name, budget })
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Failed to add subcategory');
+        }
+        location.reload();
+    })
+    .catch(error => {
+        alert('Error adding subcategory: ' + error.message);
+    });
+});
+
+document.getElementById('editSubcategoryForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const id = document.getElementById('editSubcategoryId').value;
+    const name = document.getElementById('editSubcategoryName').value;
+    const budget = parseFloat(document.getElementById('editSubcategoryBudget').value);
+
+    fetch(`/manager/subcategories/${id}`, {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ name, budget })
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Failed to update subcategory');
+        }
+        location.reload();
+    })
+    .catch(error => {
+        alert('Error updating subcategory: ' + error.message);
+    });
+});
+</script>
+
+<style>
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.5);
+}
+
+.modal-content {
+    background-color: #fff;
+    margin: 15% auto;
+    padding: 20px;
+    border-radius: 8px;
+    width: 80%;
+    max-width: 500px;
+}
+
+.form-group {
+    margin-bottom: 15px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 5px;
+}
+
+.form-group input {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+.form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+.admin-controls {
+    margin-bottom: 20px;
+}
+
+.subcategory-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 8px;
+}
+
+.button.small {
+    padding: 4px 8px;
+    font-size: 0.9em;
+}
+
+.button.danger {
+    background-color: #dc3545;
+    color: white;
+}
+
+.button.danger:hover {
+    background-color: #c82333;
+}
+</style>
+{% endblock %}
