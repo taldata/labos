@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Submit Expense - Expense System</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Submit New Expense</h1>
+            <a href="{{ url_for('employee_dashboard') }}" class="button secondary">Back to Dashboard</a>
+        </header>
+
+        <div class="card">
+            <form method="POST" enctype="multipart/form-data">
+                <div class="form-group">
+                    <label for="amount">Amount (₪):</label>
+                    <input type="number" id="amount" name="amount" step="0.01" required>
+                </div>
+                <div class="form-group">
+                    <label for="description">Description:</label>
+                    <textarea id="description" name="description" required></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="attachment">Attachment:</label>
+                    <div class="file-input">
+                        <input type="file" id="attachment" name="attachment" accept=".pdf,.png,.jpg,.jpeg,.gif">
+                        <small class="file-help">Allowed files: PDF, PNG, JPG, GIF (max 16MB)</small>
+                    </div>
+                </div>
+                <div class="button-group">
+                    <button type="submit" class="button primary">Submit Expense</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</body>
+</html>
