@@ -624,25 +624,47 @@ if __name__ == '__main__':
         
         # Create test users if they don't exist
         if not User.query.filter_by(username='admin').first():
-            # Admin should have access to all departments
             admin = User(username='admin', password='admin123', is_manager=True, department=rd_dept)
             db.session.add(admin)
-            
-        if not User.query.filter_by(username='manager').first():
-            manager = User(username='manager', password='manager123', is_manager=True, department=rd_dept)
-            db.session.add(manager)
         
-        if not User.query.filter_by(username='employee1').first():
-            employee1 = User(username='employee1', password='employee123', department=rd_dept)
-            db.session.add(employee1)
+        # R&D Department Users
+        if not User.query.filter_by(username='rd_manager').first():
+            rd_manager = User(username='rd_manager', password='manager123', is_manager=True, department=rd_dept)
+            db.session.add(rd_manager)
+        
+        if not User.query.filter_by(username='rd_dev1').first():
+            rd_dev1 = User(username='rd_dev1', password='employee123', department=rd_dept)
+            db.session.add(rd_dev1)
+        
+        if not User.query.filter_by(username='rd_dev2').first():
+            rd_dev2 = User(username='rd_dev2', password='employee123', department=rd_dept)
+            db.session.add(rd_dev2)
             
-        if not User.query.filter_by(username='employee2').first():
-            employee2 = User(username='employee2', password='employee123', department=marketing_dept)
-            db.session.add(employee2)
+        # Marketing Department Users
+        if not User.query.filter_by(username='marketing_manager').first():
+            marketing_manager = User(username='marketing_manager', password='manager123', is_manager=True, department=marketing_dept)
+            db.session.add(marketing_manager)
+        
+        if not User.query.filter_by(username='marketing_specialist1').first():
+            marketing_specialist1 = User(username='marketing_specialist1', password='employee123', department=marketing_dept)
+            db.session.add(marketing_specialist1)
+        
+        if not User.query.filter_by(username='marketing_specialist2').first():
+            marketing_specialist2 = User(username='marketing_specialist2', password='employee123', department=marketing_dept)
+            db.session.add(marketing_specialist2)
             
-        if not User.query.filter_by(username='employee3').first():
-            employee3 = User(username='employee3', password='employee123', department=sales_dept)
-            db.session.add(employee3)
+        # Sales Department Users
+        if not User.query.filter_by(username='sales_manager').first():
+            sales_manager = User(username='sales_manager', password='manager123', is_manager=True, department=sales_dept)
+            db.session.add(sales_manager)
+        
+        if not User.query.filter_by(username='sales_rep1').first():
+            sales_rep1 = User(username='sales_rep1', password='employee123', department=sales_dept)
+            db.session.add(sales_rep1)
+        
+        if not User.query.filter_by(username='sales_rep2').first():
+            sales_rep2 = User(username='sales_rep2', password='employee123', department=sales_dept)
+            db.session.add(sales_rep2)
             
         db.session.commit()
             
