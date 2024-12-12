@@ -173,7 +173,16 @@ def download_file(filename):
 def manager_dashboard():
     if not current_user.is_manager:
         return redirect(url_for('employee_dashboard'))
-    pending_expenses = Expense.query.filter_by(status='pending').all()
+    
+    # Get all pending expenses if admin, otherwise only from their department
+    if current_user.username == 'admin':
+        pending_expenses = Expense.query.filter_by(status='pending').all()
+    else:
+        pending_expenses = Expense.query.join(User).filter(
+            Expense.status == 'pending',
+            User.department_id == current_user.department_id
+        ).all()
+    
     return render_template('manager_dashboard.html', expenses=pending_expenses)
 
 @app.route('/manager/history')
@@ -226,19 +235,27 @@ def handle_expense(expense_id, action):
 @login_required
 def manage_departments():
     if not current_user.is_manager:
-        return redirect(url_for('employee_dashboard'))
-    # Only show the manager's department
-    department = Department.query.get(current_user.department_id)
-    if not department:
-        flash('Department not found', 'error')
-        return redirect(url_for('employee_dashboard'))
-    return render_template('manage_departments.html', departments=[department])
+        flash('Access denied. Manager privileges required.', 'danger')
+        return redirect(url_for('index'))
+    
+    if current_user.username == 'admin':
+        departments = Department.query.all()
+    else:
+        departments = Department.query.filter_by(id=current_user.department_id).all()
+    
+    return render_template('manage_departments.html', departments=departments)
 
 @app.route('/manager/categories/<int:dept_id>')
 @login_required
 def manage_categories(dept_id):
     if not current_user.is_manager:
-        return redirect(url_for('employee_dashboard'))
+        flash('Access denied. Manager privileges required.', 'danger')
+        return redirect(url_for('index'))
+    
+    if not current_user.username == 'admin' and current_user.department_id != dept_id:
+        flash('Access denied. You can only manage your own department.', 'danger')
+        return redirect(url_for('manage_departments'))
+    
     department = Department.query.get_or_404(dept_id)
     return render_template('manage_categories.html', department=department)
 
@@ -246,8 +263,14 @@ def manage_categories(dept_id):
 @login_required
 def manage_subcategories(cat_id):
     if not current_user.is_manager:
-        return redirect(url_for('employee_dashboard'))
+        flash('Access denied. Manager privileges required.', 'danger')
+        return redirect(url_for('index'))
+    
     category = Category.query.get_or_404(cat_id)
+    if not current_user.username == 'admin' and current_user.department_id != category.department_id:
+        flash('Access denied. You can only manage your own department.', 'danger')
+        return redirect(url_for('manage_departments'))
+    
     return render_template('manage_subcategories.html', category=category)
 
 @app.route('/api/department/<int:dept_id>/budget', methods=['POST'])
@@ -290,9 +313,13 @@ def is_department_manager(dept_id):
     return current_user.is_manager and current_user.department_id == dept_id
 
 def can_manage_department(dept_id):
+    if current_user.username == 'admin':
+        return True
     return current_user.is_manager and current_user.department_id == dept_id
 
 def can_view_department(dept_id):
+    if current_user.username == 'admin':
+        return True
     return current_user.department_id == dept_id or current_user.is_manager
 
 @app.route('/manager/departments', methods=['POST'])
@@ -454,39 +481,48 @@ def delete_subcategory(subcat_id):
     
     return jsonify({'success': True})
 
-@app.route('/manager/budgets', methods=['GET', 'POST'])
+@app.route('/manage/budgets')
 @login_required
 def manage_budgets():
     if not current_user.is_manager:
-        return redirect(url_for('employee_dashboard'))
+        flash('Access denied. Manager privileges required.', 'danger')
+        return redirect(url_for('index'))
     
-    if request.method == 'POST':
-        user_id = request.form.get('user_id')
-        budget = request.form.get('budget')
-        user = User.query.get(user_id)
-        if user and not user.is_manager:
-            try:
-                user.department.budget = float(budget)
-                db.session.commit()
-                flash(f'Budget updated for {user.username}')
-            except ValueError:
-                flash('Invalid budget amount')
+    if current_user.username == 'admin':
+        departments = Department.query.all()
+    else:
+        departments = Department.query.filter_by(id=current_user.department_id).all()
     
-    employees = User.query.filter_by(is_manager=False).all()
-    current_date = datetime.now()
+    department_data = []
+    for dept in departments:
+        dept_info = {
+            'id': dept.id,
+            'name': dept.name,
+            'budget': dept.budget,
+            'categories': []
+        }
+        
+        for cat in dept.categories:
+            cat_info = {
+                'id': cat.id,
+                'name': cat.name,
+                'budget': cat.budget,
+                'subcategories': []
+            }
+            
+            for subcat in cat.subcategories:
+                subcat_info = {
+                    'id': subcat.id,
+                    'name': subcat.name,
+                    'budget': subcat.budget
+                }
+                cat_info['subcategories'].append(subcat_info)
+            
+            dept_info['categories'].append(cat_info)
+        
+        department_data.append(dept_info)
     
-    employee_budgets = []
-    for emp in employees:
-        usage_percent, monthly_expenses = emp.get_budget_usage()
-        employee_budgets.append({
-            'user': emp,
-            'usage_percent': usage_percent,
-            'monthly_expenses': monthly_expenses
-        })
-    
-    return render_template('manage_budgets.html', 
-                         employee_budgets=employee_budgets,
-                         current_month=current_date.strftime('%B %Y'))
+    return render_template('manage_budgets.html', departments=department_data)
 
 @app.route('/employee/budget')
 @login_required
@@ -588,7 +624,8 @@ if __name__ == '__main__':
         
         # Create test users if they don't exist
         if not User.query.filter_by(username='admin').first():
-            admin = User(username='admin', password='admin123', is_manager=True)
+            # Admin should have access to all departments
+            admin = User(username='admin', password='admin123', is_manager=True, department=rd_dept)
             db.session.add(admin)
             
         if not User.query.filter_by(username='manager').first():
