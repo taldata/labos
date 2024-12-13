@@ -252,19 +252,32 @@ def expense_history():
                          selected_status=status,
                          selected_employee=employee)
 
-@app.route('/expense/<int:expense_id>/<action>')
+@app.route('/expense/<int:expense_id>/<action>', methods=['GET', 'POST'])
 @login_required
 def handle_expense(expense_id, action):
     if not current_user.is_manager:
         return redirect(url_for('employee_dashboard'))
     
     expense = Expense.query.get_or_404(expense_id)
-    if action == 'approve':
-        expense.status = 'approved'
-    elif action == 'reject':
-        expense.status = 'rejected'
     
-    db.session.commit()
+    # Validate the action
+    if action not in ['approve', 'reject']:
+        flash('Invalid action', 'error')
+        return redirect(url_for('manager_dashboard'))
+        
+    try:
+        if action == 'approve':
+            expense.status = 'approved'
+            flash('Expense approved successfully', 'success')
+        elif action == 'reject':
+            expense.status = 'rejected'
+            flash('Expense rejected successfully', 'success')
+        
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error updating expense: {str(e)}', 'error')
+    
     return redirect(url_for('manager_dashboard'))
 
 @app.route('/manager/departments')
