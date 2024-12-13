@@ -55,6 +55,7 @@ class User(UserMixin, db.Model):
     is_manager = db.Column(db.Boolean, default=False)
     is_admin = db.Column(db.Boolean, default=False)
     department_id = db.Column(db.Integer, db.ForeignKey('department.id'))
+    status = db.Column(db.String(20), default='active')  # active, inactive, pending
     expenses = db.relationship('Expense', backref='user', lazy=True)
 
     def get_monthly_expenses(self, year, month):
@@ -597,24 +598,43 @@ def add_user():
         username = request.form.get('username', '').strip()
         password = request.form.get('password', '').strip()
         department_id = request.form.get('department_id')
-        is_manager = 'is_manager' in request.form
+        role = request.form.get('role', 'user')
+        status = request.form.get('status', 'active')
+        
+        print(f"Received add user request: username={username}, dept={department_id}, role={role}, status={status}")
         
         # Validate input
         if not username or not password:
-            flash('Username and password are required', 'danger')
+            error_msg = 'Username and password are required'
+            print(f"Validation error: {error_msg}")
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return jsonify({'error': error_msg}), 400
+            flash(error_msg, 'danger')
             return redirect(url_for('manage_users'))
         
         if len(username) < 3:
-            flash('Username must be at least 3 characters long', 'danger')
+            error_msg = 'Username must be at least 3 characters long'
+            print(f"Validation error: {error_msg}")
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return jsonify({'error': error_msg}), 400
+            flash(error_msg, 'danger')
             return redirect(url_for('manage_users'))
             
         if len(password) < 6:
-            flash('Password must be at least 6 characters long', 'danger')
+            error_msg = 'Password must be at least 6 characters long'
+            print(f"Validation error: {error_msg}")
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return jsonify({'error': error_msg}), 400
+            flash(error_msg, 'danger')
             return redirect(url_for('manage_users'))
         
         # Check if username exists
         if User.query.filter_by(username=username).first():
-            flash('Username already exists', 'danger')
+            error_msg = 'Username already exists'
+            print(f"Validation error: {error_msg}")
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return jsonify({'error': error_msg}), 400
+            flash(error_msg, 'danger')
             return redirect(url_for('manage_users'))
         
         # Create new user
@@ -622,17 +642,29 @@ def add_user():
             username=username,
             password=password,  # In production, use proper password hashing
             department_id=department_id if department_id else None,
-            is_manager=is_manager
+            is_manager=role == 'manager',
+            is_admin=role == 'admin',
+            status=status
         )
         
+        print(f"Adding new user to database: {new_user.username}")
         db.session.add(new_user)
         db.session.commit()
-        flash(f'User {username} added successfully', 'success')
+        
+        success_msg = f'User {username} added successfully'
+        print(success_msg)
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return jsonify({'message': success_msg}), 200
+        flash(success_msg, 'success')
         
     except Exception as e:
         db.session.rollback()
-        flash(f'Error adding user: {str(e)}', 'danger')
-        
+        error_msg = f'Error adding user: {str(e)}'
+        print(f"Exception: {error_msg}")
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return jsonify({'error': error_msg}), 500
+        flash(error_msg, 'danger')
+    
     return redirect(url_for('manage_users'))
 
 @app.route('/admin/users/<int:user_id>/edit', methods=['POST'])
@@ -648,7 +680,8 @@ def edit_user(user_id):
         new_username = request.form.get('username', '').strip()
         new_password = request.form.get('password', '').strip()
         new_department_id = request.form.get('department_id')
-        new_is_manager = 'is_manager' in request.form
+        new_role = request.form.get('role', 'user')
+        new_status = request.form.get('status', 'active')
         
         # Validate username
         if not new_username:
@@ -673,7 +706,9 @@ def edit_user(user_id):
             user.password = new_password  # In production, use proper password hashing
         
         user.department_id = new_department_id if new_department_id else None
-        user.is_manager = new_is_manager
+        user.is_manager = new_role == 'manager'
+        user.is_admin = new_role == 'admin'
+        user.status = new_status
         
         db.session.commit()
         flash(f'User {user.username} updated successfully', 'success')
