@@ -183,12 +183,23 @@ def submit_expense():
     if request.method == 'POST':
         amount = float(request.form.get('amount'))
         description = request.form.get('description')
+        subcategory_id = request.form.get('subcategory_id')
+        
+        # Verify that the subcategory belongs to the user's department
+        subcategory = Subcategory.query.join(Category).filter(
+            Subcategory.id == subcategory_id,
+            Category.department_id == current_user.department_id
+        ).first()
+        
+        if not subcategory:
+            flash('Invalid category selected', 'error')
+            return redirect(url_for('submit_expense'))
         
         expense = Expense(
             amount=amount,
             description=description,
             user_id=current_user.id,
-            subcategory_id=request.form.get('subcategory_id')
+            subcategory_id=subcategory_id
         )
         
         # Handle file upload
@@ -204,7 +215,12 @@ def submit_expense():
         db.session.commit()
         flash('Expense submitted successfully')
         return redirect(url_for('employee_dashboard'))
-    subcategories = Subcategory.query.all()
+    
+    # Get only subcategories from user's department
+    subcategories = Subcategory.query.join(Category).filter(
+        Category.department_id == current_user.department_id
+    ).all()
+    
     return render_template('submit_expense.html', subcategories=subcategories)
 
 @app.route('/download/<filename>')
