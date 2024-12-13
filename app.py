@@ -419,23 +419,55 @@ def delete_department(dept_id):
 
 @app.route('/manager/departments/<int:dept_id>/categories', methods=['POST'])
 @login_required
-def add_category():
+def add_category(dept_id):
     if not can_manage_department(dept_id):
         return jsonify({'error': 'Unauthorized'}), 403
     
-    data = request.get_json()
-    name = data.get('name')
-    budget = data.get('budget')
-    
-    if not name or budget is None:
-        return jsonify({'error': 'Missing required fields'}), 400
-    
-    department = Department.query.get_or_404(dept_id)
-    category = Category(name=name, budget=float(budget), department=department)
-    db.session.add(category)
-    db.session.commit()
-    
-    return jsonify({'success': True}), 201
+    try:
+        # Support both JSON and form data
+        if request.is_json:
+            data = request.get_json()
+            name = data.get('name')
+            budget = data.get('budget')
+        else:
+            name = request.form.get('name')
+            budget = request.form.get('budget')
+        
+        print(f"Adding category: name={name}, budget={budget}, dept_id={dept_id}")
+        
+        if not name or budget is None:
+            error_msg = 'Missing required fields'
+            print(f"Error: {error_msg}")
+            return jsonify({'error': error_msg}), 400
+        
+        try:
+            budget = float(budget)
+        except ValueError:
+            error_msg = 'Budget must be a valid number'
+            print(f"Error: {error_msg}")
+            return jsonify({'error': error_msg}), 400
+        
+        department = Department.query.get_or_404(dept_id)
+        category = Category(name=name, budget=budget, department=department)
+        db.session.add(category)
+        db.session.commit()
+        
+        success_msg = f'Category {name} added successfully'
+        print(success_msg)
+        return jsonify({
+            'message': success_msg,
+            'category': {
+                'id': category.id,
+                'name': category.name,
+                'budget': category.budget
+            }
+        }), 200
+        
+    except Exception as e:
+        db.session.rollback()
+        error_msg = f'Failed to add category: {str(e)}'
+        print(f"Error: {error_msg}")
+        return jsonify({'error': error_msg}), 500
 
 @app.route('/manager/categories/<int:cat_id>', methods=['PUT'])
 @login_required

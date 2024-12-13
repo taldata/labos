@@ -182,6 +182,11 @@ document.getElementById('addCategoryForm').addEventListener('submit', function(e
     const name = document.getElementById('newCategoryName').value;
     const budget = parseFloat(document.getElementById('newCategoryBudget').value);
 
+    if (isNaN(budget) || budget < 0) {
+        alert('Please enter a valid budget amount');
+        return;
+    }
+
     fetch(`/manager/departments/{{ department.id }}/categories`, {
         method: 'POST',
         headers: {
@@ -189,10 +194,12 @@ document.getElementById('addCategoryForm').addEventListener('submit', function(e
         },
         body: JSON.stringify({ name, budget })
     })
-    .then(response => {
-        if (!response.ok) {
-            throw new Error('Failed to add category');
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            throw new Error(data.error);
         }
+        closeAddCategoryModal();
         location.reload();
     })
     .catch(error => {
