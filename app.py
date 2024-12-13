@@ -551,9 +551,40 @@ def manage_users():
     if not current_user.is_admin:
         flash('Access denied. Admin privileges required.', 'danger')
         return redirect(url_for('index'))
-    users = User.query.all()
-    departments = Department.query.all()
-    return render_template('manage_users.html', users=users, departments=departments)
+    
+    # Get query parameters for filtering
+    search = request.args.get('search', '').strip()
+    department_filter = request.args.get('department', 'all')
+    role_filter = request.args.get('role', 'all')
+    
+    # Base query
+    query = User.query
+    
+    # Apply filters
+    if search:
+        search_pattern = f"%{search}%"
+        query = query.filter(User.username.like(search_pattern))
+    
+    if department_filter != 'all':
+        query = query.filter(User.department_id == department_filter)
+    
+    if role_filter == 'admin':
+        query = query.filter(User.is_admin == True)
+    elif role_filter == 'manager':
+        query = query.filter(User.is_manager == True)
+    elif role_filter == 'employee':
+        query = query.filter(User.is_admin == False, User.is_manager == False)
+    
+    # Get users and departments
+    users = query.order_by(User.username).all()
+    departments = Department.query.order_by(Department.name).all()
+    
+    return render_template('manage_users.html', 
+                         users=users, 
+                         departments=departments,
+                         search=search,
+                         department_filter=department_filter,
+                         role_filter=role_filter)
 
 @app.route('/admin/users/add', methods=['POST'])
 @login_required
@@ -561,28 +592,47 @@ def add_user():
     if not current_user.is_admin:
         return jsonify({'error': 'Access denied'}), 403
     
-    username = request.form.get('username')
-    password = request.form.get('password')
-    department_id = request.form.get('department_id')
-    is_manager = 'is_manager' in request.form
-    
-    if User.query.filter_by(username=username).first():
-        flash('Username already exists', 'danger')
-        return redirect(url_for('manage_users'))
-    
-    new_user = User(
-        username=username,
-        password=password,
-        department_id=department_id if department_id else None,
-        is_manager=is_manager
-    )
-    db.session.add(new_user)
     try:
+        # Get form data
+        username = request.form.get('username', '').strip()
+        password = request.form.get('password', '').strip()
+        department_id = request.form.get('department_id')
+        is_manager = 'is_manager' in request.form
+        
+        # Validate input
+        if not username or not password:
+            flash('Username and password are required', 'danger')
+            return redirect(url_for('manage_users'))
+        
+        if len(username) < 3:
+            flash('Username must be at least 3 characters long', 'danger')
+            return redirect(url_for('manage_users'))
+            
+        if len(password) < 6:
+            flash('Password must be at least 6 characters long', 'danger')
+            return redirect(url_for('manage_users'))
+        
+        # Check if username exists
+        if User.query.filter_by(username=username).first():
+            flash('Username already exists', 'danger')
+            return redirect(url_for('manage_users'))
+        
+        # Create new user
+        new_user = User(
+            username=username,
+            password=password,  # In production, use proper password hashing
+            department_id=department_id if department_id else None,
+            is_manager=is_manager
+        )
+        
+        db.session.add(new_user)
         db.session.commit()
-        flash('User added successfully', 'success')
+        flash(f'User {username} added successfully', 'success')
+        
     except Exception as e:
         db.session.rollback()
-        flash('Error adding user: ' + str(e), 'danger')
+        flash(f'Error adding user: {str(e)}', 'danger')
+        
     return redirect(url_for('manage_users'))
 
 @app.route('/admin/users/<int:user_id>/edit', methods=['POST'])
@@ -591,20 +641,47 @@ def edit_user(user_id):
     if not current_user.is_admin:
         return jsonify({'error': 'Access denied'}), 403
     
-    user = User.query.get_or_404(user_id)
-    user.username = request.form.get('username', user.username)
-    if request.form.get('password'):
-        user.password = request.form.get('password')
-    if request.form.get('department_id'):
-        user.department_id = request.form.get('department_id')
-    user.is_manager = 'is_manager' in request.form
-    
     try:
+        user = User.query.get_or_404(user_id)
+        
+        # Get form data
+        new_username = request.form.get('username', '').strip()
+        new_password = request.form.get('password', '').strip()
+        new_department_id = request.form.get('department_id')
+        new_is_manager = 'is_manager' in request.form
+        
+        # Validate username
+        if not new_username:
+            flash('Username cannot be empty', 'danger')
+            return redirect(url_for('manage_users'))
+            
+        if len(new_username) < 3:
+            flash('Username must be at least 3 characters long', 'danger')
+            return redirect(url_for('manage_users'))
+        
+        # Check if new username exists (if changed)
+        if new_username != user.username and User.query.filter_by(username=new_username).first():
+            flash('Username already exists', 'danger')
+            return redirect(url_for('manage_users'))
+        
+        # Update user
+        user.username = new_username
+        if new_password:
+            if len(new_password) < 6:
+                flash('Password must be at least 6 characters long', 'danger')
+                return redirect(url_for('manage_users'))
+            user.password = new_password  # In production, use proper password hashing
+        
+        user.department_id = new_department_id if new_department_id else None
+        user.is_manager = new_is_manager
+        
         db.session.commit()
-        flash('User updated successfully', 'success')
+        flash(f'User {user.username} updated successfully', 'success')
+        
     except Exception as e:
         db.session.rollback()
-        flash('Error updating user: ' + str(e), 'danger')
+        flash(f'Error updating user: {str(e)}', 'danger')
+    
     return redirect(url_for('manage_users'))
 
 @app.route('/admin/users/<int:user_id>/delete', methods=['POST'])
@@ -613,14 +690,27 @@ def delete_user(user_id):
     if not current_user.is_admin:
         return jsonify({'error': 'Access denied'}), 403
     
-    if user_id == current_user.id:
-        flash('Cannot delete your own account', 'danger')
-        return redirect(url_for('manage_users'))
+    try:
+        if user_id == current_user.id:
+            flash('Cannot delete your own account', 'danger')
+            return redirect(url_for('manage_users'))
+        
+        user = User.query.get_or_404(user_id)
+        username = user.username
+        
+        # Check if user has any expenses
+        if user.expenses:
+            flash('Cannot delete user with existing expenses', 'danger')
+            return redirect(url_for('manage_users'))
+        
+        db.session.delete(user)
+        db.session.commit()
+        flash(f'User {username} deleted successfully', 'success')
+        
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error deleting user: {str(e)}', 'danger')
     
-    user = User.query.get_or_404(user_id)
-    db.session.delete(user)
-    db.session.commit()
-    flash('User deleted successfully', 'success')
     return redirect(url_for('manage_users'))
 
 if __name__ == '__main__':
