@@ -772,26 +772,24 @@ def delete_user(user_id):
     
     try:
         if user_id == current_user.id:
-            flash('Cannot delete your own account', 'danger')
-            return redirect(url_for('manage_users'))
+            return jsonify({'error': 'Cannot delete your own account'}), 400
         
         user = User.query.get_or_404(user_id)
         username = user.username
         
         # Check if user has any expenses
-        if user.expenses:
-            flash('Cannot delete user with existing expenses', 'danger')
-            return redirect(url_for('manage_users'))
+        expenses = Expense.query.filter_by(user_id=user_id).all()
+        if expenses:
+            return jsonify({'error': 'Cannot delete user with existing expenses. Please delete or reassign their expenses first.'}), 400
         
         db.session.delete(user)
         db.session.commit()
-        flash(f'User {username} deleted successfully', 'success')
+        
+        return jsonify({'message': f'User {username} deleted successfully'}), 200
         
     except Exception as e:
         db.session.rollback()
-        flash(f'Error deleting user: {str(e)}', 'danger')
-    
-    return redirect(url_for('manage_users'))
+        return jsonify({'error': f'Error deleting user: {str(e)}'}), 500
 
 if __name__ == '__main__':
     app.run(debug=True)
