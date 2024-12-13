@@ -109,7 +109,7 @@ with app.app_context():
         if not admin_user:
             admin_user = User(
                 username='admin',
-                password=generate_password_hash('admin123'),
+                password='admin123',
                 is_manager=True,
                 is_admin=True,
                 department=rd_dept
@@ -572,7 +572,7 @@ def add_user():
     
     new_user = User(
         username=username,
-        password=generate_password_hash(password),
+        password=password,
         department_id=department_id if department_id else None,
         is_manager=is_manager
     )
@@ -594,7 +594,7 @@ def edit_user(user_id):
     user = User.query.get_or_404(user_id)
     user.username = request.form.get('username', user.username)
     if request.form.get('password'):
-        user.password = generate_password_hash(request.form.get('password'))
+        user.password = request.form.get('password')
     if request.form.get('department_id'):
         user.department_id = request.form.get('department_id')
     user.is_manager = 'is_manager' in request.form
