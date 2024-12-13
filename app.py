@@ -250,19 +250,31 @@ def expense_history():
     # Base query with joins
     query = Expense.query.join(User, Expense.user_id == User.id)
     
+    # If not admin, only show expenses from manager's department
+    if current_user.username != 'admin':
+        query = query.filter(User.department_id == current_user.department_id)
+    
     # Apply filters
     if status != 'all':
         query = query.filter(Expense.status == status)
     if employee != 'all':
         query = query.filter(Expense.user_id == employee)
-    if department != 'all':
+    if department != 'all' and current_user.username == 'admin':
+        # Only admin can filter by different departments
         query = query.filter(User.department_id == department)
     
-    # Get all employees for the filter dropdown (non-managers only)
-    employees = User.query.filter_by(is_manager=False).all()
-    
-    # Get all departments for the filter dropdown
-    departments = Department.query.all()
+    # Get all employees for the filter dropdown
+    if current_user.username == 'admin':
+        employees = User.query.filter_by(is_manager=False).all()
+        departments = Department.query.all()
+    else:
+        # Only show employees from manager's department
+        employees = User.query.filter_by(
+            is_manager=False,
+            department_id=current_user.department_id
+        ).all()
+        # Only show manager's department
+        departments = [current_user.department] if current_user.department else []
     
     # Get expenses with sorting
     expenses = query.order_by(Expense.date.desc()).all()
