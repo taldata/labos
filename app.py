@@ -24,6 +24,7 @@ def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 class Department(db.Model):
+    __tablename__ = 'department'
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
     budget = db.Column(db.Float, default=0.0)
@@ -31,6 +32,7 @@ class Department(db.Model):
     categories = db.relationship('Category', backref='department', lazy=True)
 
 class Category(db.Model):
+    __tablename__ = 'category'
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
     budget = db.Column(db.Float, default=0.0)
@@ -38,6 +40,7 @@ class Category(db.Model):
     subcategories = db.relationship('Subcategory', backref='category', lazy=True)
 
 class Subcategory(db.Model):
+    __tablename__ = 'subcategory'
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
     budget = db.Column(db.Float, default=0.0)
@@ -45,10 +48,12 @@ class Subcategory(db.Model):
     expenses = db.relationship('Expense', backref='subcategory', lazy=True)
 
 class User(UserMixin, db.Model):
+    __tablename__ = 'user'
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(80), unique=True, nullable=False)
     password = db.Column(db.String(120), nullable=False)
     is_manager = db.Column(db.Boolean, default=False)
+    is_admin = db.Column(db.Boolean, default=False)
     department_id = db.Column(db.Integer, db.ForeignKey('department.id'))
     expenses = db.relationship('Expense', backref='user', lazy=True)
 
@@ -77,14 +82,44 @@ class User(UserMixin, db.Model):
         return usage_percent, monthly_expenses
 
 class Expense(db.Model):
+    __tablename__ = 'expense'
     id = db.Column(db.Integer, primary_key=True)
     amount = db.Column(db.Float, nullable=False)
     description = db.Column(db.String(200))
     date = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
-    status = db.Column(db.String(20), default='pending')  # pending, approved, rejected
+    status = db.Column(db.String(20), default='pending')
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     subcategory_id = db.Column(db.Integer, db.ForeignKey('subcategory.id'), nullable=False)
     attachment_filename = db.Column(db.String(255))
+
+# Initialize database
+with app.app_context():
+    db.create_all()
+    
+    try:
+        # Create departments if they don't exist
+        rd_dept = Department.query.filter_by(name='R&D').first()
+        if not rd_dept:
+            rd_dept = Department(name='R&D', budget=100000.0)
+            db.session.add(rd_dept)
+            db.session.commit()
+
+        # Create admin user if it doesn't exist
+        admin_user = User.query.filter_by(username='admin').first()
+        if not admin_user:
+            admin_user = User(
+                username='admin',
+                password=generate_password_hash('admin123'),
+                is_manager=True,
+                is_admin=True,
+                department=rd_dept
+            )
+            db.session.add(admin_user)
+            db.session.commit()
+            print("Admin user created successfully")
+    except Exception as e:
+        print(f"Error initializing database: {str(e)}")
+        db.session.rollback()
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -510,129 +545,83 @@ def logout():
     logout_user()
     return redirect(url_for('login'))
 
+@app.route('/admin/users')
+@login_required
+def manage_users():
+    if not current_user.is_admin:
+        flash('Access denied. Admin privileges required.', 'danger')
+        return redirect(url_for('index'))
+    users = User.query.all()
+    departments = Department.query.all()
+    return render_template('manage_users.html', users=users, departments=departments)
+
+@app.route('/admin/users/add', methods=['POST'])
+@login_required
+def add_user():
+    if not current_user.is_admin:
+        return jsonify({'error': 'Access denied'}), 403
+    
+    username = request.form.get('username')
+    password = request.form.get('password')
+    department_id = request.form.get('department_id')
+    is_manager = 'is_manager' in request.form
+    
+    if User.query.filter_by(username=username).first():
+        flash('Username already exists', 'danger')
+        return redirect(url_for('manage_users'))
+    
+    new_user = User(
+        username=username,
+        password=generate_password_hash(password),
+        department_id=department_id if department_id else None,
+        is_manager=is_manager
+    )
+    db.session.add(new_user)
+    try:
+        db.session.commit()
+        flash('User added successfully', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash('Error adding user: ' + str(e), 'danger')
+    return redirect(url_for('manage_users'))
+
+@app.route('/admin/users/<int:user_id>/edit', methods=['POST'])
+@login_required
+def edit_user(user_id):
+    if not current_user.is_admin:
+        return jsonify({'error': 'Access denied'}), 403
+    
+    user = User.query.get_or_404(user_id)
+    user.username = request.form.get('username', user.username)
+    if request.form.get('password'):
+        user.password = generate_password_hash(request.form.get('password'))
+    if request.form.get('department_id'):
+        user.department_id = request.form.get('department_id')
+    user.is_manager = 'is_manager' in request.form
+    
+    try:
+        db.session.commit()
+        flash('User updated successfully', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash('Error updating user: ' + str(e), 'danger')
+    return redirect(url_for('manage_users'))
+
+@app.route('/admin/users/<int:user_id>/delete', methods=['POST'])
+@login_required
+def delete_user(user_id):
+    if not current_user.is_admin:
+        return jsonify({'error': 'Access denied'}), 403
+    
+    if user_id == current_user.id:
+        flash('Cannot delete your own account', 'danger')
+        return redirect(url_for('manage_users'))
+    
+    user = User.query.get_or_404(user_id)
+    db.session.delete(user)
+    db.session.commit()
+    flash('User deleted successfully', 'success')
+    return redirect(url_for('manage_users'))
+
 if __name__ == '__main__':
-    with app.app_context():
-        db.create_all()
-        
-        # Create departments only if they don't exist
-        departments = {
-            'R&D': 100000,
-            'Marketing': 50000,
-            'Sales': 75000
-        }
-        
-        created_departments = {}
-        for dept_name, budget in departments.items():
-            if not Department.query.filter_by(name=dept_name).first():
-                dept = Department(name=dept_name, budget=budget)
-                db.session.add(dept)
-                created_departments[dept_name] = dept
-        
-        db.session.commit()
-        
-        # Get all departments (both existing and newly created)
-        rd_dept = Department.query.filter_by(name='R&D').first()
-        marketing_dept = Department.query.filter_by(name='Marketing').first()
-        sales_dept = Department.query.filter_by(name='Sales').first()
-        
-        # Create categories only if they don't exist
-        categories_data = {
-            'R&D': [
-                ('Software', 60000, [
-                    ('Development Tools', 20000),
-                    ('Cloud Services', 25000),
-                    ('Software Licenses', 15000)
-                ]),
-                ('Hardware', 40000, [
-                    ('Equipment', 25000),
-                    ('Maintenance', 15000)
-                ])
-            ],
-            'Marketing': [
-                ('Digital', 30000, [
-                    ('Online Advertising', 20000),
-                    ('Social Media', 10000)
-                ]),
-                ('Events', 20000, [
-                    ('Conferences', 12000),
-                    ('Trade Shows', 8000)
-                ])
-            ],
-            'Sales': [
-                ('Domestic', 45000, [
-                    ('Travel', 25000),
-                    ('Entertainment', 20000)
-                ]),
-                ('International', 30000, [
-                    ('Travel', 20000),
-                    ('Entertainment', 10000)
-                ])
-            ]
-        }
-        
-        for dept_name, categories in categories_data.items():
-            dept = Department.query.filter_by(name=dept_name).first()
-            if dept:
-                for cat_name, cat_budget, subcategories in categories:
-                    # Check if category exists
-                    category = Category.query.filter_by(name=cat_name, department_id=dept.id).first()
-                    if not category:
-                        category = Category(name=cat_name, budget=cat_budget, department=dept)
-                        db.session.add(category)
-                        db.session.commit()
-                        
-                        # Create subcategories
-                        for subcat_name, subcat_budget in subcategories:
-                            if not Subcategory.query.filter_by(name=subcat_name, category_id=category.id).first():
-                                subcategory = Subcategory(name=subcat_name, budget=subcat_budget, category=category)
-                                db.session.add(subcategory)
-        
-        db.session.commit()
-        
-        # Create test users if they don't exist
-        if not User.query.filter_by(username='admin').first():
-            admin = User(username='admin', password='admin123', is_manager=True, department=rd_dept)
-            db.session.add(admin)
-        
-        # R&D Department Users
-        if not User.query.filter_by(username='rd_manager').first():
-            rd_manager = User(username='rd_manager', password='manager123', is_manager=True, department=rd_dept)
-            db.session.add(rd_manager)
-        
-        if not User.query.filter_by(username='rd_dev1').first():
-            rd_dev1 = User(username='rd_dev1', password='employee123', department=rd_dept)
-            db.session.add(rd_dev1)
-        
-        if not User.query.filter_by(username='rd_dev2').first():
-            rd_dev2 = User(username='rd_dev2', password='employee123', department=rd_dept)
-            db.session.add(rd_dev2)
-            
-        # Marketing Department Users
-        if not User.query.filter_by(username='marketing_manager').first():
-            marketing_manager = User(username='marketing_manager', password='manager123', is_manager=True, department=marketing_dept)
-            db.session.add(marketing_manager)
-        
-        if not User.query.filter_by(username='marketing_specialist1').first():
-            marketing_specialist1 = User(username='marketing_specialist1', password='employee123', department=marketing_dept)
-            db.session.add(marketing_specialist1)
-        
-        if not User.query.filter_by(username='marketing_specialist2').first():
-            marketing_specialist2 = User(username='marketing_specialist2', password='employee123', department=marketing_dept)
-            db.session.add(marketing_specialist2)
-            
-        # Sales Department Users
-        if not User.query.filter_by(username='sales_manager').first():
-            sales_manager = User(username='sales_manager', password='manager123', is_manager=True, department=sales_dept)
-            db.session.add(sales_manager)
-        
-        if not User.query.filter_by(username='sales_rep1').first():
-            sales_rep1 = User(username='sales_rep1', password='employee123', department=sales_dept)
-            db.session.add(sales_rep1)
-        
-        if not User.query.filter_by(username='sales_rep2').first():
-            sales_rep2 = User(username='sales_rep2', password='employee123', department=sales_dept)
-            db.session.add(sales_rep2)
-            
-        db.session.commit()
-            
     app.run(debug=True)
