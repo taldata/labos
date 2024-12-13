@@ -4,6 +4,9 @@
 <div class="container">
     <header class="dashboard-header">
         <h1>Manager Dashboard</h1>
+        <div class="user-info">
+            <p>Department: {{ current_user.department.name if current_user.department else 'No Department' }}</p>
+        </div>
         <div class="header-actions">
             {% if current_user.is_admin %}
             <a href="{{ url_for('manage_users') }}" class="button primary">Manage Users</a>

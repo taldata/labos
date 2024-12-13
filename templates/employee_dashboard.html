@@ -4,6 +4,9 @@
 <div class="container">
     <header class="dashboard-header">
         <h1>Welcome, {{ current_user.username }}</h1>
+        <div class="user-info">
+            <p>Department: {{ current_user.department.name if current_user.department else 'No Department' }}</p>
+        </div>
         <div class="header-actions">
             <a href="{{ url_for('submit_expense') }}" class="button primary">Submit New Expense</a>
             <a href="{{ url_for('logout') }}" class="logout-btn">Logout</a>
