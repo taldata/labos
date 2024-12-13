@@ -56,7 +56,18 @@ class User(UserMixin, db.Model):
     is_admin = db.Column(db.Boolean, default=False)
     department_id = db.Column(db.Integer, db.ForeignKey('department.id'))
     status = db.Column(db.String(20), default='active')  # active, inactive, pending
-    expenses = db.relationship('Expense', backref='user', lazy=True)
+    
+    # Relationship for expenses where user is the submitter
+    submitted_expenses = db.relationship('Expense',
+                                       primaryjoin='User.id==Expense.user_id',
+                                       backref='submitter',
+                                       lazy=True)
+    
+    # Relationship for expenses where user is the manager
+    handled_expenses = db.relationship('Expense',
+                                     primaryjoin='User.id==Expense.manager_id',
+                                     backref='handler',
+                                     lazy=True)
 
     def get_monthly_expenses(self, year, month):
         """Get total approved expenses for a specific month"""
@@ -92,6 +103,8 @@ class Expense(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     subcategory_id = db.Column(db.Integer, db.ForeignKey('subcategory.id'), nullable=False)
     attachment_filename = db.Column(db.String(255))
+    manager_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
+    handled_at = db.Column(db.DateTime, nullable=True)
 
 # Initialize database
 with app.app_context():
@@ -161,7 +174,7 @@ def login():
 def employee_dashboard():
     if current_user.is_manager:
         return redirect(url_for('manager_dashboard'))
-    expenses = Expense.query.filter_by(user_id=current_user.id).all()
+    expenses = current_user.submitted_expenses
     return render_template('employee_dashboard.html', expenses=expenses)
 
 @app.route('/expense/submit', methods=['GET', 'POST'])
@@ -212,12 +225,14 @@ def manager_dashboard():
     
     # Get all pending expenses if admin, otherwise only from their department
     if current_user.username == 'admin':
-        pending_expenses = Expense.query.filter_by(status='pending').all()
+        pending_expenses = Expense.query.join(User, Expense.user_id == User.id)\
+            .filter(Expense.status == 'pending').all()
     else:
-        pending_expenses = Expense.query.join(User).filter(
-            Expense.status == 'pending',
-            User.department_id == current_user.department_id
-        ).all()
+        pending_expenses = Expense.query.join(User, Expense.user_id == User.id)\
+            .filter(
+                Expense.status == 'pending',
+                User.department_id == current_user.department_id
+            ).all()
     
     return render_template('manager_dashboard.html', expenses=pending_expenses)
 
@@ -230,18 +245,24 @@ def expense_history():
     # Get filter parameters
     status = request.args.get('status', 'all')
     employee = request.args.get('employee', 'all')
+    department = request.args.get('department', 'all')
     
-    # Base query
-    query = Expense.query
+    # Base query with joins
+    query = Expense.query.join(User, Expense.user_id == User.id)
     
     # Apply filters
     if status != 'all':
-        query = query.filter_by(status=status)
+        query = query.filter(Expense.status == status)
     if employee != 'all':
-        query = query.filter_by(user_id=employee)
+        query = query.filter(Expense.user_id == employee)
+    if department != 'all':
+        query = query.filter(User.department_id == department)
     
-    # Get all employees for the filter dropdown
+    # Get all employees for the filter dropdown (non-managers only)
     employees = User.query.filter_by(is_manager=False).all()
+    
+    # Get all departments for the filter dropdown
+    departments = Department.query.all()
     
     # Get expenses with sorting
     expenses = query.order_by(Expense.date.desc()).all()
@@ -249,8 +270,10 @@ def expense_history():
     return render_template('expense_history.html', 
                          expenses=expenses,
                          employees=employees,
+                         departments=departments,
                          selected_status=status,
-                         selected_employee=employee)
+                         selected_employee=employee,
+                         selected_department=department)
 
 @app.route('/expense/<int:expense_id>/<action>', methods=['GET', 'POST'])
 @login_required
@@ -260,23 +283,26 @@ def handle_expense(expense_id, action):
     
     expense = Expense.query.get_or_404(expense_id)
     
-    # Validate the action
-    if action not in ['approve', 'reject']:
-        flash('Invalid action', 'error')
+    if action == 'approve':
+        expense.status = 'approved'
+        message = 'Expense approved successfully'
+    elif action == 'reject':
+        expense.status = 'rejected'
+        message = 'Expense rejected successfully'
+    else:
+        flash('Invalid action', 'danger')
         return redirect(url_for('manager_dashboard'))
-        
+    
+    # Record manager information
+    expense.manager_id = current_user.id
+    expense.handled_at = datetime.utcnow()
+    
     try:
-        if action == 'approve':
-            expense.status = 'approved'
-            flash('Expense approved successfully', 'success')
-        elif action == 'reject':
-            expense.status = 'rejected'
-            flash('Expense rejected successfully', 'success')
-        
         db.session.commit()
+        flash(message, 'success')
     except Exception as e:
         db.session.rollback()
-        flash(f'Error updating expense: {str(e)}', 'error')
+        flash(f'Error: {str(e)}', 'danger')
     
     return redirect(url_for('manager_dashboard'))
 

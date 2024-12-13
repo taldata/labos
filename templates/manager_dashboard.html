@@ -39,7 +39,7 @@
                     {% for expense in expenses %}
                     <tr>
                         <td>{{ expense.date.strftime('%Y-%m-%d') }}</td>
-                        <td>{{ expense.user.username }}</td>
+                        <td>{{ expense.submitter.username }}</td>
                         <td>{{ expense.description }}</td>
                         <td>₪{{ "%.2f"|format(expense.amount) }}</td>
                         <td>

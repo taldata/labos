@@ -28,6 +28,17 @@
                         </select>
                     </div>
                     <div class="filter-group">
+                        <label for="department">Department:</label>
+                        <select name="department" id="department" onchange="this.form.submit()">
+                            <option value="all" {% if selected_department == 'all' %}selected{% endif %}>All Departments</option>
+                            {% for dept in departments %}
+                            <option value="{{ dept.id }}" {% if selected_department|string == dept.id|string %}selected{% endif %}>
+                                {{ dept.name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="filter-group">
                         <label for="employee">Employee:</label>
                         <select name="employee" id="employee" onchange="this.form.submit()">
                             <option value="all" {% if selected_employee == 'all' %}selected{% endif %}>All Employees</option>
@@ -47,9 +58,12 @@
                         <tr>
                             <th>Date</th>
                             <th>Employee</th>
+                            <th>Department</th>
                             <th>Description</th>
                             <th>Amount</th>
                             <th>Status</th>
+                            <th>Handled By</th>
+                            <th>Handled At</th>
                             <th>Attachment</th>
                         </tr>
                     </thead>
@@ -57,10 +71,25 @@
                         {% for expense in expenses %}
                         <tr>
                             <td>{{ expense.date.strftime('%Y-%m-%d') }}</td>
-                            <td>{{ expense.user.username }}</td>
+                            <td>{{ expense.submitter.username }}</td>
+                            <td>{{ expense.submitter.department.name if expense.submitter.department else 'N/A' }}</td>
                             <td>{{ expense.description }}</td>
                             <td>₪{{ "%.2f"|format(expense.amount) }}</td>
                             <td class="status-{{ expense.status }}">{{ expense.status }}</td>
+                            <td>
+                                {% if expense.status != 'pending' %}
+                                    {{ expense.handler.username if expense.handler else 'N/A' }}
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if expense.handled_at %}
+                                    {{ expense.handled_at.strftime('%Y-%m-%d %H:%M') }}
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </td>
                             <td>
                                 {% if expense.attachment_filename %}
                                     <a href="{{ url_for('download_file', filename=expense.attachment_filename) }}" 
@@ -73,7 +102,7 @@
                         {% endfor %}
                         {% if not expenses %}
                         <tr>
-                            <td colspan="6" class="text-center">No expenses found</td>
+                            <td colspan="9" class="text-center">No expenses found</td>
                         </tr>
                         {% endif %}
                     </tbody>
