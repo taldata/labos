@@ -1,66 +1,61 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Employee Dashboard - Expense System</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-</head>
-<body>
-    <div class="container">
-        <header>
-            <h1>Welcome, {{ current_user.username }}</h1>
-            <div class="header-actions">
-                <a href="{{ url_for('view_budget') }}" class="button primary">View Budget</a>
-                <a href="{{ url_for('logout') }}" class="logout-btn">Logout</a>
-            </div>
-        </header>
+{% extends "base.html" %}
 
-        <div class="card">
-            <div class="actions">
-                <a href="{{ url_for('submit_expense') }}" class="button primary">Submit New Expense</a>
-            </div>
+{% block content %}
+<div class="container">
+    <header class="dashboard-header">
+        <h1>Welcome, {{ current_user.username }}</h1>
+        <div class="header-actions">
+            <a href="{{ url_for('submit_expense') }}" class="button primary">Submit New Expense</a>
+            <a href="{{ url_for('logout') }}" class="logout-btn">Logout</a>
+        </div>
+    </header>
 
-            <h2>Your Expenses</h2>
-            {% with messages = get_flashed_messages() %}
-                {% if messages %}
-                    {% for message in messages %}
-                        <div class="alert success">{{ message }}</div>
+    <div class="card">
+        <h2>Your Expenses</h2>
+        {% with messages = get_flashed_messages() %}
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert success">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <div class="table-responsive">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Description</th>
+                        <th>Amount</th>
+                        <th>Status</th>
+                        <th>Attachment</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for expense in expenses %}
+                    <tr>
+                        <td>{{ expense.date.strftime('%Y-%m-%d') }}</td>
+                        <td>{{ expense.description }}</td>
+                        <td>₪{{ "%.2f"|format(expense.amount) }}</td>
+                        <td class="status-{{ expense.status }}">{{ expense.status }}</td>
+                        <td>
+                            {% if expense.attachment_filename %}
+                                <a href="{{ url_for('download_file', filename=expense.attachment_filename) }}" 
+                                   class="button secondary small">Download</a>
+                            {% else %}
+                                <span class="text-muted">No attachment</span>
+                            {% endif %}
+                        </td>
+                    </tr>
                     {% endfor %}
-                {% endif %}
-            {% endwith %}
-
-            <div class="table-responsive">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Date</th>
-                            <th>Description</th>
-                            <th>Amount</th>
-                            <th>Status</th>
-                            <th>Attachment</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for expense in expenses %}
-                        <tr>
-                            <td>{{ expense.date.strftime('%Y-%m-%d') }}</td>
-                            <td>{{ expense.description }}</td>
-                            <td>₪{{ "%.2f"|format(expense.amount) }}</td>
-                            <td class="status-{{ expense.status }}">{{ expense.status }}</td>
-                            <td>
-                                {% if expense.attachment_filename %}
-                                    <a href="{{ url_for('download_file', filename=expense.attachment_filename) }}" 
-                                       class="button secondary small">Download</a>
-                                {% else %}
-                                    <span class="text-muted">No attachment</span>
-                                {% endif %}
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
+                    {% if not expenses %}
+                    <tr>
+                        <td colspan="5" class="text-center">No expenses submitted yet</td>
+                    </tr>
+                    {% endif %}
+                </tbody>
+            </table>
         </div>
     </div>
-</body>
-</html>
+</div>
+{% endblock %}

@@ -481,52 +481,19 @@ def delete_subcategory(subcat_id):
     
     return jsonify({'success': True})
 
-@app.route('/manage/budgets')
+@app.route('/view_budget')
 @login_required
-def manage_budgets():
-    if not current_user.is_manager:
-        flash('Access denied. Manager privileges required.', 'danger')
-        return redirect(url_for('index'))
+def view_budget():
+    if not current_user.is_manager and not current_user.username == 'admin':
+        flash('Access denied. Only managers can view budgets.', 'error')
+        return redirect(url_for('employee_dashboard'))
     
-    if current_user.username == 'admin':
-        departments = Department.query.all()
-    else:
-        departments = Department.query.filter_by(id=current_user.department_id).all()
-    
-    department_data = []
-    for dept in departments:
-        dept_info = {
-            'id': dept.id,
-            'name': dept.name,
-            'budget': dept.budget,
-            'categories': []
-        }
-        
-        for cat in dept.categories:
-            cat_info = {
-                'id': cat.id,
-                'name': cat.name,
-                'budget': cat.budget,
-                'subcategories': []
-            }
-            
-            for subcat in cat.subcategories:
-                subcat_info = {
-                    'id': subcat.id,
-                    'name': subcat.name,
-                    'budget': subcat.budget
-                }
-                cat_info['subcategories'].append(subcat_info)
-            
-            dept_info['categories'].append(cat_info)
-        
-        department_data.append(dept_info)
-    
-    return render_template('manage_budgets.html', departments=department_data)
+    departments = Department.query.all()
+    return render_template('view_budget.html', departments=departments)
 
 @app.route('/employee/budget')
 @login_required
-def view_budget():
+def employee_view_budget():
     if current_user.is_manager:
         return redirect(url_for('manager_dashboard'))
     
