@@ -13,6 +13,10 @@ echo "- Time: $(date)"
 echo "🔄 Cleaning up existing processes..."
 pkill -f flask
 
+# Kill any process running on port 5000
+echo "🔪 Killing any process running on port 5000..."
+lsof -ti:5000 | xargs kill -9 2>/dev/null || true
+
 # Activate virtual environment and run Flask
 echo "🌐 Activating virtual environment..."
 source venv/bin/activate
