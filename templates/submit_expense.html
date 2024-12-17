@@ -1,43 +1,95 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Submit Expense - Expense System</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-</head>
-<body>
-    <div class="container">
-        <header>
-            <h1>Submit New Expense</h1>
-            <a href="{{ url_for('employee_dashboard') }}" class="button secondary">Back to Dashboard</a>
-        </header>
+{% extends "base.html" %}
 
-        <div class="card">
-            <form method="POST" enctype="multipart/form-data" class="expense-form">
-                <div class="form-group">
-                    <label for="amount">Amount (₪)</label>
-                    <input type="number" step="0.01" min="0" name="amount" id="amount" required class="form-control">
-                </div>
-                <div class="form-group">
-                    <label for="description">Description</label>
-                    <textarea name="description" id="description" required class="form-control"></textarea>
-                </div>
-                <div class="form-group">
-                    <label for="subcategory">Category</label>
-                    <select name="subcategory_id" id="subcategory" required class="form-control">
-                        <option value="">Select a category</option>
-                        {% for subcategory in subcategories %}
-                        <option value="{{ subcategory.id }}">{{ subcategory.category.department.name }} > {{ subcategory.category.name }} > {{ subcategory.name }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label for="attachment">Attachment (optional)</label>
-                    <input type="file" name="attachment" id="attachment" class="form-control">
-                </div>
-                <button type="submit" class="button primary">Submit Expense</button>
-            </form>
+{% block content %}
+<div class="container">
+    <header>
+        <h1>Submit New Expense</h1>
+        <div class="header-actions">
+            <a href="{{ url_for('employee_dashboard') }}" class="button secondary">Back to Dashboard</a>
+            <a href="{{ url_for('logout') }}" class="logout-btn">Logout</a>
         </div>
+    </header>
+
+    <div class="card">
+        {% with messages = get_flashed_messages() %}
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert error">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <form method="POST" enctype="multipart/form-data" class="expense-form">
+            <div class="form-group">
+                <label for="amount">Amount (₪)</label>
+                <input type="number" step="0.01" min="0" name="amount" id="amount" required class="form-control">
+            </div>
+            <div class="form-group">
+                <label for="description">Description</label>
+                <textarea name="description" id="description" required class="form-control"></textarea>
+            </div>
+            <div class="form-group">
+                <label for="subcategory">Category</label>
+                <select name="subcategory_id" id="subcategory" required class="form-control">
+                    <option value="">Select a category</option>
+                    {% for subcategory in subcategories %}
+                    <option value="{{ subcategory.id }}">{{ subcategory.category.department.name }} > {{ subcategory.category.name }} > {{ subcategory.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="attachments-section">
+                <h3>Supporting Documents</h3>
+                <div class="form-group">
+                    <label for="quote">Quote</label>
+                    <input type="file" name="quote" id="quote" class="form-control" accept=".pdf,.png,.jpg,.jpeg">
+                    <span class="file-help">Upload a quote document (PDF, PNG, JPG)</span>
+                </div>
+                <div class="form-group">
+                    <label for="invoice">Invoice</label>
+                    <input type="file" name="invoice" id="invoice" class="form-control" accept=".pdf,.png,.jpg,.jpeg">
+                    <span class="file-help">Upload an invoice document (PDF, PNG, JPG)</span>
+                </div>
+                <div class="form-group">
+                    <label for="receipt">Receipt</label>
+                    <input type="file" name="receipt" id="receipt" class="form-control" accept=".pdf,.png,.jpg,.jpeg">
+                    <span class="file-help">Upload a receipt document (PDF, PNG, JPG)</span>
+                </div>
+            </div>
+
+            <div class="form-actions">
+                <button type="submit" class="button primary">Submit Expense</button>
+                <a href="{{ url_for('employee_dashboard') }}" class="button secondary">Cancel</a>
+            </div>
+        </form>
     </div>
-</body>
-</html>
+</div>
+
+<style>
+.attachments-section {
+    background: #f8f9fa;
+    padding: 1.5rem;
+    border-radius: 8px;
+    margin: 1.5rem 0;
+}
+
+.attachments-section h3 {
+    margin-top: 0;
+    margin-bottom: 1rem;
+    color: #333;
+}
+
+.file-help {
+    display: block;
+    font-size: 0.875rem;
+    color: #666;
+    margin-top: 0.25rem;
+}
+
+.form-actions {
+    margin-top: 2rem;
+    display: flex;
+    gap: 1rem;
+}
+</style>
+{% endblock %}

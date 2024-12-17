@@ -102,7 +102,9 @@ class Expense(db.Model):
     status = db.Column(db.String(20), default='pending')
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     subcategory_id = db.Column(db.Integer, db.ForeignKey('subcategory.id'), nullable=False)
-    attachment_filename = db.Column(db.String(255))
+    quote_filename = db.Column(db.String(255))
+    invoice_filename = db.Column(db.String(255))
+    receipt_filename = db.Column(db.String(255))
     manager_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
     handled_at = db.Column(db.DateTime, nullable=True)
 
@@ -202,14 +204,15 @@ def submit_expense():
             subcategory_id=subcategory_id
         )
         
-        # Handle file upload
-        if 'attachment' in request.files:
-            file = request.files['attachment']
-            if file and file.filename != '' and allowed_file(file.filename):
-                filename = secure_filename(f"{datetime.utcnow().strftime('%Y%m%d%H%M%S')}_{file.filename}")
-                file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-                file.save(file_path)
-                expense.attachment_filename = filename
+        # Handle file uploads
+        for doc_type in ['quote', 'invoice', 'receipt']:
+            if doc_type in request.files:
+                file = request.files[doc_type]
+                if file and file.filename != '' and allowed_file(file.filename):
+                    filename = secure_filename(f"{datetime.utcnow().strftime('%Y%m%d%H%M%S')}_{doc_type}_{file.filename}")
+                    file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+                    file.save(file_path)
+                    setattr(expense, f"{doc_type}_filename", filename)
 
         db.session.add(expense)
         db.session.commit()
@@ -226,7 +229,15 @@ def submit_expense():
 @app.route('/download/<filename>')
 @login_required
 def download_file(filename):
-    expense = Expense.query.filter_by(attachment_filename=filename).first_or_404()
+    # Check all document type fields for the file
+    expense = Expense.query.filter(
+        db.or_(
+            Expense.quote_filename == filename,
+            Expense.invoice_filename == filename,
+            Expense.receipt_filename == filename
+        )
+    ).first_or_404()
+    
     if current_user.is_manager or expense.user_id == current_user.id:
         return send_file(os.path.join(app.config['UPLOAD_FOLDER'], filename),
                         as_attachment=True)
@@ -671,21 +682,23 @@ def edit_expense(expense_id):
         expense.description = description
         expense.subcategory_id = subcategory_id
         
-        # Handle file upload if new file is provided
-        if 'attachment' in request.files:
-            file = request.files['attachment']
-            if file and file.filename != '' and allowed_file(file.filename):
-                # Delete old file if it exists
-                if expense.attachment_filename:
-                    old_file_path = os.path.join(app.config['UPLOAD_FOLDER'], expense.attachment_filename)
-                    if os.path.exists(old_file_path):
-                        os.remove(old_file_path)
-                
-                # Save new file
-                filename = secure_filename(f"{datetime.utcnow().strftime('%Y%m%d%H%M%S')}_{file.filename}")
-                file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-                file.save(file_path)
-                expense.attachment_filename = filename
+        # Handle file uploads
+        for doc_type in ['quote', 'invoice', 'receipt']:
+            if doc_type in request.files:
+                file = request.files[doc_type]
+                if file and file.filename != '' and allowed_file(file.filename):
+                    # Delete old file if it exists
+                    old_filename = getattr(expense, f"{doc_type}_filename")
+                    if old_filename:
+                        old_file_path = os.path.join(app.config['UPLOAD_FOLDER'], old_filename)
+                        if os.path.exists(old_file_path):
+                            os.remove(old_file_path)
+                    
+                    # Save new file
+                    filename = secure_filename(f"{datetime.utcnow().strftime('%Y%m%d%H%M%S')}_{doc_type}_{file.filename}")
+                    file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+                    file.save(file_path)
+                    setattr(expense, f"{doc_type}_filename", filename)
 
         db.session.commit()
         flash('Expense updated successfully')

@@ -31,7 +31,7 @@
                         <th>Description</th>
                         <th>Amount</th>
                         <th>Status</th>
-                        <th>Attachment</th>
+                        <th>Documents</th>
                         <th>Actions</th>
                     </tr>
                 </thead>
@@ -42,12 +42,21 @@
                         <td>{{ expense.description }}</td>
                         <td>₪{{ "%.2f"|format(expense.amount) }}</td>
                         <td class="status-{{ expense.status }}">{{ expense.status }}</td>
-                        <td>
-                            {% if expense.attachment_filename %}
-                                <a href="{{ url_for('download_file', filename=expense.attachment_filename) }}" 
-                                   class="button secondary small">Download</a>
-                            {% else %}
-                                <span class="text-muted">No attachment</span>
+                        <td class="document-links">
+                            {% if expense.quote_filename %}
+                                <a href="{{ url_for('download_file', filename=expense.quote_filename) }}" 
+                                   class="button secondary small">Quote</a>
+                            {% endif %}
+                            {% if expense.invoice_filename %}
+                                <a href="{{ url_for('download_file', filename=expense.invoice_filename) }}" 
+                                   class="button secondary small">Invoice</a>
+                            {% endif %}
+                            {% if expense.receipt_filename %}
+                                <a href="{{ url_for('download_file', filename=expense.receipt_filename) }}" 
+                                   class="button secondary small">Receipt</a>
+                            {% endif %}
+                            {% if not expense.quote_filename and not expense.invoice_filename and not expense.receipt_filename %}
+                                <span class="text-muted">No documents</span>
                             {% endif %}
                         </td>
                         <td>
@@ -67,4 +76,17 @@
         </div>
     </div>
 </div>
+
+<style>
+.document-links {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.document-links .button {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.875rem;
+}
+</style>
 {% endblock %}
