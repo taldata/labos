@@ -32,6 +32,7 @@
                         <th>Amount</th>
                         <th>Status</th>
                         <th>Attachment</th>
+                        <th>Actions</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -49,11 +50,16 @@
                                 <span class="text-muted">No attachment</span>
                             {% endif %}
                         </td>
+                        <td>
+                            {% if expense.status == 'pending' %}
+                                <a href="{{ url_for('edit_expense', expense_id=expense.id) }}" class="button primary small">Edit</a>
+                            {% endif %}
+                        </td>
                     </tr>
                     {% endfor %}
                     {% if not expenses %}
                     <tr>
-                        <td colspan="5" class="text-center">No expenses submitted yet</td>
+                        <td colspan="6" class="text-center">No expenses submitted yet</td>
                     </tr>
                     {% endif %}
                 </tbody>

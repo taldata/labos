@@ -639,6 +639,65 @@ def employee_view_budget():
                          monthly_expenses=monthly_expenses,
                          current_month=datetime.now().strftime('%B %Y'))
 
+@app.route('/expense/edit/<int:expense_id>', methods=['GET', 'POST'])
+@login_required
+def edit_expense(expense_id):
+    # Get the expense and verify ownership and status
+    expense = Expense.query.get_or_404(expense_id)
+    if expense.user_id != current_user.id:
+        flash('You can only edit your own expenses')
+        return redirect(url_for('employee_dashboard'))
+    if expense.status != 'pending':
+        flash('You can only edit pending expenses')
+        return redirect(url_for('employee_dashboard'))
+    
+    if request.method == 'POST':
+        amount = float(request.form.get('amount'))
+        description = request.form.get('description')
+        subcategory_id = request.form.get('subcategory_id')
+        
+        # Verify that the subcategory belongs to the user's department
+        subcategory = Subcategory.query.join(Category).filter(
+            Subcategory.id == subcategory_id,
+            Category.department_id == current_user.department_id
+        ).first()
+        
+        if not subcategory:
+            flash('Invalid category selected', 'error')
+            return redirect(url_for('edit_expense', expense_id=expense_id))
+        
+        # Update expense details
+        expense.amount = amount
+        expense.description = description
+        expense.subcategory_id = subcategory_id
+        
+        # Handle file upload if new file is provided
+        if 'attachment' in request.files:
+            file = request.files['attachment']
+            if file and file.filename != '' and allowed_file(file.filename):
+                # Delete old file if it exists
+                if expense.attachment_filename:
+                    old_file_path = os.path.join(app.config['UPLOAD_FOLDER'], expense.attachment_filename)
+                    if os.path.exists(old_file_path):
+                        os.remove(old_file_path)
+                
+                # Save new file
+                filename = secure_filename(f"{datetime.utcnow().strftime('%Y%m%d%H%M%S')}_{file.filename}")
+                file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+                file.save(file_path)
+                expense.attachment_filename = filename
+
+        db.session.commit()
+        flash('Expense updated successfully')
+        return redirect(url_for('employee_dashboard'))
+    
+    # Get subcategories from user's department for the form
+    subcategories = Subcategory.query.join(Category).filter(
+        Category.department_id == current_user.department_id
+    ).all()
+    
+    return render_template('edit_expense.html', expense=expense, subcategories=subcategories)
+
 @app.route('/logout')
 @login_required
 def logout():

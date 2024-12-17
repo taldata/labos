@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <header>
+        <h1>Edit Expense</h1>
+        <div class="header-actions">
+            <a href="{{ url_for('employee_dashboard') }}" class="button secondary">Back to Dashboard</a>
+            <a href="{{ url_for('logout') }}" class="logout-btn">Logout</a>
+        </div>
+    </header>
+
+    <div class="card">
+        {% with messages = get_flashed_messages() %}
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert error">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <form method="POST" enctype="multipart/form-data">
+            <div class="form-group">
+                <label for="amount">Amount:</label>
+                <input type="number" step="0.01" id="amount" name="amount" value="{{ expense.amount }}" required>
+            </div>
+            <div class="form-group">
+                <label for="description">Description:</label>
+                <textarea id="description" name="description" required>{{ expense.description }}</textarea>
+            </div>
+            <div class="form-group">
+                <label for="subcategory_id">Category:</label>
+                <select id="subcategory_id" name="subcategory_id" required>
+                    {% for subcategory in subcategories %}
+                    <option value="{{ subcategory.id }}" {% if subcategory.id == expense.subcategory_id %}selected{% endif %}>
+                        {{ subcategory.category.name }} - {{ subcategory.name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="attachment">Attachment:</label>
+                {% if expense.attachment_filename %}
+                    <p>Current attachment: 
+                        <a href="{{ url_for('download_file', filename=expense.attachment_filename) }}">
+                            {{ expense.attachment_filename }}
+                        </a>
+                    </p>
+                {% endif %}
+                <input type="file" id="attachment" name="attachment" class="file-input">
+                <span class="file-help">Leave empty to keep the current attachment. Supported formats: PDF, PNG, JPG, JPEG, GIF</span>
+            </div>
+            <div class="form-actions">
+                <button type="submit" class="button primary">Save Changes</button>
+                <a href="{{ url_for('employee_dashboard') }}" class="button secondary">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
