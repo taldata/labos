@@ -13,6 +13,11 @@ def migrate_attachments():
             
             # Add new columns if they don't exist
             with db.engine.connect() as conn:
+                if 'reason' not in existing_columns:
+                    conn.execute(text('ALTER TABLE expense ADD COLUMN reason VARCHAR(500)'))
+                    conn.commit()
+                    print("Added reason column")
+                
                 if 'quote_filename' not in existing_columns:
                     conn.execute(text('ALTER TABLE expense ADD COLUMN quote_filename VARCHAR(255)'))
                     conn.commit()
