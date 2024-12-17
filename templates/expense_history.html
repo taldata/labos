@@ -60,6 +60,7 @@
                             <th>Employee</th>
                             <th>Department</th>
                             <th>Description</th>
+                            <th>Reason</th>
                             <th>Amount</th>
                             <th>Status</th>
                             <th>Handled By</th>
@@ -74,6 +75,7 @@
                             <td>{{ expense.submitter.username }}</td>
                             <td>{{ expense.submitter.department.name if expense.submitter.department else 'N/A' }}</td>
                             <td>{{ expense.description }}</td>
+                            <td>{{ expense.reason }}</td>
                             <td>₪{{ "%.2f"|format(expense.amount) }}</td>
                             <td class="status-{{ expense.status }}">{{ expense.status }}</td>
                             <td>
@@ -102,7 +104,7 @@
                         {% endfor %}
                         {% if not expenses %}
                         <tr>
-                            <td colspan="9" class="text-center">No expenses found</td>
+                            <td colspan="10" class="text-center">No expenses found</td>
                         </tr>
                         {% endif %}
                     </tbody>
