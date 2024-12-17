@@ -29,6 +29,7 @@
                     <tr>
                         <th>Submission Date</th>
                         <th>Description</th>
+                        <th>Reason For Request</th>
                         <th>Amount</th>
                         <th>Status</th>
                         <th>Documents</th>
@@ -40,6 +41,7 @@
                     <tr>
                         <td>{{ expense.date.strftime('%Y-%m-%d') }}</td>
                         <td>{{ expense.description }}</td>
+                        <td>{{ expense.reason }}</td>
                         <td>₪{{ "%.2f"|format(expense.amount) }}</td>
                         <td class="status-{{ expense.status }}">{{ expense.status }}</td>
                         <td class="document-links">
@@ -68,7 +70,7 @@
                     {% endfor %}
                     {% if not expenses %}
                     <tr>
-                        <td colspan="6" class="text-center">No expenses submitted yet</td>
+                        <td colspan="7" class="text-center">No expenses submitted yet</td>
                     </tr>
                     {% endif %}
                 </tbody>

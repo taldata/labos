@@ -98,6 +98,7 @@ class Expense(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     amount = db.Column(db.Float, nullable=False)
     description = db.Column(db.String(200))
+    reason = db.Column(db.String(500))  # New field for reason
     date = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
     status = db.Column(db.String(20), default='pending')
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
@@ -185,6 +186,7 @@ def submit_expense():
     if request.method == 'POST':
         amount = float(request.form.get('amount'))
         description = request.form.get('description')
+        reason = request.form.get('reason')
         subcategory_id = request.form.get('subcategory_id')
         
         # Verify that the subcategory belongs to the user's department
@@ -200,6 +202,7 @@ def submit_expense():
         expense = Expense(
             amount=amount,
             description=description,
+            reason=reason,
             user_id=current_user.id,
             subcategory_id=subcategory_id
         )
@@ -665,6 +668,7 @@ def edit_expense(expense_id):
     if request.method == 'POST':
         amount = float(request.form.get('amount'))
         description = request.form.get('description')
+        reason = request.form.get('reason')
         subcategory_id = request.form.get('subcategory_id')
         
         # Verify that the subcategory belongs to the user's department
@@ -680,6 +684,7 @@ def edit_expense(expense_id):
         # Update expense details
         expense.amount = amount
         expense.description = description
+        expense.reason = reason
         expense.subcategory_id = subcategory_id
         
         # Handle file uploads

@@ -29,6 +29,10 @@
                 <textarea id="description" name="description" required>{{ expense.description }}</textarea>
             </div>
             <div class="form-group">
+                <label for="reason">Reason For Request:</label>
+                <textarea id="reason" name="reason" required>{{ expense.reason }}</textarea>
+            </div>
+            <div class="form-group">
                 <label for="subcategory_id">Category:</label>
                 <select id="subcategory_id" name="subcategory_id" required>
                     {% for subcategory in subcategories %}
