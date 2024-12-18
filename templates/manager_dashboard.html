@@ -48,11 +48,20 @@
                         <td>{{ expense.reason }}</td>
                         <td>₪{{ "%.2f"|format(expense.amount) }}</td>
                         <td>
-                            {% if expense.attachment_filename %}
-                                <a href="{{ url_for('download_file', filename=expense.attachment_filename) }}" 
-                                   class="button secondary small">Download</a>
-                            {% else %}
-                                <span class="text-muted">No attachment</span>
+                            {% if expense.quote_filename %}
+                                <a href="{{ url_for('download_file', filename=expense.quote_filename) }}" 
+                                   class="button secondary small">Quote</a>
+                            {% endif %}
+                            {% if expense.invoice_filename %}
+                                <a href="{{ url_for('download_file', filename=expense.invoice_filename) }}" 
+                                   class="button secondary small">Invoice</a>
+                            {% endif %}
+                            {% if expense.receipt_filename %}
+                                <a href="{{ url_for('download_file', filename=expense.receipt_filename) }}" 
+                                   class="button secondary small">Receipt</a>
+                            {% endif %}
+                            {% if not expense.quote_filename and not expense.invoice_filename and not expense.receipt_filename %}
+                                <span class="text-muted">No attachments</span>
                             {% endif %}
                         </td>
                         <td class="actions">
