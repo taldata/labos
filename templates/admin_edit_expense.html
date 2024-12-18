@@ -1,0 +1,153 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <header class="dashboard-header">
+        <h1>Edit Expense</h1>
+        <div class="header-actions">
+            <a href="{{ url_for('manager_dashboard') }}" class="button secondary">Back to Dashboard</a>
+        </div>
+    </header>
+
+    <div class="card">
+        <form method="post" enctype="multipart/form-data" class="form">
+            {% with messages = get_flashed_messages() %}
+                {% if messages %}
+                    {% for message in messages %}
+                        <div class="alert error">{{ message }}</div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+            <div class="form-group">
+                <label for="amount">Amount (₪)</label>
+                <input type="number" step="0.01" id="amount" name="amount" value="{{ expense.amount }}" required>
+            </div>
+
+            <div class="form-group">
+                <label for="description">Description</label>
+                <input type="text" id="description" name="description" value="{{ expense.description }}" required>
+            </div>
+
+            <div class="form-group">
+                <label for="reason">Reason</label>
+                <textarea id="reason" name="reason" required>{{ expense.reason }}</textarea>
+            </div>
+
+            <div class="form-group">
+                <label for="status">Status</label>
+                <select id="status" name="status" required>
+                    <option value="pending" {% if expense.status == 'pending' %}selected{% endif %}>Pending</option>
+                    <option value="approved" {% if expense.status == 'approved' %}selected{% endif %}>Approved</option>
+                    <option value="rejected" {% if expense.status == 'rejected' %}selected{% endif %}>Rejected</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="type">Type</label>
+                <select id="type" name="type" required>
+                    <option value="needs_approval" {% if expense.type == 'needs_approval' %}selected{% endif %}>Needs Approval</option>
+                    <option value="auto_approved" {% if expense.type == 'auto_approved' %}selected{% endif %}>Auto Approved</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="subcategory_id">Category</label>
+                <select id="subcategory_id" name="subcategory_id" required>
+                    {% for subcat in subcategories %}
+                        <option value="{{ subcat.subcat_id }}" 
+                                {% if expense.subcategory_id == subcat.subcat_id %}selected{% endif %}>
+                            {{ subcat.dept_name }} > {{ subcat.cat_name }} > {{ subcat.subcat_name }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Current Files</label>
+                <div class="current-files">
+                    {% if expense.quote_filename %}
+                        <div>
+                            Quote: <a href="{{ url_for('download_file', filename=expense.quote_filename) }}">{{ expense.quote_filename }}</a>
+                        </div>
+                    {% endif %}
+                    {% if expense.invoice_filename %}
+                        <div>
+                            Invoice: <a href="{{ url_for('download_file', filename=expense.invoice_filename) }}">{{ expense.invoice_filename }}</a>
+                        </div>
+                    {% endif %}
+                    {% if expense.receipt_filename %}
+                        <div>
+                            Receipt: <a href="{{ url_for('download_file', filename=expense.receipt_filename) }}">{{ expense.receipt_filename }}</a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="quote">Update Quote</label>
+                <input type="file" id="quote" name="quote" accept=".pdf,.png,.jpg,.jpeg,.gif">
+            </div>
+
+            <div class="form-group">
+                <label for="invoice">Update Invoice</label>
+                <input type="file" id="invoice" name="invoice" accept=".pdf,.png,.jpg,.jpeg,.gif">
+            </div>
+
+            <div class="form-group">
+                <label for="receipt">Update Receipt</label>
+                <input type="file" id="receipt" name="receipt" accept=".pdf,.png,.jpg,.jpeg,.gif">
+            </div>
+
+            <div class="form-actions">
+                <button type="submit" class="button primary">Save Changes</button>
+                <a href="{{ url_for('manager_dashboard') }}" class="button secondary">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+.form {
+    max-width: 800px;
+    margin: 0 auto;
+}
+.form-group {
+    margin-bottom: 1.5rem;
+}
+.form-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: bold;
+}
+.form-group input[type="text"],
+.form-group input[type="number"],
+.form-group select,
+.form-group textarea {
+    width: 100%;
+    padding: 0.5rem;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+.form-group textarea {
+    height: 100px;
+}
+.current-files {
+    padding: 1rem;
+    background: #f8f9fa;
+    border-radius: 4px;
+}
+.current-files div {
+    margin-bottom: 0.5rem;
+}
+.current-files div:last-child {
+    margin-bottom: 0;
+}
+.form-actions {
+    margin-top: 2rem;
+    display: flex;
+    gap: 1rem;
+    justify-content: flex-end;
+}
+</style>
+{% endblock %}

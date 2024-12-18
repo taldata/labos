@@ -1058,5 +1058,104 @@ def delete_user(user_id):
         db.session.rollback()
         return jsonify({'error': f'Error deleting user: {str(e)}'}), 500
 
+@app.route('/admin/expense/<int:expense_id>/edit', methods=['GET', 'POST'])
+@login_required
+def admin_edit_expense(expense_id):
+    if current_user.username != 'admin':
+        flash('Only admin can edit expenses', 'error')
+        return redirect(url_for('manager_dashboard'))
+    
+    expense = Expense.query.get_or_404(expense_id)
+    
+    if request.method == 'POST':
+        expense.amount = float(request.form['amount'])
+        expense.description = request.form['description']
+        expense.reason = request.form['reason']
+        expense.type = request.form['type']
+        expense.subcategory_id = int(request.form['subcategory_id'])
+        expense.status = request.form['status']  # Add status field
+        
+        # Reset handler info if status changed to pending
+        if expense.status == 'pending':
+            expense.handler = None
+            expense.handled_at = None
+        elif expense.status in ['approved', 'rejected'] and not expense.handler:
+            # If changing to approved/rejected and no handler set, set current admin as handler
+            expense.handler = current_user
+            expense.handled_at = datetime.now()
+        
+        # Handle file uploads if provided
+        if 'quote' in request.files:
+            file = request.files['quote']
+            if file and allowed_file(file.filename):
+                filename = secure_filename(file.filename)
+                file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+                expense.quote_filename = filename
+
+        if 'invoice' in request.files:
+            file = request.files['invoice']
+            if file and allowed_file(file.filename):
+                filename = secure_filename(file.filename)
+                file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+                expense.invoice_filename = filename
+
+        if 'receipt' in request.files:
+            file = request.files['receipt']
+            if file and allowed_file(file.filename):
+                filename = secure_filename(file.filename)
+                file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+                expense.receipt_filename = filename
+        
+        db.session.commit()
+        flash('Expense updated successfully', 'success')
+        return redirect(url_for('expense_history'))
+
+    # Get all subcategories for the dropdown
+    subcategories = Subcategory.query.join(Category).join(Department)\
+        .add_columns(
+            Department.name.label('dept_name'),
+            Category.name.label('cat_name'),
+            Subcategory.name.label('subcat_name'),
+            Subcategory.id.label('subcat_id')
+        ).all()
+    
+    return render_template('admin_edit_expense.html', 
+                         expense=expense, 
+                         subcategories=subcategories)
+
+@app.route('/admin/expense/<int:expense_id>/delete', methods=['POST'])
+@login_required
+def admin_delete_expense(expense_id):
+    if current_user.username != 'admin':
+        flash('Only admin can delete expenses', 'error')
+        return redirect(url_for('manager_dashboard'))
+    
+    expense = Expense.query.get_or_404(expense_id)
+    
+    # Delete associated files
+    if expense.quote_filename:
+        try:
+            os.remove(os.path.join(app.config['UPLOAD_FOLDER'], expense.quote_filename))
+        except OSError:
+            pass
+    
+    if expense.invoice_filename:
+        try:
+            os.remove(os.path.join(app.config['UPLOAD_FOLDER'], expense.invoice_filename))
+        except OSError:
+            pass
+    
+    if expense.receipt_filename:
+        try:
+            os.remove(os.path.join(app.config['UPLOAD_FOLDER'], expense.receipt_filename))
+        except OSError:
+            pass
+    
+    db.session.delete(expense)
+    db.session.commit()
+    
+    flash('Expense deleted successfully', 'success')
+    return redirect(url_for('manager_dashboard'))
+
 if __name__ == '__main__':
     app.run(debug=True)
