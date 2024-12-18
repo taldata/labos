@@ -294,15 +294,83 @@ def manager_dashboard():
     if not current_user.is_manager:
         return redirect(url_for('employee_dashboard'))
     
+    # Subquery to get total approved expenses for each level
+    dept_expenses = db.session.query(
+        Department.id,
+        db.func.sum(Expense.amount).label('total_expenses')
+    ).join(
+        Category, Department.id == Category.department_id
+    ).join(
+        Subcategory, Category.id == Subcategory.category_id
+    ).join(
+        Expense, Subcategory.id == Expense.subcategory_id
+    ).filter(
+        Expense.status == 'approved'
+    ).group_by(Department.id).subquery()
+
+    cat_expenses = db.session.query(
+        Category.id,
+        db.func.sum(Expense.amount).label('total_expenses')
+    ).join(
+        Subcategory, Category.id == Subcategory.category_id
+    ).join(
+        Expense, Subcategory.id == Expense.subcategory_id
+    ).filter(
+        Expense.status == 'approved'
+    ).group_by(Category.id).subquery()
+
+    subcat_expenses = db.session.query(
+        Subcategory.id,
+        db.func.sum(Expense.amount).label('total_expenses')
+    ).join(
+        Expense, Subcategory.id == Expense.subcategory_id
+    ).filter(
+        Expense.status == 'approved'
+    ).group_by(Subcategory.id).subquery()
+
     # Get all pending expenses if admin, otherwise only from their department
     if current_user.username == 'admin':
         pending_expenses = Expense.query.join(User, Expense.user_id == User.id)\
-            .filter(Expense.status == 'pending').all()
+            .join(Subcategory, Expense.subcategory_id == Subcategory.id)\
+            .join(Category, Subcategory.category_id == Category.id)\
+            .join(Department, Category.department_id == Department.id)\
+            .outerjoin(dept_expenses, Department.id == dept_expenses.c.id)\
+            .outerjoin(cat_expenses, Category.id == cat_expenses.c.id)\
+            .outerjoin(subcat_expenses, Subcategory.id == subcat_expenses.c.id)\
+            .filter(Expense.status == 'pending')\
+            .add_columns(
+                Department.name.label('department_name'),
+                Department.budget.label('department_budget'),
+                (Department.budget - db.func.coalesce(dept_expenses.c.total_expenses, 0)).label('department_remaining'),
+                Category.name.label('category_name'),
+                Category.budget.label('category_budget'),
+                (Category.budget - db.func.coalesce(cat_expenses.c.total_expenses, 0)).label('category_remaining'),
+                Subcategory.name.label('subcategory_name'),
+                Subcategory.budget.label('subcategory_budget'),
+                (Subcategory.budget - db.func.coalesce(subcat_expenses.c.total_expenses, 0)).label('subcategory_remaining')
+            ).all()
     else:
         pending_expenses = Expense.query.join(User, Expense.user_id == User.id)\
+            .join(Subcategory, Expense.subcategory_id == Subcategory.id)\
+            .join(Category, Subcategory.category_id == Category.id)\
+            .join(Department, Category.department_id == Department.id)\
+            .outerjoin(dept_expenses, Department.id == dept_expenses.c.id)\
+            .outerjoin(cat_expenses, Category.id == cat_expenses.c.id)\
+            .outerjoin(subcat_expenses, Subcategory.id == subcat_expenses.c.id)\
             .filter(
                 Expense.status == 'pending',
                 User.department_id == current_user.department_id
+            )\
+            .add_columns(
+                Department.name.label('department_name'),
+                Department.budget.label('department_budget'),
+                (Department.budget - db.func.coalesce(dept_expenses.c.total_expenses, 0)).label('department_remaining'),
+                Category.name.label('category_name'),
+                Category.budget.label('category_budget'),
+                (Category.budget - db.func.coalesce(cat_expenses.c.total_expenses, 0)).label('category_remaining'),
+                Subcategory.name.label('subcategory_name'),
+                Subcategory.budget.label('subcategory_budget'),
+                (Subcategory.budget - db.func.coalesce(subcat_expenses.c.total_expenses, 0)).label('subcategory_remaining')
             ).all()
     
     return render_template('manager_dashboard.html', expenses=pending_expenses)
