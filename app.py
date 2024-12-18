@@ -716,6 +716,33 @@ def edit_expense(expense_id):
     
     return render_template('edit_expense.html', expense=expense, subcategories=subcategories)
 
+@app.route('/change_password', methods=['GET', 'POST'])
+@login_required
+def change_password():
+    if request.method == 'POST':
+        current_password = request.form.get('current_password')
+        new_password = request.form.get('new_password')
+        confirm_password = request.form.get('confirm_password')
+        
+        # Verify current password
+        if current_user.password != current_password:  # In production, use proper password hashing
+            flash('Current password is incorrect')
+            return redirect(url_for('change_password'))
+        
+        # Verify new password matches confirmation
+        if new_password != confirm_password:
+            flash('New passwords do not match')
+            return redirect(url_for('change_password'))
+        
+        # Update password
+        current_user.password = new_password  # In production, use proper password hashing
+        db.session.commit()
+        
+        flash('Password changed successfully', 'success')
+        return redirect(url_for('change_password'))
+    
+    return render_template('change_password.html')
+
 @app.route('/logout')
 @login_required
 def logout():
