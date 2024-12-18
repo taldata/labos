@@ -98,7 +98,8 @@ class Expense(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     amount = db.Column(db.Float, nullable=False)
     description = db.Column(db.String(200))
-    reason = db.Column(db.String(500))  # New field for reason
+    reason = db.Column(db.String(500))
+    type = db.Column(db.String(50), nullable=False, default='needs_approval')  # New field
     date = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
     status = db.Column(db.String(20), default='pending')
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
@@ -152,6 +153,16 @@ def min_value(value, limit):
 def format_currency(value):
     return f"₪{value:,.2f}"
 
+@app.template_filter('format_expense_type')
+def format_expense_type(value):
+    types = {
+        'future_approval': 'Approval for future purchase',
+        'auto_approved': 'Automatically approved expense',
+        'needs_approval': 'Needs manager approval',
+        'pre_approved': 'Pre-approved by manager'
+    }
+    return types.get(value, value)
+
 @app.route('/')
 def index():
     if current_user.is_authenticated:
@@ -187,6 +198,7 @@ def submit_expense():
         amount = float(request.form.get('amount'))
         description = request.form.get('description')
         reason = request.form.get('reason')
+        expense_type = request.form.get('type')
         subcategory_id = request.form.get('subcategory_id')
         
         # Verify that the subcategory belongs to the user's department
@@ -199,30 +211,59 @@ def submit_expense():
             flash('Invalid category selected', 'error')
             return redirect(url_for('submit_expense'))
         
+        # Create new expense
         expense = Expense(
             amount=amount,
             description=description,
             reason=reason,
+            type=expense_type,
             user_id=current_user.id,
             subcategory_id=subcategory_id
         )
-        
+
         # Handle file uploads
-        for doc_type in ['quote', 'invoice', 'receipt']:
-            if doc_type in request.files:
-                file = request.files[doc_type]
-                if file and file.filename != '' and allowed_file(file.filename):
-                    filename = secure_filename(f"{datetime.utcnow().strftime('%Y%m%d%H%M%S')}_{doc_type}_{file.filename}")
-                    file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-                    file.save(file_path)
-                    setattr(expense, f"{doc_type}_filename", filename)
+        if 'quote' in request.files:
+            file = request.files['quote']
+            if file and allowed_file(file.filename):
+                filename = secure_filename(f"{current_user.username}_quote_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{file.filename}")
+                file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+                expense.quote_filename = filename
+
+        if 'invoice' in request.files:
+            file = request.files['invoice']
+            if file and allowed_file(file.filename):
+                filename = secure_filename(f"{current_user.username}_invoice_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{file.filename}")
+                file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+                expense.invoice_filename = filename
+
+        if 'receipt' in request.files:
+            file = request.files['receipt']
+            if file and allowed_file(file.filename):
+                filename = secure_filename(f"{current_user.username}_receipt_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{file.filename}")
+                file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+                expense.receipt_filename = filename
+
+        # Set status based on type
+        if expense_type == 'auto_approved':
+            expense.status = 'approved'
+            expense.handled_at = datetime.utcnow()
+            expense.manager_id = None  # Auto-approved doesn't need manager
+        elif expense_type == 'pre_approved':
+            expense.status = 'approved'
+            expense.handled_at = datetime.utcnow()
+            # Find a manager from the user's department
+            manager = User.query.filter_by(department_id=current_user.department_id, is_manager=True).first()
+            if manager:
+                expense.manager_id = manager.id
+        else:
+            expense.status = 'pending'
 
         db.session.add(expense)
         db.session.commit()
+        
         flash('Expense submitted successfully')
         return redirect(url_for('employee_dashboard'))
     
-    # Get only subcategories from user's department
     subcategories = Subcategory.query.join(Category).filter(
         Category.department_id == current_user.department_id
     ).all()

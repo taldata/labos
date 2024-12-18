@@ -61,6 +61,7 @@
                             <th>Department</th>
                             <th>Description</th>
                             <th>Reason</th>
+                            <th>Type</th>
                             <th>Amount</th>
                             <th>Status</th>
                             <th>Handled By</th>
@@ -76,6 +77,7 @@
                             <td>{{ expense.submitter.department.name if expense.submitter.department else 'N/A' }}</td>
                             <td>{{ expense.description }}</td>
                             <td>{{ expense.reason }}</td>
+                            <td>{{ expense.type|format_expense_type }}</td>
                             <td>₪{{ "%.2f"|format(expense.amount) }}</td>
                             <td class="status-{{ expense.status }}">{{ expense.status }}</td>
                             <td>
@@ -113,7 +115,7 @@
                         {% endfor %}
                         {% if not expenses %}
                         <tr>
-                            <td colspan="10" class="text-center">No expenses found</td>
+                            <td colspan="11" class="text-center">No expenses found</td>
                         </tr>
                         {% endif %}
                     </tbody>

@@ -18,6 +18,11 @@ def migrate_attachments():
                     conn.commit()
                     print("Added reason column")
                 
+                if 'type' not in existing_columns:
+                    conn.execute(text('ALTER TABLE expense ADD COLUMN type VARCHAR(50) NOT NULL DEFAULT "needs_approval"'))
+                    conn.commit()
+                    print("Added type column")
+                
                 if 'quote_filename' not in existing_columns:
                     conn.execute(text('ALTER TABLE expense ADD COLUMN quote_filename VARCHAR(255)'))
                     conn.commit()
