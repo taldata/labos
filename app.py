@@ -123,6 +123,7 @@ class Expense(db.Model):
     receipt_filename = db.Column(db.String(255))
     manager_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
     handled_at = db.Column(db.DateTime, nullable=True)
+    rejection_reason = db.Column(db.String(500))
 
 # Initialize database
 with app.app_context():
@@ -454,6 +455,7 @@ def handle_expense(expense_id, action):
         message = 'Expense approved successfully'
     elif action == 'reject':
         expense.status = 'rejected'
+        expense.rejection_reason = request.form.get('rejection_reason')
         message = 'Expense rejected successfully'
     else:
         flash('Invalid action', 'danger')

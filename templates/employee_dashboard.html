@@ -45,7 +45,18 @@
                         <td>{{ expense.reason }}</td>
                         <td><span class="expense-type">{{ expense.type|format_expense_type }}</span></td>
                         <td>₪{{ "%.2f"|format(expense.amount) }}</td>
-                        <td class="status-{{ expense.status }}">{{ expense.status }}</td>
+                        <td class="status-{{ expense.status }}">{{ expense.status }}
+                            {% if expense.status == 'rejected' %}
+                                <span class="badge danger">Rejected</span>
+                                {% if expense.rejection_reason %}
+                                    <div class="rejection-reason">
+                                        <strong>Reason:</strong> {{ expense.rejection_reason }}
+                                    </div>
+                                {% endif %}
+                            {% elif expense.status == 'approved' %}
+                                <span class="badge success">Approved</span>
+                            {% endif %}
+                        </td>
                         <td class="document-links">
                             {% if expense.quote_filename %}
                                 <a href="{{ url_for('download_file', filename=expense.quote_filename) }}" 
@@ -139,6 +150,15 @@
 .status-rejected {
     color: #e74c3c;
     font-weight: 500;
+}
+
+.rejection-reason {
+    margin-top: 5px;
+    color: #dc3545;
+    font-size: 0.9em;
+    padding: 5px;
+    background-color: #fff;
+    border-radius: 4px;
 }
 </style>
 {% endblock %}

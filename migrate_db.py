@@ -1,6 +1,8 @@
 from app import app, db, Expense
 from sqlalchemy import text
 import os
+from sqlalchemy import create_engine, MetaData, Column, String
+import sqlalchemy as sa
 
 def migrate_attachments():
     print("Starting database migration for expense attachments...")
@@ -91,6 +93,21 @@ def add_email_column():
             db.session.rollback()
             raise
 
+def migrate_database():
+    # Create a new column for rejection reason
+    with app.app_context():
+        inspector = db.inspect(db.engine)
+        columns = [col['name'] for col in inspector.get_columns('expense')]
+        
+        if 'rejection_reason' not in columns:
+            # Add the column using raw SQL
+            db.session.execute(text('ALTER TABLE expense ADD COLUMN rejection_reason VARCHAR(500)'))
+            db.session.commit()
+            print("Added rejection_reason column")
+        else:
+            print("Rejection reason column already exists")
+
 if __name__ == '__main__':
     migrate_attachments()
     add_email_column()
+    migrate_database()

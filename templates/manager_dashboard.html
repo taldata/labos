@@ -137,19 +137,7 @@
                                 <form action="{{ url_for('handle_expense', expense_id=expense.id, action='approve') }}" method="post" class="inline-form">
                                     <button type="submit" class="button success small">Approve</button>
                                 </form>
-                                <form action="{{ url_for('handle_expense', expense_id=expense.id, action='reject') }}" method="post" class="inline-form">
-                                    <button type="submit" class="button danger small">Reject</button>
-                                </form>
-                                {% if current_user.username == 'admin' %}
-                                <a href="{{ url_for('admin_edit_expense', expense_id=expense.id) }}" 
-                                   class="button secondary small">Edit</a>
-                                <form action="{{ url_for('admin_delete_expense', expense_id=expense.id) }}" 
-                                      method="post" 
-                                      class="inline-form"
-                                      onsubmit="return confirm('Are you sure you want to delete this expense?');">
-                                    <button type="submit" class="button danger small">Delete</button>
-                                </form>
-                                {% endif %}
+                                <button onclick="showRejectModal({{ expense.id }})" class="button danger small">Reject</button>
                             </div>
                         </td>
                     </tr>
@@ -162,6 +150,23 @@
                 </tbody>
             </table>
         </div>
+    </div>
+</div>
+
+<!-- Rejection Modal -->
+<div id="rejectModal" class="modal" style="display: none;">
+    <div class="modal-content">
+        <h3>Reject Expense</h3>
+        <form id="rejectForm" method="post">
+            <div class="form-group">
+                <label for="rejection_reason">Reason for Rejection:</label>
+                <textarea id="rejection_reason" name="rejection_reason" class="form-control" required></textarea>
+            </div>
+            <div class="modal-actions">
+                <button type="submit" class="button danger">Reject</button>
+                <button type="button" onclick="hideRejectModal()" class="button secondary">Cancel</button>
+            </div>
+        </form>
     </div>
 </div>
 
@@ -392,5 +397,68 @@ table {
 td {
     padding: 12px;
 }
+
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.5);
+}
+
+.modal-content {
+    background-color: #fefefe;
+    margin: 15% auto;
+    padding: 20px;
+    border: 1px solid #888;
+    width: 80%;
+    max-width: 500px;
+    border-radius: 8px;
+}
+
+.modal-actions {
+    margin-top: 20px;
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+}
+
+textarea.form-control {
+    width: 100%;
+    min-height: 100px;
+    margin: 10px 0;
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+.form-group label {
+    font-weight: bold;
+}
 </style>
+
+<script>
+function showRejectModal(expenseId) {
+    const modal = document.getElementById('rejectModal');
+    const form = document.getElementById('rejectForm');
+    form.action = `/expense/${expenseId}/reject`;
+    modal.style.display = 'block';
+}
+
+function hideRejectModal() {
+    const modal = document.getElementById('rejectModal');
+    modal.style.display = 'none';
+}
+
+// Close modal when clicking outside
+window.onclick = function(event) {
+    const modal = document.getElementById('rejectModal');
+    if (event.target == modal) {
+        modal.style.display = 'none';
+    }
+}
+</script>
 {% endblock %}

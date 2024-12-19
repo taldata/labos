@@ -82,7 +82,14 @@
                             <td>{{ expense.reason }}</td>
                             <td>{{ expense.type|format_expense_type }}</td>
                             <td>₪{{ "%.2f"|format(expense.amount) }}</td>
-                            <td class="status-{{ expense.status }}">{{ expense.status }}</td>
+                            <td class="status-{{ expense.status }}">
+                                {{ expense.status }}
+                                {% if expense.status == 'rejected' and expense.rejection_reason %}
+                                <div class="rejection-reason">
+                                    <strong>Rejection Reason:</strong> {{ expense.rejection_reason }}
+                                </div>
+                                {% endif %}
+                            </td>
                             <td>
                                 {% if expense.status != 'pending' %}
                                     {{ expense.handler.username if expense.handler else 'N/A' }}
@@ -151,9 +158,19 @@
         padding: 0.25rem 0.5rem;
         font-size: 0.875rem;
     }
+    .rejection-reason {
+        margin-top: 5px;
+        color: #dc3545;
+        font-size: 0.9em;
+        padding: 5px;
+        background-color: rgba(220, 53, 69, 0.1);
+        border-radius: 4px;
+        white-space: normal;
+        max-width: 250px;
+    }
     .status-pending { color: #f39c12; }
     .status-approved { color: #27ae60; }
-    .status-rejected { color: #c0392b; }
+    .status-rejected { color: #dc3545; }
     </style>
 </body>
 </html>
