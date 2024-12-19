@@ -33,6 +33,7 @@
                         <th>Type</th>
                         <th>Amount</th>
                         <th>Status</th>
+                        <th>Handled By</th>
                         <th>Documents</th>
                         <th>Actions</th>
                     </tr>
@@ -55,6 +56,13 @@
                                 {% endif %}
                             {% elif expense.status == 'approved' %}
                                 <span class="badge success">Approved</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if expense.status != 'pending' %}
+                                {{ expense.handler.username if expense.handler else 'N/A' }}
+                            {% else %}
+                                -
                             {% endif %}
                         </td>
                         <td class="document-links">
@@ -95,7 +103,7 @@
                     {% endfor %}
                     {% if not expenses %}
                     <tr>
-                        <td colspan="8" class="text-center">No expenses submitted yet</td>
+                        <td colspan="9" class="text-center">No expenses submitted yet</td>
                     </tr>
                     {% endif %}
                 </tbody>
