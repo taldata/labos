@@ -54,6 +54,7 @@
                         <th>Amount</th>
                         <th>Budget Info</th>
                         <th>Attachment</th>
+                        <th>Status</th>
                         <th>Actions</th>
                     </tr>
                 </thead>
@@ -66,51 +67,19 @@
                         <td>{{ expense.reason }}</td>
                         <td>{{ expense.type|format_expense_type }}</td>
                         <td>₪{{ "%.2f"|format(expense.amount) }}</td>
-                        <td>
-                            <div class="budget-info">
-                                <div class="budget-section">
-                                    <div class="budget-header">{{ dept_name }}</div>
-                                    <div class="budget-details">
-                                        <div class="budget-item">
-                                            <span class="label">תקציב:</span>
-                                            <span class="amount">₪{{ "%.2f"|format(dept_budget) }}</span>
-                                        </div>
-                                        <div class="budget-item">
-                                            <span class="label">נשאר:</span>
-                                            <span class="amount {% if dept_remaining < expense.amount %}warning{% endif %}">
-                                                ₪{{ "%.2f"|format(dept_remaining) }}
-                                            </span>
-                                        </div>
+                        <td class="budget-info">
+                            <div class="budget-section">
+                                <div class="budget-header">{{ dept_name }}</div>
+                                <div class="budget-details">
+                                    <div class="budget-item">
+                                        <span class="label">תקציב:</span>
+                                        <span class="amount">₪{{ "%.2f"|format(dept_budget) }}</span>
                                     </div>
-                                </div>
-                                <div class="budget-section">
-                                    <div class="budget-header">{{ cat_name }}</div>
-                                    <div class="budget-details">
-                                        <div class="budget-item">
-                                            <span class="label">תקציב:</span>
-                                            <span class="amount">₪{{ "%.2f"|format(cat_budget) }}</span>
-                                        </div>
-                                        <div class="budget-item">
-                                            <span class="label">נשאר:</span>
-                                            <span class="amount {% if cat_remaining < expense.amount %}warning{% endif %}">
-                                                ₪{{ "%.2f"|format(cat_remaining) }}
-                                            </span>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="budget-section">
-                                    <div class="budget-header">{{ subcat_name }}</div>
-                                    <div class="budget-details">
-                                        <div class="budget-item">
-                                            <span class="label">תקציב:</span>
-                                            <span class="amount">₪{{ "%.2f"|format(subcat_budget) }}</span>
-                                        </div>
-                                        <div class="budget-item">
-                                            <span class="label">נשאר:</span>
-                                            <span class="amount {% if subcat_remaining < expense.amount %}warning{% endif %}">
-                                                ₪{{ "%.2f"|format(subcat_remaining) }}
-                                            </span>
-                                        </div>
+                                    <div class="budget-item">
+                                        <span class="label">נשאר:</span>
+                                        <span class="amount {% if dept_remaining < expense.amount %}warning{% endif %}">
+                                            ₪{{ "%.2f"|format(dept_remaining) }}
+                                        </span>
                                     </div>
                                 </div>
                             </div>
@@ -132,6 +101,20 @@
                                 <span class="text-muted">No attachments</span>
                             {% endif %}
                         </td>
+                        <td class="status-{{ expense.status }}">
+                            {% if expense.status == 'rejected' %}
+                                <span class="badge danger">Rejected</span>
+                                {% if expense.rejection_reason %}
+                                    <div class="rejection-reason">
+                                        <strong>Reason:</strong> {{ expense.rejection_reason }}
+                                    </div>
+                                {% endif %}
+                            {% elif expense.status == 'approved' %}
+                                <span class="badge success">Approved</span>
+                            {% elif expense.status == 'pending' %}
+                                <span class="badge warning">Pending</span>
+                            {% endif %}
+                        </td>
                         <td class="actions">
                             <div class="action-buttons">
                                 <form action="{{ url_for('handle_expense', expense_id=expense.id, action='approve') }}" method="post" class="inline-form">
@@ -144,7 +127,7 @@
                     {% endfor %}
                     {% if not expenses %}
                     <tr>
-                        <td colspan="9" class="text-center">No pending expenses</td>
+                        <td colspan="10" class="text-center">No pending expenses</td>
                     </tr>
                     {% endif %}
                 </tbody>
@@ -437,6 +420,42 @@ textarea.form-control {
 
 .form-group label {
     font-weight: bold;
+}
+
+.badge {
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.85em;
+    font-weight: 500;
+    text-transform: uppercase;
+}
+
+.badge.danger {
+    background-color: #dc3545;
+    color: white;
+}
+
+.badge.success {
+    background-color: #28a745;
+    color: white;
+}
+
+.badge.warning {
+    background-color: #ffc107;
+    color: #000;
+}
+
+.rejection-reason {
+    margin-top: 8px;
+    color: #dc3545;
+    font-size: 0.9em;
+    padding: 8px;
+    background-color: rgba(220, 53, 69, 0.1);
+    border-radius: 4px;
+}
+
+.rejection-reason strong {
+    color: #dc3545;
 }
 </style>
 

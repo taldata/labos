@@ -83,11 +83,17 @@
                             <td>{{ expense.type|format_expense_type }}</td>
                             <td>₪{{ "%.2f"|format(expense.amount) }}</td>
                             <td class="status-{{ expense.status }}">
-                                {{ expense.status }}
-                                {% if expense.status == 'rejected' and expense.rejection_reason %}
-                                <div class="rejection-reason">
-                                    <strong>Rejection Reason:</strong> {{ expense.rejection_reason }}
-                                </div>
+                                {% if expense.status == 'rejected' %}
+                                    <span class="badge danger">Rejected</span>
+                                    {% if expense.rejection_reason %}
+                                        <div class="rejection-reason">
+                                            <strong>Reason:</strong> {{ expense.rejection_reason }}
+                                        </div>
+                                    {% endif %}
+                                {% elif expense.status == 'approved' %}
+                                    <span class="badge success">Approved</span>
+                                {% elif expense.status == 'pending' %}
+                                    <span class="badge warning">Pending</span>
                                 {% endif %}
                             </td>
                             <td>
@@ -158,19 +164,45 @@
         padding: 0.25rem 0.5rem;
         font-size: 0.875rem;
     }
+    .badge {
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-size: 0.85em;
+        font-weight: 500;
+        text-transform: uppercase;
+    }
+
+    .badge.danger {
+        background-color: #dc3545;
+        color: white;
+    }
+
+    .badge.success {
+        background-color: #28a745;
+        color: white;
+    }
+
+    .badge.warning {
+        background-color: #ffc107;
+        color: #000;
+    }
+
     .rejection-reason {
-        margin-top: 5px;
+        margin-top: 8px;
         color: #dc3545;
         font-size: 0.9em;
-        padding: 5px;
+        padding: 8px;
         background-color: rgba(220, 53, 69, 0.1);
         border-radius: 4px;
-        white-space: normal;
-        max-width: 250px;
     }
-    .status-pending { color: #f39c12; }
-    .status-approved { color: #27ae60; }
+
+    .rejection-reason strong {
+        color: #dc3545;
+    }
+
     .status-rejected { color: #dc3545; }
+    .status-approved { color: #28a745; }
+    .status-pending { color: #ffc107; }
     </style>
 </body>
 </html>
