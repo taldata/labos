@@ -3,7 +3,7 @@
 {% block content %}
 <div class="container">
     <header class="dashboard-header">
-        <h1>{{ current_user.username }}</h1>
+
         <div class="user-info">
             <p>Department: {{ current_user.home_department.name if current_user.home_department else 'No Department' }}</p>
         </div>
