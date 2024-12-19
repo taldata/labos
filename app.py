@@ -4,6 +4,14 @@ from flask_login import LoginManager, UserMixin, login_user, login_required, log
 from datetime import datetime
 import os
 from werkzeug.utils import secure_filename
+from utils.email_sender import send_email, EXPENSE_SUBMITTED_TEMPLATE, EXPENSE_STATUS_UPDATE_TEMPLATE, NEW_USER_TEMPLATE
+import logging
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'your-secret-key-here'
@@ -277,6 +285,18 @@ def submit_expense():
         db.session.add(expense)
         db.session.commit()
         
+        # Send email notification to department managers
+        for manager in expense.subcategory.category.department.department_managers:
+            send_email(
+                subject='New Expense Submission',
+                recipient=manager.email,
+                template=EXPENSE_SUBMITTED_TEMPLATE,
+                manager_name=manager.username,
+                employee_name=current_user.username,
+                expense=expense,
+                subcategory=expense.subcategory
+            )
+        
         flash('Expense submitted successfully')
         return redirect(url_for('employee_dashboard'))
     
@@ -468,6 +488,17 @@ def handle_expense(expense_id, action):
     try:
         db.session.commit()
         flash(message, 'success')
+        
+        # Send email notification to the expense submitter
+        send_email(
+            subject='Expense Status Update',
+            recipient=expense.submitter.email,
+            template=EXPENSE_STATUS_UPDATE_TEMPLATE,
+            employee_name=expense.submitter.username,
+            expense=expense,
+            subcategory=expense.subcategory,
+            status=expense.status
+        )
     except Exception as e:
         db.session.rollback()
         flash(f'Error: {str(e)}', 'danger')
@@ -640,6 +671,14 @@ def add_user():
         print(f"Adding new user to database: {new_user.username}")
         db.session.add(new_user)
         db.session.commit()
+        
+        # Send welcome email to new user
+        send_email(
+            subject='Welcome to Expense Management System',
+            recipient=new_user.email,
+            template=NEW_USER_TEMPLATE,
+            user=new_user
+        )
         
         success_msg = f'User {username} added successfully'
         print(success_msg)
@@ -1223,6 +1262,28 @@ def admin_delete_expense(expense_id):
     
     flash('Expense deleted successfully', 'success')
     return redirect(url_for('manager_dashboard'))
+
+@app.route('/test_email')
+def test_email():
+    try:
+        print("Attempting to send test email...")
+        send_email(
+            subject='Test Email from SendGrid',
+            recipient='sabag.tal@gmail.com',  # Replace with the email where you want to receive the test
+            template="""
+            <h2>Test Email from SendGrid</h2>
+            <p>This is a test email from your Expense Management System using SendGrid.</p>
+            <p>If you received this email, the email notification system is working correctly!</p>
+            <p>Time sent: {{ time }}</p>
+            """,
+            time=datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        )
+        return 'Test email sent! Please check your inbox.'
+    except Exception as e:
+        print(f"Error sending email: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return f'Error sending email: {str(e)}'
 
 if __name__ == '__main__':
     app.run(debug=True)
