@@ -57,6 +57,7 @@ class User(UserMixin, db.Model):
     __tablename__ = 'user'
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(80), unique=True, nullable=False)
+    email = db.Column(db.String(120), unique=False, nullable=False)
     password = db.Column(db.String(120), nullable=False)
     is_manager = db.Column(db.Boolean, default=False)
     is_admin = db.Column(db.Boolean, default=False)
@@ -140,6 +141,7 @@ with app.app_context():
         if not admin_user:
             admin_user = User(
                 username='admin',
+                email='admin@example.com',
                 password='admin123',
                 is_manager=True,
                 is_admin=True,
@@ -573,6 +575,7 @@ def add_user():
     try:
         # Get form data
         username = request.form.get('username', '').strip()
+        email = request.form.get('email', '').strip()
         password = request.form.get('password', '').strip()
         department_id = request.form.get('department_id')
         managed_department_ids = request.form.getlist('managed_departments[]')
@@ -582,8 +585,8 @@ def add_user():
         print(f"Received add user request: username={username}, dept={department_id}, role={role}, status={status}, managed_depts={managed_department_ids}")
         
         # Validate input
-        if not username or not password:
-            error_msg = 'Username and password are required'
+        if not username or not email or not password:
+            error_msg = 'Username, email and password are required'
             print(f"Validation error: {error_msg}")
             if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                 return jsonify({'error': error_msg}), 400
@@ -615,9 +618,11 @@ def add_user():
             flash(error_msg, 'danger')
             return redirect(url_for('manage_users'))
         
+        
         # Create new user
         new_user = User(
             username=username,
+            email=email,
             password=password,
             department_id=department_id if department_id else None,
             is_manager=role == 'manager',
@@ -1048,6 +1053,7 @@ def get_user_info(user_id):
     return jsonify({
         'id': user.id,
         'username': user.username,
+        'email': user.email,
         'is_manager': user.is_manager,
         'is_admin': user.is_admin,
         'department_id': user.department_id,
@@ -1066,6 +1072,7 @@ def edit_user(user_id):
         
         # Update basic info
         user.username = request.form.get('username', user.username)
+        user.email = request.form.get('email', user.email)
         user.department_id = request.form.get('department_id') or None
         user.status = request.form.get('status', 'active')
         
