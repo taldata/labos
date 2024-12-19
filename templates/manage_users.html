@@ -93,12 +93,11 @@
                                     </td>
                                     <td>
                                         <div id="managedDepartmentsGroup" style="display: none;">
-                                            <select id="managed_departments" name="managed_departments[]" multiple>
+                                            <select class="form-select" id="managed_departments" multiple>
                                                 {% for dept in departments %}
                                                 <option value="{{ dept.id }}">{{ dept.name }}</option>
                                                 {% endfor %}
                                             </select>
-                                            <small class="help-text">Hold Ctrl/Cmd to select multiple departments</small>
                                         </div>
                                     </td>
                                     <td>
@@ -402,7 +401,8 @@ function saveNewUser() {
     const department = document.getElementById('newDepartment').value;
     const role = document.getElementById('newRole').value;
     const status = document.getElementById('newStatus').value;
-    const managedDepartments = document.getElementById('managed_departments').value;
+    const managedDepartmentsSelect = document.getElementById('managed_departments');
+    const managedDepartments = Array.from(managedDepartmentsSelect.selectedOptions).map(option => option.value);
 
     console.log('Saving new user:', {
         username,
@@ -423,7 +423,11 @@ function saveNewUser() {
     formData.append('department_id', department);
     formData.append('role', role);
     formData.append('status', status);
-    if (managedDepartments) formData.append('managed_departments', managedDepartments);
+    
+    // Append each selected department ID separately with array notation
+    managedDepartments.forEach(deptId => {
+        formData.append('managed_departments[]', deptId);
+    });
 
     fetch('/admin/users/add', {
         method: 'POST',
