@@ -66,5 +66,31 @@ def migrate_attachments():
             db.session.rollback()
             raise
 
+def add_email_column():
+    print("Starting database migration to add email column to user table...")
+    
+    with app.app_context():
+        try:
+            # Check if the email column exists
+            inspector = db.inspect(db.engine)
+            existing_columns = [col['name'] for col in inspector.get_columns('user')]
+            
+            # Add email column if it doesn't exist
+            with db.engine.connect() as conn:
+                if 'email' not in existing_columns:
+                    conn.execute(text('ALTER TABLE user ADD COLUMN email VARCHAR(255)'))
+                    conn.commit()
+                    print("Added email column to user table")
+                else:
+                    print("Email column already exists in user table")
+            
+            print("Migration completed successfully!")
+            
+        except Exception as e:
+            print(f"Error during migration: {str(e)}")
+            db.session.rollback()
+            raise
+
 if __name__ == '__main__':
     migrate_attachments()
+    add_email_column()

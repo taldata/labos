@@ -60,6 +60,7 @@
                             <thead class="table-light">
                                 <tr>
                                     <th scope="col"><i class="fas fa-user me-2"></i>User</th>
+                                    <th scope="col"><i class="fas fa-envelope me-2"></i>Email</th>
                                     <th scope="col"><i class="fas fa-user-tag me-2"></i>Role</th>
                                     <th scope="col"><i class="fas fa-building me-2"></i>Home Department</th>
                                     <th scope="col"><i class="fas fa-chart-bar me-2"></i>Managed Departments</th>
@@ -74,6 +75,12 @@
                                         <div class="input-group">
                                             <span class="input-group-text"><i class="fas fa-user"></i></span>
                                             <input type="text" class="form-control" id="newUsername" placeholder="Username" required>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="input-group">
+                                            <span class="input-group-text"><i class="fas fa-envelope"></i></span>
+                                            <input type="email" class="form-control" id="newEmail" placeholder="Email" required>
                                         </div>
                                     </td>
                                     <td>
@@ -123,6 +130,7 @@
                                 {% for user in users %}
                                 <tr data-user-id="{{ user.id }}" class="view-row">
                                     <td>{{ user.username }}</td>
+                                    <td>{{ user.email }}</td>
                                     <td>
                                         {% if user.is_admin %}
                                         <span class="badge bg-danger">Admin</span>
@@ -157,6 +165,9 @@
                                 <tr data-user-id="{{ user.id }}" class="edit-row" style="display: none;">
                                     <td>
                                         <input type="text" class="form-control" name="username" value="{{ user.username }}">
+                                    </td>
+                                    <td>
+                                        <input type="email" class="form-control" name="email" value="{{ user.email }}">
                                     </td>
                                     <td>
                                         <select class="form-control" name="role" onchange="toggleManagedDepts(this)">
@@ -397,6 +408,7 @@ function toggleManagedDepartments() {
 
 function saveNewUser() {
     const username = document.getElementById('newUsername').value;
+    const email = document.getElementById('newEmail').value;
     const password = document.getElementById('newPassword').value;
     const department = document.getElementById('newDepartment').value;
     const role = document.getElementById('newRole').value;
@@ -406,19 +418,21 @@ function saveNewUser() {
 
     console.log('Saving new user:', {
         username,
+        email,
         department,
         role,
         status,
         managedDepartments
     });
 
-    if (!username || !password) {
-        alert('Username and password are required');
+    if (!username || !email || !password) {
+        alert('Username, email, and password are required');
         return;
     }
 
     const formData = new FormData();
     formData.append('username', username);
+    formData.append('email', email);
     formData.append('password', password);
     formData.append('department_id', department);
     formData.append('role', role);
@@ -473,6 +487,7 @@ function saveEdit(userId) {
     
     // Gather form data
     formData.append('username', row.querySelector('[name="username"]').value);
+    formData.append('email', row.querySelector('[name="email"]').value);
     formData.append('role', row.querySelector('[name="role"]').value);
     formData.append('department_id', row.querySelector('[name="department_id"]').value);
     formData.append('status', row.querySelector('[name="status"]').value);
