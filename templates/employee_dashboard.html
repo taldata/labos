@@ -31,6 +31,7 @@
                         <th>Submission Date</th>
                         <th>Description</th>
                         <th>Reason For Request</th>
+                        <th>Type</th>
                         <th>Amount</th>
                         <th>Status</th>
                         <th>Documents</th>
@@ -43,6 +44,7 @@
                         <td>{{ expense.date.strftime('%Y-%m-%d') }}</td>
                         <td>{{ expense.description }}</td>
                         <td>{{ expense.reason }}</td>
+                        <td><span class="expense-type">{{ expense.type|format_expense_type }}</span></td>
                         <td>₪{{ "%.2f"|format(expense.amount) }}</td>
                         <td class="status-{{ expense.status }}">{{ expense.status }}</td>
                         <td class="document-links">
@@ -83,7 +85,7 @@
                     {% endfor %}
                     {% if not expenses %}
                     <tr>
-                        <td colspan="7" class="text-center">No expenses submitted yet</td>
+                        <td colspan="8" class="text-center">No expenses submitted yet</td>
                     </tr>
                     {% endif %}
                 </tbody>
@@ -113,6 +115,31 @@
 .action-buttons .button {
     padding: 0.25rem 0.5rem;
     font-size: 0.875rem;
+}
+
+.expense-type {
+    display: inline-block;
+    padding: 4px 8px;
+    background-color: #e9ecef;
+    border-radius: 4px;
+    font-size: 0.875rem;
+    color: #495057;
+    font-weight: 500;
+}
+
+.status-pending {
+    color: #f39c12;
+    font-weight: 500;
+}
+
+.status-approved {
+    color: #27ae60;
+    font-weight: 500;
+}
+
+.status-rejected {
+    color: #e74c3c;
+    font-weight: 500;
 }
 </style>
 {% endblock %}
