@@ -5,15 +5,25 @@
     <header class="dashboard-header">
         <h1>Manager Dashboard</h1>
         <div class="user-info">
-            <p>Department: {{ current_user.department.name if current_user.department else 'No Department' }}</p>
-        </div>
-        <div class="header-actions">
-            {% if current_user.is_admin %}
-            <a href="{{ url_for('manage_users') }}" class="button primary">Manage Users</a>
+            <p>Home Department: {{ current_user.home_department.name if current_user.home_department else 'No Department' }}</p>
+            {% if current_user.managed_departments %}
+            <div class="managed-departments">
+                <p>Managing Departments:</p>
+                <ul>
+                    {% for dept in current_user.managed_departments %}
+                    <li>{{ dept.name }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
             {% endif %}
-            <a href="{{ url_for('manage_departments') }}" class="button primary">Manage Budgets</a>
-            <a href="{{ url_for('expense_history') }}" class="button secondary">View History</a>
-            <a href="{{ url_for('change_password') }}" class="button secondary">Change Password</a>
+            <div class="header-actions">
+                {% if current_user.is_admin %}
+                <a href="{{ url_for('manage_users') }}" class="button primary">Manage Users</a>
+                {% endif %}
+                <a href="{{ url_for('manage_departments') }}" class="button primary">Manage Budgets</a>
+                <a href="{{ url_for('expense_history') }}" class="button secondary">View History</a>
+                <a href="{{ url_for('change_password') }}" class="button secondary">Change Password</a>
+            </div>
         </div>
     </header>
 

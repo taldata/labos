@@ -504,10 +504,17 @@ tr:hover {
     padding: 0.5rem 1rem;
     border-radius: 4px;
     transition: background-color 0.3s;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
 }
 
 .nav-link:hover {
     background-color: rgba(255, 255, 255, 0.1);
+}
+
+.nav-link i {
+    font-size: 1rem;
 }
 
 .content {
@@ -776,4 +783,121 @@ tr:hover {
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     opacity: 1;
     transition: opacity 0.5s ease-in-out;
+}
+
+/* Multiple select styling */
+select[multiple] {
+    min-height: 120px;
+    padding: 0.5rem;
+}
+
+select[multiple] option {
+    padding: 0.5rem;
+    margin-bottom: 0.25rem;
+    border-radius: 4px;
+}
+
+select[multiple] option:hover {
+    background-color: var(--primary-color);
+    color: white;
+}
+
+.help-text {
+    display: block;
+    font-size: 0.875rem;
+    color: #666;
+    margin-top: 0.25rem;
+}
+
+/* Managed departments list styling */
+.managed-departments {
+    margin-bottom: 1rem;
+}
+
+.managed-departments p {
+    font-weight: 500;
+    margin-bottom: 0.5rem;
+    color: var(--primary-color);
+}
+
+.managed-departments ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.managed-departments li {
+    background-color: var(--background-light);
+    padding: 0.25rem 0.75rem;
+    border-radius: 1rem;
+    font-size: 0.875rem;
+    color: var(--text-color);
+    border: 1px solid #ddd;
+}
+
+/* Managed departments list in table */
+.managed-departments-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.managed-departments-list li {
+    display: inline-block;
+    background-color: var(--background-light);
+    padding: 0.25rem 0.75rem;
+    border-radius: 1rem;
+    font-size: 0.875rem;
+    color: var(--text-color);
+    border: 1px solid #ddd;
+    margin: 0.25rem;
+}
+
+/* Multiple select in table */
+select[multiple].form-select {
+    min-height: 100px;
+    padding: 0.5rem;
+}
+
+select[multiple].form-select option {
+    padding: 0.25rem 0.5rem;
+    margin-bottom: 0.25rem;
+    border-radius: 4px;
+}
+
+select[multiple].form-select option:checked {
+    background-color: var(--primary-color);
+    color: white;
+}
+
+/* Edit mode styles */
+.edit-mode {
+    background-color: var(--background-light);
+}
+
+.edit-mode td {
+    padding: 0.75rem;
+}
+
+.edit-managed-departments-group {
+    margin-top: 0.5rem;
+}
+
+.edit-managed-departments-group select[multiple] {
+    width: 100%;
+    min-height: 120px;
+    margin-bottom: 0.5rem;
+}
+
+.button.small {
+    padding: 0.25rem 0.75rem;
+    font-size: 0.875rem;
+}
+
+.btn-group {
+    display: flex;
+    gap: 0.5rem;
 }

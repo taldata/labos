@@ -28,7 +28,7 @@ class Department(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
     budget = db.Column(db.Float, default=0.0)
-    users = db.relationship('User', backref='department', lazy=True)
+    employees = db.relationship('User', foreign_keys='User.department_id', back_populates='home_department')
     categories = db.relationship('Category', backref='department', lazy=True)
 
 class Category(db.Model):
@@ -47,6 +47,12 @@ class Subcategory(db.Model):
     category_id = db.Column(db.Integer, db.ForeignKey('category.id'), nullable=False)
     expenses = db.relationship('Expense', backref='subcategory', lazy=True)
 
+# Manager-Department association table
+manager_departments = db.Table('manager_departments',
+    db.Column('user_id', db.Integer, db.ForeignKey('user.id'), primary_key=True),
+    db.Column('department_id', db.Integer, db.ForeignKey('department.id'), primary_key=True)
+)
+
 class User(UserMixin, db.Model):
     __tablename__ = 'user'
     id = db.Column(db.Integer, primary_key=True)
@@ -54,8 +60,15 @@ class User(UserMixin, db.Model):
     password = db.Column(db.String(120), nullable=False)
     is_manager = db.Column(db.Boolean, default=False)
     is_admin = db.Column(db.Boolean, default=False)
-    department_id = db.Column(db.Integer, db.ForeignKey('department.id'))
     status = db.Column(db.String(20), default='active')  # active, inactive, pending
+    department_id = db.Column(db.Integer, db.ForeignKey('department.id'))
+    home_department = db.relationship('Department', 
+                                    foreign_keys=[department_id],
+                                    back_populates='employees')
+    # Add managed departments relationship
+    managed_departments = db.relationship('Department', 
+                                       secondary=manager_departments,
+                                       backref=db.backref('department_managers', lazy='dynamic'))
     
     # Relationship for expenses where user is the submitter
     submitted_expenses = db.relationship('Expense',
@@ -88,9 +101,9 @@ class User(UserMixin, db.Model):
         """Get current month's budget usage"""
         current_date = datetime.now()
         monthly_expenses = self.get_monthly_expenses(current_date.year, current_date.month)
-        if self.department.budget <= 0:
+        if self.home_department.budget <= 0:
             return 0, monthly_expenses
-        usage_percent = (monthly_expenses / self.department.budget) * 100
+        usage_percent = (monthly_expenses / self.home_department.budget) * 100
         return usage_percent, monthly_expenses
 
 class Expense(db.Model):
@@ -204,7 +217,7 @@ def submit_expense():
         # Verify that the subcategory belongs to the user's department
         subcategory = Subcategory.query.join(Category).filter(
             Subcategory.id == subcategory_id,
-            Category.department_id == current_user.department_id
+            Category.department_id == current_user.home_department_id
         ).first()
         
         if not subcategory:
@@ -252,7 +265,7 @@ def submit_expense():
             expense.status = 'approved'
             expense.handled_at = datetime.utcnow()
             # Find a manager from the user's department
-            manager = User.query.filter_by(department_id=current_user.department_id, is_manager=True).first()
+            manager = User.query.filter_by(department_id=current_user.home_department_id, is_manager=True).first()
             if manager:
                 expense.manager_id = manager.id
         else:
@@ -265,7 +278,7 @@ def submit_expense():
         return redirect(url_for('employee_dashboard'))
     
     subcategories = Subcategory.query.join(Category).filter(
-        Category.department_id == current_user.department_id
+        Category.department_id == current_user.home_department_id
     ).all()
     
     return render_template('submit_expense.html', subcategories=subcategories)
@@ -359,7 +372,7 @@ def manager_dashboard():
             .outerjoin(subcat_expenses, Subcategory.id == subcat_expenses.c.id)\
             .filter(
                 Expense.status == 'pending',
-                User.department_id == current_user.department_id
+                User.department_id == current_user.home_department_id
             )\
             .add_columns(
                 Department.name.label('department_name'),
@@ -391,7 +404,7 @@ def expense_history():
     
     # If not admin, only show expenses from manager's department
     if current_user.username != 'admin':
-        query = query.filter(User.department_id == current_user.department_id)
+        query = query.filter(User.department_id == current_user.home_department_id)
     
     # Apply filters
     if status != 'all':
@@ -410,10 +423,10 @@ def expense_history():
         # Only show employees from manager's department
         employees = User.query.filter_by(
             is_manager=False,
-            department_id=current_user.department_id
+            department_id=current_user.home_department_id
         ).all()
         # Only show manager's department
-        departments = [current_user.department] if current_user.department else []
+        departments = [current_user.home_department] if current_user.home_department else []
     
     # Get expenses with sorting
     expenses = query.order_by(Expense.date.desc()).all()
@@ -467,7 +480,7 @@ def manage_departments():
     if current_user.username == 'admin':
         departments = Department.query.all()
     else:
-        departments = Department.query.filter_by(id=current_user.department_id).all()
+        departments = current_user.managed_departments
     
     return render_template('manage_departments.html', departments=departments)
 
@@ -478,7 +491,7 @@ def manage_categories(dept_id):
         flash('Access denied. Manager privileges required.', 'danger')
         return redirect(url_for('index'))
     
-    if not current_user.username == 'admin' and current_user.department_id != dept_id:
+    if not current_user.username == 'admin' and current_user.home_department_id != dept_id:
         flash('Access denied. You can only manage your own department.', 'danger')
         return redirect(url_for('manage_departments'))
     
@@ -493,7 +506,7 @@ def manage_subcategories(cat_id):
         return redirect(url_for('index'))
     
     category = Category.query.get_or_404(cat_id)
-    if not current_user.username == 'admin' and current_user.department_id != category.department_id:
+    if not current_user.username == 'admin' and current_user.home_department_id != category.department_id:
         flash('Access denied. You can only manage your own department.', 'danger')
         return redirect(url_for('manage_departments'))
     
@@ -536,17 +549,106 @@ def is_admin():
     return current_user.is_authenticated and current_user.username == 'admin'
 
 def is_department_manager(dept_id):
-    return current_user.is_manager and current_user.department_id == dept_id
+    return current_user.is_manager and current_user.home_department_id == dept_id
 
 def can_manage_department(dept_id):
+    """Check if current user can manage the specified department"""
     if current_user.username == 'admin':
         return True
-    return current_user.is_manager and current_user.department_id == dept_id
+    if not current_user.is_manager:
+        return False
+    return dept_id in [dept.id for dept in current_user.managed_departments]
 
 def can_view_department(dept_id):
     if current_user.username == 'admin':
         return True
-    return current_user.department_id == dept_id or current_user.is_manager
+    return current_user.home_department_id == dept_id or current_user.is_manager
+
+@app.route('/admin/users/add', methods=['POST'])
+@login_required
+def add_user():
+    if not current_user.is_admin:
+        return jsonify({'error': 'Access denied'}), 403
+    
+    try:
+        # Get form data
+        username = request.form.get('username', '').strip()
+        password = request.form.get('password', '').strip()
+        department_id = request.form.get('department_id')
+        managed_department_ids = request.form.getlist('managed_departments[]')
+        role = request.form.get('role', 'user')
+        status = request.form.get('status', 'active')
+        
+        print(f"Received add user request: username={username}, dept={department_id}, role={role}, status={status}, managed_depts={managed_department_ids}")
+        
+        # Validate input
+        if not username or not password:
+            error_msg = 'Username and password are required'
+            print(f"Validation error: {error_msg}")
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return jsonify({'error': error_msg}), 400
+            flash(error_msg, 'danger')
+            return redirect(url_for('manage_users'))
+        
+        if len(username) < 3:
+            error_msg = 'Username must be at least 3 characters long'
+            print(f"Validation error: {error_msg}")
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return jsonify({'error': error_msg}), 400
+            flash(error_msg, 'danger')
+            return redirect(url_for('manage_users'))
+            
+        if len(password) < 6:
+            error_msg = 'Password must be at least 6 characters long'
+            print(f"Validation error: {error_msg}")
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return jsonify({'error': error_msg}), 400
+            flash(error_msg, 'danger')
+            return redirect(url_for('manage_users'))
+        
+        # Check if username exists
+        if User.query.filter_by(username=username).first():
+            error_msg = 'Username already exists'
+            print(f"Validation error: {error_msg}")
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return jsonify({'error': error_msg}), 400
+            flash(error_msg, 'danger')
+            return redirect(url_for('manage_users'))
+        
+        # Create new user
+        new_user = User(
+            username=username,
+            password=password,
+            department_id=department_id if department_id else None,
+            is_manager=role == 'manager',
+            is_admin=role == 'admin',
+            status=status
+        )
+        
+        # If user is a manager, assign managed departments
+        if role == 'manager' and managed_department_ids:
+            managed_departments = Department.query.filter(Department.id.in_(managed_department_ids)).all()
+            new_user.managed_departments = managed_departments
+        
+        print(f"Adding new user to database: {new_user.username}")
+        db.session.add(new_user)
+        db.session.commit()
+        
+        success_msg = f'User {username} added successfully'
+        print(success_msg)
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return jsonify({'message': success_msg}), 200
+        flash(success_msg, 'success')
+        
+    except Exception as e:
+        db.session.rollback()
+        error_msg = f'Error adding user: {str(e)}'
+        print(f"Exception: {error_msg}")
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return jsonify({'error': error_msg}), 500
+        flash(error_msg, 'danger')
+    
+    return redirect(url_for('manage_users'))
 
 @app.route('/manager/departments', methods=['POST'])
 @login_required
@@ -757,7 +859,7 @@ def employee_view_budget():
     
     usage_percent, monthly_expenses = current_user.get_budget_usage()
     return render_template('view_budget.html',
-                         budget=current_user.department.budget,
+                         budget=current_user.home_department.budget,
                          usage_percent=usage_percent,
                          monthly_expenses=monthly_expenses,
                          current_month=datetime.now().strftime('%B %Y'))
@@ -783,7 +885,7 @@ def edit_expense(expense_id):
         # Verify that the subcategory belongs to the user's department
         subcategory = Subcategory.query.join(Category).filter(
             Subcategory.id == subcategory_id,
-            Category.department_id == current_user.department_id
+            Category.department_id == current_user.home_department_id
         ).first()
         
         if not subcategory:
@@ -820,7 +922,7 @@ def edit_expense(expense_id):
     
     # Get subcategories from user's department for the form
     subcategories = Subcategory.query.join(Category).filter(
-        Category.department_id == current_user.department_id
+        Category.department_id == current_user.home_department_id
     ).all()
     
     return render_template('edit_expense.html', expense=expense, subcategories=subcategories)
@@ -936,85 +1038,22 @@ def manage_users():
                          department_filter=department_filter,
                          role_filter=role_filter)
 
-@app.route('/admin/users/add', methods=['POST'])
+@app.route('/admin/users/<int:user_id>/info')
 @login_required
-def add_user():
+def get_user_info(user_id):
     if not current_user.is_admin:
         return jsonify({'error': 'Access denied'}), 403
     
-    try:
-        # Get form data
-        username = request.form.get('username', '').strip()
-        password = request.form.get('password', '').strip()
-        department_id = request.form.get('department_id')
-        role = request.form.get('role', 'user')
-        status = request.form.get('status', 'active')
-        
-        print(f"Received add user request: username={username}, dept={department_id}, role={role}, status={status}")
-        
-        # Validate input
-        if not username or not password:
-            error_msg = 'Username and password are required'
-            print(f"Validation error: {error_msg}")
-            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-                return jsonify({'error': error_msg}), 400
-            flash(error_msg, 'danger')
-            return redirect(url_for('manage_users'))
-        
-        if len(username) < 3:
-            error_msg = 'Username must be at least 3 characters long'
-            print(f"Validation error: {error_msg}")
-            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-                return jsonify({'error': error_msg}), 400
-            flash(error_msg, 'danger')
-            return redirect(url_for('manage_users'))
-            
-        if len(password) < 6:
-            error_msg = 'Password must be at least 6 characters long'
-            print(f"Validation error: {error_msg}")
-            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-                return jsonify({'error': error_msg}), 400
-            flash(error_msg, 'danger')
-            return redirect(url_for('manage_users'))
-        
-        # Check if username exists
-        if User.query.filter_by(username=username).first():
-            error_msg = 'Username already exists'
-            print(f"Validation error: {error_msg}")
-            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-                return jsonify({'error': error_msg}), 400
-            flash(error_msg, 'danger')
-            return redirect(url_for('manage_users'))
-        
-        # Create new user
-        new_user = User(
-            username=username,
-            password=password,  # In production, use proper password hashing
-            department_id=department_id if department_id else None,
-            is_manager=role == 'manager',
-            is_admin=role == 'admin',
-            status=status
-        )
-        
-        print(f"Adding new user to database: {new_user.username}")
-        db.session.add(new_user)
-        db.session.commit()
-        
-        success_msg = f'User {username} added successfully'
-        print(success_msg)
-        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-            return jsonify({'message': success_msg}), 200
-        flash(success_msg, 'success')
-        
-    except Exception as e:
-        db.session.rollback()
-        error_msg = f'Error adding user: {str(e)}'
-        print(f"Exception: {error_msg}")
-        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-            return jsonify({'error': error_msg}), 500
-        flash(error_msg, 'danger')
-    
-    return redirect(url_for('manage_users'))
+    user = User.query.get_or_404(user_id)
+    return jsonify({
+        'id': user.id,
+        'username': user.username,
+        'is_manager': user.is_manager,
+        'is_admin': user.is_admin,
+        'department_id': user.department_id,
+        'status': user.status,
+        'managed_departments': [dept.id for dept in user.managed_departments]
+    })
 
 @app.route('/admin/users/<int:user_id>/edit', methods=['POST'])
 @login_required
@@ -1025,48 +1064,30 @@ def edit_user(user_id):
     try:
         user = User.query.get_or_404(user_id)
         
-        # Get form data
-        new_username = request.form.get('username', '').strip()
-        new_password = request.form.get('password', '').strip()
-        new_department_id = request.form.get('department_id')
-        new_role = request.form.get('role', 'user')
-        new_status = request.form.get('status', 'active')
+        # Update basic info
+        user.username = request.form.get('username', user.username)
+        user.department_id = request.form.get('department_id') or None
+        user.status = request.form.get('status', 'active')
         
-        # Validate username
-        if not new_username:
-            flash('Username cannot be empty', 'danger')
-            return redirect(url_for('manage_users'))
-            
-        if len(new_username) < 3:
-            flash('Username must be at least 3 characters long', 'danger')
-            return redirect(url_for('manage_users'))
+        # Update role
+        role = request.form.get('role', 'user')
+        user.is_admin = role == 'admin'
+        user.is_manager = role == 'manager'
         
-        # Check if new username exists (if changed)
-        if new_username != user.username and User.query.filter_by(username=new_username).first():
-            flash('Username already exists', 'danger')
-            return redirect(url_for('manage_users'))
-        
-        # Update user
-        user.username = new_username
-        if new_password:
-            if len(new_password) < 6:
-                flash('Password must be at least 6 characters long', 'danger')
-                return redirect(url_for('manage_users'))
-            user.password = new_password  # In production, use proper password hashing
-        
-        user.department_id = new_department_id if new_department_id else None
-        user.is_manager = new_role == 'manager'
-        user.is_admin = new_role == 'admin'
-        user.status = new_status
+        # Update managed departments if user is a manager
+        if role == 'manager':
+            managed_dept_ids = request.form.getlist('managed_departments[]')
+            managed_departments = Department.query.filter(Department.id.in_(managed_dept_ids)).all()
+            user.managed_departments = managed_departments
+        else:
+            user.managed_departments = []  # Clear managed departments if not a manager
         
         db.session.commit()
-        flash(f'User {user.username} updated successfully', 'success')
+        return jsonify({'message': 'User updated successfully'})
         
     except Exception as e:
         db.session.rollback()
-        flash(f'Error updating user: {str(e)}', 'danger')
-    
-    return redirect(url_for('manage_users'))
+        return jsonify({'error': f'Error updating user: {str(e)}'}), 500
 
 @app.route('/admin/users/<int:user_id>/delete', methods=['POST'])
 @login_required
