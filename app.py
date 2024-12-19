@@ -825,6 +825,43 @@ def edit_expense(expense_id):
     
     return render_template('edit_expense.html', expense=expense, subcategories=subcategories)
 
+@app.route('/expense/<int:expense_id>/delete', methods=['POST'])
+@login_required
+def delete_expense(expense_id):
+    # Get the expense and verify ownership and status
+    expense = Expense.query.get_or_404(expense_id)
+    if expense.user_id != current_user.id:
+        flash('You can only delete your own expenses')
+        return redirect(url_for('employee_dashboard'))
+    if expense.status != 'pending':
+        flash('You can only delete pending expenses')
+        return redirect(url_for('employee_dashboard'))
+    
+    # Delete associated files
+    if expense.quote_filename:
+        try:
+            os.remove(os.path.join(app.config['UPLOAD_FOLDER'], expense.quote_filename))
+        except OSError:
+            pass
+    
+    if expense.invoice_filename:
+        try:
+            os.remove(os.path.join(app.config['UPLOAD_FOLDER'], expense.invoice_filename))
+        except OSError:
+            pass
+    
+    if expense.receipt_filename:
+        try:
+            os.remove(os.path.join(app.config['UPLOAD_FOLDER'], expense.receipt_filename))
+        except OSError:
+            pass
+    
+    db.session.delete(expense)
+    db.session.commit()
+    
+    flash('Expense deleted successfully')
+    return redirect(url_for('employee_dashboard'))
+
 @app.route('/change_password', methods=['GET', 'POST'])
 @login_required
 def change_password():

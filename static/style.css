@@ -618,6 +618,51 @@ tr:hover {
     border-color: var(--primary-color);
 }
 
+/* Action buttons styling */
+.action-buttons {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.inline-form {
+    margin: 0;
+    display: inline-block;
+}
+
+.button.small {
+    font-size: 0.875rem;
+    padding: 0.25rem 0.75rem;
+    border-radius: 4px;
+}
+
+.button.primary.small {
+    background-color: var(--primary-color);
+    color: white;
+}
+
+.button.danger.small {
+    background-color: #dc3545;
+    color: white;
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.button.danger.small:hover {
+    background-color: #bd2130;
+}
+
+.button.primary.small:hover {
+    background-color: #0056b3;
+}
+
+/* Add icon support */
+.button.small i {
+    margin-right: 0.25rem;
+    font-size: 0.875rem;
+}
+
 /* Responsive adjustments */
 @media (max-width: 768px) {
     .user-management-container {
