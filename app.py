@@ -217,7 +217,7 @@ def submit_expense():
         # Verify that the subcategory belongs to the user's department
         subcategory = Subcategory.query.join(Category).filter(
             Subcategory.id == subcategory_id,
-            Category.department_id == current_user.home_department_id
+            Category.department_id == current_user.department_id
         ).first()
         
         if not subcategory:
@@ -265,7 +265,7 @@ def submit_expense():
             expense.status = 'approved'
             expense.handled_at = datetime.utcnow()
             # Find a manager from the user's department
-            manager = User.query.filter_by(department_id=current_user.home_department_id, is_manager=True).first()
+            manager = User.query.filter_by(department_id=current_user.department_id, is_manager=True).first()
             if manager:
                 expense.manager_id = manager.id
         else:
@@ -278,7 +278,7 @@ def submit_expense():
         return redirect(url_for('employee_dashboard'))
     
     subcategories = Subcategory.query.join(Category).filter(
-        Category.department_id == current_user.home_department_id
+        Category.department_id == current_user.department_id
     ).all()
     
     return render_template('submit_expense.html', subcategories=subcategories)
@@ -372,7 +372,7 @@ def manager_dashboard():
             .outerjoin(subcat_expenses, Subcategory.id == subcat_expenses.c.id)\
             .filter(
                 Expense.status == 'pending',
-                User.department_id == current_user.home_department_id
+                User.department_id == current_user.department_id
             )\
             .add_columns(
                 Department.name.label('department_name'),
@@ -404,7 +404,7 @@ def expense_history():
     
     # If not admin, only show expenses from manager's department
     if current_user.username != 'admin':
-        query = query.filter(User.department_id == current_user.home_department_id)
+        query = query.filter(User.department_id == current_user.department_id)
     
     # Apply filters
     if status != 'all':
@@ -423,7 +423,7 @@ def expense_history():
         # Only show employees from manager's department
         employees = User.query.filter_by(
             is_manager=False,
-            department_id=current_user.home_department_id
+            department_id=current_user.department_id
         ).all()
         # Only show manager's department
         departments = [current_user.home_department] if current_user.home_department else []
@@ -491,7 +491,7 @@ def manage_categories(dept_id):
         flash('Access denied. Manager privileges required.', 'danger')
         return redirect(url_for('index'))
     
-    if not current_user.username == 'admin' and current_user.home_department_id != dept_id:
+    if not current_user.username == 'admin' and current_user.department_id != dept_id:
         flash('Access denied. You can only manage your own department.', 'danger')
         return redirect(url_for('manage_departments'))
     
@@ -506,7 +506,7 @@ def manage_subcategories(cat_id):
         return redirect(url_for('index'))
     
     category = Category.query.get_or_404(cat_id)
-    if not current_user.username == 'admin' and current_user.home_department_id != category.department_id:
+    if not current_user.username == 'admin' and current_user.department_id != category.department_id:
         flash('Access denied. You can only manage your own department.', 'danger')
         return redirect(url_for('manage_departments'))
     
@@ -549,7 +549,7 @@ def is_admin():
     return current_user.is_authenticated and current_user.username == 'admin'
 
 def is_department_manager(dept_id):
-    return current_user.is_manager and current_user.home_department_id == dept_id
+    return current_user.is_manager and current_user.department_id == dept_id
 
 def can_manage_department(dept_id):
     """Check if current user can manage the specified department"""
@@ -562,7 +562,7 @@ def can_manage_department(dept_id):
 def can_view_department(dept_id):
     if current_user.username == 'admin':
         return True
-    return current_user.home_department_id == dept_id or current_user.is_manager
+    return current_user.department_id == dept_id or current_user.is_manager
 
 @app.route('/admin/users/add', methods=['POST'])
 @login_required
@@ -885,7 +885,7 @@ def edit_expense(expense_id):
         # Verify that the subcategory belongs to the user's department
         subcategory = Subcategory.query.join(Category).filter(
             Subcategory.id == subcategory_id,
-            Category.department_id == current_user.home_department_id
+            Category.department_id == current_user.department_id
         ).first()
         
         if not subcategory:
@@ -922,7 +922,7 @@ def edit_expense(expense_id):
     
     # Get subcategories from user's department for the form
     subcategories = Subcategory.query.join(Category).filter(
-        Category.department_id == current_user.home_department_id
+        Category.department_id == current_user.department_id
     ).all()
     
     return render_template('edit_expense.html', expense=expense, subcategories=subcategories)
