@@ -1237,13 +1237,16 @@ def admin_edit_expense(expense_id):
         return redirect(url_for('expense_history'))
 
     # Get all subcategories for the dropdown
-    subcategories = Subcategory.query.join(Category).join(Department)\
-        .add_columns(
-            Department.name.label('dept_name'),
-            Category.name.label('cat_name'),
-            Subcategory.name.label('subcat_name'),
-            Subcategory.id.label('subcat_id')
-        ).all()
+    subcategories = db.session.query(
+        Subcategory, 
+        Department.name.label('dept_name'),
+        Category.name.label('cat_name'),
+        Subcategory.name.label('subcat_name'),
+        Subcategory.id.label('subcat_id')
+    ).select_from(Subcategory)\
+    .join(Category)\
+    .join(Department)\
+    .all()
     
     return render_template('admin_edit_expense.html', 
                          expense=expense, 
