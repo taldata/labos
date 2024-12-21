@@ -102,6 +102,7 @@ class User(UserMixin, db.Model):
         total = db.session.query(db.func.sum(Expense.amount))\
             .filter(Expense.user_id == self.id,
                    Expense.status == 'approved',
+                   Expense.type != 'future_approval',  # Exclude future approvals even if approved
                    Expense.date >= start_date,
                    Expense.date < end_date).scalar()
         return total or 0.0
@@ -341,7 +342,8 @@ def manager_dashboard():
     ).join(
         Expense, Subcategory.id == Expense.subcategory_id
     ).filter(
-        Expense.status == 'approved'
+        Expense.status == 'approved',
+        Expense.type != 'future_approval'  # Exclude future approvals
     ).group_by(Department.id).subquery()
 
     cat_expenses = db.session.query(
@@ -352,7 +354,8 @@ def manager_dashboard():
     ).join(
         Expense, Subcategory.id == Expense.subcategory_id
     ).filter(
-        Expense.status == 'approved'
+        Expense.status == 'approved',
+        Expense.type != 'future_approval'  # Exclude future approvals
     ).group_by(Category.id).subquery()
 
     subcat_expenses = db.session.query(
@@ -361,7 +364,8 @@ def manager_dashboard():
     ).join(
         Expense, Subcategory.id == Expense.subcategory_id
     ).filter(
-        Expense.status == 'approved'
+        Expense.status == 'approved',
+        Expense.type != 'future_approval'  # Exclude future approvals
     ).group_by(Subcategory.id).subquery()
 
     # Get all pending expenses if admin, otherwise only from their department
