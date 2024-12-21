@@ -30,7 +30,7 @@
             <div class="budget-body">
                 <div class="budget-info">
                     <p><strong>Current Budget:</strong> {{ department.budget|format_currency }}</p>
-                    <p><strong>Total Employees:</strong> {{ department.users|length }}</p>
+                    <p><strong>Number of Categories:</strong> {{ department.categories|length }}</p>
                 </div>
                 <div class="budget-progress">
                     {% set total_expenses = namespace(value=0) %}
@@ -114,7 +114,7 @@ function updateBudget(departmentId) {
         return;
     }
 
-    fetch(`/manager/departments/${departmentId}/budget`, {
+    fetch(`/api/department/${departmentId}/budget`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -123,12 +123,17 @@ function updateBudget(departmentId) {
     })
     .then(response => {
         if (!response.ok) {
-            throw new Error('Failed to update budget');
+            return response.json().then(data => {
+                throw new Error(data.error || 'Failed to update budget');
+            });
         }
+        return response.json();
+    })
+    .then(() => {
         location.reload();
     })
     .catch(error => {
-        alert('Error updating budget: ' + error.message);
+        alert(error.message);
     });
 }
 

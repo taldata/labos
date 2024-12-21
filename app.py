@@ -554,13 +554,30 @@ def manage_subcategories(cat_id):
 @app.route('/api/department/<int:dept_id>/budget', methods=['POST'])
 @login_required
 def update_department_budget(dept_id):
-    if not current_user.is_manager:
+    # Check if user has permission to manage this department
+    if not (current_user.username == 'admin' or 
+            (current_user.is_manager and current_user.department_id == dept_id)):
         return jsonify({'error': 'Unauthorized'}), 403
+    
     department = Department.query.get_or_404(dept_id)
-    data = request.get_json()
-    department.budget = float(data['budget'])
-    db.session.commit()
-    return jsonify({'success': True})
+    
+    try:
+        data = request.get_json()
+        if not data or 'budget' not in data:
+            return jsonify({'error': 'Budget value is required'}), 400
+            
+        new_budget = float(data['budget'])
+        if new_budget < 0:
+            return jsonify({'error': 'Budget cannot be negative'}), 400
+            
+        department.budget = new_budget
+        db.session.commit()
+        return jsonify({'success': True})
+    except ValueError:
+        return jsonify({'error': 'Invalid budget value'}), 400
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': 'Failed to update budget'}), 500
 
 @app.route('/api/category/<int:cat_id>/budget', methods=['POST'])
 @login_required

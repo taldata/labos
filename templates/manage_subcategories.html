@@ -31,7 +31,6 @@
             <div class="budget-body">
                 <div class="budget-info">
                     <p><strong>Current Budget:</strong> {{ subcategory.budget|format_currency }}</p>
-                    <p><strong>Total Expenses:</strong> {{ subcategory.expenses|length }}</p>
                 </div>
                 <div class="budget-progress">
                     {% set total_expenses = namespace(value=0) %}
