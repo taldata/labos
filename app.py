@@ -225,11 +225,24 @@ def submit_expense():
         expense_type = request.form.get('type')
         subcategory_id = request.form.get('subcategory_id')
         
-        # Verify that the subcategory belongs to the user's department
-        subcategory = Subcategory.query.join(Category).filter(
-            Subcategory.id == subcategory_id,
-            Category.department_id == current_user.department_id
-        ).first()
+        # Verify that the subcategory belongs to either:
+        # 1. The user's department, or
+        # 2. A department they manage (if they are a manager)
+        subcategory = None
+        if current_user.is_manager:
+            # For managers, check both their department and managed departments
+            managed_dept_ids = [dept.id for dept in current_user.managed_departments]
+            managed_dept_ids.append(current_user.department_id)
+            subcategory = Subcategory.query.join(Category).filter(
+                Subcategory.id == subcategory_id,
+                Category.department_id.in_(managed_dept_ids)
+            ).first()
+        else:
+            # For regular employees, only check their department
+            subcategory = Subcategory.query.join(Category).filter(
+                Subcategory.id == subcategory_id,
+                Category.department_id == current_user.department_id
+            ).first()
         
         if not subcategory:
             flash('Invalid category selected', 'error')
@@ -300,9 +313,17 @@ def submit_expense():
         flash('Expense submitted successfully')
         return redirect(url_for('employee_dashboard'))
     
-    subcategories = Subcategory.query.join(Category).filter(
-        Category.department_id == current_user.department_id
-    ).all()
+    # Get subcategories for both the user's department and managed departments (if they are a manager)
+    if current_user.is_manager:
+        managed_dept_ids = [dept.id for dept in current_user.managed_departments]
+        managed_dept_ids.append(current_user.department_id)
+        subcategories = Subcategory.query.join(Category).filter(
+            Category.department_id.in_(managed_dept_ids)
+        ).all()
+    else:
+        subcategories = Subcategory.query.join(Category).filter(
+            Category.department_id == current_user.department_id
+        ).all()
     
     return render_template('submit_expense.html', subcategories=subcategories)
 
