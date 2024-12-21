@@ -154,8 +154,7 @@ with app.app_context():
                 email='admin@example.com',
                 password='admin123',
                 is_manager=True,
-                is_admin=True,
-                department=rd_dept
+                is_admin=True
             )
             db.session.add(admin_user)
             db.session.commit()
