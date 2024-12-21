@@ -288,12 +288,13 @@ def submit_expense():
         elif expense_type == 'pre_approved':
             expense.status = 'approved'
             expense.handled_at = datetime.utcnow()
-            # Find a manager from the user's department
+            # For pre-approved expenses, we still want to track who approved it
             manager = User.query.filter_by(department_id=current_user.department_id, is_manager=True).first()
             if manager:
                 expense.manager_id = manager.id
         else:
             expense.status = 'pending'
+            expense.manager_id = None  # Initially no manager assigned
 
         db.session.add(expense)
         db.session.commit()
