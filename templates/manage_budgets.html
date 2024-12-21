@@ -1,3 +1,6 @@
+{% extends "base.html" %}
+
+{% block content %}
 <!DOCTYPE html>
 <html>
 <head>
@@ -11,7 +14,6 @@
             <h1>Manage Employee Budgets</h1>
             <div class="header-actions">
                 <a href="{{ url_for('manager_dashboard') }}" class="button secondary">Back to Dashboard</a>
-                <a href="{{ url_for('logout') }}" class="logout-btn">Logout</a>
             </div>
         </header>
 
@@ -62,3 +64,4 @@
     </div>
 </body>
 </html>
+{% endblock %}
