@@ -76,21 +76,70 @@
                         <td>{{ expense.type|format_expense_type }}</td>
                         <td>₪{{ "%.2f"|format(expense.amount) }}</td>
                         <td class="budget-info">
-                            <div class="budget-section">
-                                <div class="budget-header">{{ dept_name }}</div>
+                            <div class="budget-column">
+                                <div class="budget-header" title="{{ dept_name }}">{{ dept_name }}</div>
                                 <div class="budget-details">
                                     <div class="budget-item">
-                                        <span class="label">תקציב:</span>
+                                        <span class="label">Budget:</span>
                                         <span class="amount">₪{{ "%.2f"|format(dept_budget) }}</span>
                                     </div>
                                     <div class="budget-item">
-                                        <span class="label">נשאר:</span>
+                                        <span class="label">Left:</span>
                                         <span class="amount {% if dept_remaining < expense.amount %}warning{% endif %}">
                                             ₪{{ "%.2f"|format(dept_remaining) }}
                                         </span>
                                     </div>
+                                    <div class="budget-status">
+                                        <div class="budget-status-bar {% if dept_remaining < expense.amount %}warning{% endif %}"
+                                             style="width: {{ (dept_remaining / dept_budget * 100) if dept_budget > 0 else 0 }}%">
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
+                            {% if cat_name %}
+                            <div class="budget-column">
+                                <div class="budget-header" title="{{ cat_name }}">{{ cat_name }}</div>
+                                <div class="budget-details">
+                                    <div class="budget-item">
+                                        <span class="label">Budget:</span>
+                                        <span class="amount">₪{{ "%.2f"|format(cat_budget) }}</span>
+                                    </div>
+                                    <div class="budget-item">
+                                        <span class="label">Left:</span>
+                                        <span class="amount {% if cat_remaining < expense.amount %}warning{% endif %}">
+                                            ₪{{ "%.2f"|format(cat_remaining) }}
+                                        </span>
+                                    </div>
+                                    <div class="budget-status">
+                                        <div class="budget-status-bar {% if cat_remaining < expense.amount %}warning{% endif %}"
+                                             style="width: {{ (cat_remaining / cat_budget * 100) if cat_budget > 0 else 0 }}%">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endif %}
+                            {% if subcat_name %}
+                            <div class="budget-column">
+                                <div class="budget-header" title="{{ subcat_name }}">{{ subcat_name }}</div>
+                                <div class="budget-details">
+                                    <div class="budget-item">
+                                        <span class="label">Budget:</span>
+                                        <span class="amount">₪{{ "%.2f"|format(subcat_budget) }}</span>
+                                    </div>
+                                    <div class="budget-item">
+                                        <span class="label">Left:</span>
+                                        <span class="amount {% if subcat_remaining < expense.amount %}warning{% endif %}">
+                                            ₪{{ "%.2f"|format(subcat_remaining) }}
+                                        </span>
+                                    </div>
+                                    <div class="budget-status">
+                                        <div class="budget-status-bar {% if subcat_remaining < expense.amount %}warning{% endif %}"
+                                             style="width: {{ (subcat_remaining / subcat_budget * 100) if subcat_budget > 0 else 0 }}%">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endif %}
                         </td>
                         <td>
                             {% if expense.quote_filename %}
@@ -271,62 +320,81 @@
 }
 
 .budget-info {
-    font-size: 0.9em;
-    background-color: #f8f9fa;
-    border-radius: 8px;
-    padding: 12px;
+    display: flex;
+    gap: 0.5rem;
+    padding: 0.25rem;
+    font-size: 0.85em;
 }
 
-.budget-section {
-    margin-bottom: 12px;
-    padding-bottom: 12px;
-    border-bottom: 1px solid #dee2e6;
-}
-
-.budget-section:last-child {
-    margin-bottom: 0;
-    padding-bottom: 0;
-    border-bottom: none;
+.budget-column {
+    flex: 1;
+    background: #f8f9fa;
+    border-radius: 4px;
+    padding: 8px;
+    min-width: 150px;
 }
 
 .budget-header {
-    font-weight: 600;
-    color: #495057;
-    margin-bottom: 8px;
-    padding: 4px 8px;
-    background-color: #e9ecef;
-    border-radius: 4px;
+    font-weight: 500;
+    color: #2c3e50;
+    margin-bottom: 4px;
+    padding-bottom: 4px;
+    border-bottom: 1px solid #e9ecef;
+    text-align: center;
+    font-size: 0.9em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .budget-details {
-    padding: 0 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
 }
 
 .budget-item {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 4px;
-    direction: rtl;
-}
-
-.budget-item:last-child {
-    margin-bottom: 0;
+    padding: 2px 4px;
+    background: white;
+    border-radius: 3px;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
 }
 
 .budget-item .label {
     color: #6c757d;
-    font-weight: 500;
+    font-size: 0.85em;
+    margin-right: 4px;
 }
 
 .budget-item .amount {
-    font-weight: 600;
-    color: #212529;
+    font-weight: 500;
+    color: #2c3e50;
+    white-space: nowrap;
 }
 
 .budget-item .amount.warning {
     color: #dc3545;
-    font-weight: 700;
+}
+
+.budget-status {
+    margin-top: 4px;
+    height: 3px;
+    background: #e9ecef;
+    border-radius: 1.5px;
+    overflow: hidden;
+}
+
+.budget-status-bar {
+    height: 100%;
+    background: #28a745;
+    transition: width 0.3s ease;
+}
+
+.budget-status-bar.warning {
+    background: #dc3545;
 }
 
 .actions {
