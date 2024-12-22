@@ -169,6 +169,7 @@
                                     <td>
                                         <input type="email" class="form-control" name="email" value="{{ user.email }}">
                                     </td>
+                                    {% if not (user.is_admin and user.id == current_user.id) %}
                                     <td>
                                         <select class="form-control" name="role" onchange="toggleManagedDepts(this)">
                                             <option value="user" {% if not user.is_admin and not user.is_manager %}selected{% endif %}>Employee</option>
@@ -186,6 +187,16 @@
                                             {% endfor %}
                                         </select>
                                     </td>
+                                    {% else %}
+                                    <td>
+                                        <input type="hidden" name="role" value="admin">
+                                        <span class="form-control-plaintext">Admin</span>
+                                    </td>
+                                    <td>
+                                        <input type="hidden" name="department_id" value="{{ user.department_id }}">
+                                        <span class="form-control-plaintext">{{ user.home_department.name if user.home_department else 'None' }}</span>
+                                    </td>
+                                    {% endif %}
                                     <td>
                                         <div class="managed-depts-container" {% if not user.is_manager %}style="display: none;"{% endif %}>
                                             <select class="form-control" name="managed_departments" multiple>
@@ -503,17 +514,22 @@ function saveEdit(userId) {
         method: 'POST',
         body: formData
     })
-    .then(response => response.json())
+    .then(response => {
+        if (!response.ok) {
+            return response.json().then(data => {
+                throw new Error(data.error || 'Failed to update user');
+            });
+        }
+        return response.json();
+    })
     .then(data => {
-        if (data.error) {
-            alert(data.error);
-        } else {
+        if (data.message) {
             location.reload();
         }
     })
     .catch(error => {
         console.error('Error:', error);
-        alert('Failed to update user');
+        alert(error.message);
     });
 }
 

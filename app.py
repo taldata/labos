@@ -1153,14 +1153,27 @@ def edit_user(user_id):
     try:
         user = User.query.get_or_404(user_id)
         
+        # Check if user is editing their own admin account
+        is_self_admin = user.id == current_user.id and user.is_admin
+        
         # Update basic info
         user.username = request.form.get('username', user.username)
         user.email = request.form.get('email', user.email)
+        
+        # Prevent admin from changing their home department
+        if is_self_admin and request.form.get('department_id') != str(user.department_id):
+            return jsonify({'error': 'Admin users cannot change their home department'}), 400
+        
         user.department_id = request.form.get('department_id') or None
         user.status = request.form.get('status', 'active')
         
         # Update role
         role = request.form.get('role', 'user')
+        
+        # Prevent admin from changing their role to non-admin
+        if is_self_admin and role != 'admin':
+            return jsonify({'error': 'Admin users cannot change their role to non-admin'}), 400
+            
         user.is_admin = role == 'admin'
         user.is_manager = role == 'manager'
         
