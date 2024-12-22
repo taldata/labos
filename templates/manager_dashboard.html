@@ -24,8 +24,11 @@
             <div class="header-actions">
                 {% if current_user.is_admin %}
                 <a href="{{ url_for('manage_users') }}" class="button primary">Manage Users</a>
-                {% endif %}
+                <a href="{{ url_for('manage_departments') }}" class="button primary">Manage Departments</a>
+                <a href="{{ url_for('view_budget') }}" class="button primary">Manage Budget</a>
+                {% else %}
                 <a href="{{ url_for('submit_expense') }}" class="button primary">Submit Expense</a>
+                {% endif %}
                 <a href="{{ url_for('expense_history') }}" class="button secondary">View History</a>
                 <a href="{{ url_for('change_password') }}" class="button secondary">Change Password</a>
             </div>
