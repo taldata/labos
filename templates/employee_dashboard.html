@@ -41,7 +41,7 @@
                 <tbody>
                     {% for expense in expenses %}
                     <tr>
-                        <td>{{ expense.date.strftime('%Y-%m-%d') }}</td>
+                        <td title="{{ expense.date.strftime('%Y-%m-%d %H:%M:%S') }}">{{ expense.date.strftime('%Y-%m-%d %H:%M') }}</td>
                         <td>{{ expense.description }}</td>
                         <td>{{ expense.reason }}</td>
                         <td><span class="expense-type">{{ expense.type|format_expense_type }}</span></td>

@@ -69,7 +69,7 @@
                 <tbody>
                     {% for expense in expenses %}
                     <tr>
-                        <td>{{ expense.date.strftime('%Y-%m-%d') }}</td>
+                        <td title="{{ expense.date.strftime('%Y-%m-%d %H:%M:%S') }}">{{ expense.date.strftime('%Y-%m-%d %H:%M') }}</td>
                         <td>{{ expense.submitter.username }}</td>
                         <td>{{ expense.submitter.department.name if expense.submitter.department else 'N/A' }}</td>
                         <td>{{ expense.description }}</td>

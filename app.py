@@ -6,6 +6,7 @@ import os
 from werkzeug.utils import secure_filename
 from utils.email_sender import send_email, EXPENSE_SUBMITTED_TEMPLATE, EXPENSE_STATUS_UPDATE_TEMPLATE, NEW_USER_TEMPLATE
 import logging
+import pytz
 
 # Configure logging
 logging.basicConfig(
@@ -212,7 +213,7 @@ def login():
 def employee_dashboard():
     if current_user.is_manager:
         return redirect(url_for('manager_dashboard'))
-    expenses = current_user.submitted_expenses
+    expenses = Expense.query.filter_by(user_id=current_user.id).order_by(Expense.date.desc()).all()
     return render_template('employee_dashboard.html', expenses=expenses)
 
 @app.route('/expense/submit', methods=['GET', 'POST'])
@@ -283,11 +284,11 @@ def submit_expense():
         # Set status based on type
         if expense_type == 'auto_approved':
             expense.status = 'approved'
-            expense.handled_at = datetime.utcnow()
+            expense.handled_at = datetime.now(pytz.utc).replace(microsecond=0)
             expense.manager_id = None  # Auto-approved doesn't need manager
         elif expense_type == 'pre_approved':
             expense.status = 'approved'
-            expense.handled_at = datetime.utcnow()
+            expense.handled_at = datetime.now(pytz.utc).replace(microsecond=0)
             # For pre-approved expenses, we still want to track who approved it
             manager = User.query.filter_by(department_id=current_user.department_id, is_manager=True).first()
             if manager:
@@ -409,7 +410,7 @@ def manager_dashboard():
                 Subcategory.name.label('subcategory_name'),
                 Subcategory.budget.label('subcategory_budget'),
                 (Subcategory.budget - db.func.coalesce(subcat_expenses.c.total_expenses, 0)).label('subcategory_remaining')
-            ).all()
+            ).order_by(Expense.date.desc()).all()
     else:
         pending_expenses = Expense.query.join(User, Expense.user_id == User.id)\
             .join(Subcategory, Expense.subcategory_id == Subcategory.id)\
@@ -432,36 +433,28 @@ def manager_dashboard():
                 Subcategory.name.label('subcategory_name'),
                 Subcategory.budget.label('subcategory_budget'),
                 (Subcategory.budget - db.func.coalesce(subcat_expenses.c.total_expenses, 0)).label('subcategory_remaining')
-            ).all()
+            ).order_by(Expense.date.desc()).all()
     
     return render_template('manager_dashboard.html', expenses=pending_expenses)
 
 @app.route('/manager/history')
 @login_required
 def expense_history():
-    if not current_user.is_manager:
-        return redirect(url_for('employee_dashboard'))
-    
-    # Get filter parameters
-    status = request.args.get('status', 'all')
-    employee = request.args.get('employee', 'all')
-    department = request.args.get('department', 'all')
-    
-    # Base query with joins
-    query = Expense.query.join(User, Expense.user_id == User.id)
-    
-    # If not admin, only show expenses from manager's department
-    if current_user.username != 'admin':
-        query = query.filter(User.department_id == current_user.department_id)
-    
-    # Apply filters
-    if status != 'all':
-        query = query.filter(Expense.status == status)
-    if employee != 'all':
-        query = query.filter(Expense.user_id == employee)
-    if department != 'all' and current_user.username == 'admin':
-        # Only admin can filter by different departments
-        query = query.filter(User.department_id == department)
+    if current_user.is_manager:
+        # For managers, show all expenses from their departments
+        managed_dept_ids = [dept.id for dept in current_user.managed_departments]
+        managed_dept_ids.append(current_user.department_id)
+        
+        expenses = db.session.query(Expense).join(
+            User, Expense.user_id == User.id
+        ).filter(
+            User.department_id.in_(managed_dept_ids)
+        ).order_by(Expense.date.desc()).all()
+    else:
+        # For regular employees, show only their expenses
+        expenses = Expense.query.filter_by(
+            user_id=current_user.id
+        ).order_by(Expense.date.desc()).all()
     
     # Get all employees for the filter dropdown
     if current_user.username == 'admin':
@@ -476,8 +469,19 @@ def expense_history():
         # Only show manager's department
         departments = [current_user.home_department] if current_user.home_department else []
     
-    # Get expenses with sorting
-    expenses = query.order_by(Expense.date.desc()).all()
+    # Get filter parameters
+    status = request.args.get('status', 'all')
+    employee = request.args.get('employee', 'all')
+    department = request.args.get('department', 'all')
+    
+    # Apply filters
+    if status != 'all':
+        expenses = [expense for expense in expenses if expense.status == status]
+    if employee != 'all':
+        expenses = [expense for expense in expenses if expense.user_id == int(employee)]
+    if department != 'all' and current_user.username == 'admin':
+        # Only admin can filter by different departments
+        expenses = [expense for expense in expenses if expense.subcategory.category.department_id == int(department)]
     
     return render_template('expense_history.html', 
                          expenses=expenses,
@@ -508,7 +512,7 @@ def handle_expense(expense_id, action):
     
     # Record manager information
     expense.manager_id = current_user.id
-    expense.handled_at = datetime.utcnow()
+    expense.handled_at = datetime.now(pytz.utc).replace(microsecond=0)
     
     try:
         db.session.commit()
@@ -1243,7 +1247,7 @@ def admin_edit_expense(expense_id):
         elif expense.status in ['approved', 'rejected'] and not expense.handler:
             # If changing to approved/rejected and no handler set, set current admin as handler
             expense.handler = current_user
-            expense.handled_at = datetime.now()
+            expense.handled_at = datetime.now(pytz.utc).replace(microsecond=0)
         
         # Handle file uploads if provided
         if 'quote' in request.files:
