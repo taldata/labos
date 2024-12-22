@@ -3,8 +3,13 @@
 {% block content %}
 <div class="container">
     <header class="dashboard-header">
+        {% if current_user.is_admin %}
+        <h1>Admin Dashboard</h1>
+        {% else %}
         <h1>Manager Dashboard</h1>
+        {% endif %}
         <div class="user-info">
+            {% if not current_user.is_admin %}
             <div class="department-info">
                 <div class="home-department">
                     <div class="department-label">Home Department</div>
@@ -21,11 +26,11 @@
                 </div>
                 {% endif %}
             </div>
+            {% endif %}
             <div class="header-actions">
                 {% if current_user.is_admin %}
                 <a href="{{ url_for('manage_users') }}" class="button primary">Manage Users</a>
-                <a href="{{ url_for('manage_departments') }}" class="button primary">Manage Departments</a>
-                <a href="{{ url_for('view_budget') }}" class="button primary">Manage Budget</a>
+                <a href="{{ url_for('manage_departments') }}" class="button primary">Manage Departments/Budgets</a>
                 {% else %}
                 <a href="{{ url_for('submit_expense') }}" class="button primary">Submit Expense</a>
                 {% endif %}
@@ -446,6 +451,11 @@ textarea.form-control {
 .badge.warning {
     background-color: #ffc107;
     color: #000;
+}
+
+.badge.admin {
+    background-color: #007bff;
+    color: white;
 }
 
 .rejection-reason {
