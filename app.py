@@ -440,7 +440,10 @@ def manager_dashboard():
 @app.route('/manager/history')
 @login_required
 def expense_history():
-    if current_user.is_manager:
+    if current_user.is_admin:
+        # For admin, show all expenses
+        expenses = Expense.query.order_by(Expense.date.desc()).all()
+    elif current_user.is_manager:
         # For managers, show all expenses from their departments
         managed_dept_ids = [dept.id for dept in current_user.managed_departments]
         managed_dept_ids.append(current_user.department_id)
@@ -457,17 +460,18 @@ def expense_history():
         ).order_by(Expense.date.desc()).all()
     
     # Get all employees for the filter dropdown
-    if current_user.username == 'admin':
-        employees = User.query.filter_by(is_manager=False).all()
+    if current_user.is_admin:
+        employees = User.query.all()  # Show all employees for admin
         departments = Department.query.all()
+    elif current_user.is_manager:
+        # Only show employees from manager's departments
+        managed_dept_ids = [dept.id for dept in current_user.managed_departments]
+        managed_dept_ids.append(current_user.department_id)
+        employees = User.query.filter(User.department_id.in_(managed_dept_ids)).all()
+        departments = [dept for dept in Department.query.filter(Department.id.in_(managed_dept_ids)).all()]
     else:
-        # Only show employees from manager's department
-        employees = User.query.filter_by(
-            is_manager=False,
-            department_id=current_user.department_id
-        ).all()
-        # Only show manager's department
-        departments = [current_user.home_department] if current_user.home_department else []
+        employees = []
+        departments = []
     
     # Get filter parameters
     status = request.args.get('status', 'all')
@@ -479,9 +483,8 @@ def expense_history():
         expenses = [expense for expense in expenses if expense.status == status]
     if employee != 'all':
         expenses = [expense for expense in expenses if expense.user_id == int(employee)]
-    if department != 'all' and current_user.username == 'admin':
-        # Only admin can filter by different departments
-        expenses = [expense for expense in expenses if expense.subcategory.category.department_id == int(department)]
+    if department != 'all':
+        expenses = [expense for expense in expenses if expense.submitter.department_id == int(department)]
     
     return render_template('expense_history.html', 
                          expenses=expenses,
