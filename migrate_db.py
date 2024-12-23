@@ -107,7 +107,44 @@ def migrate_database():
         else:
             print("Rejection reason column already exists")
 
+def migrate_payment_fields():
+    print("Starting database migration for expense payment fields...")
+    
+    with app.app_context():
+        try:
+            inspector = db.inspect(db.engine)
+            existing_columns = [col['name'] for col in inspector.get_columns('expense')]
+            
+            with db.engine.connect() as conn:
+                if 'notes' not in existing_columns:
+                    conn.execute(text('ALTER TABLE expense ADD COLUMN notes VARCHAR(500)'))
+                    conn.commit()
+                    print("Added notes column")
+                
+                if 'is_paid' not in existing_columns:
+                    conn.execute(text('ALTER TABLE expense ADD COLUMN is_paid BOOLEAN DEFAULT 0'))
+                    conn.commit()
+                    print("Added is_paid column")
+                
+                if 'paid_by_id' not in existing_columns:
+                    conn.execute(text('ALTER TABLE expense ADD COLUMN paid_by_id INTEGER REFERENCES user(id)'))
+                    conn.commit()
+                    print("Added paid_by_id column")
+                
+                if 'paid_at' not in existing_columns:
+                    conn.execute(text('ALTER TABLE expense ADD COLUMN paid_at DATETIME'))
+                    conn.commit()
+                    print("Added paid_at column")
+            
+            print("Payment fields migration completed successfully!")
+            
+        except Exception as e:
+            print(f"Error during migration: {str(e)}")
+            db.session.rollback()
+            raise
+
 if __name__ == '__main__':
     migrate_attachments()
     add_email_column()
     migrate_database()
+    migrate_payment_fields()

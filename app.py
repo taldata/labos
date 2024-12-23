@@ -123,7 +123,8 @@ class Expense(db.Model):
     amount = db.Column(db.Float, nullable=False)
     description = db.Column(db.String(200))
     reason = db.Column(db.String(500))
-    type = db.Column(db.String(50), nullable=False, default='needs_approval')  # New field
+    notes = db.Column(db.String(500))  # New field for payment notes
+    type = db.Column(db.String(50), nullable=False, default='needs_approval')
     date = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
     status = db.Column(db.String(20), default='pending')
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
@@ -134,6 +135,9 @@ class Expense(db.Model):
     manager_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
     handled_at = db.Column(db.DateTime, nullable=True)
     rejection_reason = db.Column(db.String(500))
+    is_paid = db.Column(db.Boolean, default=False)  # New field to track payment status
+    paid_by_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)  # New field to track who marked as paid
+    paid_at = db.Column(db.DateTime, nullable=True)  # New field to track when marked as paid
 
 # Initialize database
 with app.app_context():
@@ -254,6 +258,7 @@ def submit_expense():
             amount=amount,
             description=description,
             reason=reason,
+            notes=request.form.get('notes', ''),
             type=expense_type,
             user_id=current_user.id,
             subcategory_id=subcategory_id
@@ -1349,6 +1354,35 @@ def test_email():
         import traceback
         traceback.print_exc()
         return f'Error sending email: {str(e)}'
+
+@app.route('/accounting_dashboard')
+@login_required
+def accounting_dashboard():
+    if not current_user.is_admin:
+        flash('Access denied. You must be an accounting admin to view this page.', 'danger')
+        return redirect(url_for('index'))
+    
+    # Get all approved expenses
+    expenses = Expense.query.filter_by(status='approved').order_by(Expense.date.desc()).all()
+    
+    return render_template('accounting_dashboard.html', expenses=expenses)
+
+@app.route('/mark_expense_paid/<int:expense_id>', methods=['POST'])
+@login_required
+def mark_expense_paid(expense_id):
+    if not current_user.is_admin:
+        return jsonify({'error': 'Access denied'}), 403
+    
+    expense = Expense.query.get_or_404(expense_id)
+    if expense.status != 'approved':
+        return jsonify({'error': 'Only approved expenses can be marked as paid'}), 400
+    
+    expense.is_paid = True
+    expense.paid_by_id = current_user.id
+    expense.paid_at = datetime.utcnow()
+    db.session.commit()
+    
+    return jsonify({'success': True})
 
 if __name__ == '__main__':
     app.run(debug=True)

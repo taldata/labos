@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Accounting Dashboard</h2>
+    <div class="table-responsive">
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Submission Date</th>
+                    <th>Employee Name</th>
+                    <th>Department</th>
+                    <th>Description</th>
+                    <th>Type</th>
+                    <th>Amount</th>
+                    <th>Notes</th>
+                    <th>Handled by</th>
+                    <th>Date Handled</th>
+                    <th>Supplier Name</th>
+                    <th>Tax ID</th>
+                    <th>Date of Purchase</th>
+                    <th>Payment Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for expense in expenses %}
+                <tr>
+                    <td>{{ expense.date.strftime('%Y-%m-%d') }}</td>
+                    <td>{{ expense.submitter.username }}</td>
+                    <td>{{ expense.submitter.home_department.name }}</td>
+                    <td>{{ expense.description }}</td>
+                    <td>{{ expense.type | format_expense_type }}</td>
+                    <td>{{ expense.amount | format_currency }}</td>
+                    <td>{{ expense.notes }}</td>
+                    <td>{{ expense.handler.username if expense.handler else '' }}</td>
+                    <td>{{ expense.handled_at.strftime('%Y-%m-%d') if expense.handled_at else '' }}</td>
+                    <td>{{ expense.supplier_name if expense.supplier_name else '' }}</td>
+                    <td>{{ expense.tax_id if expense.tax_id else '' }}</td>
+                    <td>{{ expense.purchase_date.strftime('%Y-%m-%d') if expense.purchase_date else '' }}</td>
+                    <td>
+                        {% if expense.is_paid %}
+                            <span class="badge bg-success">Paid</span>
+                            <br>
+                            <small>by {{ expense.paid_by.username }} on {{ expense.paid_at.strftime('%Y-%m-%d') }}</small>
+                        {% else %}
+                            <span class="badge bg-warning">Pending Payment</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if not expense.is_paid %}
+                            <button class="btn btn-success btn-sm mark-paid-btn" data-expense-id="{{ expense.id }}">
+                                Mark as Paid
+                            </button>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+document.querySelectorAll('.mark-paid-btn').forEach(button => {
+    button.addEventListener('click', async function() {
+        const expenseId = this.dataset.expenseId;
+        try {
+            const response = await fetch(`/mark_expense_paid/${expenseId}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            if (response.ok) {
+                // Reload the page to show updated status
+                window.location.reload();
+            } else {
+                const data = await response.json();
+                alert(data.error || 'Failed to mark expense as paid');
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            alert('An error occurred while marking the expense as paid');
+        }
+    });
+});
+</script>
+{% endblock %}

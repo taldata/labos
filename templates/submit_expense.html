@@ -37,9 +37,14 @@
                 <label for="description">Description</label>
                 <textarea name="description" id="description" required class="form-control"></textarea>
             </div>
-            <div class="form-group">
-                <label for="reason">Reason For Request</label>
-                <textarea name="reason" id="reason" required class="form-control" placeholder="Please explain why this expense is necessary"></textarea>
+            <div class="mb-3">
+                <label for="reason" class="form-label">Reason</label>
+                <textarea class="form-control" id="reason" name="reason" rows="3" required></textarea>
+            </div>
+            
+            <div class="mb-3">
+                <label for="notes" class="form-label">Notes</label>
+                <textarea class="form-control" id="notes" name="notes" rows="2" placeholder="Specify if this expense should be paid by accounting or by employee"></textarea>
             </div>
             <div class="form-group">
                 <label for="subcategory">Category</label>
