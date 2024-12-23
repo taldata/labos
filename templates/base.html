@@ -7,6 +7,56 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .navbar {
+            background-color: #2196F3;
+            padding: 1rem 2rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .nav-brand {
+            color: white;
+            font-size: 1.5rem;
+            font-weight: 500;
+        }
+        .nav-items {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+        }
+        .nav-link {
+            color: white;
+            text-decoration: none;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            transition: background-color 0.3s;
+        }
+        .nav-link:hover {
+            background-color: rgba(255,255,255,0.1);
+        }
+        .user-info {
+            color: white;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .badge {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.85em;
+            font-weight: 500;
+            background-color: rgba(255,255,255,0.2);
+            color: white;
+        }
+        .badge.admin {
+            background-color: #1976D2;
+        }
+        .badge.accounting {
+            background-color: #28a745;
+        }
+    </style>
 </head>
 <body>
     <nav class="navbar">
@@ -16,11 +66,6 @@
                 {% if current_user.is_admin %}
                     <a href="{{ url_for('index') }}" class="nav-link">
                         <i class="fas fa-home"></i> Home
-                    </a>
-                {% endif %}
-                {% if current_user.is_accounting %}
-                    <a href="{{ url_for('accounting_dashboard') }}" class="nav-link">
-                        <i class="fas fa-calculator"></i> Accounting
                     </a>
                 {% endif %}
                 <span class="user-info">
@@ -33,33 +78,16 @@
                         <span class="badge accounting">ACCOUNTING</span>
                     {% endif %}
                 </span>
-                <a href="{{ url_for('logout') }}" class="nav-link">Logout</a>
+                <a href="{{ url_for('logout') }}" class="nav-link">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </a>
             {% else %}
-                <a href="{{ url_for('login') }}" class="nav-link">Login</a>
+                <a href="{{ url_for('login') }}" class="nav-link">
+                    <i class="fas fa-sign-in-alt"></i> Login
+                </a>
             {% endif %}
         </div>
     </nav>
-
-    <style>
-    .badge.admin {
-        background-color: #007bff;
-        color: white;
-        padding: 4px 8px;
-        border-radius: 4px;
-        font-size: 0.85em;
-        font-weight: 500;
-        margin-left: 8px;
-    }
-    .badge.accounting {
-        background-color: #28a745;
-        color: white;
-        padding: 4px 8px;
-        border-radius: 4px;
-        font-size: 0.85em;
-        font-weight: 500;
-        margin-left: 8px;
-    }
-    </style>
 
     <div class="flash-messages">
         {% with messages = get_flashed_messages() %}
