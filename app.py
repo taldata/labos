@@ -139,6 +139,11 @@ class Expense(db.Model):
     is_paid = db.Column(db.Boolean, default=False)  # New field to track payment status
     paid_by_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)  # New field to track who marked as paid
     paid_at = db.Column(db.DateTime, nullable=True)  # New field to track when marked as paid
+    
+    # Add the relationship to the user who paid the expense
+    paid_by = db.relationship('User', 
+                            foreign_keys=[paid_by_id],
+                            backref=db.backref('paid_expenses', lazy='dynamic'))
 
 # Initialize database
 with app.app_context():
@@ -209,6 +214,8 @@ def login():
         user = User.query.filter_by(username=username).first()
         if user and user.password == password:  # In production, use proper password hashing
             login_user(user)
+            if user.is_accounting:
+                return redirect(url_for('accounting_dashboard'))
             return redirect(url_for('index'))
         flash('Invalid username or password')
     return render_template('login.html')
@@ -715,6 +722,7 @@ def add_user():
             department_id=department_id if department_id else None,
             is_manager=role == 'manager',
             is_admin=role == 'admin',
+            is_accounting=role == 'accounting',
             status=status
         )
         
@@ -1189,6 +1197,7 @@ def edit_user(user_id):
             
         user.is_admin = role == 'admin'
         user.is_manager = role == 'manager'
+        user.is_accounting = role == 'accounting'
         
         # Update managed departments if user is a manager
         if role == 'manager':

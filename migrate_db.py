@@ -148,18 +148,56 @@ def migrate_is_accounting_field():
     
     with app.app_context():
         try:
-            # Add is_accounting column
-            with db.engine.connect() as connection:
-                connection.execute(text('ALTER TABLE user ADD COLUMN is_accounting BOOLEAN DEFAULT FALSE;'))
-                connection.commit()
-                print("Added is_accounting column to user table")
+            # Check if the column exists
+            inspector = db.inspect(db.engine)
+            existing_columns = [col['name'] for col in inspector.get_columns('user')]
             
-            print("Migration completed successfully!")
+            with db.engine.connect() as connection:
+                if 'is_accounting' not in existing_columns:
+                    connection.execute(text('ALTER TABLE user ADD COLUMN is_accounting BOOLEAN DEFAULT FALSE;'))
+                    connection.commit()
+                    print("Added is_accounting column to user table")
+                else:
+                    print("is_accounting column already exists in user table")
+                
+            print("Migration completed successfully")
             
         except Exception as e:
             print(f"Error during migration: {str(e)}")
             db.session.rollback()
             raise
+
+def migrate_supplier_details():
+    print("Starting migration for supplier details...")
+    
+    with app.app_context():
+        try:
+            # Check if the new columns exist
+            inspector = db.inspect(db.engine)
+            existing_columns = [col['name'] for col in inspector.get_columns('expense')]
+            
+            # Add new columns if they don't exist
+            with db.engine.connect() as conn:
+                if 'supplier_name' not in existing_columns:
+                    conn.execute(text('ALTER TABLE expense ADD COLUMN supplier_name VARCHAR(200)'))
+                    conn.commit()
+                    print("Added supplier_name column")
+                
+                if 'tax_id' not in existing_columns:
+                    conn.execute(text('ALTER TABLE expense ADD COLUMN tax_id VARCHAR(50)'))
+                    conn.commit()
+                    print("Added tax_id column")
+                
+                if 'purchase_date' not in existing_columns:
+                    conn.execute(text('ALTER TABLE expense ADD COLUMN purchase_date DATETIME'))
+                    conn.commit()
+                    print("Added purchase_date column")
+                
+            print("Supplier details migration completed successfully")
+            
+        except Exception as e:
+            print(f"Error during supplier details migration: {str(e)}")
+            raise e
 
 if __name__ == '__main__':
     migrate_attachments()
@@ -167,3 +205,4 @@ if __name__ == '__main__':
     migrate_database()
     migrate_payment_fields()
     migrate_is_accounting_field()
+    migrate_supplier_details()
