@@ -44,6 +44,7 @@
                                     <option value="admin" {% if role_filter == 'admin' %}selected{% endif %}>Admin</option>
                                     <option value="manager" {% if role_filter == 'manager' %}selected{% endif %}>Manager</option>
                                     <option value="employee" {% if role_filter == 'employee' %}selected{% endif %}>Employee</option>
+                                    <option value="accounting" {% if role_filter == 'accounting' %}selected{% endif %}>Accounting</option>
                                 </select>
                             </div>
                             <div class="col-md-2">
@@ -85,8 +86,9 @@
                                     </td>
                                     <td>
                                         <select class="form-select" id="newRole" onchange="toggleManagedDepartments()">
-                                            <option value="user">User</option>
+                                            <option value="user">Employee</option>
                                             <option value="manager">Manager</option>
+                                            <option value="accounting">Accounting</option>
                                             <option value="admin">Admin</option>
                                         </select>
                                     </td>
@@ -136,6 +138,8 @@
                                         <span class="badge bg-danger">Admin</span>
                                         {% elif user.is_manager %}
                                         <span class="badge bg-warning">Manager</span>
+                                        {% elif user.is_accounting %}
+                                        <span class="badge bg-success">Accounting</span>
                                         {% else %}
                                         <span class="badge bg-info">Employee</span>
                                         {% endif %}
@@ -172,8 +176,9 @@
                                     {% if not (user.is_admin and user.id == current_user.id) %}
                                     <td>
                                         <select class="form-control" name="role" onchange="toggleManagedDepts(this)">
-                                            <option value="user" {% if not user.is_admin and not user.is_manager %}selected{% endif %}>Employee</option>
+                                            <option value="user" {% if not user.is_admin and not user.is_manager and not user.is_accounting %}selected{% endif %}>Employee</option>
                                             <option value="manager" {% if user.is_manager %}selected{% endif %}>Manager</option>
+                                            <option value="accounting" {% if user.is_accounting %}selected{% endif %}>Accounting</option>
                                             <option value="admin" {% if user.is_admin %}selected{% endif %}>Admin</option>
                                         </select>
                                     </td>

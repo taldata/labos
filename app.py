@@ -70,6 +70,7 @@ class User(UserMixin, db.Model):
     password = db.Column(db.String(120), nullable=False)
     is_manager = db.Column(db.Boolean, default=False)
     is_admin = db.Column(db.Boolean, default=False)
+    is_accounting = db.Column(db.Boolean, default=False)
     status = db.Column(db.String(20), default='active')  # active, inactive, pending
     department_id = db.Column(db.Integer, db.ForeignKey('department.id'))
     home_department = db.relationship('Department', 
@@ -1358,8 +1359,8 @@ def test_email():
 @app.route('/accounting_dashboard')
 @login_required
 def accounting_dashboard():
-    if not current_user.is_admin:
-        flash('Access denied. You must be an accounting admin to view this page.', 'danger')
+    if not current_user.is_accounting:
+        flash('Access denied. You must be an accounting user to view this page.', 'danger')
         return redirect(url_for('index'))
     
     # Get all approved expenses
@@ -1370,7 +1371,7 @@ def accounting_dashboard():
 @app.route('/mark_expense_paid/<int:expense_id>', methods=['POST'])
 @login_required
 def mark_expense_paid(expense_id):
-    if not current_user.is_admin:
+    if not current_user.is_accounting:
         return jsonify({'error': 'Access denied'}), 403
     
     expense = Expense.query.get_or_404(expense_id)

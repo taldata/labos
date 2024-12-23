@@ -1,4 +1,4 @@
-from app import app, db, Expense
+from app import app, db, Expense, User
 from sqlalchemy import text
 import os
 from sqlalchemy import create_engine, MetaData, Column, String
@@ -143,8 +143,27 @@ def migrate_payment_fields():
             db.session.rollback()
             raise
 
+def migrate_is_accounting_field():
+    print("Starting database migration to add is_accounting field to user table...")
+    
+    with app.app_context():
+        try:
+            # Add is_accounting column
+            with db.engine.connect() as connection:
+                connection.execute(text('ALTER TABLE user ADD COLUMN is_accounting BOOLEAN DEFAULT FALSE;'))
+                connection.commit()
+                print("Added is_accounting column to user table")
+            
+            print("Migration completed successfully!")
+            
+        except Exception as e:
+            print(f"Error during migration: {str(e)}")
+            db.session.rollback()
+            raise
+
 if __name__ == '__main__':
     migrate_attachments()
     add_email_column()
     migrate_database()
     migrate_payment_fields()
+    migrate_is_accounting_field()
