@@ -61,6 +61,10 @@
                                     <button class="btn btn-success btn-sm mark-paid-btn" data-expense-id="{{ expense.id }}">
                                         <i class="fas fa-check me-1"></i>Mark as Paid
                                     </button>
+                                {% else %}
+                                    <button class="btn btn-warning btn-sm mark-unpaid-btn" data-expense-id="{{ expense.id }}">
+                                        <i class="fas fa-undo me-1"></i>Mark as Unpaid
+                                    </button>
                                 {% endif %}
                             </td>
                         </tr>
@@ -95,19 +99,45 @@ document.addEventListener('DOMContentLoaded', function() {
                     }
                 });
                 
-                if (response.ok) {
-                    window.location.reload();
-                } else {
+                if (!response.ok) {
                     const data = await response.json();
-                    alert(data.error || 'Failed to mark expense as paid');
-                    button.disabled = false;
-                    button.innerHTML = '<i class="fas fa-check me-1"></i>Mark as Paid';
+                    throw new Error(data.error || 'Failed to mark expense as paid');
                 }
+                
+                location.reload();
             } catch (error) {
-                console.error('Error:', error);
-                alert('An error occurred while marking the expense as paid');
+                alert(error.message);
                 button.disabled = false;
                 button.innerHTML = '<i class="fas fa-check me-1"></i>Mark as Paid';
+            }
+        });
+    });
+
+    // Handle mark as unpaid buttons
+    document.querySelectorAll('.mark-unpaid-btn').forEach(button => {
+        button.addEventListener('click', async function() {
+            const expenseId = this.dataset.expenseId;
+            try {
+                button.disabled = true;
+                button.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Processing...';
+                
+                const response = await fetch(`/mark_expense_unpaid/${expenseId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (!response.ok) {
+                    const data = await response.json();
+                    throw new Error(data.error || 'Failed to mark expense as unpaid');
+                }
+                
+                location.reload();
+            } catch (error) {
+                alert(error.message);
+                button.disabled = false;
+                button.innerHTML = '<i class="fas fa-undo me-1"></i>Mark as Unpaid';
             }
         });
     });

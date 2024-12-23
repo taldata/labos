@@ -1394,5 +1394,22 @@ def mark_expense_paid(expense_id):
     
     return jsonify({'success': True})
 
+@app.route('/mark_expense_unpaid/<int:expense_id>', methods=['POST'])
+@login_required
+def mark_expense_unpaid(expense_id):
+    if not current_user.is_accounting:
+        return jsonify({'error': 'Access denied'}), 403
+    
+    expense = Expense.query.get_or_404(expense_id)
+    if not expense.is_paid:
+        return jsonify({'error': 'Expense is already marked as unpaid'}), 400
+    
+    expense.is_paid = False
+    expense.paid_by_id = None
+    expense.paid_at = None
+    db.session.commit()
+    
+    return jsonify({'success': True})
+
 if __name__ == '__main__':
     app.run(debug=True)
