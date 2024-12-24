@@ -32,7 +32,7 @@
                             <td>{{ expense.submitter.username }}</td>
                             <td>{{ expense.submitter.home_department.name }}</td>
                             <td>{{ expense.description }}</td>
-                            <td><span class="badge bg-secondary">{{ expense.type | format_expense_type }}</span></td>
+                            <td>{{ expense.type | format_expense_type }}</td>
                             <td class="text-end fw-bold">{{ expense.amount | format_currency }}</td>
                             <td>
                                 {% if expense.notes %}
