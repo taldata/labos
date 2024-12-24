@@ -22,6 +22,7 @@
                             <th class="fw-bold">Tax ID</th>
                             <th class="fw-bold">Date of Purchase</th>
                             <th class="fw-bold">Payment Status</th>
+                            <th class="fw-bold">Attachments</th>
                             <th class="fw-bold">Actions</th>
                         </tr>
                     </thead>
@@ -55,6 +56,25 @@
                                 {% else %}
                                     <span class="badge bg-warning text-dark">Pending Payment</span>
                                 {% endif %}
+                            </td>
+                            <td>
+                                <div class="d-flex flex-column gap-1">
+                                    {% if expense.quote_filename %}
+                                        <a href="{{ url_for('download_file', filename=expense.quote_filename) }}">
+                                            <i class="fas fa-file-download me-1"></i>Quote
+                                        </a>
+                                    {% endif %}
+                                    {% if expense.invoice_filename %}
+                                        <a href="{{ url_for('download_file', filename=expense.invoice_filename) }}">
+                                            <i class="fas fa-file-download me-1"></i>Invoice
+                                        </a>
+                                    {% endif %}
+                                    {% if expense.receipt_filename %}
+                                        <a href="{{ url_for('download_file', filename=expense.receipt_filename) }}">
+                                            <i class="fas fa-file-download me-1"></i>Receipt
+                                        </a>
+                                    {% endif %}
+                                </div>
                             </td>
                             <td>
                                 {% if not expense.is_paid %}

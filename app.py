@@ -369,7 +369,7 @@ def download_file(filename):
         )
     ).first_or_404()
     
-    if current_user.is_manager or expense.user_id == current_user.id:
+    if current_user.is_manager or current_user.is_accounting or expense.user_id == current_user.id:
         return send_file(os.path.join(app.config['UPLOAD_FOLDER'], filename),
                         as_attachment=True)
     flash('Unauthorized access')
