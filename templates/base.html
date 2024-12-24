@@ -78,6 +78,9 @@
                         <span class="badge accounting">ACCOUNTING</span>
                     {% endif %}
                 </span>
+                <a href="{{ url_for('change_password') }}" class="nav-link">
+                    <i class="fas fa-key"></i> Change Password
+                </a>
                 <a href="{{ url_for('logout') }}" class="nav-link">
                     <i class="fas fa-sign-out-alt"></i> Logout
                 </a>
