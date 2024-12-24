@@ -9,13 +9,14 @@
                 <table class="table table-hover table-striped align-middle">
                     <thead class="table-light">
                         <tr>
-                            <th class="fw-bold">Submission Date</th>
-                            <th class="fw-bold">Employee Name</th>
-                            <th class="fw-bold">Department</th>
-                            <th class="fw-bold">Description</th>
-                            <th class="fw-bold">Type</th>
+                            <th><i class="fas fa-calendar"></i> Date</th>
+                            <th><i class="fas fa-user"></i> Employee</th>
+                            <th><i class="fas fa-building"></i> Department</th>
+                            <th><i class="fas fa-file-alt"></i> Description</th>
+                            <th><i class="fas fa-info-circle"></i> Reason</th>
+                            <th><i class="fas fa-sticky-note"></i> Notes</th>
+                            <th><i class="fas fa-tag"></i> Type</th>
                             <th class="fw-bold text-end">Amount</th>
-                            <th class="fw-bold">Notes</th>
                             <th class="fw-bold">Handled by</th>
                             <th class="fw-bold">Date Handled</th>
                             <th class="fw-bold">Supplier Name</th>
@@ -33,15 +34,10 @@
                             <td>{{ expense.submitter.username }}</td>
                             <td>{{ expense.submitter.home_department.name }}</td>
                             <td>{{ expense.description }}</td>
+                            <td>{{ expense.reason }}</td>
+                            <td>{{ expense.notes if expense.notes else '-' }}</td>
                             <td>{{ expense.type | format_expense_type }}</td>
                             <td class="text-end fw-bold">{{ expense.amount | format_currency }}</td>
-                            <td>
-                                {% if expense.notes %}
-                                <span class="text-truncate d-inline-block" style="max-width: 150px;" data-bs-toggle="tooltip" title="{{ expense.notes }}">
-                                    {{ expense.notes }}
-                                </span>
-                                {% endif %}
-                            </td>
                             <td>{{ expense.handler.username if expense.handler else '-' }}</td>
                             <td>{{ expense.handled_at.strftime('%d/%m/%Y') if expense.handled_at else '-' }}</td>
                             <td>{{ expense.supplier_name if expense.supplier_name else '-' }}</td>

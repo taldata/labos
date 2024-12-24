@@ -48,10 +48,11 @@
             <table>
                 <thead>
                     <tr>
-                        <th>Submission Date</th>
-                        <th>Description</th>
-                        <th>Reason For Request</th>
-                        <th>Type</th>
+                        <th><i class="fas fa-calendar"></i> Date</th>
+                        <th><i class="fas fa-file-alt"></i> Description</th>
+                        <th><i class="fas fa-info-circle"></i> Reason</th>
+                        <th><i class="fas fa-sticky-note"></i> Notes</th>
+                        <th><i class="fas fa-tag"></i> Type</th>
                         <th>Amount</th>
                         <th>Status</th>
                         <th>Handled By</th>
@@ -65,6 +66,7 @@
                         <td title="{{ expense.date.strftime('%d/%m/%Y %H:%M:%S') }}">{{ expense.date.strftime('%d/%m/%Y %H:%M') }}</td>
                         <td>{{ expense.description }}</td>
                         <td>{{ expense.reason }}</td>
+                        <td>{{ expense.notes if expense.notes else '-' }}</td>
                         <td><span class="expense-type">{{ expense.type|format_expense_type }}</span></td>
                         <td>₪{{ "%.2f"|format(expense.amount) }}</td>
                         <td class="status-{{ expense.status }}">
@@ -126,7 +128,7 @@
                     {% endfor %}
                     {% if not expenses %}
                     <tr>
-                        <td colspan="9" class="text-center">No expenses submitted yet</td>
+                        <td colspan="10" class="text-center">No expenses submitted yet</td>
                     </tr>
                     {% endif %}
                 </tbody>

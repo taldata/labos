@@ -76,6 +76,7 @@
                         <th><i class="fas fa-building"></i> Department</th>
                         <th><i class="fas fa-file-alt"></i> Description</th>
                         <th><i class="fas fa-comment"></i> Reason</th>
+                        <th><i class="fas fa-sticky-note"></i> Notes</th>
                         <th><i class="fas fa-tag"></i> Type</th>
                         <th><i class="fas fa-shekel-sign"></i> Amount</th>
                         <th><i class="fas fa-chart-pie"></i> Budget Info</th>
@@ -92,6 +93,7 @@
                         <td>{{ expense.submitter.home_department.name if expense.submitter.home_department else 'No Department' }}</td>
                         <td>{{ expense.description }}</td>
                         <td>{{ expense.reason }}</td>
+                        <td>{{ expense.notes if expense.notes else '-' }}</td>
                         <td>{{ expense.type|format_expense_type }}</td>
                         <td>₪{{ "%.2f"|format(expense.amount) }}</td>
                         <td class="budget-info">
@@ -203,7 +205,7 @@
                     {% endfor %}
                     {% if not expenses %}
                     <tr>
-                        <td colspan="11" class="text-center">No pending expenses</td>
+                        <td colspan="12" class="text-center">No pending expenses</td>
                     </tr>
                     {% endif %}
                 </tbody>
@@ -616,7 +618,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         rows.forEach(row => {
             const text = row.textContent.toLowerCase();
-            const status = row.querySelector('td:nth-child(10)').textContent.toLowerCase();
+            const status = row.querySelector('td:nth-child(11)').textContent.toLowerCase();
             const matchesSearch = text.includes(searchTerm);
             const matchesStatus = statusTerm === 'all' || status.includes(statusTerm);
             

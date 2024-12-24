@@ -84,6 +84,7 @@
                         <th><i class="fas fa-building"></i> Department</th>
                         <th><i class="fas fa-file-alt"></i> Description</th>
                         <th><i class="fas fa-comment"></i> Reason</th>
+                        <th><i class="fas fa-sticky-note"></i> Notes</th>
                         <th><i class="fas fa-tag"></i> Type</th>
                         <th><i class="fas fa-shekel-sign"></i> Amount</th>
                         <th><i class="fas fa-info-circle"></i> Status</th>
@@ -103,6 +104,7 @@
                         <td>{{ expense.submitter.home_department.name if expense.submitter.home_department else 'No Department' }}</td>
                         <td>{{ expense.description }}</td>
                         <td>{{ expense.reason }}</td>
+                        <td>{{ expense.notes if expense.notes else '-' }}</td>
                         <td>{{ expense.type|format_expense_type }}</td>
                         <td>₪{{ "%.2f"|format(expense.amount) }}</td>
                         <td>
