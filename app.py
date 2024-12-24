@@ -176,7 +176,10 @@ with app.app_context():
 
 @login_manager.user_loader
 def load_user(user_id):
-    return User.query.get(int(user_id))
+    user = User.query.get(int(user_id))
+    if user and user.status == 'inactive':
+        return None
+    return user
 
 # Custom template filters
 @app.template_filter('min_value')
@@ -213,6 +216,9 @@ def login():
         password = request.form.get('password')
         user = User.query.filter_by(username=username).first()
         if user and user.password == password:  # In production, use proper password hashing
+            if user.status == 'inactive':
+                flash('Your account is inactive. Please contact your administrator.')
+                return render_template('login.html')
             login_user(user)
             if user.is_accounting:
                 return redirect(url_for('accounting_dashboard'))
