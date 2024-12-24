@@ -56,6 +56,9 @@
         .badge.accounting {
             background-color: #28a745;
         }
+        .badge.department {
+            background-color: #4CAF50;
+        }
     </style>
 </head>
 <body>
@@ -70,6 +73,9 @@
                 {% endif %}
                 <span class="user-info">
                     Welcome, {{ current_user.username }}
+                    {% if current_user.home_department %}
+                        <span class="badge department">{{ current_user.home_department.name }}</span>
+                    {% endif %}
                     {% if current_user.is_admin %}
                         <span class="badge admin">ADMIN</span>
                     {% elif current_user.is_manager %}
