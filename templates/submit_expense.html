@@ -46,6 +46,15 @@
                 <label for="notes" class="form-label">Notes</label>
                 <textarea class="form-control" id="notes" name="notes" rows="2" placeholder="Specify if this expense should be paid by accounting or by employee"></textarea>
             </div>
+            <div class="mb-3">
+                <label for="supplier_name" class="form-label">Supplier Name</label>
+                <input type="text" class="form-control" id="supplier_name" name="supplier_name" placeholder="Optional">
+            </div>
+            <div class="mb-3">
+                <label for="purchase_date" class="form-label">Purchase Date</label>
+                <input type="date" class="form-control" id="purchase_date" name="purchase_date">
+                <small class="text-muted">Optional - Leave empty if this is a future purchase</small>
+            </div>
             <div class="form-group">
                 <label for="subcategory">Category</label>
                 <select name="subcategory_id" id="subcategory" required class="form-control">

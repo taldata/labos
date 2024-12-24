@@ -139,6 +139,8 @@ class Expense(db.Model):
     is_paid = db.Column(db.Boolean, default=False)  # New field to track payment status
     paid_by_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)  # New field to track who marked as paid
     paid_at = db.Column(db.DateTime, nullable=True)  # New field to track when marked as paid
+    supplier_name = db.Column(db.String(255))  # New field for supplier name
+    purchase_date = db.Column(db.DateTime, nullable=True)  # New field for purchase date
     
     # Add the relationship to the user who paid the expense
     paid_by = db.relationship('User', 
@@ -258,6 +260,8 @@ def submit_expense():
         reason = request.form.get('reason')
         expense_type = request.form.get('type')
         subcategory_id = request.form.get('subcategory_id')
+        supplier_name = request.form.get('supplier_name')
+        purchase_date = request.form.get('purchase_date')
         
         # Verify that the subcategory belongs to either:
         # 1. The user's department, or
@@ -290,7 +294,9 @@ def submit_expense():
             notes=request.form.get('notes', ''),
             type=expense_type,
             user_id=current_user.id,
-            subcategory_id=subcategory_id
+            subcategory_id=subcategory_id,
+            supplier_name=supplier_name,
+            purchase_date=datetime.strptime(purchase_date, '%Y-%m-%d') if purchase_date else None
         )
 
         # Handle file uploads

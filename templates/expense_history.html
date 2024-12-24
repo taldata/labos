@@ -85,6 +85,8 @@
                         <th><i class="fas fa-file-alt"></i> Description</th>
                         <th><i class="fas fa-comment"></i> Reason</th>
                         <th><i class="fas fa-sticky-note"></i> Notes</th>
+                        <th><i class="fas fa-store"></i> Supplier</th>
+                        <th><i class="fas fa-calendar-alt"></i> Purchase Date</th>
                         <th><i class="fas fa-tag"></i> Type</th>
                         <th><i class="fas fa-shekel-sign"></i> Amount</th>
                         <th><i class="fas fa-info-circle"></i> Status</th>
@@ -105,6 +107,8 @@
                         <td>{{ expense.description }}</td>
                         <td>{{ expense.reason }}</td>
                         <td>{{ expense.notes if expense.notes else '-' }}</td>
+                        <td>{{ expense.supplier_name if expense.supplier_name else '-' }}</td>
+                        <td>{{ expense.purchase_date.strftime('%d/%m/%Y') if expense.purchase_date else '-' }}</td>
                         <td>{{ expense.type|format_expense_type }}</td>
                         <td>₪{{ "%.2f"|format(expense.amount) }}</td>
                         <td>
