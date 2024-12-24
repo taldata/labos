@@ -225,8 +225,23 @@ def login():
 def employee_dashboard():
     if current_user.is_manager:
         return redirect(url_for('manager_dashboard'))
+    
     expenses = Expense.query.filter_by(user_id=current_user.id).order_by(Expense.date.desc()).all()
-    return render_template('employee_dashboard.html', expenses=expenses)
+    
+    # Calculate summary statistics
+    total_requests = len(expenses)
+    pending_requests = sum(1 for e in expenses if e.status == 'pending')
+    approved_requests = sum(1 for e in expenses if e.status == 'approved')
+    rejected_requests = sum(1 for e in expenses if e.status == 'rejected')
+    total_approved_amount = sum(e.amount for e in expenses if e.status == 'approved')
+    
+    return render_template('employee_dashboard.html', 
+                         expenses=expenses,
+                         total_requests=total_requests,
+                         pending_requests=pending_requests,
+                         approved_requests=approved_requests,
+                         rejected_requests=rejected_requests,
+                         total_approved_amount=total_approved_amount)
 
 @app.route('/expense/submit', methods=['GET', 'POST'])
 @login_required

@@ -3,7 +3,6 @@
 {% block content %}
 <div class="container">
     <header class="dashboard-header">
-
         <div class="user-info">
             <p>Department: {{ current_user.home_department.name if current_user.home_department else 'No Department' }}</p>
         </div>
@@ -12,6 +11,29 @@
             <a href="{{ url_for('change_password') }}" class="button secondary">Change Password</a>
         </div>
     </header>
+
+    <div class="stats-summary">
+        <div class="stat-card">
+            <div class="stat-value">{{ total_requests }}</div>
+            <div class="stat-label">Total Requests</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value">{{ pending_requests }}</div>
+            <div class="stat-label">Pending</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value">{{ approved_requests }}</div>
+            <div class="stat-label">Approved</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value">{{ rejected_requests }}</div>
+            <div class="stat-label">Rejected</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value">₪{{ "%.2f"|format(total_approved_amount) }}</div>
+            <div class="stat-label">Total Approved Amount</div>
+        </div>
+    </div>
 
     <div class="card">
         <h2>Your Expenses</h2>
@@ -117,13 +139,42 @@
 <style>
 .document-links {
     display: flex;
-    gap: 0.5rem;
+    gap: 8px;
     flex-wrap: wrap;
 }
 
-.document-links .button {
-    padding: 0.25rem 0.5rem;
-    font-size: 0.875rem;
+.stats-summary {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+.stat-card {
+    background: white;
+    border-radius: 8px;
+    padding: 1.5rem;
+    text-align: center;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    transition: transform 0.2s ease;
+}
+
+.stat-card:hover {
+    transform: translateY(-2px);
+}
+
+.stat-value {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: #2c3e50;
+    margin-bottom: 0.5rem;
+}
+
+.stat-label {
+    font-size: 0.9rem;
+    color: #7f8c8d;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
 }
 
 .action-buttons {
