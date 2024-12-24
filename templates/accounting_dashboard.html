@@ -30,7 +30,7 @@
                         <tr class="align-middle">
                             <td>{{ expense.date.strftime('%Y-%m-%d') }}</td>
                             <td>{{ expense.submitter.username }}</td>
-                            <td><span class="badge bg-info text-dark">{{ expense.submitter.home_department.name }}</span></td>
+                            <td>{{ expense.submitter.home_department.name }}</td>
                             <td>{{ expense.description }}</td>
                             <td><span class="badge bg-secondary">{{ expense.type | format_expense_type }}</span></td>
                             <td class="text-end fw-bold">{{ expense.amount | format_currency }}</td>

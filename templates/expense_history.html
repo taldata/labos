@@ -100,7 +100,7 @@
                     <tr>
                         <td>{{ expense.date.strftime('%Y-%m-%d %H:%M') }}</td>
                         <td>{{ expense.submitter.username }}</td>
-                        <td>{{ expense.submitter.department.name if expense.submitter.department else 'N/A' }}</td>
+                        <td>{{ expense.submitter.home_department.name if expense.submitter.home_department else 'No Department' }}</td>
                         <td>{{ expense.description }}</td>
                         <td>{{ expense.reason }}</td>
                         <td>{{ expense.type|format_expense_type }}</td>
