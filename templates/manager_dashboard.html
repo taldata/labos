@@ -87,7 +87,7 @@
                 <tbody>
                     {% for expense, dept_name, dept_budget, dept_remaining, cat_name, cat_budget, cat_remaining, subcat_name, subcat_budget, subcat_remaining in expenses %}
                     <tr>
-                        <td title="{{ expense.date.strftime('%Y-%m-%d %H:%M:%S') }}">{{ expense.date.strftime('%Y-%m-%d %H:%M') }}</td>
+                        <td title="{{ expense.date.strftime('%d/%m/%Y %H:%M:%S') }}">{{ expense.date.strftime('%d/%m/%Y %H:%M') }}</td>
                         <td>{{ expense.submitter.username }}</td>
                         <td>{{ expense.submitter.home_department.name if expense.submitter.home_department else 'No Department' }}</td>
                         <td>{{ expense.description }}</td>

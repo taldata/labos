@@ -98,7 +98,7 @@
                 <tbody>
                     {% for expense in expenses %}
                     <tr>
-                        <td>{{ expense.date.strftime('%Y-%m-%d %H:%M') }}</td>
+                        <td>{{ expense.date.strftime('%d/%m/%Y %H:%M') }}</td>
                         <td>{{ expense.submitter.username }}</td>
                         <td>{{ expense.submitter.home_department.name if expense.submitter.home_department else 'No Department' }}</td>
                         <td>{{ expense.description }}</td>
@@ -126,7 +126,7 @@
                             {% endif %}
                         </td>
                         <td>{{ expense.handler.username if expense.handler and expense.status != 'pending' else '-' }}</td>
-                        <td>{{ expense.handled_at.strftime('%Y-%m-%d %H:%M') if expense.handled_at else '-' }}</td>
+                        <td>{{ expense.handled_at.strftime('%d/%m/%Y %H:%M') if expense.handled_at else '-' }}</td>
                         <td class="attachments-cell">
                             {% if expense.quote_filename %}
                                 <a href="{{ url_for('download_file', filename=expense.quote_filename) }}" 

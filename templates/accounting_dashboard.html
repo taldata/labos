@@ -29,7 +29,7 @@
                     <tbody>
                         {% for expense in expenses %}
                         <tr class="align-middle">
-                            <td>{{ expense.date.strftime('%Y-%m-%d') }}</td>
+                            <td>{{ expense.date.strftime('%d/%m/%Y') }}</td>
                             <td>{{ expense.submitter.username }}</td>
                             <td>{{ expense.submitter.home_department.name }}</td>
                             <td>{{ expense.description }}</td>
@@ -43,15 +43,15 @@
                                 {% endif %}
                             </td>
                             <td>{{ expense.handler.username if expense.handler else '-' }}</td>
-                            <td>{{ expense.handled_at.strftime('%Y-%m-%d') if expense.handled_at else '-' }}</td>
+                            <td>{{ expense.handled_at.strftime('%d/%m/%Y') if expense.handled_at else '-' }}</td>
                             <td>{{ expense.supplier_name if expense.supplier_name else '-' }}</td>
                             <td>{{ expense.tax_id if expense.tax_id else '-' }}</td>
-                            <td>{{ expense.purchase_date.strftime('%Y-%m-%d') if expense.purchase_date else '-' }}</td>
+                            <td>{{ expense.purchase_date.strftime('%d/%m/%Y') if expense.purchase_date else '-' }}</td>
                             <td>
                                 {% if expense.is_paid %}
                                     <div class="d-flex flex-column">
                                         <span class="badge bg-success mb-1">Paid</span>
-                                        <small class="text-muted">by {{ expense.paid_by.username }}<br>{{ expense.paid_at.strftime('%Y-%m-%d') }}</small>
+                                        <small class="text-muted">by {{ expense.paid_by.username }}<br>{{ expense.paid_at.strftime('%d/%m/%Y') }}</small>
                                     </div>
                                 {% else %}
                                     <span class="badge bg-warning text-dark">Pending Payment</span>
