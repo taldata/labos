@@ -183,19 +183,25 @@
                                 <span class="text-muted">No attachments</span>
                             {% endif %}
                         </td>
-                        <td class="status-{{ expense.status }}">
-                            {% if expense.status == 'rejected' %}
-                                <span class="badge danger">Rejected</span>
-                                {% if expense.rejection_reason %}
-                                    <div class="rejection-reason">
-                                        <strong>Reason:</strong> {{ expense.rejection_reason }}
-                                    </div>
+                        <td class="status-cell">
+                            <div class="status-indicator {{ expense.status }}">
+                                {% if expense.status == 'rejected' %}
+                                    <i class="fas fa-times-circle"></i>
+                                    <span>Rejected</span>
+                                    {% if expense.rejection_reason %}
+                                        <div class="rejection-reason">
+                                            <i class="fas fa-info-circle"></i>
+                                            {{ expense.rejection_reason }}
+                                        </div>
+                                    {% endif %}
+                                {% elif expense.status == 'approved' %}
+                                    <i class="fas fa-check-circle"></i>
+                                    <span>Approved</span>
+                                {% elif expense.status == 'pending' %}
+                                    <i class="fas fa-clock"></i>
+                                    <span>Pending</span>
                                 {% endif %}
-                            {% elif expense.status == 'approved' %}
-                                <span class="badge success">Approved</span>
-                            {% elif expense.status == 'pending' %}
-                                <span class="badge warning">Pending</span>
-                            {% endif %}
+                            </div>
                         </td>
                         <td class="actions">
                             <div class="action-buttons">
@@ -606,6 +612,51 @@ textarea.form-control {
         transform: translateY(0);
         opacity: 1;
     }
+}
+
+/* Status Cell Styles */
+.status-cell {
+    padding: 8px;
+}
+
+.status-indicator {
+    display: inline-flex;
+    align-items: center;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-weight: 500;
+    gap: 6px;
+}
+
+.status-indicator i {
+    font-size: 1.1em;
+}
+
+.status-indicator.approved {
+    background-color: #e6f4ea;
+    color: #1e7e34;
+}
+
+.status-indicator.rejected {
+    background-color: #fde7e9;
+    color: #dc3545;
+}
+
+.status-indicator.pending {
+    background-color: #fff3cd;
+    color: #856404;
+}
+
+.rejection-reason {
+    margin-top: 4px;
+    font-size: 0.9em;
+    color: #6c757d;
+    display: flex;
+    align-items: flex-start;
+    gap: 4px;
+    padding: 4px 8px;
+    background-color: #f8f9fa;
+    border-radius: 4px;
 }
 </style>
 
