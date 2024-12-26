@@ -57,8 +57,9 @@
                         <th><i class="fas fa-folder"></i> Category</th>
                         <th><i class="fas fa-folder-open"></i> Subcategory</th>
                         <th><i class="fas fa-tag"></i> Type</th>
-                        <th>Amount</th>
-                        <th>Status</th>
+                        <th><i class="fas fa-credit-card"></i> Payment Method</th>
+                        <th><i class="fas fa-shekel-sign"></i> Amount</th>
+                        <th><i class="fas fa-check-circle"></i> Status</th>
                         <th>Handled By</th>
                         <th>Documents</th>
                         <th>Actions</th>
@@ -75,8 +76,9 @@
                         <td>{{ expense.purchase_date.strftime('%d/%m/%Y') if expense.purchase_date else '-' }}</td>
                         <td>{{ expense.subcategory.category.name if expense.subcategory else '-' }}</td>
                         <td>{{ expense.subcategory.name if expense.subcategory else '-' }}</td>
-                        <td><span class="expense-type">{{ expense.type|format_expense_type }}</span></td>
-                        <td>₪{{ "%.2f"|format(expense.amount) }}</td>
+                        <td>{{ expense.type }}</td>
+                        <td>{{ "Credit Card (By Employee)" if expense.payment_method == "credit" else "Bank Transfer (By Accounting)" }}</td>
+                        <td class="amount">₪{{ "%.2f"|format(expense.amount) }}</td>
                         <td class="status-{{ expense.status }}">
                             {% if expense.status == 'rejected' %}
                                 <span class="badge danger">Rejected</span>
@@ -136,7 +138,7 @@
                     {% endfor %}
                     {% if not expenses %}
                     <tr>
-                        <td colspan="13" class="text-center">No expenses submitted yet</td>
+                        <td colspan="14" class="text-center">No expenses submitted yet</td>
                     </tr>
                     {% endif %}
                 </tbody>

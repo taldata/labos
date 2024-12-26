@@ -179,14 +179,9 @@ def migrate_supplier_details():
             # Add new columns if they don't exist
             with db.engine.connect() as conn:
                 if 'supplier_name' not in existing_columns:
-                    conn.execute(text('ALTER TABLE expense ADD COLUMN supplier_name VARCHAR(200)'))
+                    conn.execute(text('ALTER TABLE expense ADD COLUMN supplier_name VARCHAR(255)'))
                     conn.commit()
                     print("Added supplier_name column")
-                
-                if 'tax_id' not in existing_columns:
-                    conn.execute(text('ALTER TABLE expense ADD COLUMN tax_id VARCHAR(50)'))
-                    conn.commit()
-                    print("Added tax_id column")
                 
                 if 'purchase_date' not in existing_columns:
                     conn.execute(text('ALTER TABLE expense ADD COLUMN purchase_date DATETIME'))
@@ -199,6 +194,24 @@ def migrate_supplier_details():
             print(f"Error during supplier details migration: {str(e)}")
             raise e
 
+def migrate_payment_method():
+    print("Starting migration for payment method...")
+    with app.app_context():
+        try:
+            inspector = db.inspect(db.engine)
+            existing_columns = [col['name'] for col in inspector.get_columns('expense')]
+            
+            with db.engine.connect() as conn:
+                if 'payment_method' not in existing_columns:
+                    conn.execute(text('ALTER TABLE expense ADD COLUMN payment_method VARCHAR(50) DEFAULT "credit"'))
+                    conn.commit()
+                    print("Added payment_method column")
+                
+            print("Payment method migration completed successfully")
+        except Exception as e:
+            print(f"Error during payment method migration: {str(e)}")
+            raise e
+
 if __name__ == '__main__':
     migrate_attachments()
     add_email_column()
@@ -206,3 +219,4 @@ if __name__ == '__main__':
     migrate_payment_fields()
     migrate_is_accounting_field()
     migrate_supplier_details()
+    migrate_payment_method()

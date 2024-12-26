@@ -82,6 +82,7 @@
                         <th><i class="fas fa-folder"></i> Category</th>
                         <th><i class="fas fa-folder-open"></i> Subcategory</th>
                         <th><i class="fas fa-tag"></i> Type</th>
+                        <th><i class="fas fa-credit-card"></i> Payment Method</th>
                         <th><i class="fas fa-shekel-sign"></i> Amount</th>
                         <th><i class="fas fa-chart-pie"></i> Budget Info</th>
                         <th><i class="fas fa-paperclip"></i> Attachment</th>
@@ -103,6 +104,7 @@
                         <td>{{ expense.subcategory.category.name if expense.subcategory else '-' }}</td>
                         <td>{{ expense.subcategory.name if expense.subcategory else '-' }}</td>
                         <td>{{ expense.type|format_expense_type }}</td>
+                        <td>{{ "Credit Card (By Employee)" if expense.payment_method == "credit" else "Bank Transfer (By Accounting)" }}</td>
                         <td>₪{{ "%.2f"|format(expense.amount) }}</td>
                         <td class="budget-info">
                             <div class="budget-column">

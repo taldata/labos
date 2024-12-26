@@ -141,6 +141,7 @@ class Expense(db.Model):
     paid_at = db.Column(db.DateTime, nullable=True)  # New field to track when marked as paid
     supplier_name = db.Column(db.String(255))  # New field for supplier name
     purchase_date = db.Column(db.DateTime, nullable=True)  # New field for purchase date
+    payment_method = db.Column(db.String(50), default='credit')  # Payment method: credit/transfer
     
     # Add the relationship to the user who paid the expense
     paid_by = db.relationship('User', 
@@ -262,6 +263,7 @@ def submit_expense():
         subcategory_id = request.form.get('subcategory_id')
         supplier_name = request.form.get('supplier_name')
         purchase_date = request.form.get('purchase_date')
+        payment_method = request.form.get('payment_method')
         
         # Verify that the subcategory belongs to either:
         # 1. The user's department, or
@@ -296,7 +298,8 @@ def submit_expense():
             user_id=current_user.id,
             subcategory_id=subcategory_id,
             supplier_name=supplier_name,
-            purchase_date=datetime.strptime(purchase_date, '%Y-%m-%d') if purchase_date else None
+            purchase_date=datetime.strptime(purchase_date, '%Y-%m-%d') if purchase_date else None,
+            payment_method=payment_method
         )
 
         # Handle file uploads
@@ -1017,6 +1020,7 @@ def edit_expense(expense_id):
         description = request.form.get('description')
         reason = request.form.get('reason')
         subcategory_id = request.form.get('subcategory_id')
+        payment_method = request.form.get('payment_method')
         
         # Verify that the subcategory belongs to the user's department
         subcategory = Subcategory.query.join(Category).filter(
@@ -1033,6 +1037,7 @@ def edit_expense(expense_id):
         expense.description = description
         expense.reason = reason
         expense.subcategory_id = subcategory_id
+        expense.payment_method = payment_method
         
         # Handle file uploads
         for doc_type in ['quote', 'invoice', 'receipt']:
