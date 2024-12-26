@@ -54,6 +54,8 @@
                         <th><i class="fas fa-sticky-note"></i> Notes</th>
                         <th><i class="fas fa-store"></i> Supplier</th>
                         <th><i class="fas fa-calendar-alt"></i> Purchase Date</th>
+                        <th><i class="fas fa-folder"></i> Category</th>
+                        <th><i class="fas fa-folder-open"></i> Subcategory</th>
                         <th><i class="fas fa-tag"></i> Type</th>
                         <th>Amount</th>
                         <th>Status</th>
@@ -71,6 +73,8 @@
                         <td>{{ expense.notes if expense.notes else '-' }}</td>
                         <td>{{ expense.supplier_name if expense.supplier_name else '-' }}</td>
                         <td>{{ expense.purchase_date.strftime('%d/%m/%Y') if expense.purchase_date else '-' }}</td>
+                        <td>{{ expense.subcategory.category.name if expense.subcategory else '-' }}</td>
+                        <td>{{ expense.subcategory.name if expense.subcategory else '-' }}</td>
                         <td><span class="expense-type">{{ expense.type|format_expense_type }}</span></td>
                         <td>₪{{ "%.2f"|format(expense.amount) }}</td>
                         <td class="status-{{ expense.status }}">
@@ -132,7 +136,7 @@
                     {% endfor %}
                     {% if not expenses %}
                     <tr>
-                        <td colspan="11" class="text-center">No expenses submitted yet</td>
+                        <td colspan="13" class="text-center">No expenses submitted yet</td>
                     </tr>
                     {% endif %}
                 </tbody>
