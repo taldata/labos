@@ -1,8 +1,9 @@
-Flask==3.0.0
-Flask-SQLAlchemy==3.1.1
-Flask-Login==0.6.3
-Werkzeug==3.0.1
-gunicorn==21.2.0
-python-dotenv==1.0.0
-sendgrid==6.10.0
-pytz==2024.2
+Flask[async]
+Flask-SQLAlchemy
+Flask-Login
+Werkzeug
+gunicorn
+sendgrid
+pytz
+azure-ai-formrecognizer
+python-dotenv
