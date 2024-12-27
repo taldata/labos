@@ -9,9 +9,6 @@ class DocumentProcessor:
     def __init__(self):
         endpoint = "https://budgetpricingscan.cognitiveservices.azure.com/"
         key = os.environ.get('AZURE_FORM_RECOGNIZER_KEY')
-        if not key:
-            key = "29MHfl7yi0uzZveW2PIp73smvDqUM7KHeWfuZ46wBK5xgE3sFJ81JQQJ99AKAC5RqLJXJ3w3AAALACOGUSd1"
-            
         self.document_analysis_client = DocumentAnalysisClient(
             endpoint=endpoint, 
             credential=AzureKeyCredential(key)
