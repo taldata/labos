@@ -26,15 +26,11 @@ def send_email_sendgrid(to_email, subject, html_content):
         logger.info(f"Attempting to send email to {to_email}")
         
         # Create the email message
-        from_email = Email(FROM_EMAIL)
-        to_email = To(to_email)
-        content = HtmlContent(html_content)
-        
         message = Mail(
-            from_email=from_email,
-            to_emails=to_email,
+            from_email=FROM_EMAIL,
+            to_emails=[{"email": to_email}],
             subject=subject,
-            html_content=content
+            html_content=html_content
         )
         
         # Send the email
