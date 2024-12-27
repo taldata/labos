@@ -16,44 +16,6 @@
                             <i class="fas fa-plus me-1"></i>Add User
                         </button>
                     </div>
-                    <!-- Search and Filter Form -->
-                    <form method="GET" action="{{ url_for('manage_users') }}" class="mt-2">
-                        <div class="row g-2">
-                            <div class="col-md-5">
-                                <div class="input-group">
-                                    <span class="input-group-text bg-white">
-                                        <i class="fas fa-search"></i>
-                                    </span>
-                                    <input type="text" class="form-control" name="search" 
-                                           placeholder="Search users..." value="{{ search }}">
-                                </div>
-                            </div>
-                            <div class="col-md-3">
-                                <select class="form-select" name="department">
-                                    <option value="all" {% if department_filter == 'all' %}selected{% endif %}>All Departments</option>
-                                    {% for dept in departments %}
-                                    <option value="{{ dept.id }}" {% if department_filter|string == dept.id|string %}selected{% endif %}>
-                                        {{ dept.name }}
-                                    </option>
-                                    {% endfor %}
-                                </select>
-                            </div>
-                            <div class="col-md-2">
-                                <select class="form-select" name="role">
-                                    <option value="all" {% if role_filter == 'all' %}selected{% endif %}>All Roles</option>
-                                    <option value="admin" {% if role_filter == 'admin' %}selected{% endif %}>Admin</option>
-                                    <option value="manager" {% if role_filter == 'manager' %}selected{% endif %}>Manager</option>
-                                    <option value="employee" {% if role_filter == 'employee' %}selected{% endif %}>Employee</option>
-                                    <option value="accounting" {% if role_filter == 'accounting' %}selected{% endif %}>Accounting</option>
-                                </select>
-                            </div>
-                            <div class="col-md-2">
-                                <button type="submit" class="btn btn-light w-100">
-                                    <i class="fas fa-filter me-1"></i>Filter
-                                </button>
-                            </div>
-                        </div>
-                    </form>
                 </div>
                 <div class="card-body">
                     <div class="table-responsive">
