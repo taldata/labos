@@ -33,8 +33,9 @@ app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 os.makedirs(os.path.dirname(db_path), exist_ok=True)
 
-# Set proper permissions for the database directory
+# Set proper permissions for the database directory and uploads folder
 os.chmod(os.path.dirname(db_path), 0o777)
+os.chmod(app.config['UPLOAD_FOLDER'], 0o777)
 if os.path.exists(db_path):
     os.chmod(db_path, 0o666)
 
@@ -313,15 +314,15 @@ def submit_expense():
                     # Save the file with a proper name
                     filename = secure_filename(f"{datetime.now().strftime('%Y%m%d%H%M%S')}_{invoice_file.filename}")
                     filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-                    temp_path = os.path.join(app.config['UPLOAD_FOLDER'], 'temp_' + filename)
                     
-                    # Save temporary file for processing
-                    invoice_file.save(temp_path)
+                    # Save the file first
+                    invoice_file.save(filepath)
+                    expense.invoice_filename = filename
                     
                     try:
                         # Process the document
                         doc_processor = DocumentProcessor()
-                        doc_data = doc_processor.process_invoice(temp_path)
+                        doc_data = doc_processor.process_invoice(filepath)
                         logging.info(f"Extracted document data: {doc_data}")
                         
                         # Update expense with document data if available
@@ -345,17 +346,9 @@ def submit_expense():
                             expense.purchase_date = doc_data['invoice_date']
                             logging.info(f"Updated purchase_date to {expense.purchase_date}")
                             
-                        # Save the actual file
-                        invoice_file.save(filepath)
-                        expense.invoice_filename = filename
-                            
                     except Exception as e:
                         logging.error(f"Error processing document: {str(e)}")
-                    finally:
-                        # Clean up temp file
-                        if os.path.exists(temp_path):
-                            os.remove(temp_path)
-
+            
             # Process quote if provided
             if 'quote' in request.files:
                 quote = request.files['quote']
@@ -431,8 +424,17 @@ def download_file(filename):
     ).first_or_404()
     
     if current_user.is_manager or current_user.is_accounting or expense.user_id == current_user.id:
-        return send_file(os.path.join(app.config['UPLOAD_FOLDER'], filename),
-                        as_attachment=True)
+        try:
+            filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+            if not os.path.exists(filepath):
+                flash('File not found', 'error')
+                return redirect(url_for('employee_dashboard'))
+            return send_file(filepath, as_attachment=True)
+        except Exception as e:
+            logging.error(f"Error downloading file {filename}: {str(e)}")
+            flash('Error downloading file', 'error')
+            return redirect(url_for('employee_dashboard'))
+            
     flash('Unauthorized access')
     return redirect(url_for('employee_dashboard'))
 
