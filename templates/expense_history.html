@@ -13,29 +13,25 @@
 
     <div class="card shadow-sm">
         <div class="card-body">
-            <div class="filters-section mb-4">
-                <div class="row align-items-center mb-3">
-                    <div class="col-md-6">
-                        <h5 class="card-title mb-0"><i class="fas fa-filter text-primary"></i> Filters</h5>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="search-box">
-                            <div class="input-group">
-                                <span class="input-group-text bg-light border-end-0">
-                                    <i class="fas fa-search text-muted"></i>
-                                </span>
-                                <input type="text" id="expenseSearch" placeholder="Search expenses..." 
-                                       class="form-control border-start-0 ps-0">
-                            </div>
-                        </div>
-                    </div>
+            <div class="filters-section">
+                <div class="filters-header">
+                    <span class="toggle-filters" data-bs-toggle="collapse" data-bs-target="#filtersCollapse">
+                        <i class="fas fa-filter"></i>
+                    </span>
+                    <h5>Filters</h5>
                 </div>
 
-                <form method="GET" class="row g-3">
-                    <div class="col-md-4">
-                        <div class="form-group">
-                            <label for="status" class="form-label text-muted">
-                                <i class="fas fa-tag"></i> Status
+                <div id="filtersCollapse" class="collapse show">
+                    <div class="search-box">
+                        <i class="fas fa-search search-icon"></i>
+                        <input type="text" id="expenseSearch" class="form-control" 
+                               placeholder="Search expenses by description, supplier, or category...">
+                    </div>
+
+                    <form method="GET" class="filters-grid">
+                        <div class="filter-item">
+                            <label for="status">
+                                <i class="fas fa-tag filter-icon"></i>Status
                             </label>
                             <select name="status" id="status" class="form-select" onchange="this.form.submit()">
                                 <option value="all" {% if selected_status == 'all' %}selected{% endif %}>All Statuses</option>
@@ -44,11 +40,10 @@
                                 <option value="rejected" {% if selected_status == 'rejected' %}selected{% endif %}>Rejected</option>
                             </select>
                         </div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="form-group">
-                            <label for="department" class="form-label text-muted">
-                                <i class="fas fa-building"></i> Department
+
+                        <div class="filter-item">
+                            <label for="department">
+                                <i class="fas fa-building filter-icon"></i>Department
                             </label>
                             <select name="department" id="department" class="form-select" onchange="this.form.submit()">
                                 <option value="all" {% if selected_department == 'all' %}selected{% endif %}>All Departments</option>
@@ -59,11 +54,10 @@
                                 {% endfor %}
                             </select>
                         </div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="form-group">
-                            <label for="employee" class="form-label text-muted">
-                                <i class="fas fa-user"></i> Employee
+
+                        <div class="filter-item">
+                            <label for="employee">
+                                <i class="fas fa-user filter-icon"></i>Employee
                             </label>
                             <select name="employee" id="employee" class="form-select" onchange="this.form.submit()">
                                 <option value="all" {% if selected_employee == 'all' %}selected{% endif %}>All Employees</option>
@@ -74,8 +68,8 @@
                                 {% endfor %}
                             </select>
                         </div>
-                    </div>
-                </form>
+                    </form>
+                </div>
             </div>
 
             <div class="table-scroll-indicator">
@@ -347,6 +341,124 @@
     
     .table .btn-group {
         flex-direction: column;
+    }
+}
+
+/* Filters section styles */
+.filters-section {
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.filters-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.filters-header h5 {
+    margin: 0;
+    color: #495057;
+    font-weight: 600;
+}
+
+.filters-header .toggle-filters {
+    margin-right: 1rem;
+    color: #6c757d;
+    cursor: pointer;
+    transition: color 0.2s;
+}
+
+.filters-header .toggle-filters:hover {
+    color: #495057;
+}
+
+.search-box {
+    position: relative;
+    margin-bottom: 1.5rem;
+}
+
+.search-box .form-control {
+    padding-left: 2.5rem;
+    height: 45px;
+    border-radius: 8px;
+    border: 1px solid #ced4da;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+    transition: all 0.2s;
+}
+
+.search-box .form-control:focus {
+    border-color: #80bdff;
+    box-shadow: 0 0 0 0.2rem rgba(0,123,255,0.15);
+}
+
+.search-box .search-icon {
+    position: absolute;
+    left: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #adb5bd;
+}
+
+.filters-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1rem;
+}
+
+.filter-item {
+    background: white;
+    padding: 1rem;
+    border-radius: 6px;
+    border: 1px solid #e9ecef;
+}
+
+.filter-item label {
+    display: block;
+    margin-bottom: 0.5rem;
+    color: #495057;
+    font-weight: 500;
+}
+
+.filter-item select {
+    width: 100%;
+    padding: 0.5rem;
+    border-radius: 6px;
+    border: 1px solid #ced4da;
+    background-color: white;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.filter-item select:hover {
+    border-color: #adb5bd;
+}
+
+.filter-item select:focus {
+    border-color: #80bdff;
+    box-shadow: 0 0 0 0.2rem rgba(0,123,255,0.15);
+    outline: none;
+}
+
+.filter-icon {
+    margin-right: 0.5rem;
+    color: #6c757d;
+    width: 16px;
+    text-align: center;
+}
+
+@media (max-width: 768px) {
+    .filters-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .search-box {
+        margin-bottom: 1rem;
     }
 }
 </style>
