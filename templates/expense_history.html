@@ -78,51 +78,55 @@
                 </form>
             </div>
 
+            <div class="table-scroll-indicator">
+                <i class="fas fa-arrows-alt-h"></i> Scroll horizontally to view more
+            </div>
+
             <div class="table-responsive">
                 <table class="table table-hover align-middle table-striped">
                     <thead>
                         <tr class="table-light">
-                            <th class="text-nowrap"><i class="fas fa-calendar text-primary"></i> Date</th>
-                            <th class="text-nowrap"><i class="fas fa-user text-primary"></i> Employee</th>
-                            <th class="text-nowrap"><i class="fas fa-building text-primary"></i> Department</th>
+                            <th class="col-date"><i class="fas fa-calendar text-primary"></i> Date</th>
+                            <th class="col-employee"><i class="fas fa-user text-primary"></i> Employee</th>
+                            <th class="col-department"><i class="fas fa-building text-primary"></i> Department</th>
                             <th><i class="fas fa-file-alt text-primary"></i> Description</th>
                             <th><i class="fas fa-comment text-primary"></i> Reason</th>
                             <th><i class="fas fa-sticky-note text-primary"></i> Notes</th>
-                            <th class="text-nowrap"><i class="fas fa-store text-primary"></i> Supplier</th>
-                            <th class="text-nowrap"><i class="fas fa-calendar-alt text-primary"></i> Purchase Date</th>
-                            <th class="text-nowrap"><i class="fas fa-folder text-primary"></i> Category</th>
-                            <th class="text-nowrap"><i class="fas fa-folder-open text-primary"></i> Subcategory</th>
-                            <th class="text-nowrap"><i class="fas fa-tag text-primary"></i> Type</th>
-                            <th class="text-nowrap"><i class="fas fa-credit-card text-primary"></i> Payment</th>
-                            <th class="text-nowrap"><i class="fas fa-shekel-sign text-primary"></i> Amount</th>
-                            <th class="text-nowrap"><i class="fas fa-info-circle text-primary"></i> Status</th>
-                            <th class="text-nowrap"><i class="fas fa-user-check text-primary"></i> Handled By</th>
-                            <th class="text-nowrap"><i class="fas fa-clock text-primary"></i> Handled At</th>
-                            <th class="text-nowrap"><i class="fas fa-paperclip text-primary"></i> Files</th>
+                            <th><i class="fas fa-store text-primary"></i> Supplier</th>
+                            <th class="col-date"><i class="fas fa-calendar-alt text-primary"></i> Purchase Date</th>
+                            <th><i class="fas fa-folder text-primary"></i> Category</th>
+                            <th><i class="fas fa-folder-open text-primary"></i> Subcategory</th>
+                            <th><i class="fas fa-tag text-primary"></i> Type</th>
+                            <th><i class="fas fa-credit-card text-primary"></i> Payment</th>
+                            <th class="col-amount"><i class="fas fa-shekel-sign text-primary"></i> Amount</th>
+                            <th><i class="fas fa-info-circle text-primary"></i> Status</th>
+                            <th class="col-actions"><i class="fas fa-user-check text-primary"></i> Handled By</th>
+                            <th class="col-actions"><i class="fas fa-clock text-primary"></i> Handled At</th>
+                            <th><i class="fas fa-paperclip text-primary"></i> Files</th>
                             {% if current_user.username == 'admin' %}
-                            <th class="text-nowrap"><i class="fas fa-cogs text-primary"></i> Actions</th>
+                            <th class="col-actions"><i class="fas fa-cogs text-primary"></i> Actions</th>
                             {% endif %}
                         </tr>
                     </thead>
                     <tbody>
                         {% for expense in expenses %}
                         <tr>
-                            <td class="text-nowrap small">{{ expense.date.strftime('%d/%m/%Y %H:%M') }}</td>
-                            <td class="text-nowrap">{{ expense.submitter.username }}</td>
-                            <td class="text-nowrap">{{ expense.submitter.home_department.name if expense.submitter.home_department else 'No Department' }}</td>
+                            <td class="col-date small">{{ expense.date.strftime('%d/%m/%Y %H:%M') }}</td>
+                            <td class="col-employee">{{ expense.submitter.username }}</td>
+                            <td class="col-department">{{ expense.submitter.home_department.name if expense.submitter.home_department else 'No Department' }}</td>
                             <td>{{ expense.description }}</td>
                             <td>{{ expense.reason }}</td>
                             <td>{{ expense.notes if expense.notes else '-' }}</td>
-                            <td class="text-nowrap">{{ expense.supplier_name if expense.supplier_name else '-' }}</td>
-                            <td class="text-nowrap small">{{ expense.purchase_date.strftime('%d/%m/%Y') if expense.purchase_date else '-' }}</td>
-                            <td class="text-nowrap">{{ expense.subcategory.category.name if expense.subcategory else '-' }}</td>
-                            <td class="text-nowrap">{{ expense.subcategory.name if expense.subcategory else '-' }}</td>
-                            <td class="text-nowrap">{{ expense.type|format_expense_type }}</td>
-                            <td class="text-nowrap">{{ "Credit Card" if expense.payment_method == "credit" else "Bank Transfer" }}</td>
-                            <td class="text-nowrap">₪{{ "%.2f"|format(expense.amount) }}</td>
-                            <td class="text-nowrap">
+                            <td>{{ expense.supplier_name if expense.supplier_name else '-' }}</td>
+                            <td class="col-date small">{{ expense.purchase_date.strftime('%d/%m/%Y') if expense.purchase_date else '-' }}</td>
+                            <td>{{ expense.subcategory.category.name if expense.subcategory else '-' }}</td>
+                            <td>{{ expense.subcategory.name if expense.subcategory else '-' }}</td>
+                            <td>{{ expense.type|format_expense_type }}</td>
+                            <td>{{ "Credit Card" if expense.payment_method == "credit" else "Bank Transfer" }}</td>
+                            <td class="col-amount">₪{{ "%.2f"|format(expense.amount) }}</td>
+                            <td>
                                 {% if expense.status == 'rejected' %}
-                                    <span class="badge bg-danger">
+                                    <span class="badge bg-danger status-badge">
                                         <i class="fas fa-times-circle"></i> Rejected
                                     </span>
                                     {% if expense.rejection_reason %}
@@ -131,17 +135,17 @@
                                         </div>
                                     {% endif %}
                                 {% elif expense.status == 'approved' %}
-                                    <span class="badge bg-success">
+                                    <span class="badge bg-success status-badge">
                                         <i class="fas fa-check-circle"></i> Approved
                                     </span>
                                 {% elif expense.status == 'pending' %}
-                                    <span class="badge bg-warning text-dark">
+                                    <span class="badge bg-warning text-dark status-badge">
                                         <i class="fas fa-clock"></i> Pending
                                     </span>
                                 {% endif %}
                             </td>
-                            <td class="text-nowrap">{{ expense.handler.username if expense.handler and expense.status != 'pending' else '-' }}</td>
-                            <td class="text-nowrap small">{{ expense.handled_at.strftime('%d/%m/%Y %H:%M') if expense.handled_at else '-' }}</td>
+                            <td class="col-actions">{{ expense.handler.username if expense.handler and expense.status != 'pending' else '-' }}</td>
+                            <td class="col-actions small">{{ expense.handled_at.strftime('%d/%m/%Y %H:%M') if expense.handled_at else '-' }}</td>
                             <td>
                                 <div class="btn-group">
                                     {% if expense.quote_filename %}
@@ -170,7 +174,7 @@
                                 </div>
                             </td>
                             {% if current_user.username == 'admin' %}
-                            <td class="text-nowrap">
+                            <td class="col-actions">
                                 <div class="btn-group">
                                     <a href="{{ url_for('admin_edit_expense', expense_id=expense.id) }}" 
                                        class="btn btn-sm btn-outline-primary" title="Edit">
@@ -259,6 +263,77 @@
 .small {
     font-size: 0.875rem;
 }
+
+/* Table styles */
+.table-responsive {
+    overflow-x: auto;
+    margin: 0 -1rem;
+    padding: 0 1rem;
+    -webkit-overflow-scrolling: touch;
+}
+
+.table {
+    width: 100%;
+    margin-bottom: 0;
+    white-space: nowrap;
+}
+
+.table th,
+.table td {
+    padding: 0.75rem;
+    max-width: 200px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Optimize column widths */
+.col-date { width: 100px; }
+.col-employee { width: 120px; }
+.col-department { width: 150px; }
+.col-amount { width: 100px; }
+.col-status { width: 100px; }
+.col-actions { width: 120px; }
+
+/* Add horizontal scroll indicator */
+.table-scroll-indicator {
+    display: none;
+    text-align: center;
+    padding: 0.5rem;
+    color: #666;
+    font-size: 0.9rem;
+}
+
+@media (max-width: 1024px) {
+    .table-scroll-indicator {
+        display: block;
+    }
+    
+    .filters-section .row {
+        margin-bottom: 1rem;
+    }
+    
+    .search-box {
+        margin-top: 1rem;
+    }
+}
+
+/* Tooltip styles for truncated content */
+[ data-bs-toggle="tooltip"] {
+    cursor: help;
+}
+
+/* Status badge styles */
+.status-badge {
+    display: inline-block;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.25rem;
+    font-size: 0.875rem;
+}
+
+.status-pending { background-color: #fff3cd; color: #856404; }
+.status-approved { background-color: #d4edda; color: #155724; }
+.status-rejected { background-color: #f8d7da; color: #721c24; }
 
 @media (max-width: 768px) {
     .table-responsive {

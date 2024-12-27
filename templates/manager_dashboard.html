@@ -67,27 +67,31 @@
             {% endif %}
         {% endwith %}
 
+        <div class="table-scroll-indicator">
+            <i class="fas fa-arrows-alt-h"></i> Scroll horizontally to view more
+        </div>
+
         <div class="table-responsive">
             <table class="expenses-table">
                 <thead>
                     <tr>
-                        <th><i class="fas fa-calendar"></i> Date</th>
+                        <th class="date-col"><i class="fas fa-calendar"></i> Date</th>
                         <th><i class="fas fa-user"></i> Employee</th>
                         <th><i class="fas fa-building"></i> Department</th>
                         <th><i class="fas fa-file-alt"></i> Description</th>
                         <th><i class="fas fa-comment"></i> Reason</th>
                         <th><i class="fas fa-sticky-note"></i> Notes</th>
                         <th><i class="fas fa-store"></i> Supplier</th>
-                        <th><i class="fas fa-calendar-alt"></i> Purchase Date</th>
+                        <th class="date-col"><i class="fas fa-calendar-alt"></i> Purchase Date</th>
                         <th><i class="fas fa-folder"></i> Category</th>
                         <th><i class="fas fa-folder-open"></i> Subcategory</th>
                         <th><i class="fas fa-tag"></i> Type</th>
-                        <th><i class="fas fa-credit-card"></i> Payment Method</th>
-                        <th><i class="fas fa-shekel-sign"></i> Amount (VAT included)</th>
-                        <th><i class="fas fa-chart-pie"></i> Budget Info</th>
-                        <th><i class="fas fa-paperclip"></i> Attachment</th>
-                        <th><i class="fas fa-info-circle"></i> Status</th>
-                        <th><i class="fas fa-cogs"></i> Actions</th>
+                        <th><i class="fas fa-credit-card"></i> Payment</th>
+                        <th class="amount-col"><i class="fas fa-shekel-sign"></i> Amount</th>
+                        <th><i class="fas fa-chart-pie"></i> Budget</th>
+                        <th><i class="fas fa-paperclip"></i> Files</th>
+                        <th class="status-col"><i class="fas fa-info-circle"></i> Status</th>
+                        <th class="actions-col"><i class="fas fa-cogs"></i> Actions</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -663,6 +667,56 @@ textarea.form-control {
     padding: 4px 8px;
     background-color: #f8f9fa;
     border-radius: 4px;
+}
+
+.table-responsive {
+    overflow-x: auto;
+    margin: 0 -1rem;  /* Negative margin to allow full-width scrolling */
+    padding: 0 1rem;
+    -webkit-overflow-scrolling: touch;
+}
+
+.expenses-table {
+    width: 100%;
+    white-space: nowrap;
+    border-collapse: collapse;
+}
+
+.expenses-table th,
+.expenses-table td {
+    padding: 0.75rem;
+    max-width: 200px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Optimize column widths */
+.expenses-table th.date-col,
+.expenses-table td.date-col { width: 100px; }
+
+.expenses-table th.amount-col,
+.expenses-table td.amount-col { width: 100px; }
+
+.expenses-table th.status-col,
+.expenses-table td.status-col { width: 100px; }
+
+.expenses-table th.actions-col,
+.expenses-table td.actions-col { width: 120px; }
+
+/* Add horizontal scroll indicator */
+.table-scroll-indicator {
+    display: none;
+    text-align: center;
+    padding: 0.5rem;
+    color: #666;
+    font-size: 0.9rem;
+}
+
+@media (max-width: 1024px) {
+    .table-scroll-indicator {
+        display: block;
+    }
 }
 </style>
 
