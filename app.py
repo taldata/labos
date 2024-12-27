@@ -16,22 +16,36 @@ logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 
+# Initialize Flask app
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'your-secret-key-here'
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///expenses.db'
-app.config['UPLOAD_FOLDER'] = 'uploads'
+
+# Database configuration
+db_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'instance', 'expenses.db')
+app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{db_path}'
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+# Upload configuration
+app.config['UPLOAD_FOLDER'] = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'uploads')
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
+
+# Ensure required directories exist with proper permissions
+os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+os.makedirs(os.path.dirname(db_path), exist_ok=True)
+
+# Set proper permissions for the database directory
+os.chmod(os.path.dirname(db_path), 0o777)
+if os.path.exists(db_path):
+    os.chmod(db_path, 0o666)
 
 # Register blueprints
 app.register_blueprint(expense_bp, url_prefix='/api/expense')
 
-db = SQLAlchemy(app)
+# Initialize login manager
 login_manager = LoginManager(app)
 login_manager.login_view = 'login'
 
-# Create uploads directory if it doesn't exist
-if not os.path.exists(app.config['UPLOAD_FOLDER']):
-    os.makedirs(app.config['UPLOAD_FOLDER'])
+db = SQLAlchemy(app)
 
 ALLOWED_EXTENSIONS = {'pdf', 'png', 'jpg', 'jpeg', 'gif'}
 
@@ -266,76 +280,14 @@ def submit_expense():
             amount = float(request.form['amount'])
             description = request.form['description']
             reason = request.form['reason']
-            subcategory_id = int(request.form['subcategory_id'])  # Changed from 'subcategory'
+            subcategory_id = int(request.form['subcategory_id'])
             expense_type = request.form.get('type', 'needs_approval')
             supplier_name = request.form.get('supplier_name', '')
             purchase_date_str = request.form.get('purchase_date', '')
             payment_method = request.form.get('payment_method', 'credit')
-            notes = request.form.get('notes', '')  # Added notes field
+            notes = request.form.get('notes', '')
 
-            # Process purchase date
-            purchase_date = None
-            if purchase_date_str:
-                try:
-                    purchase_date = datetime.strptime(purchase_date_str, '%Y-%m-%d')
-                except ValueError:
-                    flash('Invalid purchase date format', 'error')
-                    return redirect(url_for('submit_expense'))
-
-            # Create new expense
-            expense = Expense(
-                amount=amount,
-                description=description,
-                reason=reason,
-                notes=notes,  # Added notes
-                type=expense_type,
-                user_id=current_user.id,
-                subcategory_id=subcategory_id,
-                supplier_name=supplier_name,
-                purchase_date=purchase_date,
-                payment_method=payment_method
-            )
-
-            # Process document if uploaded
-            if 'invoice' in request.files:
-                invoice_file = request.files['invoice']
-                if invoice_file and allowed_file(invoice_file.filename):
-                    # Save the file temporarily
-                    temp_path = os.path.join(app.config['UPLOAD_FOLDER'], 'temp_' + invoice_file.filename)
-                    invoice_file.save(temp_path)
-                    
-                    try:
-                        # Process the document
-                        doc_processor = DocumentProcessor()
-                        doc_data = doc_processor.process_invoice(temp_path)
-                        logging.info(f"Extracted document data: {doc_data}")
-                        
-                        # Overwrite fields from document if available
-                        if doc_data.get('invoice_total'):
-                            invoice_total = doc_data['invoice_total']
-                            # Handle CurrencyValue object
-                            if hasattr(invoice_total, 'amount'):
-                                amount = float(invoice_total.amount)
-                            else:
-                                amount = float(invoice_total)
-                            logging.info(f"Overwrote amount with {amount}")
-                        if doc_data.get('items') and doc_data['items'] and doc_data['items'][0].get('description'):
-                            description = doc_data['items'][0]['description']
-                            logging.info(f"Overwrote description with {description}")
-                        if doc_data.get('vendor_name'):
-                            supplier_name = doc_data['vendor_name']
-                            logging.info(f"Overwrote supplier_name with {supplier_name}")
-                        if doc_data.get('invoice_date'):
-                            purchase_date_str = doc_data['invoice_date'].strftime('%Y-%m-%d')
-                            logging.info(f"Overwrote purchase_date with {purchase_date_str}")
-                            
-                    except Exception as e:
-                        logging.error(f"Error processing document: {str(e)}")
-                    finally:
-                        # Clean up temp file
-                        os.remove(temp_path)
-
-            # Create new expense with the potentially overwritten fields
+            # Create new expense with initial fields
             expense = Expense(
                 amount=amount,
                 description=description,
@@ -354,11 +306,61 @@ def submit_expense():
                 except ValueError:
                     logging.error(f"Invalid purchase date format: {purchase_date_str}")
 
+            # Process document if uploaded
+            if 'invoice' in request.files:
+                invoice_file = request.files['invoice']
+                if invoice_file and allowed_file(invoice_file.filename):
+                    # Save the file with a proper name
+                    filename = secure_filename(f"{datetime.now().strftime('%Y%m%d%H%M%S')}_{invoice_file.filename}")
+                    filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+                    temp_path = os.path.join(app.config['UPLOAD_FOLDER'], 'temp_' + filename)
+                    
+                    # Save temporary file for processing
+                    invoice_file.save(temp_path)
+                    
+                    try:
+                        # Process the document
+                        doc_processor = DocumentProcessor()
+                        doc_data = doc_processor.process_invoice(temp_path)
+                        logging.info(f"Extracted document data: {doc_data}")
+                        
+                        # Update expense with document data if available
+                        if doc_data.get('invoice_total'):
+                            invoice_total = doc_data['invoice_total']
+                            if hasattr(invoice_total, 'amount'):
+                                expense.amount = float(invoice_total.amount)
+                            else:
+                                expense.amount = float(invoice_total)
+                            logging.info(f"Updated amount to {expense.amount}")
+                        
+                        if doc_data.get('items') and doc_data['items'] and doc_data['items'][0].get('description'):
+                            expense.description = doc_data['items'][0]['description']
+                            logging.info(f"Updated description to {expense.description}")
+                        
+                        if doc_data.get('vendor_name'):
+                            expense.supplier_name = doc_data['vendor_name']
+                            logging.info(f"Updated supplier_name to {expense.supplier_name}")
+                        
+                        if doc_data.get('invoice_date'):
+                            expense.purchase_date = doc_data['invoice_date']
+                            logging.info(f"Updated purchase_date to {expense.purchase_date}")
+                            
+                        # Save the actual file
+                        invoice_file.save(filepath)
+                        expense.invoice_filename = filename
+                            
+                    except Exception as e:
+                        logging.error(f"Error processing document: {str(e)}")
+                    finally:
+                        # Clean up temp file
+                        if os.path.exists(temp_path):
+                            os.remove(temp_path)
+
             # Process quote if provided
             if 'quote' in request.files:
                 quote = request.files['quote']
                 if quote and allowed_file(quote.filename):
-                    filename = secure_filename(quote.filename)
+                    filename = secure_filename(f"{datetime.now().strftime('%Y%m%d%H%M%S')}_{quote.filename}")
                     quote.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
                     expense.quote_filename = filename
 
@@ -366,12 +368,16 @@ def submit_expense():
             if 'receipt' in request.files:
                 receipt = request.files['receipt']
                 if receipt and allowed_file(receipt.filename):
-                    filename = secure_filename(receipt.filename)
+                    filename = secure_filename(f"{datetime.now().strftime('%Y%m%d%H%M%S')}_{receipt.filename}")
                     receipt.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
                     expense.receipt_filename = filename
 
+            # Save the expense to database
             db.session.add(expense)
             db.session.commit()
+            
+            # Explicitly load the subcategory relationship
+            db.session.refresh(expense)
 
             # Send email notification to managers
             try:
@@ -391,14 +397,12 @@ def submit_expense():
 
             flash('Expense submitted successfully!', 'success')
             return redirect(url_for('employee_dashboard'))
-
-        except ValueError as e:
-            flash('Invalid input: Please check your form values', 'error')
-            return redirect(url_for('submit_expense'))
+            
         except Exception as e:
-            flash(f'An error occurred: {str(e)}', 'error')
+            logging.error(f"Error submitting expense: {str(e)}")
+            flash('Error submitting expense. Please try again.', 'error')
             return redirect(url_for('submit_expense'))
-
+    
     # GET request - render form
     departments = Department.query.all()
     categories = []

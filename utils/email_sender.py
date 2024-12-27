@@ -98,27 +98,33 @@ def send_email(subject, recipient, template, **kwargs):
 # Email Templates
 EXPENSE_SUBMITTED_TEMPLATE = """
 <h2>New Expense Submission</h2>
-<p>Hello {{ manager_name }},</p>
-<p>A new expense has been submitted by {{ employee_name }} that requires your review.</p>
+<p>Hello {{ submitter.username }},</p>
+<p>A new expense has been submitted that requires your review.</p>
 <p><strong>Details:</strong></p>
 <ul>
-    <li>Amount: ${{ expense.amount }}</li>
+    <li>Amount: ${{ "%.2f"|format(expense.amount) }}</li>
     <li>Description: {{ expense.description }}</li>
-    <li>Category: {{ subcategory.category.name }} > {{ subcategory.name }}</li>
+    <li>Subcategory: {{ expense.subcategory.name }}</li>
     <li>Date: {{ expense.date.strftime('%Y-%m-%d') }}</li>
+    {% if expense.supplier_name %}
+    <li>Supplier: {{ expense.supplier_name }}</li>
+    {% endif %}
+    {% if expense.invoice_filename %}
+    <li>Invoice attached: {{ expense.invoice_filename }}</li>
+    {% endif %}
 </ul>
 <p>Please login to the expense management system to review this submission.</p>
 """
 
 EXPENSE_STATUS_UPDATE_TEMPLATE = """
 <h2>Expense Status Update</h2>
-<p>Hello {{ employee_name }},</p>
+<p>Hello {{ submitter.username }},</p>
 <p>Your expense submission has been {{ status }}.</p>
 <p><strong>Expense Details:</strong></p>
 <ul>
-    <li>Amount: ${{ expense.amount }}</li>
+    <li>Amount: ${{ "%.2f"|format(expense.amount) }}</li>
     <li>Description: {{ expense.description }}</li>
-    <li>Category: {{ subcategory.category.name }} > {{ subcategory.name }}</li>
+    <li>Subcategory: {{ expense.subcategory.name }}</li>
     <li>Date: {{ expense.date.strftime('%Y-%m-%d') }}</li>
 </ul>
 {% if status == 'rejected' and expense.rejection_reason %}
