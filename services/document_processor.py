@@ -83,3 +83,66 @@ class DocumentProcessor:
 
         except Exception as e:
             raise Exception(f"Error processing invoice: {str(e)}")
+
+    def process_receipt(self, document_path):
+        """
+        Process a receipt document and extract relevant information
+        
+        Args:
+            document_path (str): Path to the document file
+            
+        Returns:
+            dict: Extracted receipt information
+        """
+        try:
+            with open(document_path, "rb") as f:
+                poller = self.document_analysis_client.begin_analyze_document(
+                    "prebuilt-receipt", document=f
+                )
+            result = poller.result()
+
+            # Extract relevant receipt information
+            receipt_data = {
+                "merchant_name": None,
+                "transaction_date": None,
+                "total": None,
+                "items": []
+            }
+
+            for receipt in result.documents:
+                # Get merchant name
+                try:
+                    receipt_data["merchant_name"] = receipt.fields.get("MerchantName").value
+                except:
+                    pass
+
+                # Get transaction date
+                try:
+                    receipt_data["transaction_date"] = receipt.fields.get("TransactionDate").value
+                except:
+                    pass
+
+                # Get total amount
+                try:
+                    receipt_data["total"] = receipt.fields.get("Total").value
+                except:
+                    pass
+
+                # Get items
+                try:
+                    items = receipt.fields.get("Items").value
+                    for item in items:
+                        item_data = {
+                            "description": item.get("Description").value if item.get("Description") else None,
+                            "quantity": item.get("Quantity").value if item.get("Quantity") else None,
+                            "price": item.get("Price").value if item.get("Price") else None,
+                            "total_price": item.get("TotalPrice").value if item.get("TotalPrice") else None,
+                        }
+                        receipt_data["items"].append(item_data)
+                except:
+                    pass
+
+            return receipt_data
+
+        except Exception as e:
+            raise Exception(f"Error processing receipt: {str(e)}")

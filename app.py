@@ -362,9 +362,42 @@ def submit_expense():
                 receipt = request.files['receipt']
                 if receipt and allowed_file(receipt.filename):
                     filename = secure_filename(f"{datetime.now().strftime('%Y%m%d%H%M%S')}_{receipt.filename}")
-                    receipt.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+                    filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+                    
+                    # Save the file first
+                    receipt.save(filepath)
                     expense.receipt_filename = filename
-
+                    
+                    try:
+                        # Process the receipt
+                        doc_processor = DocumentProcessor()
+                        receipt_data = doc_processor.process_receipt(filepath)
+                        logging.info(f"Extracted receipt data: {receipt_data}")
+                        
+                        # Update expense with receipt data if available and if not already set by invoice
+                        if not expense.amount and receipt_data.get('total'):
+                            total = receipt_data['total']
+                            if hasattr(total, 'amount'):
+                                expense.amount = float(total.amount)
+                            else:
+                                expense.amount = float(total)
+                            logging.info(f"Updated amount from receipt to {expense.amount}")
+                        
+                        if not expense.description and receipt_data.get('items') and receipt_data['items'] and receipt_data['items'][0].get('description'):
+                            expense.description = receipt_data['items'][0]['description']
+                            logging.info(f"Updated description from receipt to {expense.description}")
+                        
+                        if not expense.supplier_name and receipt_data.get('merchant_name'):
+                            expense.supplier_name = receipt_data['merchant_name']
+                            logging.info(f"Updated supplier_name from receipt to {expense.supplier_name}")
+                        
+                        if not expense.purchase_date and receipt_data.get('transaction_date'):
+                            expense.purchase_date = receipt_data['transaction_date']
+                            logging.info(f"Updated purchase_date from receipt to {expense.purchase_date}")
+                            
+                    except Exception as e:
+                        logging.error(f"Error processing receipt: {str(e)}")
+            
             # Save the expense to database
             db.session.add(expense)
             db.session.commit()
