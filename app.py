@@ -3,10 +3,12 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 from datetime import datetime
 import os
+from services.document_processor import DocumentProcessor
 from werkzeug.utils import secure_filename
 from utils.email_sender import send_email, EXPENSE_SUBMITTED_TEMPLATE, EXPENSE_STATUS_UPDATE_TEMPLATE, NEW_USER_TEMPLATE
 import logging
 import pytz
+from routes.expense import expense_bp
 
 # Configure logging
 logging.basicConfig(
@@ -19,6 +21,10 @@ app.config['SECRET_KEY'] = 'your-secret-key-here'
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///expenses.db'
 app.config['UPLOAD_FOLDER'] = 'uploads'
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
+
+# Register blueprints
+app.register_blueprint(expense_bp, url_prefix='/api/expense')
+
 db = SQLAlchemy(app)
 login_manager = LoginManager(app)
 login_manager.login_view = 'login'
@@ -252,125 +258,161 @@ def employee_dashboard():
                          rejected_requests=rejected_requests,
                          total_approved_amount=total_approved_amount)
 
-@app.route('/expense/submit', methods=['GET', 'POST'])
+@app.route('/submit-expense', methods=['GET', 'POST'])
 @login_required
 def submit_expense():
     if request.method == 'POST':
-        amount = float(request.form.get('amount'))
-        description = request.form.get('description')
-        reason = request.form.get('reason')
-        expense_type = request.form.get('type')
-        subcategory_id = request.form.get('subcategory_id')
-        supplier_name = request.form.get('supplier_name')
-        purchase_date = request.form.get('purchase_date')
-        payment_method = request.form.get('payment_method')
-        
-        # Verify that the subcategory belongs to either:
-        # 1. The user's department, or
-        # 2. A department they manage (if they are a manager)
-        subcategory = None
-        if current_user.is_manager:
-            # For managers, check both their department and managed departments
-            managed_dept_ids = [dept.id for dept in current_user.managed_departments]
-            managed_dept_ids.append(current_user.department_id)
-            subcategory = Subcategory.query.join(Category).filter(
-                Subcategory.id == subcategory_id,
-                Category.department_id.in_(managed_dept_ids)
-            ).first()
-        else:
-            # For regular employees, only check their department
-            subcategory = Subcategory.query.join(Category).filter(
-                Subcategory.id == subcategory_id,
-                Category.department_id == current_user.department_id
-            ).first()
-        
-        if not subcategory:
-            flash('Invalid category selected', 'error')
-            return redirect(url_for('submit_expense'))
-        
-        # Create new expense
-        expense = Expense(
-            amount=amount,
-            description=description,
-            reason=reason,
-            notes=request.form.get('notes', ''),
-            type=expense_type,
-            user_id=current_user.id,
-            subcategory_id=subcategory_id,
-            supplier_name=supplier_name,
-            purchase_date=datetime.strptime(purchase_date, '%Y-%m-%d') if purchase_date else None,
-            payment_method=payment_method
-        )
+        try:
+            amount = float(request.form['amount'])
+            description = request.form['description']
+            reason = request.form['reason']
+            subcategory_id = int(request.form['subcategory_id'])  # Changed from 'subcategory'
+            expense_type = request.form.get('type', 'needs_approval')
+            supplier_name = request.form.get('supplier_name', '')
+            purchase_date_str = request.form.get('purchase_date', '')
+            payment_method = request.form.get('payment_method', 'credit')
+            notes = request.form.get('notes', '')  # Added notes field
 
-        # Handle file uploads
-        if 'quote' in request.files:
-            file = request.files['quote']
-            if file and allowed_file(file.filename):
-                filename = secure_filename(f"{current_user.username}_quote_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{file.filename}")
-                file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-                expense.quote_filename = filename
+            # Process purchase date
+            purchase_date = None
+            if purchase_date_str:
+                try:
+                    purchase_date = datetime.strptime(purchase_date_str, '%Y-%m-%d')
+                except ValueError:
+                    flash('Invalid purchase date format', 'error')
+                    return redirect(url_for('submit_expense'))
 
-        if 'invoice' in request.files:
-            file = request.files['invoice']
-            if file and allowed_file(file.filename):
-                filename = secure_filename(f"{current_user.username}_invoice_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{file.filename}")
-                file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-                expense.invoice_filename = filename
-
-        if 'receipt' in request.files:
-            file = request.files['receipt']
-            if file and allowed_file(file.filename):
-                filename = secure_filename(f"{current_user.username}_receipt_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{file.filename}")
-                file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-                expense.receipt_filename = filename
-
-        # Set status based on type
-        if expense_type == 'auto_approved':
-            expense.status = 'approved'
-            expense.handled_at = datetime.now(pytz.utc).replace(microsecond=0)
-            expense.manager_id = None  # Auto-approved doesn't need manager
-        elif expense_type == 'pre_approved':
-            expense.status = 'approved'
-            expense.handled_at = datetime.now(pytz.utc).replace(microsecond=0)
-            # For pre-approved expenses, we still want to track who approved it
-            manager = User.query.filter_by(department_id=current_user.department_id, is_manager=True).first()
-            if manager:
-                expense.manager_id = manager.id
-        else:
-            expense.status = 'pending'
-            expense.manager_id = None  # Initially no manager assigned
-
-        db.session.add(expense)
-        db.session.commit()
-        
-        # Send email notification to department managers
-        for manager in expense.subcategory.category.department.department_managers:
-            send_email(
-                subject='New Expense Submission',
-                recipient=manager.email,
-                template=EXPENSE_SUBMITTED_TEMPLATE,
-                manager_name=manager.username,
-                employee_name=current_user.username,
-                expense=expense,
-                subcategory=expense.subcategory
+            # Create new expense
+            expense = Expense(
+                amount=amount,
+                description=description,
+                reason=reason,
+                notes=notes,  # Added notes
+                type=expense_type,
+                user_id=current_user.id,
+                subcategory_id=subcategory_id,
+                supplier_name=supplier_name,
+                purchase_date=purchase_date,
+                payment_method=payment_method
             )
-        
-        flash('Expense submitted successfully')
-        return redirect(url_for('employee_dashboard'))
+
+            # Process document if uploaded
+            if 'invoice' in request.files:
+                invoice_file = request.files['invoice']
+                if invoice_file and allowed_file(invoice_file.filename):
+                    # Save the file temporarily
+                    temp_path = os.path.join(app.config['UPLOAD_FOLDER'], 'temp_' + invoice_file.filename)
+                    invoice_file.save(temp_path)
+                    
+                    try:
+                        # Process the document
+                        doc_processor = DocumentProcessor()
+                        doc_data = doc_processor.process_invoice(temp_path)
+                        logging.info(f"Extracted document data: {doc_data}")
+                        
+                        # Overwrite fields from document if available
+                        if doc_data.get('invoice_total'):
+                            invoice_total = doc_data['invoice_total']
+                            # Handle CurrencyValue object
+                            if hasattr(invoice_total, 'amount'):
+                                amount = float(invoice_total.amount)
+                            else:
+                                amount = float(invoice_total)
+                            logging.info(f"Overwrote amount with {amount}")
+                        if doc_data.get('items') and doc_data['items'] and doc_data['items'][0].get('description'):
+                            description = doc_data['items'][0]['description']
+                            logging.info(f"Overwrote description with {description}")
+                        if doc_data.get('vendor_name'):
+                            supplier_name = doc_data['vendor_name']
+                            logging.info(f"Overwrote supplier_name with {supplier_name}")
+                        if doc_data.get('invoice_date'):
+                            purchase_date_str = doc_data['invoice_date'].strftime('%Y-%m-%d')
+                            logging.info(f"Overwrote purchase_date with {purchase_date_str}")
+                            
+                    except Exception as e:
+                        logging.error(f"Error processing document: {str(e)}")
+                    finally:
+                        # Clean up temp file
+                        os.remove(temp_path)
+
+            # Create new expense with the potentially overwritten fields
+            expense = Expense(
+                amount=amount,
+                description=description,
+                reason=reason,
+                notes=notes,
+                type=expense_type,
+                user_id=current_user.id,
+                subcategory_id=subcategory_id,
+                supplier_name=supplier_name,
+                payment_method=payment_method
+            )
+            
+            if purchase_date_str:
+                try:
+                    expense.purchase_date = datetime.strptime(purchase_date_str, '%Y-%m-%d')
+                except ValueError:
+                    logging.error(f"Invalid purchase date format: {purchase_date_str}")
+
+            # Process quote if provided
+            if 'quote' in request.files:
+                quote = request.files['quote']
+                if quote and allowed_file(quote.filename):
+                    filename = secure_filename(quote.filename)
+                    quote.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+                    expense.quote_filename = filename
+
+            # Process receipt if provided
+            if 'receipt' in request.files:
+                receipt = request.files['receipt']
+                if receipt and allowed_file(receipt.filename):
+                    filename = secure_filename(receipt.filename)
+                    receipt.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+                    expense.receipt_filename = filename
+
+            db.session.add(expense)
+            db.session.commit()
+
+            # Send email notification to managers
+            try:
+                managers = User.query.filter_by(is_manager=True).all()
+                for manager in managers:
+                    send_email(
+                        subject="New Expense Submission",
+                        recipient=manager.email,
+                        template=EXPENSE_SUBMITTED_TEMPLATE,
+                        expense=expense,
+                        submitter=current_user
+                    )
+            except Exception as e:
+                logging.error(f"Failed to send email notification: {str(e)}")
+                # Continue even if email fails
+                pass
+
+            flash('Expense submitted successfully!', 'success')
+            return redirect(url_for('employee_dashboard'))
+
+        except ValueError as e:
+            flash('Invalid input: Please check your form values', 'error')
+            return redirect(url_for('submit_expense'))
+        except Exception as e:
+            flash(f'An error occurred: {str(e)}', 'error')
+            return redirect(url_for('submit_expense'))
+
+    # GET request - render form
+    departments = Department.query.all()
+    categories = []
+    subcategories = []
     
-    # Get subcategories for both the user's department and managed departments (if they are a manager)
-    if current_user.is_manager:
-        managed_dept_ids = [dept.id for dept in current_user.managed_departments]
-        managed_dept_ids.append(current_user.department_id)
-        subcategories = Subcategory.query.join(Category).filter(
-            Category.department_id.in_(managed_dept_ids)
-        ).all()
-    else:
-        subcategories = Subcategory.query.join(Category).filter(
-            Category.department_id == current_user.department_id
-        ).all()
+    if current_user.department_id:
+        categories = Category.query.filter_by(department_id=current_user.department_id).all()
+        if categories:
+            subcategories = Subcategory.query.filter_by(category_id=categories[0].id).all()
     
-    return render_template('submit_expense.html', subcategories=subcategories)
+    return render_template('submit_expense.html', 
+                         departments=departments,
+                         categories=categories,
+                         subcategories=subcategories)
 
 @app.route('/download/<filename>')
 @login_required
