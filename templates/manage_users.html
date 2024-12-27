@@ -33,21 +33,15 @@
                             </thead>
                             <tbody>
                                 <!-- Add User Row (Initially Hidden) -->
-                                <tr id="addUserRow" style="display: none;">
+                                <tr id="addUserRow" style="display: none;" class="bg-light">
                                     <td>
-                                        <div class="input-group">
-                                            <span class="input-group-text"><i class="fas fa-user"></i></span>
-                                            <input type="text" class="form-control" id="newUsername" placeholder="Username" required>
-                                        </div>
+                                        <input type="text" class="form-control form-control-sm" id="newUsername" placeholder="Enter username" required>
                                     </td>
                                     <td>
-                                        <div class="input-group">
-                                            <span class="input-group-text"><i class="fas fa-envelope"></i></span>
-                                            <input type="email" class="form-control" id="newEmail" placeholder="Email" required>
-                                        </div>
+                                        <input type="email" class="form-control form-control-sm" id="newEmail" placeholder="Enter email" required>
                                     </td>
                                     <td>
-                                        <select class="form-select" id="newRole" onchange="toggleManagedDepartments()">
+                                        <select class="form-select form-select-sm" id="newRole" onchange="toggleManagedDepartments()">
                                             <option value="user">Employee</option>
                                             <option value="manager">Manager</option>
                                             <option value="accounting">Accounting</option>
@@ -55,7 +49,7 @@
                                         </select>
                                     </td>
                                     <td>
-                                        <select class="form-select" id="newDepartment">
+                                        <select class="form-select form-select-sm" id="newDepartment">
                                             <option value="">None</option>
                                             {% for dept in departments %}
                                             <option value="{{ dept.id }}">{{ dept.name }}</option>
@@ -64,7 +58,7 @@
                                     </td>
                                     <td>
                                         <div id="managedDepartmentsGroup" style="display: none;">
-                                            <select class="form-select" id="managed_departments" multiple>
+                                            <select class="form-select form-select-sm" id="managed_departments" multiple data-bs-toggle="tooltip" title="Hold Ctrl/Cmd to select multiple">
                                                 {% for dept in departments %}
                                                 <option value="{{ dept.id }}">{{ dept.name }}</option>
                                                 {% endfor %}
@@ -72,22 +66,18 @@
                                         </div>
                                     </td>
                                     <td>
-                                        <select class="form-select" id="newStatus">
-                                            <option value="active">Active</option>
-                                            <option value="inactive">Inactive</option>
-                                            <option value="pending">Pending</option>
-                                        </select>
-                                    </td>
-                                    <td>
-                                        <div class="input-group">
-                                            <span class="input-group-text"><i class="fas fa-lock"></i></span>
-                                            <input type="password" class="form-control" id="newPassword" placeholder="Password" required>
+                                        <div class="d-flex flex-column gap-2">
+                                            <select class="form-select form-select-sm" id="newStatus">
+                                                <option value="active">Active</option>
+                                                <option value="inactive">Inactive</option>
+                                            </select>
+                                            <input type="password" class="form-control form-control-sm" id="newPassword" placeholder="Enter password" required>
                                         </div>
                                     </td>
-                                    <td class="text-end">
-                                        <div class="action-buttons">
-                                            <button class="btn btn-save" onclick="saveNewUser()">Save</button>
-                                            <button class="btn btn-cancel" onclick="toggleAddUserRow()">Cancel</button>
+                                    <td>
+                                        <div class="btn-group">
+                                            <button class="btn btn-sm btn-primary" onclick="saveNewUser()">Save</button>
+                                            <button class="btn btn-sm btn-outline-secondary" onclick="toggleAddUserRow()">Cancel</button>
                                         </div>
                                     </td>
                                 </tr>
@@ -209,10 +199,74 @@
     width: 32px;
     height: 32px;
     border-radius: 50%;
+    background-color: #e9ecef;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-weight: 500;
+    font-weight: bold;
+    color: #495057;
+}
+
+/* Action buttons styling */
+.action-buttons {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    align-items: center;
+}
+
+/* Add consistent width and height for form controls in add user row */
+#addUserRow .form-control-sm,
+#addUserRow .form-select-sm {
+    width: 160px !important;
+    height: 35px !important;
+    padding: 0.25rem 0.5rem;
+    font-size: 0.875rem;
+    border-radius: 4px;
+    border: 1px solid #dee2e6;
+}
+
+#addUserRow td {
+    padding: 0.75rem;
+    vertical-align: middle;
+}
+
+#addUserRow .btn-group {
+    display: flex;
+    gap: 8px;
+}
+
+#addUserRow .btn-sm {
+    height: 35px;
+    padding: 0 1rem;
+    font-size: 0.875rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 80px;
+}
+
+#addUserRow .btn-primary {
+    background-color: #0d6efd;
+    border-color: #0d6efd;
+    color: white;
+}
+
+#addUserRow .btn-primary:hover {
+    background-color: #0b5ed7;
+    border-color: #0a58ca;
+}
+
+#addUserRow .btn-outline-secondary {
+    color: #6c757d;
+    border-color: #6c757d;
+    background-color: white;
+}
+
+#addUserRow .btn-outline-secondary:hover {
+    color: #fff;
+    background-color: #6c757d;
+    border-color: #6c757d;
 }
 
 /* Action buttons styling */
@@ -268,78 +322,56 @@ th.actions-header {
 /* Action buttons styling */
 .action-buttons {
     display: flex;
-    gap: 10px;
     justify-content: flex-end;
-    align-items: center;
-}
-
-.btn-action {
-    padding: 6px 12px;
-    font-size: 14px;
-    border: none;
-    background: none;
-    color: #6c757d;
-    transition: all 0.2s;
-}
-
-.btn-action:hover {
-    color: #0d6efd;
-    background-color: rgba(13, 110, 253, 0.1);
-    border-radius: 4px;
-}
-
-.btn-delete {
-    color: #dc3545;
-}
-
-.btn-delete:hover {
-    color: #dc3545;
-    background-color: rgba(220, 53, 69, 0.1);
-    border-radius: 4px;
-}
-
-/* Edit mode styling */
-.edit-mode {
-    padding: 10px 0;
-}
-
-.edit-mode .form-control,
-.edit-mode .form-select {
-    margin-bottom: 0;
-}
-
-.edit-actions {
-    display: flex;
     gap: 8px;
-    justify-content: flex-end;
-    align-items: center;
 }
 
-.edit-actions .btn {
-    padding: 6px 12px;
-    font-size: 14px;
-}
-
-.btn-save {
-    background-color: #0d6efd;
-    color: white;
-    border: none;
+.action-buttons .btn-link {
+    padding: 4px 8px;
+    text-decoration: none;
+    color: #666;
+    background: #f5f5f5;
     border-radius: 4px;
+    font-size: 0.875rem;
+    transition: all 0.2s ease;
 }
 
-.btn-cancel {
+.action-buttons .btn-link:hover {
+    background: #e9e9e9;
+    color: #333;
+}
+
+.action-buttons .btn-link.text-danger {
+    color: #dc3545;
+}
+
+.action-buttons .btn-link.text-danger:hover {
+    background: #fee;
+}
+
+.table td {
+    padding: 12px 16px;
+    vertical-align: middle;
+}
+
+.table > :not(caption) > * > * {
+    background: none;
+    box-shadow: none;
+    border-bottom-color: #eee;
+}
+
+.table > tbody > tr:hover {
     background-color: #f8f9fa;
-    color: #6c757d;
-    border: 1px solid #dee2e6;
-    border-radius: 4px;
 }
 
-.btn-save:hover {
-    background-color: #0b5ed7;
+.managed-departments-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
 }
 
-.btn-cancel:hover {
-    background-color: #e9ecef;
+.managed-departments-list li {
+    margin-bottom: 4px;
 }
 
 .card {
@@ -413,29 +445,48 @@ th.actions-header {
     background: #fee;
 }
 
-.table td {
-    padding: 12px 16px;
-    vertical-align: middle;
+/* Edit mode styling */
+.edit-mode {
+    padding: 10px 0;
 }
 
-.table > :not(caption) > * > * {
-    background: none;
-    box-shadow: none;
-    border-bottom-color: #eee;
+.edit-mode .form-control,
+.edit-mode .form-select {
+    margin-bottom: 0;
 }
 
-.table > tbody > tr:hover {
+.edit-actions {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+    align-items: center;
+}
+
+.edit-actions .btn {
+    padding: 6px 12px;
+    font-size: 14px;
+}
+
+.btn-save {
+    background-color: #0d6efd;
+    color: white;
+    border: none;
+    border-radius: 4px;
+}
+
+.btn-cancel {
     background-color: #f8f9fa;
+    color: #6c757d;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
 }
 
-.managed-departments-list {
-    list-style: none;
-    padding: 0;
-    margin: 0;
+.btn-save:hover {
+    background-color: #0b5ed7;
 }
 
-.managed-departments-list li {
-    margin-bottom: 4px;
+.btn-cancel:hover {
+    background-color: #e9ecef;
 }
 </style>
 
@@ -469,16 +520,8 @@ function saveNewUser() {
     const role = document.getElementById('newRole').value;
     const status = document.getElementById('newStatus').value;
     const managedDepartmentsSelect = document.getElementById('managed_departments');
-    const managedDepartments = Array.from(managedDepartmentsSelect.selectedOptions).map(option => option.value);
-
-    console.log('Saving new user:', {
-        username,
-        email,
-        department,
-        role,
-        status,
-        managedDepartments
-    });
+    const managedDepartments = role === 'manager' && managedDepartmentsSelect ? 
+        Array.from(managedDepartmentsSelect.selectedOptions).map(option => option.value) : [];
 
     if (!username || !email || !password) {
         alert('Username, email, and password are required');
@@ -493,10 +536,11 @@ function saveNewUser() {
     formData.append('role', role);
     formData.append('status', status);
     
-    // Append each selected department ID separately with array notation
-    managedDepartments.forEach(deptId => {
-        formData.append('managed_departments[]', deptId);
-    });
+    if (managedDepartments.length > 0) {
+        managedDepartments.forEach(deptId => {
+            formData.append('managed_departments[]', deptId);
+        });
+    }
 
     fetch('/admin/users/add', {
         method: 'POST',
