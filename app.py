@@ -10,6 +10,7 @@ import logging
 import pytz
 from routes.expense import expense_bp
 from flask_migrate import Migrate
+from config import Config
 
 # Configure logging
 logging.basicConfig(
@@ -19,36 +20,19 @@ logging.basicConfig(
 
 # Initialize Flask app
 app = Flask(__name__)
-app.config['SECRET_KEY'] = 'your-secret-key-here'
+app.config.from_object(Config)
+Config.init_app(app)
 
-# Database configuration
-db_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'instance', 'database.db')
-app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{db_path}'
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-
-# Upload configuration
-app.config['UPLOAD_FOLDER'] = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'uploads')
-app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
-
-# Ensure required directories exist with proper permissions
-os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
-os.makedirs(os.path.dirname(db_path), exist_ok=True)
-
-# Set proper permissions for the database directory and uploads folder
-os.chmod(os.path.dirname(db_path), 0o777)
-os.chmod(app.config['UPLOAD_FOLDER'], 0o777)
-if os.path.exists(db_path):
-    os.chmod(db_path, 0o666)
-
-# Register blueprints
-app.register_blueprint(expense_bp, url_prefix='/api/expense')
+# Initialize extensions
+db = SQLAlchemy(app)
+migrate = Migrate(app, db)
 
 # Initialize login manager
 login_manager = LoginManager(app)
 login_manager.login_view = 'login'
 
-db = SQLAlchemy(app)
-migrate = Migrate(app, db)
+# Register blueprints
+app.register_blueprint(expense_bp, url_prefix='/api/expense')
 
 ALLOWED_EXTENSIONS = {'pdf', 'png', 'jpg', 'jpeg', 'gif'}
 
