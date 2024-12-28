@@ -9,6 +9,7 @@ from utils.email_sender import send_email, EXPENSE_SUBMITTED_TEMPLATE, EXPENSE_S
 import logging
 import pytz
 from routes.expense import expense_bp
+from flask_migrate import Migrate
 
 # Configure logging
 logging.basicConfig(
@@ -21,7 +22,7 @@ app = Flask(__name__)
 app.config['SECRET_KEY'] = 'your-secret-key-here'
 
 # Database configuration
-db_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'instance', 'expenses.db')
+db_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'instance', 'database.db')
 app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{db_path}'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
@@ -47,6 +48,7 @@ login_manager = LoginManager(app)
 login_manager.login_view = 'login'
 
 db = SQLAlchemy(app)
+migrate = Migrate(app, db)
 
 ALLOWED_EXTENSIONS = {'pdf', 'png', 'jpg', 'jpeg', 'gif'}
 
@@ -139,6 +141,20 @@ class User(UserMixin, db.Model):
         usage_percent = (monthly_expenses / self.home_department.budget) * 100
         return usage_percent, monthly_expenses
 
+class Supplier(db.Model):
+    __tablename__ = 'supplier'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(255), nullable=False)
+    email = db.Column(db.String(255))
+    phone = db.Column(db.String(50))
+    address = db.Column(db.String(500))
+    tax_id = db.Column(db.String(100))
+    notes = db.Column(db.Text)
+    status = db.Column(db.String(20), default='active')  # active, inactive
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    expenses = db.relationship('Expense', backref='supplier', lazy=True)
+
 class Expense(db.Model):
     __tablename__ = 'expense'
     id = db.Column(db.Integer, primary_key=True)
@@ -156,22 +172,21 @@ class Expense(db.Model):
     manager_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
     handled_at = db.Column(db.DateTime, nullable=True)
     rejection_reason = db.Column(db.String(500))
-    is_paid = db.Column(db.Boolean, default=False)  # New field to track payment status
-    paid_by_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)  # New field to track who marked as paid
-    paid_at = db.Column(db.DateTime, nullable=True)  # New field to track when marked as paid
-    supplier_name = db.Column(db.String(255))  # New field for supplier name
-    purchase_date = db.Column(db.DateTime, nullable=True)  # New field for purchase date
-    payment_method = db.Column(db.String(50), default='credit')  # Payment method: credit/transfer
-    
-    # Add the relationship to the user who paid the expense
+    is_paid = db.Column(db.Boolean, default=False)
+    paid_by_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
+    paid_at = db.Column(db.DateTime, nullable=True)
+    supplier_id = db.Column(db.Integer, db.ForeignKey('supplier.id'), nullable=True)
+    purchase_date = db.Column(db.DateTime, nullable=True)
+    payment_method = db.Column(db.String(50), default='credit')
     paid_by = db.relationship('User', 
                             foreign_keys=[paid_by_id],
                             backref=db.backref('paid_expenses', lazy='dynamic'))
 
 # Initialize database
 with app.app_context():
-    db.create_all()
-    
+    db.drop_all()  # Drop all tables to ensure a clean state
+    db.create_all()  # Create all tables fresh
+
     try:
         # Create departments if they don't exist
         rd_dept = Department.query.filter_by(name='R&D').first()
