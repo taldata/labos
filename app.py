@@ -145,7 +145,6 @@ class Expense(db.Model):
     amount = db.Column(db.Float, nullable=False)
     description = db.Column(db.String(200))
     reason = db.Column(db.String(500))
-    notes = db.Column(db.String(500))  # New field for payment notes
     type = db.Column(db.String(50), nullable=False, default='needs_approval')
     date = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
     status = db.Column(db.String(20), default='pending')
@@ -286,14 +285,12 @@ def submit_expense():
             supplier_name = request.form.get('supplier_name', '')
             purchase_date_str = request.form.get('purchase_date', '')
             payment_method = request.form.get('payment_method', 'credit')
-            notes = request.form.get('notes', '')
-
+            
             # Create new expense with initial fields
             expense = Expense(
                 amount=amount,
                 description=description,
                 reason=reason,
-                notes=notes,
                 type=expense_type,
                 user_id=current_user.id,
                 subcategory_id=subcategory_id,

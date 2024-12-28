@@ -43,11 +43,7 @@
                 </select>
             </div>
 
-            <div class="mb-3">
-                <label for="notes" class="form-label">Notes</label>
-                <textarea class="form-control" id="notes" name="notes" rows="2" placeholder="Specify if this expense should be paid by accounting or by employee">{{ expense.notes }}</textarea>
-            </div>
-            <div class="mb-3">
+            <div class="form-group">
                 <label for="payment_method" class="form-label">Payment Method</label>
                 <select class="form-control" id="payment_method" name="payment_method" required>
                     <option value="credit" {% if expense.payment_method == 'credit' %}selected{% endif %}>Credit Card (By Employee)</option>

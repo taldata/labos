@@ -80,7 +80,6 @@
                         <th><i class="fas fa-building"></i> Department</th>
                         <th><i class="fas fa-file-alt"></i> Description</th>
                         <th><i class="fas fa-comment"></i> Reason</th>
-                        <th><i class="fas fa-sticky-note"></i> Notes</th>
                         <th><i class="fas fa-store"></i> Supplier</th>
                         <th class="date-col"><i class="fas fa-calendar-alt"></i> Purchase Date</th>
                         <th><i class="fas fa-folder"></i> Category</th>
@@ -102,7 +101,6 @@
                         <td>{{ expense.submitter.home_department.name if expense.submitter.home_department else 'No Department' }}</td>
                         <td>{{ expense.description }}</td>
                         <td>{{ expense.reason }}</td>
-                        <td>{{ expense.notes if expense.notes else '-' }}</td>
                         <td>{{ expense.supplier_name if expense.supplier_name else '-' }}</td>
                         <td>{{ expense.purchase_date.strftime('%d/%m/%Y') if expense.purchase_date else '-' }}</td>
                         <td>{{ expense.subcategory.category.name if expense.subcategory else '-' }}</td>

@@ -85,7 +85,6 @@
                             <th class="col-department"><i class="fas fa-building text-primary"></i> Department</th>
                             <th><i class="fas fa-file-alt text-primary"></i> Description</th>
                             <th><i class="fas fa-comment text-primary"></i> Reason</th>
-                            <th><i class="fas fa-sticky-note text-primary"></i> Notes</th>
                             <th><i class="fas fa-store text-primary"></i> Supplier</th>
                             <th class="col-date"><i class="fas fa-calendar-alt text-primary"></i> Purchase Date</th>
                             <th><i class="fas fa-folder text-primary"></i> Category</th>
@@ -110,7 +109,6 @@
                             <td class="col-department">{{ expense.submitter.home_department.name if expense.submitter.home_department else 'No Department' }}</td>
                             <td>{{ expense.description }}</td>
                             <td>{{ expense.reason }}</td>
-                            <td>{{ expense.notes if expense.notes else '-' }}</td>
                             <td>{{ expense.supplier_name if expense.supplier_name else '-' }}</td>
                             <td class="col-date small">{{ expense.purchase_date.strftime('%d/%m/%Y') if expense.purchase_date else '-' }}</td>
                             <td>{{ expense.subcategory.category.name if expense.subcategory else '-' }}</td>
@@ -189,7 +187,7 @@
                         {% endfor %}
                         {% if not expenses %}
                         <tr>
-                            <td colspan="18" class="text-center py-5 text-muted">
+                            <td colspan="16" class="text-center py-5 text-muted">
                                 <i class="fas fa-inbox fa-2x mb-3 d-block"></i>
                                 No expenses found
                             </td>
