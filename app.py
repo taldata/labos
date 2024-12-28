@@ -184,8 +184,7 @@ class Expense(db.Model):
 
 # Initialize database
 with app.app_context():
-    db.drop_all()  # Drop all tables to ensure a clean state
-    db.create_all()  # Create all tables fresh
+    db.create_all()  # Only create tables if they don't exist
 
     try:
         # Create departments if they don't exist

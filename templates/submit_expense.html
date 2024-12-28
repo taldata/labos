@@ -2,138 +2,373 @@
 
 {% block content %}
 <div class="container">
-    <header>
+    <header class="page-header">
         <h1>Submit New Expense</h1>
         <div class="header-actions">
-            <a href="{{ url_for('employee_dashboard') }}" class="button secondary">Back to Dashboard</a>
+            <a href="{{ url_for('employee_dashboard') }}" class="button secondary">
+                <i class="fas fa-arrow-left"></i> Back to Dashboard
+            </a>
         </div>
     </header>
 
-    <div class="card">
-        {% with messages = get_flashed_messages() %}
+    <div class="card expense-form-card">
+        {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
-                {% for message in messages %}
-                    <div class="alert error">{{ message }}</div>
+                {% for category, message in messages %}
+                    <div class="alert {{ category }}">{{ message }}</div>
                 {% endfor %}
             {% endif %}
         {% endwith %}
 
         <form method="POST" enctype="multipart/form-data" class="expense-form" id="expense-form">
-            <div class="form-group">
-                <label for="amount">Amount (VAT included) (₪)</label>
-                <input type="number" step="0.01" min="0" name="amount" id="amount" required class="form-control">
-            </div>
-            <div class="form-group">
-                <label for="type">Type</label>
-                <select name="type" id="type" required class="form-control">
-                    <option value="">Select expense type</option>
-                    <option value="future_approval">Approval for future purchase</option>
-                    <option value="auto_approved">Report expense that is approved automatically</option>
-                    <option value="needs_approval">Report expense that needs a manager approval</option>
-                    <option value="pre_approved">Report expense that was approved by a manager</option>
-                </select>
-            </div>
-            <div class="form-group">
-                <label for="description">Description</label>
-                <textarea name="description" id="description" required class="form-control"></textarea>
-            </div>
-            <div class="mb-3">
-                <label for="reason" class="form-label">Reason</label>
-                <textarea class="form-control" id="reason" name="reason" rows="3" required></textarea>
-            </div>
-            <div class="mb-3">
-                <label for="payment_method" class="form-label">Payment Method</label>
-                <select class="form-select" id="payment_method" name="payment_method" required>
-                    <option value="credit">Credit Card</option>
-                    <option value="transfer">Bank Transfer</option>
-                </select>
-            </div>
-            <div class="mb-3">
-                <label for="supplier_id" class="form-label">Supplier</label>
-                <select class="form-select" id="supplier_id" name="supplier_id">
-                    <option value="">Select a supplier (optional)</option>
-                    {% for supplier in suppliers %}
-                        {% if supplier.status == 'active' %}
-                            <option value="{{ supplier.id }}">{{ supplier.name }}</option>
-                        {% endif %}
-                    {% endfor %}
-                </select>
-            </div>
-            <div class="mb-3">
-                <label for="supplier_name" class="form-label">Supplier Name</label>
-                <input type="text" class="form-control" id="supplier_name" name="supplier_name" placeholder="Optional">
-            </div>
-            <div class="mb-3">
-                <label for="purchase_date" class="form-label">Purchase Date</label>
-                <input type="date" class="form-control" id="purchase_date" name="purchase_date">
-                <small class="text-muted">Optional - Leave empty if this is a future purchase</small>
-            </div>
-            <div class="form-group">
-                <label for="subcategory">Category</label>
-                <select name="subcategory_id" id="subcategory" required class="form-control">
-                    <option value="">Select a category</option>
-                    {% for subcategory in subcategories %}
-                    <option value="{{ subcategory.id }}">{{ subcategory.category.department.name }} > {{ subcategory.category.name }} > {{ subcategory.name }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-            
-            <div class="attachments-section">
-                <h3>Supporting Documents</h3>
-                <div class="form-group">
-                    <label for="quote">Quote</label>
-                    <input type="file" name="quote" id="quote" class="form-control" accept=".pdf,.png,.jpg,.jpeg">
-                    <span class="file-help">Upload a quote document (PDF, PNG, JPG)</span>
+            <div class="form-grid">
+                <!-- Basic Information -->
+                <div class="form-section">
+                    <h3><i class="fas fa-info-circle"></i> Basic Information</h3>
+                    <div class="form-group">
+                        <label for="amount">Amount (VAT included) (₪)</label>
+                        <div class="input-group">
+                            <span class="input-group-text">₪</span>
+                            <input type="number" step="0.01" min="0" name="amount" id="amount" required class="form-control">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="type">Type</label>
+                        <select name="type" id="type" required class="form-control">
+                            <option value="">Select expense type</option>
+                            <option value="future_approval">Approval for future purchase</option>
+                            <option value="auto_approved">Report expense that is approved automatically</option>
+                            <option value="needs_approval">Report expense that needs a manager approval</option>
+                            <option value="pre_approved">Report expense that was approved by a manager</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="description">Description</label>
+                        <textarea name="description" id="description" required class="form-control" placeholder="Brief description of the expense"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="reason">Business Reason</label>
+                        <textarea class="form-control" id="reason" name="reason" rows="3" required placeholder="Explain why this expense is necessary"></textarea>
+                    </div>
                 </div>
-                <div class="form-group">
-                    <label for="invoice">Invoice</label>
-                    <input type="file" name="invoice" id="invoice" class="form-control" accept=".pdf,.png,.jpg,.jpeg">
-                    <span class="file-help">Upload an invoice document (PDF, PNG, JPG)</span>
+
+                <!-- Category and Payment -->
+                <div class="form-section">
+                    <h3><i class="fas fa-tags"></i> Category and Payment</h3>
+                    <div class="form-group">
+                        <label for="subcategory">Expense Category</label>
+                        <select name="subcategory_id" id="subcategory" required class="form-control">
+                            <option value="">Select a category</option>
+                            {% for subcategory in subcategories %}
+                            <option value="{{ subcategory.id }}">
+                                {{ subcategory.category.department.name }} > {{ subcategory.category.name }} > {{ subcategory.name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="payment_method">Payment Method</label>
+                        <select class="form-control" id="payment_method" name="payment_method" required>
+                            <option value="credit">Credit Card</option>
+                            <option value="transfer">Bank Transfer</option>
+                        </select>
+                    </div>
                 </div>
-                <div class="form-group">
-                    <label for="receipt">Receipt</label>
-                    <input type="file" name="receipt" id="receipt" class="form-control" accept=".pdf,.png,.jpg,.jpeg">
-                    <span class="file-help">Upload a receipt document (PDF, PNG, JPG)</span>
+
+                <!-- Supplier Information -->
+                <div class="form-section">
+                    <h3><i class="fas fa-building"></i> Supplier Information</h3>
+                    <div class="form-group">
+                        <label for="supplier_id">Select Existing Supplier</label>
+                        <select class="form-control" id="supplier_id" name="supplier_id">
+                            <option value="">Select a supplier (optional)</option>
+                            {% for supplier in suppliers %}
+                                {% if supplier.status == 'active' %}
+                                    <option value="{{ supplier.id }}">{{ supplier.name }}</option>
+                                {% endif %}
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="supplier_name">Or Enter New Supplier Name</label>
+                        <input type="text" class="form-control" id="supplier_name" name="supplier_name" placeholder="Enter supplier name if not in the list above">
+                    </div>
+                    <div class="form-group">
+                        <label for="purchase_date">Purchase Date</label>
+                        <input type="date" class="form-control" id="purchase_date" name="purchase_date">
+                        <small class="text-muted">Leave empty if this is a future purchase</small>
+                    </div>
+                </div>
+
+                <!-- Supporting Documents -->
+                <div class="form-section documents-section">
+                    <h3><i class="fas fa-file-alt"></i> Supporting Documents</h3>
+                    <div class="form-group">
+                        <label for="quote">
+                            <i class="fas fa-file-invoice"></i> Quote
+                        </label>
+                        <input type="file" name="quote" id="quote" class="form-control" accept=".pdf,.png,.jpg,.jpeg">
+                        <small class="text-muted">Upload a quote document (PDF, PNG, JPG)</small>
+                    </div>
+                    <div class="form-group">
+                        <label for="invoice">
+                            <i class="fas fa-file-invoice-dollar"></i> Invoice
+                        </label>
+                        <input type="file" name="invoice" id="invoice" class="form-control" accept=".pdf,.png,.jpg,.jpeg">
+                        <small class="text-muted">Upload an invoice document (PDF, PNG, JPG)</small>
+                    </div>
+                    <div class="form-group">
+                        <label for="receipt">
+                            <i class="fas fa-receipt"></i> Receipt
+                        </label>
+                        <input type="file" name="receipt" id="receipt" class="form-control" accept=".pdf,.png,.jpg,.jpeg">
+                        <small class="text-muted">Upload a receipt document (PDF, PNG, JPG)</small>
+                    </div>
                 </div>
             </div>
 
             <div class="form-actions">
-                <button type="submit" class="button primary">Submit Expense</button>
-                <a href="{{ url_for('employee_dashboard') }}" class="button secondary">Cancel</a>
+                <button type="submit" class="button primary">
+                    <i class="fas fa-paper-plane"></i> Submit Expense
+                </button>
+                <a href="{{ url_for('employee_dashboard') }}" class="button secondary">
+                    <i class="fas fa-times"></i> Cancel
+                </a>
             </div>
         </form>
     </div>
 </div>
 
 <style>
-.attachments-section {
+.page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.expense-form-card {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    padding: 2rem;
+}
+
+.form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 2rem;
+    margin-bottom: 2rem;
+}
+
+.form-section {
     background: #f8f9fa;
     padding: 1.5rem;
     border-radius: 8px;
-    margin: 1.5rem 0;
+    border: 1px solid #e9ecef;
 }
 
-.attachments-section h3 {
+.form-section h3 {
     margin-top: 0;
-    margin-bottom: 1rem;
-    color: #333;
+    margin-bottom: 1.5rem;
+    color: #2c3e50;
+    font-size: 1.2rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
 }
 
-.file-help {
+.form-section h3 i {
+    color: #3498db;
+}
+
+.form-group {
+    margin-bottom: 1.5rem;
+}
+
+.form-group label {
     display: block;
-    font-size: 0.875rem;
-    color: #666;
+    margin-bottom: 0.5rem;
+    color: #2c3e50;
+    font-weight: 500;
+}
+
+.form-control {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    transition: border-color 0.15s ease-in-out;
+}
+
+.form-control:focus {
+    border-color: #3498db;
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.25);
+}
+
+.input-group {
+    display: flex;
+    align-items: center;
+}
+
+.input-group-text {
+    padding: 0.75rem;
+    background: #e9ecef;
+    border: 1px solid #ced4da;
+    border-right: none;
+    border-radius: 4px 0 0 4px;
+    color: #495057;
+}
+
+.input-group .form-control {
+    border-radius: 0 4px 4px 0;
+}
+
+.text-muted {
+    display: block;
     margin-top: 0.25rem;
+    color: #6c757d;
+    font-size: 0.875rem;
+}
+
+.documents-section {
+    background: #fff;
+    border: 2px dashed #dee2e6;
+}
+
+.documents-section .form-group {
+    position: relative;
+    padding: 1rem;
+    background: #f8f9fa;
+    border-radius: 4px;
+    transition: all 0.3s ease;
+}
+
+.documents-section .form-group:hover {
+    background: #e9ecef;
 }
 
 .form-actions {
-    margin-top: 2rem;
     display: flex;
     gap: 1rem;
+    justify-content: flex-end;
+    margin-top: 2rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid #e9ecef;
+}
+
+.button {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.5rem;
+    border-radius: 4px;
+    font-weight: 500;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    border: none;
+    cursor: pointer;
+}
+
+.button i {
+    font-size: 1rem;
+}
+
+.button.primary {
+    background: #3498db;
+    color: white;
+}
+
+.button.primary:hover {
+    background: #2980b9;
+}
+
+.button.secondary {
+    background: #e9ecef;
+    color: #495057;
+}
+
+.button.secondary:hover {
+    background: #dee2e6;
+}
+
+.alert {
+    padding: 1rem;
+    margin-bottom: 1.5rem;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.alert.error {
+    background: #fee2e2;
+    border: 1px solid #ef4444;
+    color: #b91c1c;
+}
+
+.alert.success {
+    background: #dcfce7;
+    border: 1px solid #22c55e;
+    color: #15803d;
 }
 </style>
+
 {% endblock %}
 
 {% block scripts %}
 <script src="{{ url_for('static', filename='js/expense_form.js') }}"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Handle supplier selection
+    const supplierSelect = document.getElementById('supplier_id');
+    const supplierNameInput = document.getElementById('supplier_name');
+
+    supplierSelect.addEventListener('change', function() {
+        if (this.value) {
+            supplierNameInput.value = '';
+            supplierNameInput.disabled = true;
+        } else {
+            supplierNameInput.disabled = false;
+        }
+    });
+
+    // Set max date for purchase date
+    const purchaseDateInput = document.getElementById('purchase_date');
+    const today = new Date().toISOString().split('T')[0];
+    purchaseDateInput.max = today;
+
+    // File input preview and validation
+    const fileInputs = document.querySelectorAll('input[type="file"]');
+    fileInputs.forEach(input => {
+        input.addEventListener('change', function() {
+            if (this.files && this.files[0]) {
+                const fileSize = this.files[0].size / 1024 / 1024; // in MB
+                if (fileSize > 16) {
+                    alert('File size exceeds 16MB limit. Please choose a smaller file.');
+                    this.value = '';
+                }
+            }
+        });
+    });
+
+    // Form validation
+    const form = document.getElementById('expense-form');
+    form.addEventListener('submit', function(e) {
+        const amount = document.getElementById('amount').value;
+        const type = document.getElementById('type').value;
+        const description = document.getElementById('description').value;
+        const reason = document.getElementById('reason').value;
+        const subcategory = document.getElementById('subcategory').value;
+
+        if (!amount || !type || !description || !reason || !subcategory) {
+            e.preventDefault();
+            alert('Please fill in all required fields.');
+        }
+    });
+});
+</script>
 {% endblock %}
