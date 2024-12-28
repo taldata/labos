@@ -68,7 +68,9 @@
                 <tbody>
                     {% for expense in expenses %}
                     <tr>
-                        <td title="{{ expense.date.strftime('%d/%m/%Y %H:%M:%S') }}">{{ expense.date.strftime('%d/%m/%Y %H:%M') }}</td>
+                        <td title="{{ expense.date.replace(tzinfo=pytz.UTC).astimezone(pytz.timezone('Asia/Jerusalem')).strftime('%d/%m/%Y %H:%M:%S') }}">
+                            {{ expense.date.replace(tzinfo=pytz.UTC).astimezone(pytz.timezone('Asia/Jerusalem')).strftime('%d/%m/%Y %H:%M') }}
+                        </td>
                         <td>{{ expense.description }}</td>
                         <td>{{ expense.reason }}</td>
                         <td>{{ expense.supplier_name if expense.supplier_name else '-' }}</td>
@@ -101,7 +103,7 @@
                         </td>
                         <td>
                             {% if expense.status != 'pending' %}
-                                {{ expense.handled_at.strftime('%d/%m/%Y %H:%M') if expense.handled_at else 'N/A' }}
+                                {{ expense.handled_at.replace(tzinfo=pytz.UTC).astimezone(pytz.timezone('Asia/Jerusalem')).strftime('%d/%m/%Y %H:%M') if expense.handled_at else 'N/A' }}
                             {% else %}
                                 -
                             {% endif %}

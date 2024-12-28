@@ -257,7 +257,6 @@ def employee_dashboard():
     
     expenses = Expense.query.filter_by(user_id=current_user.id).order_by(Expense.date.desc()).all()
     
-    # Calculate summary statistics
     total_requests = len(expenses)
     pending_requests = sum(1 for e in expenses if e.status == 'pending')
     approved_requests = sum(1 for e in expenses if e.status == 'approved')
@@ -270,7 +269,8 @@ def employee_dashboard():
                          pending_requests=pending_requests,
                          approved_requests=approved_requests,
                          rejected_requests=rejected_requests,
-                         total_approved_amount=total_approved_amount)
+                         total_approved_amount=total_approved_amount,
+                         pytz=pytz)
 
 @app.route('/submit-expense', methods=['GET', 'POST'])
 @login_required
