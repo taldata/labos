@@ -1360,8 +1360,7 @@ def delete_user(user_id):
         username = user.username
         
         # Check if user has any expenses
-        expenses = Expense.query.filter_by(user_id=user_id).all()
-        if expenses:
+        if user.submitted_expenses:
             return jsonify({'error': 'Cannot delete user with existing expenses. Please delete or reassign their expenses first.'}), 400
         
         db.session.delete(user)
@@ -1546,46 +1545,46 @@ def mark_expense_unpaid(expense_id):
 @app.route('/manage_suppliers')
 @login_required
 def manage_suppliers():
-    if not current_user.is_admin and not current_user.is_accounting:
-        flash('You do not have permission to manage suppliers.', 'error')
-        return redirect(url_for('index'))
-    
     suppliers = Supplier.query.order_by(Supplier.name).all()
-    return render_template('suppliers/manage_suppliers.html', suppliers=suppliers)
+    return render_template('manage_suppliers.html', suppliers=suppliers)
 
 @app.route('/add_supplier', methods=['POST'])
 @login_required
 def add_supplier():
-    if not current_user.is_admin and not current_user.is_accounting:
-        return jsonify({'error': 'Unauthorized'}), 403
-    
     try:
+        name = request.form['name']
+        email = request.form.get('email')
+        phone = request.form.get('phone')
+        address = request.form.get('address')
+        tax_id = request.form.get('tax_id')
+        notes = request.form.get('notes')
+        status = request.form.get('status', 'active')
+
         supplier = Supplier(
-            name=request.form['name'],
-            email=request.form.get('email'),
-            phone=request.form.get('phone'),
-            address=request.form.get('address'),
-            tax_id=request.form.get('tax_id'),
-            notes=request.form.get('notes')
+            name=name,
+            email=email,
+            phone=phone,
+            address=address,
+            tax_id=tax_id,
+            notes=notes,
+            status=status
         )
+
         db.session.add(supplier)
         db.session.commit()
+
         flash('Supplier added successfully!', 'success')
     except Exception as e:
         db.session.rollback()
-        flash('Error adding supplier: ' + str(e), 'error')
-    
+        flash(f'Error adding supplier: {str(e)}', 'error')
+
     return redirect(url_for('manage_suppliers'))
 
 @app.route('/get_supplier/<int:supplier_id>')
 @login_required
 def get_supplier(supplier_id):
-    if not current_user.is_admin and not current_user.is_accounting:
-        return jsonify({'error': 'Unauthorized'}), 403
-    
     supplier = Supplier.query.get_or_404(supplier_id)
     return jsonify({
-        'id': supplier.id,
         'name': supplier.name,
         'email': supplier.email,
         'phone': supplier.phone,
@@ -1598,11 +1597,9 @@ def get_supplier(supplier_id):
 @app.route('/edit_supplier/<int:supplier_id>', methods=['POST'])
 @login_required
 def edit_supplier(supplier_id):
-    if not current_user.is_admin and not current_user.is_accounting:
-        return jsonify({'error': 'Unauthorized'}), 403
-    
-    supplier = Supplier.query.get_or_404(supplier_id)
     try:
+        supplier = Supplier.query.get_or_404(supplier_id)
+        
         supplier.name = request.form['name']
         supplier.email = request.form.get('email')
         supplier.phone = request.form.get('phone')
@@ -1611,36 +1608,36 @@ def edit_supplier(supplier_id):
         supplier.notes = request.form.get('notes')
         supplier.status = request.form.get('status', 'active')
         supplier.updated_at = datetime.utcnow()
-        
+
         db.session.commit()
         flash('Supplier updated successfully!', 'success')
     except Exception as e:
         db.session.rollback()
-        flash('Error updating supplier: ' + str(e), 'error')
-    
+        flash(f'Error updating supplier: {str(e)}', 'error')
+
     return redirect(url_for('manage_suppliers'))
 
-@app.route('/delete_supplier/<int:supplier_id>', methods=['POST'])
+@app.route('/delete_supplier/<int:supplier_id>')
 @login_required
 def delete_supplier(supplier_id):
-    if not current_user.is_admin and not current_user.is_accounting:
-        return jsonify({'error': 'Unauthorized'}), 403
-    
-    supplier = Supplier.query.get_or_404(supplier_id)
     try:
+        supplier = Supplier.query.get_or_404(supplier_id)
+        
         # Check if supplier has any associated expenses
         if supplier.expenses:
             # Instead of deleting, mark as inactive
             supplier.status = 'inactive'
-            flash('Supplier has associated expenses. Marked as inactive instead of deleting.', 'warning')
+            flash('Supplier has associated expenses. Marked as inactive instead of deleting.', 'success')
         else:
             db.session.delete(supplier)
+            flash('Supplier deleted successfully!', 'success')
+        
         db.session.commit()
-        flash('Supplier deleted successfully!', 'success')
-        return jsonify({'success': True})
     except Exception as e:
         db.session.rollback()
-        return jsonify({'error': str(e)}), 500
+        flash(f'Error deleting supplier: {str(e)}', 'error')
+
+    return redirect(url_for('manage_suppliers'))
 
 if __name__ == '__main__':
     app.run(debug=True)
