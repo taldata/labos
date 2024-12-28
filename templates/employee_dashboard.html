@@ -60,6 +60,7 @@
                         <th><i class="fas fa-shekel-sign"></i> Amount (VAT included)</th>
                         <th><i class="fas fa-check-circle"></i> Status</th>
                         <th>Handled By</th>
+                        <th>Handled at</th>
                         <th>Documents</th>
                         <th>Actions</th>
                     </tr>
@@ -94,6 +95,13 @@
                         <td>
                             {% if expense.status != 'pending' %}
                                 {{ expense.handler.username if expense.handler else 'N/A' }}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if expense.status != 'pending' %}
+                                {{ expense.handled_at.strftime('%d/%m/%Y %H:%M') if expense.handled_at else 'N/A' }}
                             {% else %}
                                 -
                             {% endif %}
@@ -136,7 +144,7 @@
                     {% endfor %}
                     {% if not expenses %}
                     <tr>
-                        <td colspan="13" class="text-center">No expenses submitted yet</td>
+                        <td colspan="14" class="text-center">No expenses submitted yet</td>
                     </tr>
                     {% endif %}
                 </tbody>
@@ -328,13 +336,18 @@ table td:nth-child(12) {
     min-width: 120px;
 }
 
-table th:nth-child(13), /* Documents */
+table th:nth-child(13), /* Handled at */
 table td:nth-child(13) {
+    min-width: 120px;
+}
+
+table th:nth-child(14), /* Documents */
+table td:nth-child(14) {
     min-width: 100px;
 }
 
-table th:nth-child(14), /* Actions */
-table td:nth-child(14) {
+table th:nth-child(15), /* Actions */
+table td:nth-child(15) {
     min-width: 100px;
 }
 
