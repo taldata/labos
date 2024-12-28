@@ -290,171 +290,179 @@ def employee_dashboard():
 @app.route('/submit-expense', methods=['GET', 'POST'])
 @login_required
 def submit_expense():
-    if request.method == 'POST':
-        try:
-            amount = float(request.form['amount'])
-            description = request.form['description']
-            reason = request.form['reason']
-            subcategory_id = int(request.form['subcategory_id'])
-            expense_type = request.form.get('type', 'needs_approval')
-            supplier_name = request.form.get('supplier_name', '')
-            purchase_date_str = request.form.get('purchase_date', '')
-            payment_method = request.form.get('payment_method', 'credit')
-            
-            # Create new expense with initial fields
-            expense = Expense(
-                amount=amount,
-                description=description,
-                reason=reason,
-                type=expense_type,
-                user_id=current_user.id,
-                subcategory_id=subcategory_id,
-                supplier_name=supplier_name,
-                payment_method=payment_method
-            )
-            
-            if purchase_date_str:
-                try:
-                    expense.purchase_date = datetime.strptime(purchase_date_str, '%Y-%m-%d')
-                except ValueError:
-                    logging.error(f"Invalid purchase date format: {purchase_date_str}")
-
-            # Process document if uploaded
-            if 'invoice' in request.files:
-                invoice_file = request.files['invoice']
-                if invoice_file and allowed_file(invoice_file.filename):
-                    # Save the file with a proper name
-                    filename = secure_filename(f"{datetime.now().strftime('%Y%m%d%H%M%S')}_{invoice_file.filename}")
-                    filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-                    
-                    # Save the file first
-                    invoice_file.save(filepath)
-                    expense.invoice_filename = filename
-                    
-                    try:
-                        # Process the document
-                        doc_processor = DocumentProcessor()
-                        doc_data = doc_processor.process_invoice(filepath)
-                        logging.info(f"Extracted document data: {doc_data}")
-                        
-                        # Update expense with document data if available
-                        if doc_data.get('invoice_total'):
-                            invoice_total = doc_data['invoice_total']
-                            if hasattr(invoice_total, 'amount'):
-                                expense.amount = float(invoice_total.amount)
-                            else:
-                                expense.amount = float(invoice_total)
-                            logging.info(f"Updated amount to {expense.amount}")
-                        
-                        if doc_data.get('items') and doc_data['items'] and doc_data['items'][0].get('description'):
-                            expense.description = doc_data['items'][0]['description']
-                            logging.info(f"Updated description to {expense.description}")
-                        
-                        if doc_data.get('vendor_name'):
-                            expense.supplier_name = doc_data['vendor_name']
-                            logging.info(f"Updated supplier_name to {expense.supplier_name}")
-                        
-                        if doc_data.get('invoice_date'):
-                            expense.purchase_date = doc_data['invoice_date']
-                            logging.info(f"Updated purchase_date to {expense.purchase_date}")
-                            
-                    except Exception as e:
-                        logging.error(f"Error processing document: {str(e)}")
-            
-            # Process quote if provided
-            if 'quote' in request.files:
-                quote = request.files['quote']
-                if quote and allowed_file(quote.filename):
-                    filename = secure_filename(f"{datetime.now().strftime('%Y%m%d%H%M%S')}_{quote.filename}")
-                    quote.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-                    expense.quote_filename = filename
-
-            # Process receipt if provided
-            if 'receipt' in request.files:
-                receipt = request.files['receipt']
-                if receipt and allowed_file(receipt.filename):
-                    filename = secure_filename(f"{datetime.now().strftime('%Y%m%d%H%M%S')}_{receipt.filename}")
-                    filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-                    
-                    # Save the file first
-                    receipt.save(filepath)
-                    expense.receipt_filename = filename
-                    
-                    try:
-                        # Process the receipt
-                        doc_processor = DocumentProcessor()
-                        receipt_data = doc_processor.process_receipt(filepath)
-                        logging.info(f"Extracted receipt data: {receipt_data}")
-                        
-                        # Update expense with receipt data if available and if not already set by invoice
-                        if not expense.amount and receipt_data.get('total'):
-                            total = receipt_data['total']
-                            if hasattr(total, 'amount'):
-                                expense.amount = float(total.amount)
-                            else:
-                                expense.amount = float(total)
-                            logging.info(f"Updated amount from receipt to {expense.amount}")
-                        
-                        if not expense.description and receipt_data.get('items') and receipt_data['items'] and receipt_data['items'][0].get('description'):
-                            expense.description = receipt_data['items'][0]['description']
-                            logging.info(f"Updated description from receipt to {expense.description}")
-                        
-                        if not expense.supplier_name and receipt_data.get('merchant_name'):
-                            expense.supplier_name = receipt_data['merchant_name']
-                            logging.info(f"Updated supplier_name from receipt to {expense.supplier_name}")
-                        
-                        if not expense.purchase_date and receipt_data.get('transaction_date'):
-                            expense.purchase_date = receipt_data['transaction_date']
-                            logging.info(f"Updated purchase_date from receipt to {expense.purchase_date}")
-                            
-                    except Exception as e:
-                        logging.error(f"Error processing receipt: {str(e)}")
-            
-            # Save the expense to database
-            db.session.add(expense)
-            db.session.commit()
-            
-            # Explicitly load the subcategory relationship
-            db.session.refresh(expense)
-
-            # Send email notification to managers
-            try:
-                managers = User.query.filter_by(is_manager=True).all()
-                for manager in managers:
-                    send_email(
-                        subject="New Expense Submission",
-                        recipient=manager.email,
-                        template=EXPENSE_SUBMITTED_TEMPLATE,
-                        expense=expense,
-                        submitter=current_user
-                    )
-            except Exception as e:
-                logging.error(f"Failed to send email notification: {str(e)}")
-                # Continue even if email fails
-                pass
-
-            flash('Expense submitted successfully!', 'success')
-            return redirect(url_for('employee_dashboard'))
-            
-        except Exception as e:
-            logging.error(f"Error submitting expense: {str(e)}")
-            flash('Error submitting expense. Please try again.', 'error')
-            return redirect(url_for('submit_expense'))
-    
-    # GET request - render form
-    departments = Department.query.all()
-    categories = []
-    subcategories = []
-    
-    if current_user.department_id:
-        categories = Category.query.filter_by(department_id=current_user.department_id).all()
+    if request.method == 'GET':
+        categories = Category.query.join(Department).filter(
+            Department.id == current_user.department_id
+        ).all()
+        
+        subcategories = []
         if categories:
             subcategories = Subcategory.query.filter_by(category_id=categories[0].id).all()
+        
+        suppliers = Supplier.query.filter_by(status='active').order_by(Supplier.name).all()
+        
+        return render_template('submit_expense.html', 
+                            categories=categories, 
+                            subcategories=subcategories,
+                            suppliers=suppliers)
     
-    return render_template('submit_expense.html', 
-                         departments=departments,
-                         categories=categories,
-                         subcategories=subcategories)
+    # Handle POST request
+    try:
+        # Get form data
+        amount = float(request.form['amount'])
+        description = request.form['description']
+        reason = request.form['reason']
+        expense_type = request.form['type']
+        subcategory_id = int(request.form['subcategory_id'])
+        payment_method = request.form['payment_method']
+        supplier_id = request.form.get('supplier_id')
+        purchase_date_str = request.form.get('purchase_date')
+        
+        if supplier_id:
+            supplier_id = int(supplier_id)
+            
+        # Convert purchase_date string to datetime if provided
+        purchase_date = None
+        if purchase_date_str:
+            try:
+                purchase_date = datetime.strptime(purchase_date_str, '%Y-%m-%d')
+            except ValueError:
+                logging.error(f"Invalid purchase date format: {purchase_date_str}")
+        
+        # Create new expense
+        expense = Expense(
+            amount=amount,
+            description=description,
+            reason=reason,
+            type=expense_type,
+            subcategory_id=subcategory_id,
+            user_id=current_user.id,
+            payment_method=payment_method,
+            supplier_id=supplier_id,
+            purchase_date=purchase_date
+        )
+        
+        # Process document if uploaded
+        if 'invoice' in request.files:
+            invoice_file = request.files['invoice']
+            if invoice_file and allowed_file(invoice_file.filename):
+                # Save the file with a proper name
+                filename = secure_filename(f"{datetime.now().strftime('%Y%m%d%H%M%S')}_{invoice_file.filename}")
+                filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+                
+                # Save the file first
+                invoice_file.save(filepath)
+                expense.invoice_filename = filename
+                
+                try:
+                    # Process the document
+                    doc_processor = DocumentProcessor()
+                    doc_data = doc_processor.process_invoice(filepath)
+                    logging.info(f"Extracted document data: {doc_data}")
+                    
+                    # Update expense with document data if available
+                    if doc_data.get('invoice_total'):
+                        invoice_total = doc_data['invoice_total']
+                        if hasattr(invoice_total, 'amount'):
+                            expense.amount = float(invoice_total.amount)
+                        else:
+                            expense.amount = float(invoice_total)
+                        logging.info(f"Updated amount to {expense.amount}")
+                    
+                    if doc_data.get('items') and doc_data['items'] and doc_data['items'][0].get('description'):
+                        expense.description = doc_data['items'][0]['description']
+                        logging.info(f"Updated description to {expense.description}")
+                    
+                    if doc_data.get('vendor_name'):
+                        expense.supplier_name = doc_data['vendor_name']
+                        logging.info(f"Updated supplier_name to {expense.supplier_name}")
+                    
+                    if doc_data.get('invoice_date'):
+                        expense.purchase_date = doc_data['invoice_date']
+                        logging.info(f"Updated purchase_date to {expense.purchase_date}")
+                        
+                except Exception as e:
+                    logging.error(f"Error processing document: {str(e)}")
+        
+        # Process quote if provided
+        if 'quote' in request.files:
+            quote = request.files['quote']
+            if quote and allowed_file(quote.filename):
+                filename = secure_filename(f"{datetime.now().strftime('%Y%m%d%H%M%S')}_{quote.filename}")
+                quote.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+                expense.quote_filename = filename
+
+        # Process receipt if provided
+        if 'receipt' in request.files:
+            receipt = request.files['receipt']
+            if receipt and allowed_file(receipt.filename):
+                filename = secure_filename(f"{datetime.now().strftime('%Y%m%d%H%M%S')}_{receipt.filename}")
+                filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+                
+                # Save the file first
+                receipt.save(filepath)
+                expense.receipt_filename = filename
+                
+                try:
+                    # Process the receipt
+                    doc_processor = DocumentProcessor()
+                    receipt_data = doc_processor.process_receipt(filepath)
+                    logging.info(f"Extracted receipt data: {receipt_data}")
+                    
+                    # Update expense with receipt data if available and if not already set by invoice
+                    if not expense.amount and receipt_data.get('total'):
+                        total = receipt_data['total']
+                        if hasattr(total, 'amount'):
+                            expense.amount = float(total.amount)
+                        else:
+                            expense.amount = float(total)
+                        logging.info(f"Updated amount from receipt to {expense.amount}")
+                    
+                    if not expense.description and receipt_data.get('items') and receipt_data['items'] and receipt_data['items'][0].get('description'):
+                        expense.description = receipt_data['items'][0]['description']
+                        logging.info(f"Updated description from receipt to {expense.description}")
+                    
+                    if not expense.supplier_name and receipt_data.get('merchant_name'):
+                        expense.supplier_name = receipt_data['merchant_name']
+                        logging.info(f"Updated supplier_name from receipt to {expense.supplier_name}")
+                    
+                    if not expense.purchase_date and receipt_data.get('transaction_date'):
+                        expense.purchase_date = receipt_data['transaction_date']
+                        logging.info(f"Updated purchase_date from receipt to {expense.purchase_date}")
+                        
+                except Exception as e:
+                    logging.error(f"Error processing receipt: {str(e)}")
+        
+        # Save the expense to database
+        db.session.add(expense)
+        db.session.commit()
+        
+        # Explicitly load the subcategory relationship
+        db.session.refresh(expense)
+
+        # Send email notification to managers
+        try:
+            managers = User.query.filter_by(is_manager=True).all()
+            for manager in managers:
+                send_email(
+                    subject="New Expense Submission",
+                    recipient=manager.email,
+                    template=EXPENSE_SUBMITTED_TEMPLATE,
+                    expense=expense,
+                    submitter=current_user
+                )
+        except Exception as e:
+            logging.error(f"Failed to send email notification: {str(e)}")
+            # Continue even if email fails
+            pass
+
+        flash('Expense submitted successfully!', 'success')
+        return redirect(url_for('employee_dashboard'))
+        
+    except Exception as e:
+        logging.error(f"Error submitting expense: {str(e)}")
+        flash('Error submitting expense. Please try again.', 'error')
+        return redirect(url_for('submit_expense'))
 
 @app.route('/download/<filename>')
 @login_required
@@ -1535,6 +1543,105 @@ def mark_expense_unpaid(expense_id):
     db.session.commit()
     
     return jsonify({'success': True})
+
+@app.route('/manage_suppliers')
+@login_required
+def manage_suppliers():
+    if not current_user.is_admin and not current_user.is_accounting:
+        flash('You do not have permission to manage suppliers.', 'error')
+        return redirect(url_for('index'))
+    
+    suppliers = Supplier.query.order_by(Supplier.name).all()
+    return render_template('suppliers/manage_suppliers.html', suppliers=suppliers)
+
+@app.route('/add_supplier', methods=['POST'])
+@login_required
+def add_supplier():
+    if not current_user.is_admin and not current_user.is_accounting:
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    try:
+        supplier = Supplier(
+            name=request.form['name'],
+            email=request.form.get('email'),
+            phone=request.form.get('phone'),
+            address=request.form.get('address'),
+            tax_id=request.form.get('tax_id'),
+            notes=request.form.get('notes')
+        )
+        db.session.add(supplier)
+        db.session.commit()
+        flash('Supplier added successfully!', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash('Error adding supplier: ' + str(e), 'error')
+    
+    return redirect(url_for('manage_suppliers'))
+
+@app.route('/get_supplier/<int:supplier_id>')
+@login_required
+def get_supplier(supplier_id):
+    if not current_user.is_admin and not current_user.is_accounting:
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    supplier = Supplier.query.get_or_404(supplier_id)
+    return jsonify({
+        'id': supplier.id,
+        'name': supplier.name,
+        'email': supplier.email,
+        'phone': supplier.phone,
+        'address': supplier.address,
+        'tax_id': supplier.tax_id,
+        'notes': supplier.notes,
+        'status': supplier.status
+    })
+
+@app.route('/edit_supplier/<int:supplier_id>', methods=['POST'])
+@login_required
+def edit_supplier(supplier_id):
+    if not current_user.is_admin and not current_user.is_accounting:
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    supplier = Supplier.query.get_or_404(supplier_id)
+    try:
+        supplier.name = request.form['name']
+        supplier.email = request.form.get('email')
+        supplier.phone = request.form.get('phone')
+        supplier.address = request.form.get('address')
+        supplier.tax_id = request.form.get('tax_id')
+        supplier.notes = request.form.get('notes')
+        supplier.status = request.form.get('status', 'active')
+        supplier.updated_at = datetime.utcnow()
+        
+        db.session.commit()
+        flash('Supplier updated successfully!', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash('Error updating supplier: ' + str(e), 'error')
+    
+    return redirect(url_for('manage_suppliers'))
+
+@app.route('/delete_supplier/<int:supplier_id>', methods=['POST'])
+@login_required
+def delete_supplier(supplier_id):
+    if not current_user.is_admin and not current_user.is_accounting:
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    supplier = Supplier.query.get_or_404(supplier_id)
+    try:
+        # Check if supplier has any associated expenses
+        if supplier.expenses:
+            # Instead of deleting, mark as inactive
+            supplier.status = 'inactive'
+            flash('Supplier has associated expenses. Marked as inactive instead of deleting.', 'warning')
+        else:
+            db.session.delete(supplier)
+        db.session.commit()
+        flash('Supplier deleted successfully!', 'success')
+        return jsonify({'success': True})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
     app.run(debug=True)

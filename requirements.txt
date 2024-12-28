@@ -1,6 +1,7 @@
 Flask[async]
 Flask-SQLAlchemy
 Flask-Login
+Flask-Migrate
 Werkzeug
 gunicorn
 sendgrid

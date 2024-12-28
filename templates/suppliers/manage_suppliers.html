@@ -1,0 +1,179 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Manage Suppliers</h2>
+    
+    <!-- Add Supplier Button -->
+    <div class="mb-4">
+        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addSupplierModal">
+            Add New Supplier
+        </button>
+    </div>
+
+    <!-- Suppliers Table -->
+    <div class="table-responsive">
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Email</th>
+                    <th>Phone</th>
+                    <th>Tax ID</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for supplier in suppliers %}
+                <tr>
+                    <td>{{ supplier.name }}</td>
+                    <td>{{ supplier.email }}</td>
+                    <td>{{ supplier.phone }}</td>
+                    <td>{{ supplier.tax_id }}</td>
+                    <td>
+                        <span class="badge {% if supplier.status == 'active' %}bg-success{% else %}bg-danger{% endif %}">
+                            {{ supplier.status }}
+                        </span>
+                    </td>
+                    <td>
+                        <button class="btn btn-sm btn-info" onclick="editSupplier({{ supplier.id }})">Edit</button>
+                        <button class="btn btn-sm btn-danger" onclick="deleteSupplier({{ supplier.id }})">Delete</button>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Add Supplier Modal -->
+    <div class="modal fade" id="addSupplierModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Add New Supplier</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="addSupplierForm" action="{{ url_for('add_supplier') }}" method="POST">
+                        <div class="mb-3">
+                            <label for="name" class="form-label">Name*</label>
+                            <input type="text" class="form-control" id="name" name="name" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="email" class="form-label">Email</label>
+                            <input type="email" class="form-control" id="email" name="email">
+                        </div>
+                        <div class="mb-3">
+                            <label for="phone" class="form-label">Phone</label>
+                            <input type="tel" class="form-control" id="phone" name="phone">
+                        </div>
+                        <div class="mb-3">
+                            <label for="address" class="form-label">Address</label>
+                            <textarea class="form-control" id="address" name="address" rows="3"></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label for="tax_id" class="form-label">Tax ID</label>
+                            <input type="text" class="form-control" id="tax_id" name="tax_id">
+                        </div>
+                        <div class="mb-3">
+                            <label for="notes" class="form-label">Notes</label>
+                            <textarea class="form-control" id="notes" name="notes" rows="3"></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="submit" form="addSupplierForm" class="btn btn-primary">Add Supplier</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Supplier Modal -->
+    <div class="modal fade" id="editSupplierModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Edit Supplier</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="editSupplierForm" method="POST">
+                        <input type="hidden" id="edit_supplier_id" name="supplier_id">
+                        <div class="mb-3">
+                            <label for="edit_name" class="form-label">Name*</label>
+                            <input type="text" class="form-control" id="edit_name" name="name" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="edit_email" class="form-label">Email</label>
+                            <input type="email" class="form-control" id="edit_email" name="email">
+                        </div>
+                        <div class="mb-3">
+                            <label for="edit_phone" class="form-label">Phone</label>
+                            <input type="tel" class="form-control" id="edit_phone" name="phone">
+                        </div>
+                        <div class="mb-3">
+                            <label for="edit_address" class="form-label">Address</label>
+                            <textarea class="form-control" id="edit_address" name="address" rows="3"></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label for="edit_tax_id" class="form-label">Tax ID</label>
+                            <input type="text" class="form-control" id="edit_tax_id" name="tax_id">
+                        </div>
+                        <div class="mb-3">
+                            <label for="edit_notes" class="form-label">Notes</label>
+                            <textarea class="form-control" id="edit_notes" name="notes" rows="3"></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label for="edit_status" class="form-label">Status</label>
+                            <select class="form-select" id="edit_status" name="status">
+                                <option value="active">Active</option>
+                                <option value="inactive">Inactive</option>
+                            </select>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="submit" form="editSupplierForm" class="btn btn-primary">Save Changes</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- JavaScript for supplier management -->
+<script>
+function editSupplier(supplierId) {
+    fetch(`/get_supplier/${supplierId}`)
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('edit_supplier_id').value = data.id;
+            document.getElementById('edit_name').value = data.name;
+            document.getElementById('edit_email').value = data.email || '';
+            document.getElementById('edit_phone').value = data.phone || '';
+            document.getElementById('edit_address').value = data.address || '';
+            document.getElementById('edit_tax_id').value = data.tax_id || '';
+            document.getElementById('edit_notes').value = data.notes || '';
+            document.getElementById('edit_status').value = data.status;
+            
+            document.getElementById('editSupplierForm').action = `/edit_supplier/${supplierId}`;
+            new bootstrap.Modal(document.getElementById('editSupplierModal')).show();
+        });
+}
+
+function deleteSupplier(supplierId) {
+    if (confirm('Are you sure you want to delete this supplier?')) {
+        fetch(`/delete_supplier/${supplierId}`, { method: 'POST' })
+            .then(response => {
+                if (response.ok) {
+                    window.location.reload();
+                } else {
+                    alert('Error deleting supplier');
+                }
+            });
+    }
+}
+</script>
+{% endblock %}

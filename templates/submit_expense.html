@@ -41,11 +41,22 @@
                 <label for="reason" class="form-label">Reason</label>
                 <textarea class="form-control" id="reason" name="reason" rows="3" required></textarea>
             </div>
-            <div class="form-group">
+            <div class="mb-3">
                 <label for="payment_method" class="form-label">Payment Method</label>
-                <select class="form-control" id="payment_method" name="payment_method" required>
-                    <option value="credit">Credit Card (By Employee)</option>
-                    <option value="transfer">Bank Transfer (By Accounting)</option>
+                <select class="form-select" id="payment_method" name="payment_method" required>
+                    <option value="credit">Credit Card</option>
+                    <option value="transfer">Bank Transfer</option>
+                </select>
+            </div>
+            <div class="mb-3">
+                <label for="supplier_id" class="form-label">Supplier</label>
+                <select class="form-select" id="supplier_id" name="supplier_id">
+                    <option value="">Select a supplier (optional)</option>
+                    {% for supplier in suppliers %}
+                        {% if supplier.status == 'active' %}
+                            <option value="{{ supplier.id }}">{{ supplier.name }}</option>
+                        {% endif %}
+                    {% endfor %}
                 </select>
             </div>
             <div class="mb-3">
