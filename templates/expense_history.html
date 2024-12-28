@@ -116,24 +116,18 @@
                             <td>{{ expense.type|format_expense_type }}</td>
                             <td>{{ "Credit Card" if expense.payment_method == "credit" else "Bank Transfer" }}</td>
                             <td class="col-amount">₪{{ "%.2f"|format(expense.amount) }}</td>
-                            <td>
+                            <td class="status-{{ expense.status }}">
                                 {% if expense.status == 'rejected' %}
-                                    <span class="badge bg-danger status-badge">
-                                        <i class="fas fa-times-circle"></i> Rejected
-                                    </span>
+                                    <span class="badge danger">Rejected</span>
                                     {% if expense.rejection_reason %}
-                                        <div class="text-danger small mt-1">
-                                            {{ expense.rejection_reason }}
+                                        <div class="rejection-reason">
+                                            <strong>Reason:</strong> {{ expense.rejection_reason }}
                                         </div>
                                     {% endif %}
                                 {% elif expense.status == 'approved' %}
-                                    <span class="badge bg-success status-badge">
-                                        <i class="fas fa-check-circle"></i> Approved
-                                    </span>
+                                    <span class="badge success">Approved</span>
                                 {% elif expense.status == 'pending' %}
-                                    <span class="badge bg-warning text-dark status-badge">
-                                        <i class="fas fa-clock"></i> Pending
-                                    </span>
+                                    <span class="badge warning">Pending</span>
                                 {% endif %}
                             </td>
                             <td class="col-actions">{{ expense.handler.username if expense.handler and expense.status != 'pending' else '-' }}</td>
@@ -316,16 +310,50 @@
 }
 
 /* Status badge styles */
-.status-badge {
+.badge {
     display: inline-block;
-    padding: 0.25rem 0.5rem;
+    padding: 0.4em 0.8em;
+    font-size: 0.75em;
+    font-weight: 600;
+    line-height: 1;
+    text-align: center;
+    white-space: nowrap;
+    vertical-align: baseline;
     border-radius: 0.25rem;
-    font-size: 0.875rem;
 }
 
-.status-pending { background-color: #fff3cd; color: #856404; }
-.status-approved { background-color: #d4edda; color: #155724; }
-.status-rejected { background-color: #f8d7da; color: #721c24; }
+.badge.success {
+    background-color: #28a745;
+    color: white;
+}
+
+.badge.danger {
+    background-color: #dc3545;
+    color: white;
+}
+
+.badge.warning {
+    background-color: #ffc107;
+    color: #212529;
+}
+
+.rejection-reason {
+    margin-top: 0.5rem;
+    font-size: 0.875em;
+    color: #dc3545;
+}
+
+.status-rejected {
+    color: #dc3545;
+}
+
+.status-approved {
+    color: #28a745;
+}
+
+.status-pending {
+    color: #ffc107;
+}
 
 @media (max-width: 768px) {
     .table-responsive {
