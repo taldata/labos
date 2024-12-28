@@ -24,14 +24,25 @@
                 <label for="amount">Amount (VAT included) (₪)</label>
                 <input type="number" step="0.01" min="0" name="amount" id="amount" required class="form-control" value="{{ expense.amount }}">
             </div>
+
             <div class="form-group">
                 <label for="description">Description:</label>
                 <textarea id="description" name="description" required>{{ expense.description }}</textarea>
             </div>
+
             <div class="form-group">
                 <label for="reason">Reason For Request:</label>
                 <textarea id="reason" name="reason" required>{{ expense.reason }}</textarea>
             </div>
+
+            <div class="form-group">
+                <label for="type">Expense Type:</label>
+                <select id="type" name="type" required>
+                    <option value="needs_approval" {% if expense.type == 'needs_approval' %}selected{% endif %}>Regular Expense</option>
+                    <option value="future_approval" {% if expense.type == 'future_approval' %}selected{% endif %}>Future Approval</option>
+                </select>
+            </div>
+
             <div class="form-group">
                 <label for="subcategory_id">Category:</label>
                 <select id="subcategory_id" name="subcategory_id" required>
@@ -41,6 +52,24 @@
                     </option>
                     {% endfor %}
                 </select>
+            </div>
+
+            <div class="form-group">
+                <label for="supplier_id">Supplier:</label>
+                <select id="supplier_id" name="supplier_id">
+                    <option value="">-- Select Supplier (Optional) --</option>
+                    {% for supplier in suppliers %}
+                    <option value="{{ supplier.id }}" {% if supplier.id == expense.supplier_id %}selected{% endif %}>
+                        {{ supplier.name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="purchase_date">Purchase Date:</label>
+                <input type="date" id="purchase_date" name="purchase_date" 
+                       value="{{ expense.purchase_date.strftime('%Y-%m-%d') if expense.purchase_date else '' }}">
             </div>
 
             <div class="form-group">
@@ -57,7 +86,7 @@
                 <div class="form-group">
                     <label for="quote">Quote:</label>
                     {% if expense.quote_filename %}
-                        <p>Current quote: 
+                        <p class="current-file">Current quote: 
                             <a href="{{ url_for('download_file', filename=expense.quote_filename) }}">
                                 {{ expense.quote_filename }}
                             </a>
@@ -70,7 +99,7 @@
                 <div class="form-group">
                     <label for="invoice">Invoice:</label>
                     {% if expense.invoice_filename %}
-                        <p>Current invoice: 
+                        <p class="current-file">Current invoice: 
                             <a href="{{ url_for('download_file', filename=expense.invoice_filename) }}">
                                 {{ expense.invoice_filename }}
                             </a>
@@ -83,7 +112,7 @@
                 <div class="form-group">
                     <label for="receipt">Receipt:</label>
                     {% if expense.receipt_filename %}
-                        <p>Current receipt: 
+                        <p class="current-file">Current receipt: 
                             <a href="{{ url_for('download_file', filename=expense.receipt_filename) }}">
                                 {{ expense.receipt_filename }}
                             </a>
@@ -127,6 +156,51 @@
     margin-top: 2rem;
     display: flex;
     gap: 1rem;
+}
+
+.form-group {
+    margin-bottom: 1.5rem;
+}
+
+label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+}
+
+input[type="text"],
+input[type="number"],
+input[type="date"],
+select,
+textarea {
+    width: 100%;
+    padding: 0.5rem;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 1rem;
+}
+
+textarea {
+    min-height: 100px;
+    resize: vertical;
+}
+
+.file-input {
+    margin-top: 0.5rem;
+}
+
+.current-file {
+    margin-bottom: 0.5rem;
+    color: #0066cc;
+}
+
+.current-file a {
+    text-decoration: none;
+    color: inherit;
+}
+
+.current-file a:hover {
+    text-decoration: underline;
 }
 </style>
 {% endblock %}

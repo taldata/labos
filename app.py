@@ -1116,57 +1116,108 @@ def edit_expense(expense_id):
         return redirect(url_for('employee_dashboard'))
     
     if request.method == 'POST':
-        amount = float(request.form.get('amount'))
-        description = request.form.get('description')
-        reason = request.form.get('reason')
-        subcategory_id = request.form.get('subcategory_id')
-        payment_method = request.form.get('payment_method')
-        
-        # Verify that the subcategory belongs to the user's department
-        subcategory = Subcategory.query.join(Category).filter(
-            Subcategory.id == subcategory_id,
-            Category.department_id == current_user.department_id
-        ).first()
-        
-        if not subcategory:
-            flash('Invalid category selected', 'error')
-            return redirect(url_for('edit_expense', expense_id=expense_id))
-        
-        # Update expense details
-        expense.amount = amount
-        expense.description = description
-        expense.reason = reason
-        expense.subcategory_id = subcategory_id
-        expense.payment_method = payment_method
-        
-        # Handle file uploads
-        for doc_type in ['quote', 'invoice', 'receipt']:
-            if doc_type in request.files:
-                file = request.files[doc_type]
-                if file and file.filename != '' and allowed_file(file.filename):
-                    # Delete old file if it exists
-                    old_filename = getattr(expense, f"{doc_type}_filename")
-                    if old_filename:
-                        old_file_path = os.path.join(app.config['UPLOAD_FOLDER'], old_filename)
-                        if os.path.exists(old_file_path):
-                            os.remove(old_file_path)
-                    
-                    # Save new file
-                    filename = secure_filename(f"{datetime.utcnow().strftime('%Y%m%d%H%M%S')}_{doc_type}_{file.filename}")
-                    file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-                    file.save(file_path)
-                    setattr(expense, f"{doc_type}_filename", filename)
+        try:
+            amount = float(request.form.get('amount'))
+            description = request.form.get('description')
+            reason = request.form.get('reason')
+            expense_type = request.form.get('type')
+            subcategory_id = request.form.get('subcategory_id')
+            payment_method = request.form.get('payment_method')
+            supplier_id = request.form.get('supplier_id')
+            purchase_date_str = request.form.get('purchase_date')
+            
+            # Convert purchase_date string to datetime if provided
+            purchase_date = None
+            if purchase_date_str:
+                try:
+                    purchase_date = datetime.strptime(purchase_date_str, '%Y-%m-%d')
+                except ValueError:
+                    logging.error(f"Invalid purchase date format: {purchase_date_str}")
+            
+            # Verify that the subcategory belongs to the user's department
+            subcategory = Subcategory.query.join(Category).filter(
+                Subcategory.id == subcategory_id,
+                Category.department_id == current_user.department_id
+            ).first()
+            
+            if not subcategory:
+                flash('Invalid category selected', 'error')
+                return redirect(url_for('edit_expense', expense_id=expense_id))
+            
+            # Update expense details
+            expense.amount = amount
+            expense.description = description
+            expense.reason = reason
+            expense.type = expense_type
+            expense.subcategory_id = subcategory_id
+            expense.payment_method = payment_method
+            expense.supplier_id = supplier_id if supplier_id else None
+            expense.purchase_date = purchase_date
+            
+            # Handle file uploads with document processing
+            for doc_type in ['quote', 'invoice', 'receipt']:
+                if doc_type in request.files:
+                    file = request.files[doc_type]
+                    if file and file.filename != '' and allowed_file(file.filename):
+                        # Delete old file if it exists
+                        old_filename = getattr(expense, f"{doc_type}_filename")
+                        if old_filename:
+                            old_file_path = os.path.join(app.config['UPLOAD_FOLDER'], old_filename)
+                            if os.path.exists(old_file_path):
+                                os.remove(old_file_path)
+                        
+                        # Save new file
+                        filename = secure_filename(f"{datetime.utcnow().strftime('%Y%m%d%H%M%S')}_{doc_type}_{file.filename}")
+                        file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+                        file.save(file_path)
+                        setattr(expense, f"{doc_type}_filename", filename)
+                        
+                        # Process document if it's an invoice or receipt
+                        if doc_type in ['invoice', 'receipt']:
+                            try:
+                                doc_processor = DocumentProcessor()
+                                process_method = getattr(doc_processor, f"process_{doc_type}")
+                                doc_data = process_method(file_path)
+                                logging.info(f"Extracted {doc_type} data: {doc_data}")
+                                
+                                # Update expense with document data if not already set by user
+                                if doc_type == 'invoice' and doc_data.get('invoice_total') and not request.form.get('amount'):
+                                    total = doc_data['invoice_total']
+                                    expense.amount = float(total.amount if hasattr(total, 'amount') else total)
+                                    
+                                if doc_data.get('items') and doc_data['items'] and not request.form.get('description'):
+                                    expense.description = doc_data['items'][0].get('description', '')
+                                    
+                                if doc_type == 'invoice' and doc_data.get('vendor_name'):
+                                    expense.supplier_name = doc_data['vendor_name']
+                                    
+                                if doc_data.get(f"{doc_type}_date") and not request.form.get('purchase_date'):
+                                    expense.purchase_date = doc_data[f"{doc_type}_date"]
+                                    
+                            except Exception as e:
+                                logging.error(f"Error processing {doc_type}: {str(e)}")
 
-        db.session.commit()
-        flash('Expense updated successfully')
-        return redirect(url_for('employee_dashboard'))
+            db.session.commit()
+            flash('Expense updated successfully')
+            return redirect(url_for('employee_dashboard'))
+            
+        except Exception as e:
+            logging.error(f"Error updating expense: {str(e)}")
+            flash('Error updating expense. Please try again.', 'error')
+            return redirect(url_for('edit_expense', expense_id=expense_id))
     
     # Get subcategories from user's department for the form
     subcategories = Subcategory.query.join(Category).filter(
         Category.department_id == current_user.department_id
     ).all()
     
-    return render_template('edit_expense.html', expense=expense, subcategories=subcategories)
+    # Get active suppliers for the form
+    suppliers = Supplier.query.filter_by(status='active').order_by(Supplier.name).all()
+    
+    return render_template('edit_expense.html', 
+                         expense=expense, 
+                         subcategories=subcategories,
+                         suppliers=suppliers)
 
 @app.route('/expense/<int:expense_id>/delete', methods=['POST'])
 @login_required
