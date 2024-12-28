@@ -6,7 +6,6 @@
         <h1>{{ category.name }} - Subcategories Management</h1>
         <div class="header-actions">
             <a href="{{ url_for('manage_categories', dept_id=category.department.id) }}" class="button secondary">Back to Categories</a>
-            <a href="{{ url_for('logout') }}" class="logout-btn">Logout</a>
         </div>
     </header>
 
