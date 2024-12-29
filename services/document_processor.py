@@ -103,18 +103,13 @@ class DocumentProcessor:
 
             # Extract relevant receipt information
             receipt_data = {
-                "merchant_name": None,
                 "transaction_date": None,
-                "total": None,
+                "invoice_total": None,
                 "items": []
             }
 
             for receipt in result.documents:
-                # Get merchant name
-                try:
-                    receipt_data["merchant_name"] = receipt.fields.get("MerchantName").value if receipt.fields.get("MerchantName") else None
-                except:
-                    pass
+                print(f"Raw receipt fields: {receipt.fields}")
 
                 # Get transaction date
                 try:
@@ -175,6 +170,7 @@ class DocumentProcessor:
             }
 
             for quote in result.documents:
+                print(f"Raw quote fields: {quote.fields}")
                 # Get customer name
                 try:
                     quote_data["customer_name"] = quote.fields.get("CustomerName").value if quote.fields.get("CustomerName") else None
