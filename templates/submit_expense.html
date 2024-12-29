@@ -105,7 +105,7 @@
                         <label for="supplier_id">Select Existing Supplier</label>
                         <div class="supplier-select-container">
                             <select class="form-control" id="supplier_id" name="supplier_id" onchange="handleSupplierChange()">
-                                <option value="">Select a supplier (optional)</option>
+                                <option value="">Choose</option>
                                 {% for supplier in suppliers %}
                                     {% if supplier.status == 'active' %}
                                         <option value="{{ supplier.id }}">{{ supplier.name }}</option>

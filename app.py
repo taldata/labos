@@ -1771,5 +1771,22 @@ def delete_supplier(supplier_id):
 
     return redirect(url_for('manage_suppliers'))
 
+from services.document_processor import DocumentProcessor
+
+processor = DocumentProcessor()
+
+def process_quote_endpoint(document_path):
+    """
+    Endpoint to process a quote document.
+    
+    Args:
+        document_path (str): Path to the quote document.
+    """
+    try:
+        quote_data = processor.process_quote(document_path)
+        return quote_data
+    except Exception as e:
+        return {"error": str(e)}
+
 if __name__ == '__main__':
     app.run(debug=True)

@@ -146,3 +146,80 @@ class DocumentProcessor:
 
         except Exception as e:
             raise Exception(f"Error processing receipt: {str(e)}")
+
+    def process_quote(self, document_path):
+        """
+        Process a quote document and extract relevant information
+        
+        Args:
+            document_path (str): Path to the document file
+            
+        Returns:
+            dict: Extracted quote information
+        """
+        try:
+            with open(document_path, "rb") as f:
+                poller = self.document_analysis_client.begin_analyze_document(
+                    "prebuilt-quote", document=f
+                )
+            result = poller.result()
+
+            # Extract relevant quote information
+            quote_data = {
+                "customer_name": None,
+                "quote_date": None,
+                "quote_number": None,
+                "expiry_date": None,
+                "total_amount": None,
+                "items": []
+            }
+
+            for quote in result.documents:
+                # Get customer name
+                try:
+                    quote_data["customer_name"] = quote.fields.get("CustomerName").value
+                except:
+                    pass
+
+                # Get quote date
+                try:
+                    quote_data["quote_date"] = quote.fields.get("QuoteDate").value
+                except:
+                    pass
+
+                # Get quote number
+                try:
+                    quote_data["quote_number"] = quote.fields.get("QuoteNumber").value
+                except:
+                    pass
+
+                # Get expiry date
+                try:
+                    quote_data["expiry_date"] = quote.fields.get("ExpiryDate").value
+                except:
+                    pass
+
+                # Get total amount
+                try:
+                    quote_data["total_amount"] = quote.fields.get("TotalAmount").value
+                except:
+                    pass
+
+                # Get items
+                try:
+                    items = quote.fields.get("Items").value
+                    for item in items:
+                        item_data = {
+                            "description": item.get("Description").value if item.get("Description") else None,
+                            "quantity": item.get("Quantity").value if item.get("Quantity") else None,
+                            "unit_price": item.get("UnitPrice").value if item.get("UnitPrice") else None,
+                            "amount": item.get("Amount").value if item.get("Amount") else None,
+                        }
+                        quote_data["items"].append(item_data)
+                except:
+                    pass
+
+            return quote_data
+
+        except Exception as e:
+            raise Exception(f"Error processing quote: {str(e)}")
