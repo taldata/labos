@@ -112,19 +112,19 @@ class DocumentProcessor:
             for receipt in result.documents:
                 # Get merchant name
                 try:
-                    receipt_data["merchant_name"] = receipt.fields.get("MerchantName").value
+                    receipt_data["merchant_name"] = receipt.fields.get("MerchantName").value if receipt.fields.get("MerchantName") else None
                 except:
                     pass
 
                 # Get transaction date
                 try:
-                    receipt_data["transaction_date"] = receipt.fields.get("TransactionDate").value
+                    receipt_data["transaction_date"] = receipt.fields.get("TransactionDate").value if receipt.fields.get("TransactionDate") else None
                 except:
                     pass
 
                 # Get total amount
                 try:
-                    receipt_data["total"] = receipt.fields.get("Total").value
+                    receipt_data["total"] = receipt.fields.get("Total").value if receipt.fields.get("Total") else None
                 except:
                     pass
 
@@ -139,8 +139,8 @@ class DocumentProcessor:
                             "total_price": item.get("TotalPrice").value if item.get("TotalPrice") else None,
                         }
                         receipt_data["items"].append(item_data)
-                except:
-                    pass
+                except Exception as e:
+                    print(f"Error extracting items from receipt: {str(e)}")
 
             return receipt_data
 
