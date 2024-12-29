@@ -78,163 +78,174 @@
             <i class="fas fa-arrows-alt-h"></i> Scroll horizontally to view more
         </div>
 
-        <div class="table-responsive">
-            <table class="expenses-table">
-                <thead>
-                    <tr>
-                        <th class="date-col"><i class="fas fa-calendar"></i> Date</th>
-                        <th><i class="fas fa-user"></i> Employee</th>
-                        <th><i class="fas fa-building"></i> Department</th>
-                        <th><i class="fas fa-file-alt"></i> Description</th>
-                        <th><i class="fas fa-comment"></i> Reason</th>
-                        <th><i class="fas fa-store"></i> Supplier</th>
-                        <th class="date-col"><i class="fas fa-calendar-alt"></i> Purchase Date</th>
-                        <th><i class="fas fa-folder"></i> Category</th>
-                        <th><i class="fas fa-folder-open"></i> Subcategory</th>
-                        <th><i class="fas fa-tag"></i> Type</th>
-                        <th><i class="fas fa-credit-card"></i> Payment</th>
-                        <th class="amount-col"><i class="fas fa-shekel-sign"></i> Amount</th>
-                        <th><i class="fas fa-chart-pie"></i> Budget</th>
-                        <th><i class="fas fa-paperclip"></i> Files</th>
-                        <th class="status-col"><i class="fas fa-info-circle"></i> Status</th>
-                        <th class="actions-col"><i class="fas fa-cogs"></i> Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for expense, dept_name, dept_budget, dept_remaining, cat_name, cat_budget, cat_remaining, subcat_name, subcat_budget, subcat_remaining in expenses %}
-                    <tr>
-                        <td title="{{ expense.date.strftime('%d/%m/%Y %H:%M:%S') }}">{{ expense.date.strftime('%d/%m/%Y %H:%M') }}</td>
-                        <td>{{ expense.submitter.username }}</td>
-                        <td>{{ expense.submitter.home_department.name if expense.submitter.home_department else 'No Department' }}</td>
-                        <td>{{ expense.description }}</td>
-                        <td>{{ expense.reason }}</td>
-                        <td>{{ expense.supplier.name if expense.supplier else '-' }}</td>
-                        <td>{{ expense.purchase_date.strftime('%d/%m/%Y') if expense.purchase_date else '-' }}</td>
-                        <td>{{ expense.subcategory.category.name if expense.subcategory else '-' }}</td>
-                        <td>{{ expense.subcategory.name if expense.subcategory else '-' }}</td>
-                        <td>{{ expense.type|format_expense_type }}</td>
-                        <td>{{ "Credit Card (By Employee)" if expense.payment_method == "credit" else "Bank Transfer (By Accounting)" }}</td>
-                        <td>₪{{ "%.2f"|format(expense.amount) }}</td>
-                        <td class="budget-info">
-                            <div class="budget-column">
-                                <div class="budget-header" title="{{ dept_name }}">{{ dept_name }}</div>
-                                <div class="budget-details">
-                                    <div class="budget-item">
-                                        <span class="label">Initial Budget:</span>
-                                        <span class="amount">₪{{ "%.2f"|format(dept_budget) }}</span>
+        <div class="table-scroll-container">
+            <div class="table-responsive">
+                <table class="expenses-table">
+                    <thead>
+                        <tr>
+                            <th class="date-col"><i class="fas fa-calendar"></i> Date</th>
+                            <th><i class="fas fa-user"></i> Employee</th>
+                            <th><i class="fas fa-building"></i> Department</th>
+                            <th><i class="fas fa-file-alt"></i> Description</th>
+                            <th><i class="fas fa-comment"></i> Reason</th>
+                            <th><i class="fas fa-store"></i> Supplier</th>
+                            <th class="date-col"><i class="fas fa-calendar-alt"></i> Purchase Date</th>
+                            <th><i class="fas fa-folder"></i> Category</th>
+                            <th><i class="fas fa-folder-open"></i> Subcategory</th>
+                            <th><i class="fas fa-tag"></i> Type</th>
+                            <th><i class="fas fa-credit-card"></i> Payment</th>
+                            <th class="amount-col"><i class="fas fa-shekel-sign"></i> Amount</th>
+                            <th class="budget-col"><i class="fas fa-chart-pie"></i> Budget</th>
+                            <th><i class="fas fa-paperclip"></i> Files</th>
+                            <th class="status-col"><i class="fas fa-info-circle"></i> Status</th>
+                            <th class="actions-col"><i class="fas fa-cogs"></i> Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for expense, dept_name, dept_budget, dept_remaining, cat_name, cat_budget, cat_remaining, subcat_name, subcat_budget, subcat_remaining in expenses %}
+                        <tr>
+                            <td title="{{ expense.date.strftime('%d/%m/%Y %H:%M:%S') }}">{{ expense.date.strftime('%d/%m/%Y %H:%M') }}</td>
+                            <td>{{ expense.submitter.username }}</td>
+                            <td>{{ expense.submitter.home_department.name if expense.submitter.home_department else 'No Department' }}</td>
+                            <td>{{ expense.description }}</td>
+                            <td>{{ expense.reason }}</td>
+                            <td>{{ expense.supplier.name if expense.supplier else '-' }}</td>
+                            <td>{{ expense.purchase_date.strftime('%d/%m/%Y') if expense.purchase_date else '-' }}</td>
+                            <td>{{ expense.subcategory.category.name if expense.subcategory else '-' }}</td>
+                            <td>{{ expense.subcategory.name if expense.subcategory else '-' }}</td>
+                            <td>{{ expense.type|format_expense_type }}</td>
+                            <td>{{ "Credit Card (By Employee)" if expense.payment_method == "credit" else "Bank Transfer (By Accounting)" }}</td>
+                            <td>₪{{ "%.2f"|format(expense.amount) }}</td>
+                            <td class="budget-info">
+                                <div class="budget-column collapsed" onclick="toggleBudgetDetails(this)">
+                                    <div class="budget-preview">
+                                        <div class="budget-title">{{ dept_name }}</div>
+                                        <div class="budget-bar">
+                                            <div class="budget-status-bar {% if dept_remaining < expense.amount %}warning{% endif %}"
+                                                 style="width: {{ (dept_remaining / dept_budget * 100) if dept_budget > 0 else 0 }}%">
+                                            </div>
+                                        </div>
+                                        <div class="budget-amount">₪{{ "%.2f"|format(dept_remaining) }}</div>
                                     </div>
-                                    <div class="budget-item">
-                                        <span class="label">Left:</span>
-                                        <span class="amount {% if dept_remaining < expense.amount %}warning{% endif %}">
-                                            ₪{{ "%.2f"|format(dept_remaining) }}
-                                        </span>
-                                    </div>
-                                    <div class="budget-status">
-                                        <div class="budget-status-bar {% if dept_remaining < expense.amount %}warning{% endif %}"
-                                             style="width: {{ (dept_remaining / dept_budget * 100) if dept_budget > 0 else 0 }}%">
+                                    <div class="budget-details">
+                                        <div class="budget-item">
+                                            <span class="label">Initial:</span>
+                                            <span class="amount">₪{{ "%.2f"|format(dept_budget) }}</span>
+                                        </div>
+                                        <div class="budget-item">
+                                            <span class="label">Left:</span>
+                                            <span class="amount {% if dept_remaining < expense.amount %}warning{% endif %}">
+                                                ₪{{ "%.2f"|format(dept_remaining) }}
+                                            </span>
                                         </div>
                                     </div>
                                 </div>
-                            </div>
-                            {% if cat_name %}
-                            <div class="budget-column">
-                                <div class="budget-header" title="{{ cat_name }}">{{ cat_name }}</div>
-                                <div class="budget-details">
-                                    <div class="budget-item">
-                                        <span class="label">Initial Budget:</span>
-                                        <span class="amount">₪{{ "%.2f"|format(cat_budget) }}</span>
+                                {% if cat_name %}
+                                <div class="budget-column collapsed" onclick="toggleBudgetDetails(this)">
+                                    <div class="budget-preview">
+                                        <div class="budget-title">{{ cat_name }}</div>
+                                        <div class="budget-bar">
+                                            <div class="budget-status-bar {% if cat_remaining < expense.amount %}warning{% endif %}"
+                                                 style="width: {{ (cat_remaining / cat_budget * 100) if cat_budget > 0 else 0 }}%">
+                                            </div>
+                                        </div>
+                                        <div class="budget-amount">₪{{ "%.2f"|format(cat_remaining) }}</div>
                                     </div>
-                                    <div class="budget-item">
-                                        <span class="label">Left:</span>
-                                        <span class="amount {% if cat_remaining < expense.amount %}warning{% endif %}">
-                                            ₪{{ "%.2f"|format(cat_remaining) }}
-                                        </span>
-                                    </div>
-                                    <div class="budget-status">
-                                        <div class="budget-status-bar {% if cat_remaining < expense.amount %}warning{% endif %}"
-                                             style="width: {{ (cat_remaining / cat_budget * 100) if cat_budget > 0 else 0 }}%">
+                                    <div class="budget-details">
+                                        <div class="budget-item">
+                                            <span class="label">Initial:</span>
+                                            <span class="amount">₪{{ "%.2f"|format(cat_budget) }}</span>
+                                        </div>
+                                        <div class="budget-item">
+                                            <span class="label">Left:</span>
+                                            <span class="amount {% if cat_remaining < expense.amount %}warning{% endif %}">
+                                                ₪{{ "%.2f"|format(cat_remaining) }}
+                                            </span>
                                         </div>
                                     </div>
                                 </div>
-                            </div>
-                            {% endif %}
-                            {% if subcat_name %}
-                            <div class="budget-column">
-                                <div class="budget-header" title="{{ subcat_name }}">{{ subcat_name }}</div>
-                                <div class="budget-details">
-                                    <div class="budget-item">
-                                        <span class="label">Initial Budget:</span>
-                                        <span class="amount">₪{{ "%.2f"|format(subcat_budget) }}</span>
-                                    </div>
-                                    <div class="budget-item">
-                                        <span class="label">Left:</span>
-                                        <span class="amount {% if subcat_remaining < expense.amount %}warning{% endif %}">
-                                            ₪{{ "%.2f"|format(subcat_remaining) }}
-                                        </span>
-                                    </div>
-                                    <div class="budget-status">
-                                        <div class="budget-status-bar {% if subcat_remaining < expense.amount %}warning{% endif %}"
-                                             style="width: {{ (subcat_remaining / subcat_budget * 100) if subcat_budget > 0 else 0 }}%">
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            {% endif %}
-                        </td>
-                        <td>
-                            {% if expense.quote_filename %}
-                                <a href="{{ url_for('download_file', filename=expense.quote_filename) }}" 
-                                   class="button secondary small">Quote</a>
-                            {% endif %}
-                            {% if expense.invoice_filename %}
-                                <a href="{{ url_for('download_file', filename=expense.invoice_filename) }}" 
-                                   class="button secondary small">Invoice</a>
-                            {% endif %}
-                            {% if expense.receipt_filename %}
-                                <a href="{{ url_for('download_file', filename=expense.receipt_filename) }}" 
-                                   class="button secondary small">Receipt</a>
-                            {% endif %}
-                            {% if not expense.quote_filename and not expense.invoice_filename and not expense.receipt_filename %}
-                                <span class="text-muted">No attachments</span>
-                            {% endif %}
-                        </td>
-                        <td class="status-cell">
-                            <div class="status-indicator {{ expense.status }}">
-                                {% if expense.status == 'rejected' %}
-                                    <i class="fas fa-times-circle"></i>
-                                    <span>Rejected</span>
-                                    {% if expense.rejection_reason %}
-                                        <div class="rejection-reason">
-                                            <i class="fas fa-info-circle"></i>
-                                            {{ expense.rejection_reason }}
-                                        </div>
-                                    {% endif %}
-                                {% elif expense.status == 'approved' %}
-                                    <i class="fas fa-check-circle"></i>
-                                    <span>Approved</span>
-                                {% elif expense.status == 'pending' %}
-                                    <i class="fas fa-clock"></i>
-                                    <span>Pending</span>
                                 {% endif %}
-                            </div>
-                        </td>
-                        <td class="actions">
-                            <div class="action-buttons">
-                                <form action="{{ url_for('handle_expense', expense_id=expense.id, action='approve') }}" method="post" class="inline-form">
-                                    <button type="submit" class="button success small">Approve</button>
-                                </form>
-                                <button onclick="showRejectModal({{ expense.id }})" class="button danger small">Reject</button>
-                            </div>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                    {% if not expenses %}
-                    <tr>
-                        <td colspan="12" class="text-center">No pending expenses</td>
-                    </tr>
-                    {% endif %}
-                </tbody>
-            </table>
+                                {% if subcat_name %}
+                                <div class="budget-column collapsed" onclick="toggleBudgetDetails(this)">
+                                    <div class="budget-preview">
+                                        <div class="budget-title">{{ subcat_name }}</div>
+                                        <div class="budget-bar">
+                                            <div class="budget-status-bar {% if subcat_remaining < expense.amount %}warning{% endif %}"
+                                                 style="width: {{ (subcat_remaining / subcat_budget * 100) if subcat_budget > 0 else 0 }}%">
+                                            </div>
+                                        </div>
+                                        <div class="budget-amount">₪{{ "%.2f"|format(subcat_remaining) }}</div>
+                                    </div>
+                                    <div class="budget-details">
+                                        <div class="budget-item">
+                                            <span class="label">Initial:</span>
+                                            <span class="amount">₪{{ "%.2f"|format(subcat_budget) }}</span>
+                                        </div>
+                                        <div class="budget-item">
+                                            <span class="label">Left:</span>
+                                            <span class="amount {% if subcat_remaining < expense.amount %}warning{% endif %}">
+                                                ₪{{ "%.2f"|format(subcat_remaining) }}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if expense.quote_filename %}
+                                    <a href="{{ url_for('download_file', filename=expense.quote_filename) }}" 
+                                       class="button secondary small">Quote</a>
+                                {% endif %}
+                                {% if expense.invoice_filename %}
+                                    <a href="{{ url_for('download_file', filename=expense.invoice_filename) }}" 
+                                       class="button secondary small">Invoice</a>
+                                {% endif %}
+                                {% if expense.receipt_filename %}
+                                    <a href="{{ url_for('download_file', filename=expense.receipt_filename) }}" 
+                                       class="button secondary small">Receipt</a>
+                                {% endif %}
+                                {% if not expense.quote_filename and not expense.invoice_filename and not expense.receipt_filename %}
+                                    <span class="text-muted">No attachments</span>
+                                {% endif %}
+                            </td>
+                            <td class="status-cell">
+                                <div class="status-indicator {{ expense.status }}">
+                                    {% if expense.status == 'rejected' %}
+                                        <i class="fas fa-times-circle"></i>
+                                        <span>Rejected</span>
+                                        {% if expense.rejection_reason %}
+                                            <div class="rejection-reason">
+                                                <i class="fas fa-info-circle"></i>
+                                                {{ expense.rejection_reason }}
+                                            </div>
+                                        {% endif %}
+                                    {% elif expense.status == 'approved' %}
+                                        <i class="fas fa-check-circle"></i>
+                                        <span>Approved</span>
+                                    {% elif expense.status == 'pending' %}
+                                        <i class="fas fa-clock"></i>
+                                        <span>Pending</span>
+                                    {% endif %}
+                                </div>
+                            </td>
+                            <td class="actions">
+                                <div class="action-buttons">
+                                    <form action="{{ url_for('handle_expense', expense_id=expense.id, action='approve') }}" method="post" class="inline-form">
+                                        <button type="submit" class="button success small">Approve</button>
+                                    </form>
+                                    <button onclick="showRejectModal({{ expense.id }})" class="button danger small">Reject</button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                        {% if not expenses %}
+                        <tr>
+                            <td colspan="12" class="text-center">No pending expenses</td>
+                        </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
 </div>
@@ -413,62 +424,175 @@
 
 .expenses-table {
     width: 100%;
-    border-collapse: collapse;
+    border-collapse: separate;
+    border-spacing: 0;
 }
 
 .expenses-table th {
-    background: #f8f9fa;
-    padding: 12px;
+    position: sticky;
+    top: 0;
+    background: #f8fafc;
+    z-index: 1;
+    padding: 1rem;
     text-align: left;
     font-weight: 500;
-    color: #495057;
-    border-bottom: 2px solid #dee2e6;
+    color: #475569;
+    border-bottom: 2px solid #e2e8f0;
+    white-space: nowrap;
 }
 
 .expenses-table td {
-    padding: 12px;
-    border-bottom: 1px solid #dee2e6;
+    padding: 1rem;
+    border-bottom: 1px solid #e2e8f0;
+    vertical-align: top;
 }
 
-.expenses-table tr:hover {
-    background: #f8f9fa;
+.expenses-table tbody tr:hover {
+    background: #f8fafc;
+}
+
+/* Fixed width columns */
+.date-col {
+    width: 120px;
+    min-width: 120px;
+}
+
+.amount-col {
+    width: 100px;
+    min-width: 100px;
+}
+
+.status-col {
+    width: 100px;
+    min-width: 100px;
+}
+
+.actions-col {
+    width: 120px;
+    min-width: 120px;
+}
+
+/* Budget column specific */
+.budget-col {
+    width: 180px;
+    min-width: 180px;
 }
 
 .budget-info {
-    display: flex;
-    gap: 15px;
+    min-width: 180px;
+    padding: 0.25rem;
 }
 
 .budget-column {
-    flex: 1;
-    min-width: 150px;
+    background: #f8f9fa;
+    border-radius: 4px;
+    padding: 0.5rem;
+    margin-bottom: 0.25rem;
+    border: 1px solid #e0e0e0;
+    cursor: pointer;
+    transition: all 0.3s ease;
 }
 
-.budget-header {
+.budget-column:hover {
+    background: #f0f0f0;
+}
+
+.budget-column.collapsed .budget-details {
+    display: none;
+}
+
+.budget-preview {
+    display: grid;
+    grid-template-columns: minmax(0, 1.5fr) 2fr minmax(0, 1fr);
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.budget-title {
+    font-size: 0.8rem;
     font-weight: 500;
-    margin-bottom: 5px;
-    color: #495057;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.budget-bar {
+    height: 4px;
+    background: #e2e8f0;
+    border-radius: 2px;
+    overflow: hidden;
+}
+
+.budget-status-bar {
+    height: 100%;
+    background: #22c55e;
+    border-radius: 2px;
+    transition: width 0.3s ease;
+}
+
+.budget-status-bar.warning {
+    background: #ef4444;
+}
+
+.budget-amount {
+    font-size: 0.8rem;
+    text-align: right;
+    white-space: nowrap;
 }
 
 .budget-details {
-    font-size: 14px;
+    margin-top: 0.5rem;
+    padding-top: 0.5rem;
+    border-top: 1px solid #e0e0e0;
+    font-size: 0.8rem;
 }
 
 .budget-item {
     display: flex;
     justify-content: space-between;
-    margin-bottom: 3px;
+    margin-bottom: 0.25rem;
 }
 
-.budget-status-bar {
-    height: 4px;
-    background: #28a745;
-    border-radius: 2px;
-    transition: width 0.3s;
+.budget-item .label {
+    color: #64748b;
 }
 
-.budget-status-bar.warning {
-    background: #dc3545;
+.budget-item .amount {
+    font-weight: 500;
+}
+
+.budget-item .amount.warning {
+    color: #ef4444;
+}
+
+.table-responsive {
+    overflow-x: auto;
+    margin: 0 -1rem;  /* Negative margin to allow full-width scrolling */
+    padding: 0 1rem;
+}
+
+/* Ensure horizontal scrolling works smoothly */
+.table-scroll-container {
+    position: relative;
+    overflow-x: auto;
+    margin: 0 -1rem;
+    padding: 0 1rem;
+}
+
+.table-scroll-indicator {
+    display: none;
+    text-align: center;
+    padding: 0.5rem;
+    color: #64748b;
+    font-size: 0.9rem;
+    background: #f8fafc;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+@media (max-width: 1200px) {
+    .table-scroll-indicator {
+        display: block;
+    }
 }
 
 .alert {
@@ -717,21 +841,6 @@ textarea.form-control {
 
 .expenses-table th.actions-col,
 .expenses-table td.actions-col { width: 120px; }
-
-/* Add horizontal scroll indicator */
-.table-scroll-indicator {
-    display: none;
-    text-align: center;
-    padding: 0.5rem;
-    color: #666;
-    font-size: 0.9rem;
-}
-
-@media (max-width: 1024px) {
-    .table-scroll-indicator {
-        display: block;
-    }
-}
 </style>
 
 <script>
@@ -777,6 +886,10 @@ window.onclick = function(event) {
     if (event.target == modal) {
         modal.style.display = 'none';
     }
+}
+
+function toggleBudgetDetails(element) {
+    element.classList.toggle('collapsed');
 }
 </script>
 {% endblock %}
