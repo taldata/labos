@@ -126,14 +126,15 @@ class DocumentProcessor:
                 # Get items
                 try:
                     items = receipt.fields.get("Items").value
-                    for item in items:
-                        item_data = {
-                            "description": item.get("Description").value if item.get("Description") else None,
-                            "quantity": item.get("Quantity").value if item.get("Quantity") else None,
-                            "unit_price": item.get("UnitPrice").value if item.get("UnitPrice") else None,
-                            "amount": item.get("Amount").value if item.get("Amount") else None,
-                        }
-                        receipt_data["items"].append(item_data)
+                    if items:
+                        for item in items:
+                            item_data = {
+                                "description": item.get("Description").value if item.get("Description") else None,
+                                "quantity": item.get("Quantity").value if item.get("Quantity") else None,
+                                "unit_price": item.get("UnitPrice").value if item.get("UnitPrice") else None,
+                                "amount": item.get("Amount").value if item.get("Amount") else None,
+                            }
+                            receipt_data["items"].append(item_data)
                 except Exception as e:
                     print(f"Error extracting items from receipt: {e}")
 
