@@ -124,7 +124,7 @@ class DocumentProcessor:
 
                 # Get total amount
                 try:
-                    receipt_data["total"] = receipt.fields.get("Total").value if receipt.fields.get("Total") else None
+                    receipt_data["invoice_total"] = receipt.fields.get("Total").value if receipt.fields.get("Total") else None
                 except:
                     pass
 
@@ -135,12 +135,12 @@ class DocumentProcessor:
                         item_data = {
                             "description": item.get("Description").value if item.get("Description") else None,
                             "quantity": item.get("Quantity").value if item.get("Quantity") else None,
-                            "price": item.get("Price").value if item.get("Price") else None,
-                            "total_price": item.get("TotalPrice").value if item.get("TotalPrice") else None,
+                            "unit_price": item.get("UnitPrice").value if item.get("UnitPrice") else None,
+                            "amount": item.get("Amount").value if item.get("Amount") else None,
                         }
                         receipt_data["items"].append(item_data)
                 except Exception as e:
-                    print(f"Error extracting items from receipt: {str(e)}")
+                    print(f"Error extracting items from receipt: {e}")
 
             return receipt_data
 
@@ -177,31 +177,31 @@ class DocumentProcessor:
             for quote in result.documents:
                 # Get customer name
                 try:
-                    quote_data["customer_name"] = quote.fields.get("CustomerName").value
+                    quote_data["customer_name"] = quote.fields.get("CustomerName").value if quote.fields.get("CustomerName") else None
                 except:
                     pass
 
                 # Get quote date
                 try:
-                    quote_data["quote_date"] = quote.fields.get("QuoteDate").value
+                    quote_data["quote_date"] = quote.fields.get("QuoteDate").value if quote.fields.get("QuoteDate") else None
                 except:
                     pass
 
                 # Get quote number
                 try:
-                    quote_data["quote_number"] = quote.fields.get("QuoteNumber").value
+                    quote_data["quote_number"] = quote.fields.get("QuoteNumber").value if quote.fields.get("QuoteNumber") else None
                 except:
                     pass
 
                 # Get expiry date
                 try:
-                    quote_data["expiry_date"] = quote.fields.get("ExpiryDate").value
+                    quote_data["expiry_date"] = quote.fields.get("ExpiryDate").value if quote.fields.get("ExpiryDate") else None
                 except:
                     pass
 
                 # Get total amount
                 try:
-                    quote_data["total_amount"] = quote.fields.get("TotalAmount").value
+                    quote_data["total_amount"] = quote.fields.get("TotalAmount").value if quote.fields.get("TotalAmount") else None
                 except:
                     pass
 
@@ -216,7 +216,8 @@ class DocumentProcessor:
                             "amount": item.get("Amount").value if item.get("Amount") else None,
                         }
                         quote_data["items"].append(item_data)
-                except:
+                except Exception as e:
+                    print(f"Error extracting items from quote: {e}")
                     pass
 
             return quote_data
