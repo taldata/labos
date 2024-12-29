@@ -1788,5 +1788,67 @@ def process_quote_endpoint(document_path):
     except Exception as e:
         return {"error": str(e)}
 
+@app.route('/api/expense/process-expense', methods=['POST'])
+@login_required
+def process_expense_document():
+    if 'document' not in request.files:
+        return jsonify({'error': 'No document provided'}), 400
+    
+    file = request.files['document']
+    if file.filename == '':
+        return jsonify({'error': 'No selected file'}), 400
+    
+    if file and allowed_file(file.filename):
+        try:
+            # Save file temporarily
+            filename = secure_filename(f"temp_{datetime.now().strftime('%Y%m%d%H%M%S')}_{file.filename}")
+            filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+            file.save(filepath)
+            
+            # Process the document
+            doc_processor = DocumentProcessor()
+            doc_data = doc_processor.process_invoice(filepath)
+            
+            # Clean up temporary file
+            os.remove(filepath)
+            
+            return jsonify(doc_data)
+        except Exception as e:
+            logging.error(f"Error processing document: {str(e)}")
+            return jsonify({'error': str(e)}), 500
+    
+    return jsonify({'error': 'Invalid file type'}), 400
+
+@app.route('/api/expense/process-receipt', methods=['POST'])
+@login_required
+def process_receipt_document():
+    if 'document' not in request.files:
+        return jsonify({'error': 'No document provided'}), 400
+    
+    file = request.files['document']
+    if file.filename == '':
+        return jsonify({'error': 'No selected file'}), 400
+    
+    if file and allowed_file(file.filename):
+        try:
+            # Save file temporarily
+            filename = secure_filename(f"temp_{datetime.now().strftime('%Y%m%d%H%M%S')}_{file.filename}")
+            filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+            file.save(filepath)
+            
+            # Process the receipt
+            doc_processor = DocumentProcessor()
+            receipt_data = doc_processor.process_receipt(filepath)
+            
+            # Clean up temporary file
+            os.remove(filepath)
+            
+            return jsonify(receipt_data)
+        except Exception as e:
+            logging.error(f"Error processing receipt: {str(e)}")
+            return jsonify({'error': str(e)}), 500
+    
+    return jsonify({'error': 'Invalid file type'}), 400
+
 if __name__ == '__main__':
     app.run(debug=True)

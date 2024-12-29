@@ -1,5 +1,6 @@
 document.addEventListener('DOMContentLoaded', function() {
     const invoiceInput = document.getElementById('invoice');
+    const receiptInput = document.getElementById('receipt');
     const supplierInput = document.getElementById('supplier_name');
     const amountInput = document.getElementById('amount');
     const purchaseDateInput = document.getElementById('purchase_date');
@@ -40,6 +41,46 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             } catch (error) {
                 console.error('Error processing invoice:', error);
+                // Continue with form submission even if document processing fails
+            }
+        });
+    }
+
+    if (receiptInput) {
+        receiptInput.addEventListener('change', async function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const formData = new FormData();
+            formData.append('document', file);
+
+            try {
+                const response = await fetch('/api/expense/process-receipt', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to process receipt');
+                }
+
+                const data = await response.json();
+                
+                // Auto-fill form fields if they're empty
+                if (data.merchant_name && !supplierInput.value) {
+                    supplierInput.value = data.merchant_name;
+                }
+                if (data.total && !amountInput.value) {
+                    amountInput.value = data.total;
+                }
+                if (data.transaction_date && !purchaseDateInput.value) {
+                    // Convert date to YYYY-MM-DD format
+                    const date = new Date(data.transaction_date);
+                    const formattedDate = date.toISOString().split('T')[0];
+                    purchaseDateInput.value = formattedDate;
+                }
+            } catch (error) {
+                console.error('Error processing receipt:', error);
                 // Continue with form submission even if document processing fails
             }
         });
