@@ -31,8 +31,15 @@
             <a href="{{ url_for('manage_users') }}" class="btn primary">
                 <i class="fas fa-users"></i> Manage Users
             </a>
+            <a href="{{ url_for('manage_suppliers') }}" class="btn primary">
+                <i class="fas fa-truck"></i> Manage Suppliers
+            </a>
             <a href="{{ url_for('manage_departments') }}" class="btn primary">
                 <i class="fas fa-sitemap"></i> Manage Departments
+            </a>
+            {% elif current_user.is_accounting %}
+            <a href="{{ url_for('manage_suppliers') }}" class="btn primary">
+                <i class="fas fa-truck"></i> Manage Suppliers
             </a>
             {% else %}
             <a href="{{ url_for('submit_expense') }}" class="btn primary">

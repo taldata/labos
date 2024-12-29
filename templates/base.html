@@ -87,16 +87,6 @@
                 <a href="{{ url_for('change_password') }}" class="nav-link">
                     <i class="fas fa-key"></i> Change Password
                 </a>
-                {% if current_user.is_admin %}
-                    <a href="{{ url_for('manage_suppliers') }}" class="nav-link">
-                        <i class="fas fa-truck"></i> Manage Suppliers
-                    </a>
-                {% endif %}
-                {% if current_user.is_accounting %}
-                    <a href="{{ url_for('manage_suppliers') }}" class="nav-link">
-                        <i class="fas fa-truck"></i> Manage Suppliers
-                    </a>
-                {% endif %}
                 <a href="{{ url_for('logout') }}" class="nav-link">
                     <i class="fas fa-sign-out-alt"></i> Logout
                 </a>

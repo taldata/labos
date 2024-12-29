@@ -1603,12 +1603,18 @@ def mark_expense_unpaid(expense_id):
 @app.route('/manage_suppliers')
 @login_required
 def manage_suppliers():
+    if not current_user.is_admin and not current_user.is_accounting:
+        flash('Access denied.', 'error')
+        return redirect(url_for('employee_dashboard'))
     suppliers = Supplier.query.order_by(Supplier.name).all()
     return render_template('manage_suppliers.html', suppliers=suppliers)
 
-@app.route('/add_supplier', methods=['POST'])
+@app.route('/add_supplier', methods=['GET', 'POST'])
 @login_required
 def add_supplier():
+    if request.method == 'GET':
+        return render_template('add_supplier.html')
+    
     try:
         name = request.form['name']
         email = request.form.get('email')
@@ -1640,11 +1646,13 @@ def add_supplier():
         db.session.commit()
 
         flash('Supplier added successfully!', 'success')
+        if current_user.is_admin or current_user.is_accounting:
+            return redirect(url_for('manage_suppliers'))
+        return redirect(url_for('submit_expense'))
     except Exception as e:
         db.session.rollback()
         flash(f'Error adding supplier: {str(e)}', 'error')
-
-    return redirect(url_for('manage_suppliers'))
+        return redirect(url_for('add_supplier'))
 
 @app.route('/get_supplier/<int:supplier_id>')
 @login_required

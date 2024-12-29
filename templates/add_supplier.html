@@ -1,0 +1,233 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <header class="page-header">
+        <h1>Add New Supplier</h1>
+        <div class="header-actions">
+            {% if current_user.is_admin or current_user.is_accounting %}
+            <a href="{{ url_for('manage_suppliers') }}" class="button secondary">
+                <i class="fas fa-arrow-left"></i> Back to Suppliers
+            </a>
+            {% else %}
+            <a href="{{ url_for('submit_expense') }}" class="button secondary">
+                <i class="fas fa-arrow-left"></i> Back to Expense
+            </a>
+            {% endif %}
+        </div>
+    </header>
+
+    <div class="card">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert {{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <form method="POST" class="supplier-form">
+            <div class="form-grid">
+                <!-- Basic Information -->
+                <div class="form-section">
+                    <h3><i class="fas fa-info-circle"></i> Basic Information</h3>
+                    <div class="form-group">
+                        <label for="name">Supplier Name *</label>
+                        <input type="text" name="name" id="name" required class="form-control">
+                    </div>
+                    <div class="form-group">
+                        <label for="email">Email</label>
+                        <input type="email" name="email" id="email" class="form-control">
+                    </div>
+                    <div class="form-group">
+                        <label for="phone">Phone</label>
+                        <input type="tel" name="phone" id="phone" class="form-control">
+                    </div>
+                    <div class="form-group">
+                        <label for="address">Address</label>
+                        <textarea name="address" id="address" class="form-control" rows="3"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="tax_id">Tax ID</label>
+                        <input type="text" name="tax_id" id="tax_id" class="form-control">
+                    </div>
+                </div>
+
+                <!-- Bank Details -->
+                <div class="form-section">
+                    <h3><i class="fas fa-university"></i> Bank Details</h3>
+                    <div class="form-group">
+                        <label for="bank_name">Bank Name</label>
+                        <input type="text" name="bank_name" id="bank_name" class="form-control">
+                    </div>
+                    <div class="form-group">
+                        <label for="bank_account_number">Account Number</label>
+                        <input type="text" name="bank_account_number" id="bank_account_number" class="form-control">
+                    </div>
+                    <div class="form-group">
+                        <label for="bank_branch">Branch</label>
+                        <input type="text" name="bank_branch" id="bank_branch" class="form-control">
+                    </div>
+                    <div class="form-group">
+                        <label for="bank_swift">SWIFT Code</label>
+                        <input type="text" name="bank_swift" id="bank_swift" class="form-control">
+                    </div>
+                </div>
+
+                <!-- Additional Information -->
+                <div class="form-section">
+                    <h3><i class="fas fa-sticky-note"></i> Additional Information</h3>
+                    <div class="form-group">
+                        <label for="notes">Notes</label>
+                        <textarea name="notes" id="notes" class="form-control" rows="4"></textarea>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-actions">
+                <button type="submit" class="button primary">
+                    <i class="fas fa-save"></i> Save Supplier
+                </button>
+                {% if current_user.is_admin or current_user.is_accounting %}
+                <a href="{{ url_for('manage_suppliers') }}" class="button secondary">
+                    <i class="fas fa-times"></i> Cancel
+                </a>
+                {% else %}
+                <a href="{{ url_for('submit_expense') }}" class="button secondary">
+                    <i class="fas fa-times"></i> Cancel
+                </a>
+                {% endif %}
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+.page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.card {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    padding: 2rem;
+}
+
+.form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 2rem;
+    margin-bottom: 2rem;
+}
+
+.form-section {
+    background: #f8f9fa;
+    padding: 1.5rem;
+    border-radius: 8px;
+    border: 1px solid #e0e0e0;
+}
+
+.form-section h3 {
+    color: #2c3e50;
+    margin-bottom: 1.5rem;
+    font-size: 1.1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.form-section h3 i {
+    color: #3498db;
+}
+
+.form-group {
+    margin-bottom: 1rem;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    color: #2c3e50;
+    font-weight: 500;
+}
+
+.form-control {
+    width: 100%;
+    padding: 0.5rem;
+    border: 1px solid #cbd5e1;
+    border-radius: 4px;
+    font-size: 1rem;
+}
+
+.form-control:focus {
+    outline: none;
+    border-color: #3498db;
+    box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+}
+
+.form-actions {
+    display: flex;
+    gap: 1rem;
+    justify-content: flex-end;
+    margin-top: 2rem;
+    padding-top: 1rem;
+    border-top: 1px solid #e0e0e0;
+}
+
+.button {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    border-radius: 4px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.button.primary {
+    background: #3498db;
+    color: white;
+    border: none;
+}
+
+.button.primary:hover {
+    background: #2980b9;
+}
+
+.button.secondary {
+    background: white;
+    color: #64748b;
+    border: 1px solid #cbd5e1;
+}
+
+.button.secondary:hover {
+    background: #f1f5f9;
+    border-color: #94a3b8;
+}
+
+.alert {
+    padding: 1rem;
+    margin-bottom: 1rem;
+    border-radius: 4px;
+}
+
+.alert.success {
+    background: #f0fdf4;
+    border: 1px solid #22c55e;
+    color: #15803d;
+}
+
+.alert.error {
+    background: #fef2f2;
+    border: 1px solid #ef4444;
+    color: #b91c1c;
+}
+</style>
+{% endblock %}
