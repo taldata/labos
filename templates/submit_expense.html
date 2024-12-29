@@ -103,7 +103,7 @@
                     <h3><i class="fas fa-building"></i> Supplier Information</h3>
                     <div class="form-group">
                         <label for="supplier_id">Select Existing Supplier</label>
-                        <select class="form-control" id="supplier_id" name="supplier_id">
+                        <select class="form-control" id="supplier_id" name="supplier_id" onchange="handleSupplierChange()">
                             <option value="">Select a supplier (optional)</option>
                             {% for supplier in suppliers %}
                                 {% if supplier.status == 'active' %}
@@ -111,6 +111,15 @@
                                 {% endif %}
                             {% endfor %}
                         </select>
+                    </div>
+                    <div id="supplier_bank_details" class="form-group" style="display: none;">
+                        <h4><i class="fas fa-university"></i> Bank Details</h4>
+                        <div class="supplier-bank-info">
+                            <p id="bank_name_display"><strong>Bank:</strong> <span></span></p>
+                            <p id="bank_account_display"><strong>Account:</strong> <span></span></p>
+                            <p id="bank_branch_display"><strong>Branch:</strong> <span></span></p>
+                            <p id="bank_swift_display"><strong>SWIFT:</strong> <span></span></p>
+                        </div>
                     </div>
                     <div class="form-group">
                         <label for="supplier_name">Or Enter New Supplier Name</label>
@@ -120,6 +129,25 @@
                         <label for="purchase_date">Purchase Date</label>
                         <input type="date" class="form-control" id="purchase_date" name="purchase_date">
                         <small class="text-muted">Leave empty if this is a future purchase</small>
+                    </div>
+                    <div class="bank-details-section">
+                        <h4><i class="fas fa-university"></i> Bank Details</h4>
+                        <div class="form-group">
+                            <label for="bank_name">Bank Name</label>
+                            <input type="text" class="form-control" id="bank_name" name="bank_name">
+                        </div>
+                        <div class="form-group">
+                            <label for="bank_account_number">Account Number</label>
+                            <input type="text" class="form-control" id="bank_account_number" name="bank_account_number">
+                        </div>
+                        <div class="form-group">
+                            <label for="bank_branch">Branch</label>
+                            <input type="text" class="form-control" id="bank_branch" name="bank_branch">
+                        </div>
+                        <div class="form-group">
+                            <label for="bank_swift">SWIFT Code</label>
+                            <input type="text" class="form-control" id="bank_swift" name="bank_swift">
+                        </div>
                     </div>
                 </div>
             </div>
@@ -232,12 +260,39 @@
 }
 
 .form-actions {
+    margin-top: 2rem;
     display: flex;
     gap: 1rem;
     justify-content: flex-end;
-    margin-top: 2rem;
-    padding-top: 1.5rem;
-    border-top: 1px solid #e9ecef;
+}
+
+.bank-details-section {
+    background: #f8f9fa;
+    padding: 1rem;
+    border-radius: 4px;
+    margin-top: 1rem;
+    border: 1px solid #e0e0e0;
+}
+
+.bank-details-section h4 {
+    color: #2c3e50;
+    margin-bottom: 1rem;
+    font-size: 1.1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.bank-details-section h4 i {
+    color: #3498db;
+}
+
+.bank-details-section .form-group {
+    margin-bottom: 1rem;
+}
+
+.bank-details-section .form-group:last-child {
+    margin-bottom: 0;
 }
 
 .button {
@@ -295,6 +350,24 @@
     border: 1px solid #22c55e;
     color: #15803d;
 }
+
+.supplier-bank-info {
+    background: #fff;
+    padding: 1rem;
+    border-radius: 4px;
+    border: 1px solid #e0e0e0;
+    margin-top: 0.5rem;
+}
+
+.supplier-bank-info p {
+    margin: 0.5rem 0;
+}
+
+.supplier-bank-info strong {
+    color: #2c3e50;
+    min-width: 80px;
+    display: inline-block;
+}
 </style>
 
 {% endblock %}
@@ -306,15 +379,46 @@ document.addEventListener('DOMContentLoaded', function() {
     // Handle supplier selection
     const supplierSelect = document.getElementById('supplier_id');
     const supplierNameInput = document.getElementById('supplier_name');
+    const bankDetailsSection = document.querySelector('.bank-details-section');
 
     supplierSelect.addEventListener('change', function() {
         if (this.value) {
             supplierNameInput.value = '';
             supplierNameInput.disabled = true;
+            bankDetailsSection.style.display = 'none';
+            
+            // Fetch supplier details if a supplier is selected
+            fetch(`/api/expense/get_supplier/${this.value}`)
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('bank_name').value = data.bank_name || '';
+                    document.getElementById('bank_account_number').value = data.bank_account_number || '';
+                    document.getElementById('bank_branch').value = data.bank_branch || '';
+                    document.getElementById('bank_swift').value = data.bank_swift || '';
+                })
+                .catch(error => console.error('Error fetching supplier details:', error));
         } else {
             supplierNameInput.disabled = false;
+            bankDetailsSection.style.display = 'block';
+            // Clear bank details fields
+            document.getElementById('bank_name').value = '';
+            document.getElementById('bank_account_number').value = '';
+            document.getElementById('bank_branch').value = '';
+            document.getElementById('bank_swift').value = '';
         }
     });
+
+    // Show bank details section only when entering a new supplier
+    supplierNameInput.addEventListener('input', function() {
+        if (this.value.trim()) {
+            bankDetailsSection.style.display = 'block';
+        } else {
+            bankDetailsSection.style.display = 'none';
+        }
+    });
+
+    // Initial state
+    bankDetailsSection.style.display = 'none';
 
     // Set max date for purchase date
     const purchaseDateInput = document.getElementById('purchase_date');
@@ -350,5 +454,38 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 });
+
+function handleSupplierChange() {
+    const supplierId = document.getElementById('supplier_id').value;
+    const bankDetailsDiv = document.getElementById('supplier_bank_details');
+    
+    if (supplierId) {
+        fetch(`/api/expense/get_supplier/${supplierId}`)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                console.log('Supplier data:', data);  // Debug log
+                if (data.bank_name || data.bank_account_number || data.bank_branch || data.bank_swift) {
+                    document.querySelector('#bank_name_display span').textContent = data.bank_name || 'N/A';
+                    document.querySelector('#bank_account_display span').textContent = data.bank_account_number || 'N/A';
+                    document.querySelector('#bank_branch_display span').textContent = data.bank_branch || 'N/A';
+                    document.querySelector('#bank_swift_display span').textContent = data.bank_swift || 'N/A';
+                    bankDetailsDiv.style.display = 'block';
+                } else {
+                    bankDetailsDiv.style.display = 'none';
+                }
+            })
+            .catch(error => {
+                console.error('Error fetching supplier details:', error.message);
+                bankDetailsDiv.style.display = 'none';
+            });
+    } else {
+        bankDetailsDiv.style.display = 'none';
+    }
+}
 </script>
 {% endblock %}

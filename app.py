@@ -133,8 +133,12 @@ class Supplier(db.Model):
     phone = db.Column(db.String(50))
     address = db.Column(db.String(500))
     tax_id = db.Column(db.String(100))
+    bank_name = db.Column(db.String(255))
+    bank_account_number = db.Column(db.String(50))
+    bank_branch = db.Column(db.String(100))
+    bank_swift = db.Column(db.String(50))
     notes = db.Column(db.Text)
-    status = db.Column(db.String(20), default='active')  # active, inactive
+    status = db.Column(db.String(20), default='active')
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     expenses = db.relationship('Expense', backref='supplier', lazy=True)
@@ -299,6 +303,11 @@ def submit_expense():
         subcategory_id = int(request.form['subcategory_id'])
         payment_method = request.form['payment_method']
         supplier_id = request.form.get('supplier_id')
+        supplier_name = request.form.get('supplier_name')
+        bank_name = request.form.get('bank_name')
+        bank_account_number = request.form.get('bank_account_number')
+        bank_branch = request.form.get('bank_branch')
+        bank_swift = request.form.get('bank_swift')
         purchase_date_str = request.form.get('purchase_date')
         
         if supplier_id:
@@ -311,6 +320,20 @@ def submit_expense():
                 purchase_date = datetime.strptime(purchase_date_str, '%Y-%m-%d')
             except ValueError:
                 logging.error(f"Invalid purchase date format: {purchase_date_str}")
+        
+        # Handle supplier
+        if supplier_name and not supplier_id:
+            # Create new supplier
+            supplier = Supplier(
+                name=supplier_name,
+                bank_name=bank_name,
+                bank_account_number=bank_account_number,
+                bank_branch=bank_branch,
+                bank_swift=bank_swift
+            )
+            db.session.add(supplier)
+            db.session.commit()
+            supplier_id = supplier.id
         
         # Create new expense
         expense = Expense(
@@ -1592,6 +1615,10 @@ def add_supplier():
         phone = request.form.get('phone')
         address = request.form.get('address')
         tax_id = request.form.get('tax_id')
+        bank_name = request.form.get('bank_name')
+        bank_account_number = request.form.get('bank_account_number')
+        bank_branch = request.form.get('bank_branch')
+        bank_swift = request.form.get('bank_swift')
         notes = request.form.get('notes')
         status = request.form.get('status', 'active')
 
@@ -1601,6 +1628,10 @@ def add_supplier():
             phone=phone,
             address=address,
             tax_id=tax_id,
+            bank_name=bank_name,
+            bank_account_number=bank_account_number,
+            bank_branch=bank_branch,
+            bank_swift=bank_swift,
             notes=notes,
             status=status
         )
@@ -1625,6 +1656,10 @@ def get_supplier(supplier_id):
         'phone': supplier.phone,
         'address': supplier.address,
         'tax_id': supplier.tax_id,
+        'bank_name': supplier.bank_name,
+        'bank_account_number': supplier.bank_account_number,
+        'bank_branch': supplier.bank_branch,
+        'bank_swift': supplier.bank_swift,
         'notes': supplier.notes,
         'status': supplier.status
     })
@@ -1640,6 +1675,10 @@ def edit_supplier(supplier_id):
         supplier.phone = request.form.get('phone')
         supplier.address = request.form.get('address')
         supplier.tax_id = request.form.get('tax_id')
+        supplier.bank_name = request.form.get('bank_name')
+        supplier.bank_account_number = request.form.get('bank_account_number')
+        supplier.bank_branch = request.form.get('bank_branch')
+        supplier.bank_swift = request.form.get('bank_swift')
         supplier.notes = request.form.get('notes')
         supplier.status = request.form.get('status', 'active')
         supplier.updated_at = datetime.utcnow()

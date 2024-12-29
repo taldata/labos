@@ -58,6 +58,12 @@
                 {% if supplier.tax_id %}
                 <p><i class="fas fa-id-card"></i> Tax ID: {{ supplier.tax_id }}</p>
                 {% endif %}
+                {% if supplier.bank_name %}
+                <p><i class="fas fa-university"></i> Bank: {{ supplier.bank_name }}</p>
+                {% endif %}
+                {% if supplier.bank_account_number %}
+                <p><i class="fas fa-money-check"></i> Account: {{ supplier.bank_account_number }}</p>
+                {% endif %}
             </div>
             <div class="supplier-footer">
                 <button class="button secondary" onclick="openEditSupplierModal({{ supplier.id }})">
@@ -98,6 +104,22 @@
                 <div class="form-group">
                     <label for="tax_id">Tax ID</label>
                     <input type="text" id="tax_id" name="tax_id" class="form-control">
+                </div>
+                <div class="form-group">
+                    <label for="bank_name">Bank Name</label>
+                    <input type="text" id="bank_name" name="bank_name" class="form-control">
+                </div>
+                <div class="form-group">
+                    <label for="bank_account_number">Bank Account Number</label>
+                    <input type="text" id="bank_account_number" name="bank_account_number" class="form-control">
+                </div>
+                <div class="form-group">
+                    <label for="bank_branch">Bank Branch</label>
+                    <input type="text" id="bank_branch" name="bank_branch" class="form-control">
+                </div>
+                <div class="form-group">
+                    <label for="bank_swift">SWIFT Code</label>
+                    <input type="text" id="bank_swift" name="bank_swift" class="form-control">
                 </div>
                 <div class="form-group">
                     <label for="notes">Notes</label>
@@ -399,6 +421,10 @@ function openEditSupplierModal(supplierId) {
             document.getElementById('phone').value = data.phone || '';
             document.getElementById('address').value = data.address || '';
             document.getElementById('tax_id').value = data.tax_id || '';
+            document.getElementById('bank_name').value = data.bank_name || '';
+            document.getElementById('bank_account_number').value = data.bank_account_number || '';
+            document.getElementById('bank_branch').value = data.bank_branch || '';
+            document.getElementById('bank_swift').value = data.bank_swift || '';
             document.getElementById('notes').value = data.notes || '';
             document.getElementById('status').value = data.status;
             
