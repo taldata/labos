@@ -103,8 +103,8 @@ class DocumentProcessor:
 
             # Extract relevant receipt information
             receipt_data = {
-                "transaction_date": None,
-                "invoice_total": None,
+                "purchase_date": None,
+                "amount": None,
                 "items": []
             }
 
@@ -113,13 +113,13 @@ class DocumentProcessor:
 
                 # Get transaction date
                 try:
-                    receipt_data["transaction_date"] = receipt.fields.get("TransactionDate").value if receipt.fields.get("TransactionDate") else None
+                    receipt_data["purchase_date"] = receipt.fields.get("TransactionDate").value if receipt.fields.get("TransactionDate") else None
                 except:
                     pass
 
                 # Get total amount
                 try:
-                    receipt_data["invoice_total"] = receipt.fields.get("Total").value if receipt.fields.get("Total") else None
+                    receipt_data["amount"] = receipt.fields.get("Total").value if receipt.fields.get("Total") else None
                 except:
                     pass
 
