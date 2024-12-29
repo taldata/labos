@@ -474,12 +474,12 @@
 
 /* Budget column specific */
 .budget-col {
-    width: 180px;
-    min-width: 180px;
+    width: 400px;
+    min-width: 300px;
 }
 
 .budget-info {
-    min-width: 180px;
+    min-width: 120px;
     padding: 0.25rem;
 }
 
@@ -503,7 +503,7 @@
 
 .budget-preview {
     display: grid;
-    grid-template-columns: minmax(0, 1.5fr) 2fr minmax(0, 1fr);
+    grid-template-columns: 80px minmax(60px, 1fr) 100px;
     gap: 0.5rem;
     align-items: center;
 }
@@ -538,6 +538,8 @@
     font-size: 0.8rem;
     text-align: right;
     white-space: nowrap;
+    overflow: hidden;
+    min-width: 90px;
 }
 
 .budget-details {
@@ -551,14 +553,21 @@
     display: flex;
     justify-content: space-between;
     margin-bottom: 0.25rem;
+    gap: 1rem;
 }
 
 .budget-item .label {
     color: #64748b;
+    white-space: nowrap;
 }
 
 .budget-item .amount {
     font-weight: 500;
+    text-align: right;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 120px;
 }
 
 .budget-item .amount.warning {
