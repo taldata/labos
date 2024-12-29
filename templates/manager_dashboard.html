@@ -92,8 +92,8 @@
                             <th class="date-col"><i class="fas fa-calendar-alt"></i> Purchase Date</th>
                             <th><i class="fas fa-folder"></i> Category</th>
                             <th><i class="fas fa-folder-open"></i> Subcategory</th>
-                            <th><i class="fas fa-tag"></i> Type</th>
-                            <th><i class="fas fa-credit-card"></i> Payment</th>
+                            <th class="type-col"><i class="fas fa-tag"></i> Type</th>
+                            <th class="payment-col"><i class="fas fa-credit-card"></i> Payment</th>
                             <th class="amount-col"><i class="fas fa-shekel-sign"></i> Amount</th>
                             <th class="budget-col"><i class="fas fa-chart-pie"></i> Budget</th>
                             <th><i class="fas fa-paperclip"></i> Files</th>
@@ -113,9 +113,9 @@
                             <td>{{ expense.purchase_date.strftime('%d/%m/%Y') if expense.purchase_date else '-' }}</td>
                             <td>{{ expense.subcategory.category.name if expense.subcategory else '-' }}</td>
                             <td>{{ expense.subcategory.name if expense.subcategory else '-' }}</td>
-                            <td>{{ expense.type|format_expense_type }}</td>
-                            <td>{{ "Credit Card (By Employee)" if expense.payment_method == "credit" else "Bank Transfer (By Accounting)" }}</td>
-                            <td>₪{{ "%.2f"|format(expense.amount) }}</td>
+                            <td class="type-col">{{ expense.type|format_expense_type }}</td>
+                            <td class="payment-col">{{ "Credit Card (By Employee)" if expense.payment_method == "credit" else "Bank Transfer (By Accounting)" }}</td>
+                            <td class="amount-col">₪{{ "%.2f"|format(expense.amount) }}</td>
                             <td class="budget-info">
                                 <div class="budget-column collapsed" onclick="toggleBudgetDetails(this)">
                                     <div class="budget-preview">
@@ -850,6 +850,56 @@ textarea.form-control {
 
 .expenses-table th.actions-col,
 .expenses-table td.actions-col { width: 120px; }
+
+.expenses-table th.type-col,
+.expenses-table td.type-col { width: 180px; }
+
+.expenses-table th.payment-col,
+.expenses-table td.payment-col { width: 200px; }
+
+.expenses-table th.type-col,
+.expenses-table td.type-col {
+    width: 180px;
+    min-width: 180px;
+    white-space: normal;
+    word-wrap: break-word;
+    line-height: 1.2;
+}
+
+.expenses-table th.payment-col,
+.expenses-table td.payment-col {
+    width: 200px;
+    min-width: 200px;
+    white-space: normal;
+    word-wrap: break-word;
+    line-height: 1.2;
+}
+
+.expenses-table th {
+    padding: 0.75rem;
+    white-space: nowrap;
+    font-weight: 600;
+    text-align: left;
+    border-bottom: 2px solid #e2e8f0;
+}
+
+.expenses-table td {
+    padding: 0.75rem;
+    color: #4a5568;
+    vertical-align: top;
+}
+
+/* Keep certain columns with nowrap */
+.expenses-table th.date-col,
+.expenses-table td.date-col,
+.expenses-table th.amount-col,
+.expenses-table td.amount-col,
+.expenses-table th.status-col,
+.expenses-table td.status-col,
+.expenses-table th.actions-col,
+.expenses-table td.actions-col {
+    white-space: nowrap;
+}
 </style>
 
 <script>
