@@ -8,3 +8,5 @@ sendgrid
 pytz
 azure-ai-formrecognizer
 python-dotenv
+pandas
+xlsxwriter

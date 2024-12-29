@@ -11,6 +11,8 @@ import pytz
 from routes.expense import expense_bp
 from flask_migrate import Migrate
 from config import Config
+from io import BytesIO
+import pandas as pd
 
 # Configure logging
 logging.basicConfig(
@@ -1531,6 +1533,54 @@ def admin_delete_expense(expense_id):
     
     flash('Expense deleted successfully', 'success')
     return redirect(url_for('manager_dashboard'))
+
+@app.route('/export_accounting_excel')
+@login_required
+def export_accounting_excel():
+    expenses = Expense.query.all()
+    
+    data = []
+    for expense in expenses:
+        data.append({
+            'Date': expense.date.strftime('%d/%m/%Y'),
+            'Employee': expense.submitter.username,
+            'Department': expense.submitter.home_department.name,
+            'Description': expense.description,
+            'Reason': expense.reason,
+            'Type': expense.type,
+            'Amount': expense.amount,
+            'Handled By': expense.handler.username if expense.handler else '-',
+            'Date Handled': expense.handled_at.strftime('%d/%m/%Y') if expense.handled_at else '-',
+            'Supplier Name': expense.supplier.name if expense.supplier else '-',
+            'Tax ID': expense.supplier.tax_id if expense.supplier else '-',
+            'Date of Purchase': expense.purchase_date.strftime('%d/%m/%Y') if expense.purchase_date else '-',
+            'Payment Status': 'Paid' if expense.is_paid else 'Pending Payment'
+        })
+    
+    df = pd.DataFrame(data)
+    
+    # Create Excel file in memory
+    output = BytesIO()
+    with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+        df.to_excel(writer, sheet_name='Expenses', index=False)
+        worksheet = writer.sheets['Expenses']
+        
+        # Auto-adjust columns width
+        for idx, col in enumerate(df.columns):
+            series = df[col]
+            max_len = max(
+                series.astype(str).map(len).max(),
+                len(str(series.name))
+            ) + 1
+            worksheet.set_column(idx, idx, max_len)
+    
+    output.seek(0)
+    return send_file(
+        output,
+        mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        as_attachment=True,
+        download_name=f'accounting_export_{datetime.now().strftime("%Y%m%d")}.xlsx'
+    )
 
 @app.route('/test_email')
 def test_email():
