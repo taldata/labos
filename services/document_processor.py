@@ -31,22 +31,13 @@ class DocumentProcessor:
                 )
             result = poller.result()
 
-            # Extract relevant invoice information
+            # Extract only amount and date information
             invoice_data = {
-                "vendor_name": None,
                 "invoice_date": None,
-                "invoice_total": None,
-                "invoice_number": None,
-                "items": []
+                "invoice_total": None
             }
 
             for invoice in result.documents:
-                # Get vendor name
-                try:
-                    invoice_data["vendor_name"] = invoice.fields.get("VendorName").value
-                except:
-                    pass
-
                 # Get invoice date
                 try:
                     invoice_data["invoice_date"] = invoice.fields.get("InvoiceDate").value
@@ -56,26 +47,6 @@ class DocumentProcessor:
                 # Get total amount
                 try:
                     invoice_data["invoice_total"] = invoice.fields.get("InvoiceTotal").value
-                except:
-                    pass
-
-                # Get invoice number
-                try:
-                    invoice_data["invoice_number"] = invoice.fields.get("InvoiceId").value
-                except:
-                    pass
-
-                # Get items
-                try:
-                    items = invoice.fields.get("Items").value
-                    for item in items:
-                        item_data = {
-                            "description": item.get("Description").value if item.get("Description") else None,
-                            "quantity": item.get("Quantity").value if item.get("Quantity") else None,
-                            "unit_price": item.get("UnitPrice").value if item.get("UnitPrice") else None,
-                            "amount": item.get("Amount").value if item.get("Amount") else None,
-                        }
-                        invoice_data["items"].append(item_data)
                 except:
                     pass
 
@@ -101,16 +72,13 @@ class DocumentProcessor:
                 )
             result = poller.result()
 
-            # Extract relevant receipt information
+            # Extract only amount and date information
             receipt_data = {
                 "purchase_date": None,
-                "amount": None,
-                "items": []
+                "amount": None
             }
 
             for receipt in result.documents:
-                print(f"Raw receipt fields: {receipt.fields}")
-
                 # Get transaction date
                 try:
                     receipt_data["purchase_date"] = receipt.fields.get("TransactionDate").value if receipt.fields.get("TransactionDate") else None
@@ -122,21 +90,6 @@ class DocumentProcessor:
                     receipt_data["amount"] = receipt.fields.get("Total").value if receipt.fields.get("Total") else None
                 except:
                     pass
-
-                # Get items
-                try:
-                    items = receipt.fields.get("Items").value
-                    if items:
-                        for item in items:
-                            item_data = {
-                                "description": item.get("Description").value if item.get("Description") else None,
-                                "quantity": item.get("Quantity").value if item.get("Quantity") else None,
-                                "unit_price": item.get("UnitPrice").value if item.get("UnitPrice") else None,
-                                "amount": item.get("Amount").value if item.get("Amount") else None,
-                            }
-                            receipt_data["items"].append(item_data)
-                except Exception as e:
-                    print(f"Error extracting items from receipt: {e}")
 
             return receipt_data
 
@@ -160,39 +113,16 @@ class DocumentProcessor:
                 )
             result = poller.result()
 
-            # Extract relevant quote information
+            # Extract only amount and date information
             quote_data = {
-                "customer_name": None,
                 "quote_date": None,
-                "quote_number": None,
-                "expiry_date": None,
-                "total_amount": None,
-                "items": []
+                "total_amount": None
             }
 
             for quote in result.documents:
-                print(f"Raw quote fields: {quote.fields}")
-                # Get customer name
-                try:
-                    quote_data["customer_name"] = quote.fields.get("CustomerName").value if quote.fields.get("CustomerName") else None
-                except:
-                    pass
-
                 # Get quote date
                 try:
                     quote_data["quote_date"] = quote.fields.get("QuoteDate").value if quote.fields.get("QuoteDate") else None
-                except:
-                    pass
-
-                # Get quote number
-                try:
-                    quote_data["quote_number"] = quote.fields.get("QuoteNumber").value if quote.fields.get("QuoteNumber") else None
-                except:
-                    pass
-
-                # Get expiry date
-                try:
-                    quote_data["expiry_date"] = quote.fields.get("ExpiryDate").value if quote.fields.get("ExpiryDate") else None
                 except:
                     pass
 
@@ -200,21 +130,6 @@ class DocumentProcessor:
                 try:
                     quote_data["total_amount"] = quote.fields.get("TotalAmount").value if quote.fields.get("TotalAmount") else None
                 except:
-                    pass
-
-                # Get items
-                try:
-                    items = quote.fields.get("Items").value
-                    for item in items:
-                        item_data = {
-                            "description": item.get("Description").value if item.get("Description") else None,
-                            "quantity": item.get("Quantity").value if item.get("Quantity") else None,
-                            "unit_price": item.get("UnitPrice").value if item.get("UnitPrice") else None,
-                            "amount": item.get("Amount").value if item.get("Amount") else None,
-                        }
-                        quote_data["items"].append(item_data)
-                except Exception as e:
-                    print(f"Error extracting items from quote: {e}")
                     pass
 
             return quote_data
