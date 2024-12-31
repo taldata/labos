@@ -10,3 +10,4 @@ azure-ai-formrecognizer
 python-dotenv
 pandas
 xlsxwriter
+psycopg2-binary

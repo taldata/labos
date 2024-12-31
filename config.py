@@ -1,14 +1,21 @@
 import os
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
 
 class Config:
     # Base directory of the application
     BASE_DIR = os.path.dirname(os.path.abspath(__file__))
     
     # Secret key for session management
-    SECRET_KEY = 'your-secret-key-here'
+    SECRET_KEY = os.getenv('SECRET_KEY', 'your-secret-key-here')
     
-    # SQLite database
-    SQLALCHEMY_DATABASE_URI = f'sqlite:///{os.path.join(BASE_DIR, "instance", "database.db")}'
+    # Database configuration
+    # If DATABASE_URL is provided (Render), use it directly
+    # Otherwise, construct from individual components
+    SQLALCHEMY_DATABASE_URI = os.getenv('DATABASE_URL', '').replace('postgres://', 'postgresql://') or \
+        f"postgresql://{os.getenv('DB_USER', 'postgres')}:{os.getenv('DB_PASSWORD', '')}@{os.getenv('DB_HOST', 'localhost')}:{os.getenv('DB_PORT', '5432')}/{os.getenv('DB_NAME', 'expense_manager')}"
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     
     # Upload configuration
