@@ -11,3 +11,8 @@ python-dotenv
 pandas
 xlsxwriter
 psycopg2-binary
+dash
+dash-core-components
+dash-html-components
+dash-bootstrap-components
+plotly
