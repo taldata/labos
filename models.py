@@ -108,6 +108,16 @@ class Supplier(db.Model):
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     expenses = db.relationship('Expense', backref='supplier', lazy=True)
 
+class CreditCard(db.Model):
+    __tablename__ = 'credit_card'
+    id = db.Column(db.Integer, primary_key=True)
+    last_four_digits = db.Column(db.String(4), nullable=False)
+    description = db.Column(db.String(100))
+    status = db.Column(db.String(20), default='active')  # active, inactive
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    expenses = db.relationship('Expense', backref='credit_card', lazy=True)
+
 class Expense(db.Model):
     __tablename__ = 'expense'
     id = db.Column(db.Integer, primary_key=True)
@@ -131,6 +141,7 @@ class Expense(db.Model):
     supplier_id = db.Column(db.Integer, db.ForeignKey('supplier.id'), nullable=True)
     purchase_date = db.Column(db.DateTime, nullable=True)
     payment_method = db.Column(db.String(50), default='credit')
+    credit_card_id = db.Column(db.Integer, db.ForeignKey('credit_card.id'), nullable=True)
     paid_by = db.relationship('User', 
                             foreign_keys=[paid_by_id],
                             backref=db.backref('paid_expenses', lazy='dynamic'))

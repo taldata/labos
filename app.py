@@ -13,7 +13,7 @@ from flask_migrate import Migrate
 from config import Config
 from io import BytesIO
 import pandas as pd
-from models import db, Department, Category, Subcategory, User, Supplier, Expense
+from models import db, Department, Category, Subcategory, User, Supplier, Expense, CreditCard
 
 # Configure logging
 logging.basicConfig(
@@ -163,11 +163,13 @@ def submit_expense():
             subcategories = Subcategory.query.filter_by(category_id=categories[0].id).all()
         
         suppliers = Supplier.query.filter_by(status='active').order_by(Supplier.name).all()
+        credit_cards = CreditCard.query.filter_by(status='active').order_by(CreditCard.last_four_digits).all()
         
         return render_template('submit_expense.html', 
                             categories=categories, 
                             subcategories=subcategories,
-                            suppliers=suppliers)
+                            suppliers=suppliers,
+                            credit_cards=credit_cards)
     
     # Handle POST request
     try:
@@ -185,6 +187,7 @@ def submit_expense():
         bank_branch = request.form.get('bank_branch')
         bank_swift = request.form.get('bank_swift')
         purchase_date_str = request.form.get('purchase_date')
+        credit_card_id = request.form.get('credit_card_id')
         
         if supplier_id:
             supplier_id = int(supplier_id)
@@ -211,6 +214,18 @@ def submit_expense():
             db.session.commit()
             supplier_id = supplier.id
         
+        # Validate credit card if payment method is credit
+        if payment_method == 'credit':
+            if not credit_card_id:
+                flash('Please select a credit card for credit card payments', 'error')
+                return redirect(url_for('submit_expense'))
+            credit_card = CreditCard.query.get(credit_card_id)
+            if not credit_card or credit_card.status != 'active':
+                flash('Selected credit card is not valid', 'error')
+                return redirect(url_for('submit_expense'))
+        else:
+            credit_card_id = None
+        
         # Create new expense
         expense = Expense(
             amount=amount,
@@ -221,7 +236,8 @@ def submit_expense():
             user_id=current_user.id,
             payment_method=payment_method,
             supplier_id=supplier_id,
-            purchase_date=purchase_date
+            purchase_date=purchase_date,
+            credit_card_id=credit_card_id
         )
         
         # Process document if uploaded
@@ -1008,6 +1024,7 @@ def edit_expense(expense_id):
             payment_method = request.form.get('payment_method')
             supplier_id = request.form.get('supplier_id')
             purchase_date_str = request.form.get('purchase_date')
+            credit_card_id = request.form.get('credit_card_id')
             
             # Convert purchase_date string to datetime if provided
             purchase_date = None
@@ -1027,6 +1044,18 @@ def edit_expense(expense_id):
                 flash('Invalid category selected', 'error')
                 return redirect(url_for('edit_expense', expense_id=expense_id))
             
+            # Validate credit card if payment method is credit
+            if payment_method == 'credit':
+                if not credit_card_id:
+                    flash('Please select a credit card for credit card payments', 'error')
+                    return redirect(url_for('edit_expense', expense_id=expense_id))
+                credit_card = CreditCard.query.get(credit_card_id)
+                if not credit_card or credit_card.status != 'active':
+                    flash('Selected credit card is not valid', 'error')
+                    return redirect(url_for('edit_expense', expense_id=expense_id))
+            else:
+                credit_card_id = None
+            
             # Update expense details
             expense.amount = amount
             expense.description = description
@@ -1036,6 +1065,7 @@ def edit_expense(expense_id):
             expense.payment_method = payment_method
             expense.supplier_id = supplier_id if supplier_id else None
             expense.purchase_date = purchase_date
+            expense.credit_card_id = credit_card_id
             
             # Handle file uploads with document processing
             for doc_type in ['quote', 'invoice', 'receipt']:
@@ -1097,10 +1127,14 @@ def edit_expense(expense_id):
     # Get active suppliers for the form
     suppliers = Supplier.query.filter_by(status='active').order_by(Supplier.name).all()
     
+    # Get active credit cards for the form
+    credit_cards = CreditCard.query.filter_by(status='active').order_by(CreditCard.last_four_digits).all()
+    
     return render_template('edit_expense.html', 
                          expense=expense, 
                          subcategories=subcategories,
-                         suppliers=suppliers)
+                         suppliers=suppliers,
+                         credit_cards=credit_cards)
 
 @app.route('/expense/<int:expense_id>/delete', methods=['POST'])
 @login_required
@@ -1644,6 +1678,114 @@ def delete_supplier(supplier_id):
         flash(f'Error deleting supplier: {str(e)}', 'error')
 
     return redirect(url_for('manage_suppliers'))
+
+@app.route('/manage_credit_cards')
+@login_required
+def manage_credit_cards():
+    if not current_user.is_admin:
+        flash('Access denied.', 'error')
+        return redirect(url_for('employee_dashboard'))
+    credit_cards = CreditCard.query.order_by(CreditCard.last_four_digits).all()
+    return render_template('manage_credit_cards.html', credit_cards=credit_cards)
+
+@app.route('/add_credit_card', methods=['POST'])
+@login_required
+def add_credit_card():
+    if not current_user.is_admin:
+        return jsonify({'error': 'Access denied'}), 403
+    
+    try:
+        last_four_digits = request.form['last_four_digits']
+        description = request.form.get('description')
+        
+        # Validate last four digits
+        if not last_four_digits.isdigit() or len(last_four_digits) != 4:
+            return jsonify({'error': 'Last four digits must be exactly 4 numbers'}), 400
+        
+        # Check if card already exists
+        if CreditCard.query.filter_by(last_four_digits=last_four_digits, status='active').first():
+            return jsonify({'error': 'Credit card already exists'}), 400
+        
+        credit_card = CreditCard(
+            last_four_digits=last_four_digits,
+            description=description,
+            status='active'
+        )
+        
+        db.session.add(credit_card)
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'credit_card': {
+                'id': credit_card.id,
+                'last_four_digits': credit_card.last_four_digits,
+                'description': credit_card.description,
+                'status': credit_card.status
+            }
+        })
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/edit_credit_card/<int:card_id>', methods=['POST'])
+@login_required
+def edit_credit_card(card_id):
+    if not current_user.is_admin:
+        return jsonify({'error': 'Access denied'}), 403
+    
+    try:
+        credit_card = CreditCard.query.get_or_404(card_id)
+        last_four_digits = request.form['last_four_digits']
+        description = request.form.get('description')
+        status = request.form.get('status', 'active')
+        
+        # Validate last four digits
+        if not last_four_digits.isdigit() or len(last_four_digits) != 4:
+            return jsonify({'error': 'Last four digits must be exactly 4 numbers'}), 400
+        
+        # Check if card already exists (excluding current card)
+        existing_card = CreditCard.query.filter(
+            CreditCard.last_four_digits == last_four_digits,
+            CreditCard.id != card_id,
+            CreditCard.status == 'active'
+        ).first()
+        if existing_card:
+            return jsonify({'error': 'Credit card already exists'}), 400
+        
+        credit_card.last_four_digits = last_four_digits
+        credit_card.description = description
+        credit_card.status = status
+        db.session.commit()
+        
+        return jsonify({'success': True})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/delete_credit_card/<int:card_id>', methods=['POST'])
+@login_required
+def delete_credit_card(card_id):
+    if not current_user.is_admin:
+        return jsonify({'error': 'Access denied'}), 403
+    
+    try:
+        credit_card = CreditCard.query.get_or_404(card_id)
+        
+        # Check if card has any associated expenses
+        if credit_card.expenses:
+            # Instead of deleting, mark as inactive
+            credit_card.status = 'inactive'
+            flash('Credit card has associated expenses. Marked as inactive instead of deleting.', 'success')
+        else:
+            db.session.delete(credit_card)
+            flash('Credit card deleted successfully!', 'success')
+        
+        db.session.commit()
+        return jsonify({'success': True})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
 
 from services.document_processor import DocumentProcessor
 

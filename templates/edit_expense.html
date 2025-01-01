@@ -72,10 +72,24 @@
             </div>
 
             <div class="form-group">
-                <label for="payment_method" class="form-label">Payment Method</label>
-                <select class="form-control" id="payment_method" name="payment_method" required>
-                    <option value="credit" {% if expense.payment_method == 'credit' %}selected{% endif %}>Credit Card (By Employee)</option>
-                    <option value="transfer" {% if expense.payment_method == 'transfer' %}selected{% endif %}>Bank Transfer (By Accounting)</option>
+                <label for="payment_method">Payment Method</label>
+                <select class="form-control" id="payment_method" name="payment_method" required onchange="toggleCreditCardField()">
+                    <option value="credit" {% if expense.payment_method == 'credit' %}selected{% endif %}>Credit Card</option>
+                    <option value="transfer" {% if expense.payment_method == 'transfer' %}selected{% endif %}>Bank Transfer</option>
+                </select>
+            </div>
+
+            <div class="form-group" id="credit_card_group">
+                <label for="credit_card_id">Credit Card</label>
+                <select class="form-control" id="credit_card_id" name="credit_card_id">
+                    <option value="">Select a credit card</option>
+                    {% for card in credit_cards %}
+                        {% if card.status == 'active' %}
+                            <option value="{{ card.id }}" {% if expense.credit_card_id == card.id %}selected{% endif %}>
+                                **** {{ card.last_four_digits }}{% if card.description %} - {{ card.description }}{% endif %}
+                            </option>
+                        {% endif %}
+                    {% endfor %}
                 </select>
             </div>
 
@@ -202,4 +216,26 @@ textarea {
     text-decoration: underline;
 }
 </style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initial toggle of credit card field
+    toggleCreditCardField();
+});
+
+function toggleCreditCardField() {
+    const paymentMethod = document.getElementById('payment_method').value;
+    const creditCardGroup = document.getElementById('credit_card_group');
+    const creditCardSelect = document.getElementById('credit_card_id');
+    
+    if (paymentMethod === 'credit') {
+        creditCardGroup.style.display = 'block';
+        creditCardSelect.required = true;
+    } else {
+        creditCardGroup.style.display = 'none';
+        creditCardSelect.required = false;
+        creditCardSelect.value = '';
+    }
+}
+</script>
 {% endblock %}

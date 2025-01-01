@@ -74,6 +74,18 @@
                         </select>
                     </div>
 
+                    <div class="form-group" id="credit_card_group">
+                        <label for="credit_card_id">Credit Card</label>
+                        <select class="form-control" id="credit_card_id" name="credit_card_id">
+                            <option value="">Select a credit card</option>
+                            {% for card in credit_cards %}
+                                {% if card.status == 'active' %}
+                                    <option value="{{ card.id }}">**** {{ card.last_four_digits }}{% if card.description %} - {{ card.description }}{% endif %}</option>
+                                {% endif %}
+                            {% endfor %}
+                        </select>
+                    </div>
+
                     <h3 class="mt-4"><i class="fas fa-file-alt"></i> Supporting Documents</h3>
                     <div class="form-group">
                         <label for="quote">
@@ -317,56 +329,4 @@
 
 {% block scripts %}
 <script src="{{ url_for('static', filename='js/expense_form.js') }}"></script>
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Handle supplier selection
-    const supplierSelect = document.getElementById('supplier_id');
-
-    supplierSelect.addEventListener('change', function() {
-        if (this.value) {
-            // A supplier is selected
-        } else {
-            // No supplier selected
-        }
-    });
-
-    // Set max date for purchase date
-    const purchaseDateInput = document.getElementById('purchase_date');
-    const today = new Date().toISOString().split('T')[0];
-    purchaseDateInput.max = today;
-
-    // File input preview and validation
-    const fileInputs = document.querySelectorAll('input[type="file"]');
-    fileInputs.forEach(input => {
-        input.addEventListener('change', function() {
-            if (this.files && this.files[0]) {
-                const fileSize = this.files[0].size / 1024 / 1024; // in MB
-                if (fileSize > 16) {
-                    alert('File size exceeds 16MB limit. Please choose a smaller file.');
-                    this.value = '';
-                }
-            }
-        });
-    });
-
-    // Form validation
-    const form = document.getElementById('expense-form');
-    form.addEventListener('submit', function(e) {
-        const amount = document.getElementById('amount').value;
-        const type = document.getElementById('type').value;
-        const description = document.getElementById('description').value;
-        const reason = document.getElementById('reason').value;
-        const subcategory = document.getElementById('subcategory').value;
-
-        if (!amount || !type || !description || !reason || !subcategory) {
-            e.preventDefault();
-            alert('Please fill in all required fields.');
-        }
-    });
-});
-
-function handleSupplierChange() {
-    const supplierId = document.getElementById('supplier_id').value;
-}
-</script>
 {% endblock %}

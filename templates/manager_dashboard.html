@@ -37,6 +37,9 @@
             <a href="{{ url_for('manage_departments') }}" class="btn primary">
                 <i class="fas fa-sitemap"></i> Manage Departments
             </a>
+            <a href="{{ url_for('manage_credit_cards') }}" class="btn primary">
+                <i class="fas fa-credit-card"></i> Manage Credit Cards
+            </a>
             {% elif current_user.is_accounting %}
             <a href="{{ url_for('manage_suppliers') }}" class="btn primary">
                 <i class="fas fa-truck"></i> Manage Suppliers
