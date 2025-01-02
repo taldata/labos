@@ -1570,47 +1570,53 @@ def manage_suppliers():
 @app.route('/add_supplier', methods=['GET', 'POST'])
 @login_required
 def add_supplier():
-    if request.method == 'GET':
-        return render_template('add_supplier.html')
+    if request.method == 'POST':
+        try:
+            # Get form data
+            name = request.form['name']
+            email = request.form.get('email')
+            phone = request.form.get('phone')
+            tax_id = request.form.get('tax_id')
+            
+            # Create new supplier
+            supplier = Supplier(
+                name=name,
+                email=email,
+                phone=phone,
+                tax_id=tax_id,
+                status='active'
+            )
+            db.session.add(supplier)
+            db.session.commit()
+            
+            # If it's an AJAX request, return JSON response
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return jsonify({
+                    'success': True,
+                    'supplier': {
+                        'id': supplier.id,
+                        'name': supplier.name
+                    }
+                })
+            
+            flash('Supplier added successfully!', 'success')
+            return redirect(url_for('submit_expense'))
+            
+        except Exception as e:
+            db.session.rollback()
+            logging.error(f"Error adding supplier: {str(e)}")
+            
+            # If it's an AJAX request, return JSON error response
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return jsonify({
+                    'success': False,
+                    'message': 'Failed to add supplier'
+                }), 400
+                
+            flash('Failed to add supplier. Please try again.', 'error')
+            return redirect(url_for('add_supplier'))
     
-    try:
-        name = request.form['name']
-        email = request.form.get('email')
-        phone = request.form.get('phone')
-        address = request.form.get('address')
-        tax_id = request.form.get('tax_id')
-        bank_name = request.form.get('bank_name')
-        bank_account_number = request.form.get('bank_account_number')
-        bank_branch = request.form.get('bank_branch')
-        bank_swift = request.form.get('bank_swift')
-        notes = request.form.get('notes')
-        status = request.form.get('status', 'active')
-
-        supplier = Supplier(
-            name=name,
-            email=email,
-            phone=phone,
-            address=address,
-            tax_id=tax_id,
-            bank_name=bank_name,
-            bank_account_number=bank_account_number,
-            bank_branch=bank_branch,
-            bank_swift=bank_swift,
-            notes=notes,
-            status=status
-        )
-
-        db.session.add(supplier)
-        db.session.commit()
-
-        flash('Supplier added successfully!', 'success')
-        if current_user.is_admin or current_user.is_accounting:
-            return redirect(url_for('manage_suppliers'))
-        return redirect(url_for('submit_expense'))
-    except Exception as e:
-        db.session.rollback()
-        flash(f'Error adding supplier: {str(e)}', 'error')
-        return redirect(url_for('add_supplier'))
+    return render_template('add_supplier.html')
 
 @app.route('/get_supplier/<int:supplier_id>')
 @login_required

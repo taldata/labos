@@ -124,9 +124,9 @@
                                     {% endif %}
                                 {% endfor %}
                             </select>
-                            <a href="{{ url_for('add_supplier') }}" class="button secondary add-supplier-btn" target="_blank">
+                            <button type="button" class="button secondary add-supplier-btn" onclick="openAddSupplierModal()">
                                 <i class="fas fa-plus"></i> Add New Supplier
-                            </a>
+                            </button>
                         </div>
                     </div>
                     <div class="form-group">
@@ -146,6 +146,44 @@
                 </a>
             </div>
         </form>
+    </div>
+</div>
+
+<!-- Add Supplier Modal -->
+<div id="addSupplierModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>Add New Supplier</h2>
+            <span class="close" onclick="closeAddSupplierModal()">&times;</span>
+        </div>
+        <div class="modal-body">
+            <form id="addSupplierForm" onsubmit="submitSupplier(event)">
+                <div class="form-group">
+                    <label for="supplier_name">Supplier Name *</label>
+                    <input type="text" name="name" id="supplier_name" required class="form-control">
+                </div>
+                <div class="form-group">
+                    <label for="supplier_email">Email</label>
+                    <input type="email" name="email" id="supplier_email" class="form-control">
+                </div>
+                <div class="form-group">
+                    <label for="supplier_phone">Phone</label>
+                    <input type="tel" name="phone" id="supplier_phone" class="form-control">
+                </div>
+                <div class="form-group">
+                    <label for="supplier_tax_id">Tax ID</label>
+                    <input type="text" name="tax_id" id="supplier_tax_id" class="form-control">
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="button primary">
+                        <i class="fas fa-save"></i> Save Supplier
+                    </button>
+                    <button type="button" class="button secondary" onclick="closeAddSupplierModal()">
+                        <i class="fas fa-times"></i> Cancel
+                    </button>
+                </div>
+            </form>
+        </div>
     </div>
 </div>
 
@@ -323,7 +361,136 @@
     height: 38px;
     font-size: 0.9rem;
 }
+
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.5);
+}
+
+.modal-content {
+    background-color: #fefefe;
+    margin: 10% auto;
+    padding: 20px;
+    border-radius: 8px;
+    width: 80%;
+    max-width: 600px;
+    position: relative;
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.close {
+    color: #aaa;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.close:hover {
+    color: #555;
+}
+
+.supplier-select-container {
+    display: flex;
+    gap: 10px;
+    align-items: start;
+}
+
+.supplier-select-container select {
+    flex: 1;
+}
+
+.add-supplier-btn {
+    white-space: nowrap;
+}
 </style>
+
+<script>
+function openAddSupplierModal() {
+    document.getElementById('addSupplierModal').style.display = 'block';
+}
+
+function closeAddSupplierModal() {
+    document.getElementById('addSupplierModal').style.display = 'none';
+    document.getElementById('addSupplierForm').reset();
+}
+
+async function submitSupplier(event) {
+    event.preventDefault();
+    const form = event.target;
+    const formData = new FormData(form);
+
+    try {
+        const response = await fetch('/add_supplier', {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        });
+
+        if (!response.ok) {
+            const data = await response.json();
+            throw new Error(data.message || 'Failed to add supplier');
+        }
+
+        const data = await response.json();
+        if (data.success) {
+            // Add the new supplier to the dropdown
+            const supplierSelect = document.getElementById('supplier_id');
+            const option = new Option(data.supplier.name, data.supplier.id);
+            supplierSelect.add(option);
+            supplierSelect.value = data.supplier.id;
+
+            // Show success message
+            const alertDiv = document.createElement('div');
+            alertDiv.className = 'alert success';
+            alertDiv.textContent = 'Supplier added successfully!';
+            form.insertBefore(alertDiv, form.firstChild);
+
+            // Remove the alert after 3 seconds
+            setTimeout(() => alertDiv.remove(), 3000);
+
+            // Close the modal
+            closeAddSupplierModal();
+        } else {
+            throw new Error(data.message || 'Failed to add supplier');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        // Show error message in the modal
+        const alertDiv = document.createElement('div');
+        alertDiv.className = 'alert error';
+        alertDiv.textContent = error.message;
+        form.insertBefore(alertDiv, form.firstChild);
+
+        // Remove any existing error alerts after 3 seconds
+        setTimeout(() => {
+            const alerts = form.querySelectorAll('.alert.error');
+            alerts.forEach(alert => alert.remove());
+        }, 3000);
+    }
+}
+
+// Close modal when clicking outside
+window.onclick = function(event) {
+    const modal = document.getElementById('addSupplierModal');
+    if (event.target === modal) {
+        closeAddSupplierModal();
+    }
+}
+</script>
 
 {% endblock %}
 
