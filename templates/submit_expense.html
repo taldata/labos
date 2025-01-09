@@ -48,7 +48,7 @@
                     </div>
                     <div class="form-group">
                         <label for="reason">Business Reason</label>
-                        <textarea class="form-control" id="reason" name="reason" rows="3" required placeholder="Explain why this expense is necessary"></textarea>
+                        <textarea class="form-control" id="reason" name="reason" rows="3" placeholder="Explain why this expense is necessary"></textarea>
                     </div>
                 </div>
 
@@ -420,6 +420,35 @@
 function openAddSupplierModal() {
     document.getElementById('addSupplierModal').style.display = 'block';
 }
+
+// Add payment method change handler
+document.getElementById('payment_method').addEventListener('change', function() {
+    const creditCardGroup = document.getElementById('credit_card_group');
+    const creditCardSelect = document.getElementById('credit_card_id');
+    
+    if (this.value === 'credit') {
+        creditCardSelect.setAttribute('required', '');
+        creditCardGroup.style.display = 'block';
+    } else {
+        creditCardSelect.removeAttribute('required');
+        creditCardGroup.style.display = 'none';
+    }
+});
+
+// Initialize payment method state on page load
+document.addEventListener('DOMContentLoaded', function() {
+    const paymentMethod = document.getElementById('payment_method');
+    const creditCardGroup = document.getElementById('credit_card_group');
+    const creditCardSelect = document.getElementById('credit_card_id');
+    
+    if (paymentMethod.value === 'credit') {
+        creditCardSelect.setAttribute('required', '');
+        creditCardGroup.style.display = 'block';
+    } else {
+        creditCardSelect.removeAttribute('required');
+        creditCardGroup.style.display = 'none';
+    }
+});
 
 function closeAddSupplierModal() {
     document.getElementById('addSupplierModal').style.display = 'none';
