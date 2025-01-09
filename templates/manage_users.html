@@ -2,6 +2,8 @@
 
 {% block content %}
 <div class="container-fluid">
+    <div id="alertContainer" style="position: fixed; top: 20px; right: 20px; z-index: 1050;"></div>
+    
     <div class="row">
         <!-- Right Column: Users List -->
         <div class="col-12">
@@ -120,6 +122,9 @@
                                         {% if user.id != current_user.id and not user.is_admin %}
                                         <button onclick="deleteUser({{ user.id }})" class="action-btn delete" title="Delete User">
                                             <i class="fas fa-trash-alt"></i>
+                                        </button>
+                                        <button onclick="resetPassword({{ user.id }})" class="action-btn reset" title="Reset Password" {% if user.username == 'admin' %}disabled{% endif %}>
+                                            <i class="fas fa-key"></i>
                                         </button>
                                         {% endif %}
                                     </td>
@@ -488,6 +493,24 @@ th.actions-header {
 .btn-cancel:hover {
     background-color: #e9ecef;
 }
+
+.action-btn.reset {
+    color: #ffc107;
+}
+
+.action-btn.reset:hover {
+    background: rgba(255, 193, 7, 0.1);
+}
+
+#alertContainer {
+    min-width: 250px;
+    max-width: 400px;
+}
+
+#alertContainer .alert {
+    margin-bottom: 10px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
 </style>
 
 <script>
@@ -642,5 +665,65 @@ function deleteUser(userId) {
         alert('Failed to delete user');
     });
 }
+
+function showAlert(type, message) {
+    const alertContainer = document.getElementById('alertContainer');
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+    alertDiv.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    `;
+    alertContainer.appendChild(alertDiv);
+    
+    // Auto-dismiss after 3 seconds
+    setTimeout(() => {
+        alertDiv.remove();
+    }, 3000);
+}
+
+function resetPassword(userId) {
+    if (confirm('Are you sure you want to reset this user\'s password to 123456?')) {
+        fetch(`/admin/users/${userId}/reset_password`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showAlert('success', data.message);
+            } else {
+                showAlert('danger', data.error || 'Error resetting password');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showAlert('danger', 'Error resetting password');
+        });
+    }
+}
+
+$(document).ready(function() {
+    // Reset Password functionality
+    $('.action-btn.reset').click(function() {
+        const userId = $(this).data('user-id');
+        if (confirm('Are you sure you want to reset this user\'s password to 123456?')) {
+            $.ajax({
+                url: `/admin/users/${userId}/reset_password`,
+                type: 'POST',
+                contentType: 'application/json',
+                success: function(response) {
+                    showAlert('success', response.message);
+                },
+                error: function(xhr) {
+                    const error = xhr.responseJSON ? xhr.responseJSON.error : 'Error resetting password';
+                    showAlert('danger', error);
+                }
+            });
+        }
+    });
+});
 </script>
 {% endblock %}

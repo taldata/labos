@@ -1923,5 +1923,35 @@ def process_receipt_document():
     
     return jsonify({'error': 'Invalid file type'}), 400
 
+@app.route('/admin/users/<int:user_id>/reset_password', methods=['POST'])
+@login_required
+def reset_user_password(user_id):
+    if not current_user.is_admin:
+        return jsonify({'error': 'Access denied'}), 403
+    
+    try:
+        user = User.query.get_or_404(user_id)
+        
+        # Don't allow resetting admin's own password through this route
+        if user.id == current_user.id:
+            return jsonify({'error': 'Cannot reset your own password through this route. Please use the change password page.'}), 400
+        
+        # Reset password to default
+        user.password = '123456'
+        db.session.commit()
+        
+        # Log the action
+        logging.info(f"Admin {current_user.username} reset password for user {user.username}")
+        
+        return jsonify({
+            'success': True,
+            'message': f'Password for user {user.username} has been reset to 123456'
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        logging.error(f"Error resetting password: {str(e)}")
+        return jsonify({'error': f'Error resetting password: {str(e)}'}), 500
+
 if __name__ == '__main__':
     app.run(debug=True)
