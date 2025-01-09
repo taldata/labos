@@ -190,8 +190,13 @@ def submit_expense():
         credit_card_id = request.form.get('credit_card_id')
         
         if supplier_id:
-            supplier_id = int(supplier_id)
-            
+            try:
+                supplier_id = int(supplier_id)
+            except (ValueError, TypeError):
+                supplier_id = None
+        else:
+            supplier_id = None
+        
         # Convert purchase_date string to datetime if provided
         purchase_date = None
         if purchase_date_str:
@@ -199,20 +204,27 @@ def submit_expense():
                 purchase_date = datetime.strptime(purchase_date_str, '%Y-%m-%d')
             except ValueError:
                 logging.error(f"Invalid purchase date format: {purchase_date_str}")
+                flash('Invalid purchase date format. Please use DD/MM/YYYY format.', 'error')
+                return redirect(url_for('submit_expense'))
         
         # Handle supplier
         if supplier_name and not supplier_id:
-            # Create new supplier
-            supplier = Supplier(
-                name=supplier_name,
-                bank_name=bank_name,
-                bank_account_number=bank_account_number,
-                bank_branch=bank_branch,
-                bank_swift=bank_swift
-            )
-            db.session.add(supplier)
-            db.session.commit()
-            supplier_id = supplier.id
+            try:
+                # Create new supplier
+                supplier = Supplier(
+                    name=supplier_name,
+                    bank_name=bank_name,
+                    bank_account_number=bank_account_number,
+                    bank_branch=bank_branch,
+                    bank_swift=bank_swift
+                )
+                db.session.add(supplier)
+                db.session.commit()
+                supplier_id = supplier.id
+            except Exception as e:
+                logging.error(f"Error creating supplier: {str(e)}")
+                flash('Failed to create new supplier. Please check the supplier information.', 'error')
+                return redirect(url_for('submit_expense'))
         
         # Validate credit card if payment method is credit
         if payment_method == 'credit':
@@ -221,11 +233,11 @@ def submit_expense():
                 return redirect(url_for('submit_expense'))
             credit_card = CreditCard.query.get(credit_card_id)
             if not credit_card or credit_card.status != 'active':
-                flash('Selected credit card is not valid', 'error')
+                flash('Selected credit card is not valid or inactive', 'error')
                 return redirect(url_for('submit_expense'))
         else:
             credit_card_id = None
-        
+
         # Create new expense
         expense = Expense(
             amount=amount,
@@ -244,122 +256,158 @@ def submit_expense():
         if 'invoice' in request.files:
             invoice_file = request.files['invoice']
             if invoice_file and allowed_file(invoice_file.filename):
-                # Save the file with a proper name
-                filename = secure_filename(f"{datetime.now().strftime('%Y%m%d%H%M%S')}_{invoice_file.filename}")
-                filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-                
-                # Save the file first
-                invoice_file.save(filepath)
-                expense.invoice_filename = filename
-                
                 try:
-                    # Process the document
-                    doc_processor = DocumentProcessor()
-                    doc_data = doc_processor.process_invoice(filepath)
-                    logging.info(f"Extracted document data: {doc_data}")
+                    # Save the file with a proper name
+                    filename = secure_filename(f"{datetime.now().strftime('%Y%m%d%H%M%S')}_{invoice_file.filename}")
+                    filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
                     
-                    # Update expense with document data if available
-                    if doc_data.get('invoice_total'):
-                        invoice_total = doc_data['invoice_total']
-                        if hasattr(invoice_total, 'amount'):
-                            expense.amount = float(invoice_total.amount)
-                        else:
-                            expense.amount = float(invoice_total)
-                        logging.info(f"Updated amount to {expense.amount}")
+                    # Save the file first
+                    invoice_file.save(filepath)
+                    expense.invoice_filename = filename
                     
-                    if doc_data.get('items') and doc_data['items'] and doc_data['items'][0].get('description'):
-                        expense.description = doc_data['items'][0]['description']
-                        logging.info(f"Updated description to {expense.description}")
-                    
-                    if doc_data.get('vendor_name'):
-                        expense.supplier_name = doc_data['vendor_name']
-                        logging.info(f"Updated supplier_name to {expense.supplier_name}")
-                    
-                    if doc_data.get('invoice_date'):
-                        expense.purchase_date = doc_data['invoice_date']
-                        logging.info(f"Updated purchase_date to {expense.purchase_date}")
+                    try:
+                        # Process the document
+                        doc_processor = DocumentProcessor()
+                        doc_data = doc_processor.process_invoice(filepath)
+                        logging.info(f"Extracted document data: {doc_data}")
                         
+                        # Update expense with document data if available
+                        if doc_data.get('invoice_total'):
+                            invoice_total = doc_data['invoice_total']
+                            if hasattr(invoice_total, 'amount'):
+                                expense.amount = float(invoice_total.amount)
+                            else:
+                                expense.amount = float(invoice_total)
+                            logging.info(f"Updated amount to {expense.amount}")
+                        
+                        if doc_data.get('items') and doc_data['items'] and doc_data['items'][0].get('description'):
+                            expense.description = doc_data['items'][0]['description']
+                            logging.info(f"Updated description to {expense.description}")
+                        
+                        if doc_data.get('vendor_name'):
+                            expense.supplier_name = doc_data['vendor_name']
+                            logging.info(f"Updated supplier_name to {expense.supplier_name}")
+                        
+                        if doc_data.get('invoice_date'):
+                            expense.purchase_date = doc_data['invoice_date']
+                            logging.info(f"Updated purchase_date to {expense.purchase_date}")
+                    except Exception as e:
+                        logging.error(f"Error processing invoice: {str(e)}")
+                        flash(f'Error processing invoice: {str(e)}', 'error')
+                        return redirect(url_for('submit_expense'))
                 except Exception as e:
-                    logging.error(f"Error processing document: {str(e)}")
-        
+                    logging.error(f"Error saving invoice file: {str(e)}")
+                    flash('Failed to save invoice file. Please try again.', 'error')
+                    return redirect(url_for('submit_expense'))
+            elif invoice_file and not allowed_file(invoice_file.filename):
+                flash('Invalid invoice file type. Allowed types are: PDF, PNG, JPG, JPEG', 'error')
+                return redirect(url_for('submit_expense'))
+
         # Process quote if provided
         if 'quote' in request.files:
             quote = request.files['quote']
             if quote and allowed_file(quote.filename):
-                filename = secure_filename(f"{datetime.now().strftime('%Y%m%d%H%M%S')}_{quote.filename}")
-                quote.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-                expense.quote_filename = filename
+                try:
+                    filename = secure_filename(f"{datetime.now().strftime('%Y%m%d%H%M%S')}_{quote.filename}")
+                    quote.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+                    expense.quote_filename = filename
+                except Exception as e:
+                    logging.error(f"Error saving quote file: {str(e)}")
+                    flash('Failed to save quote file. Please try again.', 'error')
+                    return redirect(url_for('submit_expense'))
+            elif quote and not allowed_file(quote.filename):
+                flash('Invalid quote file type. Allowed types are: PDF, PNG, JPG, JPEG', 'error')
+                return redirect(url_for('submit_expense'))
 
         # Process receipt if provided
         if 'receipt' in request.files:
             receipt = request.files['receipt']
             if receipt and allowed_file(receipt.filename):
-                filename = secure_filename(f"{datetime.now().strftime('%Y%m%d%H%M%S')}_{receipt.filename}")
-                filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-                
-                # Save the file first
-                receipt.save(filepath)
-                expense.receipt_filename = filename
-                
                 try:
-                    # Process the receipt
-                    doc_processor = DocumentProcessor()
-                    receipt_data = doc_processor.process_receipt(filepath)
-                    logging.info(f"Extracted receipt data: {receipt_data}")
+                    filename = secure_filename(f"{datetime.now().strftime('%Y%m%d%H%M%S')}_{receipt.filename}")
+                    filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
                     
-                    # Update expense with receipt data if available and if not already set by invoice
-                    if not expense.amount and receipt_data.get('total'):
-                        total = receipt_data['total']
-                        if hasattr(total, 'amount'):
-                            expense.amount = float(total.amount)
-                        else:
-                            expense.amount = float(total)
-                        logging.info(f"Updated amount from receipt to {expense.amount}")
+                    # Save the file first
+                    receipt.save(filepath)
+                    expense.receipt_filename = filename
                     
-                    if not expense.description and receipt_data.get('items') and receipt_data['items'] and receipt_data['items'][0].get('description'):
-                        expense.description = receipt_data['items'][0]['description']
-                        logging.info(f"Updated description from receipt to {expense.description}")
-                    
-                    if not expense.supplier_name and receipt_data.get('merchant_name'):
-                        expense.supplier_name = receipt_data['merchant_name']
-                        logging.info(f"Updated supplier_name from receipt to {expense.supplier_name}")
-                    
-                    if not expense.purchase_date and receipt_data.get('transaction_date'):
-                        expense.purchase_date = receipt_data['transaction_date']
-                        logging.info(f"Updated purchase_date from receipt to {expense.purchase_date}")
+                    try:
+                        # Process the receipt
+                        doc_processor = DocumentProcessor()
+                        receipt_data = doc_processor.process_receipt(filepath)
+                        logging.info(f"Extracted receipt data: {receipt_data}")
                         
+                        # Update expense with receipt data if available and if not already set by invoice
+                        if not expense.amount and receipt_data.get('total'):
+                            total = receipt_data['total']
+                            if hasattr(total, 'amount'):
+                                expense.amount = float(total.amount)
+                            else:
+                                expense.amount = float(total)
+                            logging.info(f"Updated amount from receipt to {expense.amount}")
+                        
+                        if not expense.description and receipt_data.get('items') and receipt_data['items'] and receipt_data['items'][0].get('description'):
+                            expense.description = receipt_data['items'][0]['description']
+                            logging.info(f"Updated description from receipt to {expense.description}")
+                        
+                        if not expense.supplier_name and receipt_data.get('merchant_name'):
+                            expense.supplier_name = receipt_data['merchant_name']
+                            logging.info(f"Updated supplier_name from receipt to {expense.supplier_name}")
+                        
+                        if not expense.purchase_date and receipt_data.get('transaction_date'):
+                            expense.purchase_date = receipt_data['transaction_date']
+                            logging.info(f"Updated purchase_date from receipt to {expense.purchase_date}")
+                    except Exception as e:
+                        logging.error(f"Error processing receipt: {str(e)}")
+                        flash(f'Error processing receipt: {str(e)}', 'error')
+                        return redirect(url_for('submit_expense'))
                 except Exception as e:
-                    logging.error(f"Error processing receipt: {str(e)}")
+                    logging.error(f"Error saving receipt file: {str(e)}")
+                    flash('Failed to save receipt file. Please try again.', 'error')
+                    return redirect(url_for('submit_expense'))
+            elif receipt and not allowed_file(receipt.filename):
+                flash('Invalid receipt file type. Allowed types are: PDF, PNG, JPG, JPEG', 'error')
+                return redirect(url_for('submit_expense'))
         
         # Save the expense to database
-        db.session.add(expense)
-        db.session.commit()
-        
-        # Explicitly load the subcategory relationship
-        db.session.refresh(expense)
-
-        # Send email notification to managers
         try:
-            managers = User.query.filter_by(is_manager=True).all()
-            for manager in managers:
-                send_email(
-                    subject="New Expense Submission",
-                    recipient=manager.email,
-                    template=EXPENSE_SUBMITTED_TEMPLATE,
-                    expense=expense,
-                    submitter=current_user
-                )
-        except Exception as e:
-            logging.error(f"Failed to send email notification: {str(e)}")
-            # Continue even if email fails
-            pass
+            db.session.add(expense)
+            db.session.commit()
+            
+            # Explicitly load the subcategory relationship
+            db.session.refresh(expense)
 
-        flash('Expense submitted successfully!', 'success')
-        return redirect(url_for('employee_dashboard'))
-        
+            # Send email notification to managers
+            try:
+                managers = User.query.filter_by(is_manager=True).all()
+                for manager in managers:
+                    send_email(
+                        subject="New Expense Submission",
+                        recipient=manager.email,
+                        template=EXPENSE_SUBMITTED_TEMPLATE,
+                        expense=expense,
+                        submitter=current_user
+                    )
+            except Exception as e:
+                logging.error(f"Failed to send email notification: {str(e)}")
+                # Continue even if email fails
+                pass
+
+            flash('Expense submitted successfully!', 'success')
+            return redirect(url_for('employee_dashboard'))
+        except Exception as e:
+            db.session.rollback()
+            logging.error(f"Database error while saving expense: {str(e)}")
+            flash(f'Failed to save expense: {str(e)}', 'error')
+            return redirect(url_for('submit_expense'))
+            
+    except ValueError as e:
+        logging.error(f"Value error in expense submission: {str(e)}")
+        flash(f'Invalid value provided: {str(e)}', 'error')
+        return redirect(url_for('submit_expense'))
     except Exception as e:
-        logging.error(f"Error submitting expense: {str(e)}")
-        flash('Error submitting expense. Please try again.', 'error')
+        logging.error(f"Unexpected error in expense submission: {str(e)}")
+        flash(f'An unexpected error occurred: {str(e)}', 'error')
         return redirect(url_for('submit_expense'))
 
 @app.route('/download/<filename>')
@@ -1033,6 +1081,8 @@ def edit_expense(expense_id):
                     purchase_date = datetime.strptime(purchase_date_str, '%Y-%m-%d')
                 except ValueError:
                     logging.error(f"Invalid purchase date format: {purchase_date_str}")
+                    flash('Invalid purchase date format. Please use DD/MM/YYYY format.', 'error')
+                    return redirect(url_for('edit_expense', expense_id=expense_id))
             
             # Verify that the subcategory belongs to the user's department
             subcategory = Subcategory.query.join(Category).filter(
@@ -1051,7 +1101,7 @@ def edit_expense(expense_id):
                     return redirect(url_for('edit_expense', expense_id=expense_id))
                 credit_card = CreditCard.query.get(credit_card_id)
                 if not credit_card or credit_card.status != 'active':
-                    flash('Selected credit card is not valid', 'error')
+                    flash('Selected credit card is not valid or inactive', 'error')
                     return redirect(url_for('edit_expense', expense_id=expense_id))
             else:
                 credit_card_id = None
