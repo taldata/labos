@@ -249,7 +249,8 @@ def submit_expense():
             payment_method=payment_method,
             supplier_id=supplier_id,
             purchase_date=purchase_date,
-            credit_card_id=credit_card_id
+            credit_card_id=credit_card_id,
+            status='approved' if expense_type == 'auto_approved' else 'pending'
         )
         
         # Process document if uploaded
