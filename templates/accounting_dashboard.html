@@ -4,10 +4,16 @@
 <div class="container-fluid">
     <div class="dashboard-actions">
         <h2 class="mb-0">Accounting Dashboard</h2>
-        <a href="{{ url_for('export_accounting_excel') }}" class="export-btn">
-            <i class="fas fa-file-excel"></i>
-            Export to Excel
-        </a>
+        <div class="d-flex gap-2">
+            <a href="{{ url_for('manage_suppliers') }}" class="button primary">
+                <i class="fas fa-building"></i>
+                Manage Suppliers
+            </a>
+            <a href="{{ url_for('export_accounting_excel') }}" class="button primary">
+                <i class="fas fa-file-excel"></i>
+                Export to Excel
+            </a>
+        </div>
     </div>
     <div class="card shadow">
         <div class="card-body">

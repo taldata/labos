@@ -1651,6 +1651,9 @@ def add_supplier():
                 })
             
             flash('Supplier added successfully!', 'success')
+            # Redirect based on user role
+            if current_user.is_accounting:
+                return redirect(url_for('accounting_dashboard'))
             return redirect(url_for('submit_expense'))
             
         except Exception as e:
@@ -1712,6 +1715,9 @@ def edit_supplier(supplier_id):
         db.session.rollback()
         flash(f'Error updating supplier: {str(e)}', 'error')
 
+    # Redirect based on user role
+    if current_user.is_accounting:
+        return redirect(url_for('accounting_dashboard'))
     return redirect(url_for('manage_suppliers'))
 
 @app.route('/delete_supplier/<int:supplier_id>')
