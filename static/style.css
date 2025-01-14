@@ -945,3 +945,151 @@ select[multiple].form-select option:checked {
 .export-btn i {
     font-size: 1.1rem;
 }
+
+/* Mobile-friendly improvements */
+@media (max-width: 768px) {
+    /* Improved container padding for mobile */
+    .container {
+        padding: 0.5rem;
+        width: 100%;
+    }
+
+    /* Mobile navigation */
+    .navbar {
+        flex-direction: column;
+        padding: 0.5rem;
+    }
+
+    .nav-items {
+        flex-direction: column;
+        width: 100%;
+        gap: 0.5rem;
+        padding: 0.5rem 0;
+    }
+
+    .nav-link {
+        width: 100%;
+        text-align: center;
+        padding: 0.75rem;
+    }
+
+    /* Form improvements */
+    .form-group {
+        margin-bottom: 1rem;
+    }
+
+    input[type="text"],
+    input[type="email"],
+    input[type="password"],
+    input[type="number"],
+    input[type="date"],
+    select,
+    textarea {
+        width: 100%;
+        padding: 12px;
+        font-size: 16px; /* Prevents iOS zoom on focus */
+    }
+
+    /* Table improvements */
+    .table-responsive {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        margin-bottom: 1rem;
+    }
+
+    table {
+        min-width: 100%;
+    }
+
+    /* Card improvements */
+    .card {
+        margin: 0.5rem 0;
+        padding: 1rem;
+    }
+
+    /* Button improvements */
+    .button {
+        padding: 12px 20px;
+        min-height: 44px; /* Better touch targets */
+    }
+
+    .button-group {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .button-group .button {
+        width: 100%;
+    }
+
+    /* Modal improvements */
+    .modal-content {
+        width: 95%;
+        margin: 10px auto;
+    }
+
+    /* Dashboard improvements */
+    .dashboard-header {
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .dashboard-actions {
+        flex-direction: column;
+        width: 100%;
+    }
+
+    /* Form layout improvements */
+    .form-row {
+        flex-direction: column;
+    }
+
+    .form-col {
+        width: 100%;
+    }
+
+    /* Touch-friendly dropdowns */
+    select {
+        appearance: none;
+        background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+        background-repeat: no-repeat;
+        background-position: right 0.5rem center;
+        background-size: 1.5em;
+    }
+}
+
+/* Additional improvements for very small screens */
+@media (max-width: 480px) {
+    .container {
+        padding: 0.25rem;
+    }
+
+    h1 {
+        font-size: 1.5rem;
+    }
+
+    h2 {
+        font-size: 1.25rem;
+    }
+
+    .card {
+        padding: 0.75rem;
+    }
+}
+
+/* Touch-friendly improvements */
+@media (hover: none) {
+    .button:hover {
+        transform: none;
+    }
+
+    .nav-link:hover {
+        background-color: transparent;
+    }
+
+    /* Add active state for touch devices */
+    .button:active,
+    .nav-link:active {
+        background-color: rgba(0,0,0,0.1);
+    }
+}
