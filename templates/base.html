@@ -13,28 +13,33 @@
     <style>
         .navbar {
             background-color: #2196F3;
-            padding: 1rem 2rem;
+            padding: 0.5rem 1rem;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
             display: flex;
             justify-content: space-between;
             align-items: center;
+            position: fixed;
+            width: 100%;
+            top: 0;
+            z-index: 1000;
         }
         .nav-brand {
             color: white;
-            font-size: 1.5rem;
+            font-size: 1.2rem;
             font-weight: 500;
         }
         .nav-items {
             display: flex;
             align-items: center;
-            gap: 1.5rem;
+            gap: 1rem;
         }
         .nav-link {
             color: white;
             text-decoration: none;
-            padding: 0.5rem 1rem;
+            padding: 0.5rem;
             border-radius: 4px;
             transition: background-color 0.3s;
+            font-size: 0.9rem;
         }
         .nav-link:hover {
             background-color: rgba(255,255,255,0.1);
@@ -44,11 +49,12 @@
             display: flex;
             align-items: center;
             gap: 0.5rem;
+            font-size: 0.9rem;
         }
         .badge {
-            padding: 4px 8px;
+            padding: 2px 6px;
             border-radius: 4px;
-            font-size: 0.85em;
+            font-size: 0.75em;
             font-weight: 500;
             background-color: rgba(255,255,255,0.2);
             color: white;
@@ -62,11 +68,56 @@
         .badge.department {
             background-color: #4CAF50;
         }
+        .menu-toggle {
+            display: none;
+            color: white;
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            padding: 0.5rem;
+        }
+        @media (max-width: 768px) {
+            .menu-toggle {
+                display: block;
+            }
+            .nav-items {
+                display: none;
+                position: absolute;
+                top: 100%;
+                left: 0;
+                right: 0;
+                background-color: #2196F3;
+                flex-direction: column;
+                padding: 0.5rem;
+                box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            }
+            .nav-items.active {
+                display: flex;
+            }
+            .nav-link {
+                width: 100%;
+                text-align: left;
+                padding: 0.75rem;
+            }
+            .user-info {
+                flex-wrap: wrap;
+                justify-content: center;
+                text-align: center;
+                padding: 0.5rem;
+            }
+            .content {
+                margin-top: 60px;
+            }
+        }
     </style>
 </head>
 <body>
     <nav class="navbar">
         <div class="nav-brand">Budget Management System</div>
+        <button class="menu-toggle" aria-label="Toggle menu">
+            <i class="fas fa-bars"></i>
+        </button>
         <div class="nav-items">
             {% if current_user.is_authenticated %}
                 {% if current_user.is_admin %}
@@ -121,6 +172,7 @@
     <script>
         // Auto-hide flash messages after 5 seconds
         document.addEventListener('DOMContentLoaded', function() {
+            // Flash messages
             setTimeout(function() {
                 var flashMessages = document.querySelectorAll('.flash-message');
                 flashMessages.forEach(function(message) {
@@ -130,6 +182,21 @@
                     }, 500);
                 });
             }, 5000);
+
+            // Mobile menu toggle
+            const menuToggle = document.querySelector('.menu-toggle');
+            const navItems = document.querySelector('.nav-items');
+            
+            menuToggle.addEventListener('click', function() {
+                navItems.classList.toggle('active');
+            });
+
+            // Close menu when clicking outside
+            document.addEventListener('click', function(event) {
+                if (!event.target.closest('.navbar')) {
+                    navItems.classList.remove('active');
+                }
+            });
         });
     </script>
 </body>
