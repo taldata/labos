@@ -135,5 +135,108 @@ NEW_USER_TEMPLATE = """
 <p>If you have any questions, please contact your department manager.</p>
 """
 
+# New Email Templates
+EXPENSE_REQUEST_CONFIRMATION_TEMPLATE = """
+<h2>Confirmation: Your Request Has Been Successfully Registered</h2>
+<p>Hello {{ employee.username }},</p>
+
+<p>Your request has been successfully registered in the system. Below are the main details of your request:</p>
+
+<ul>
+    <li><strong>Description:</strong> {{ expense.description }}</li>
+    <li><strong>Amount:</strong> ${{ "%.2f"|format(expense.amount) }}</li>
+    <li><strong>Type of Request:</strong> {{ expense.subcategory.name }}</li>
+    <li><strong>Payment Method:</strong> {{ expense.payment_method }}</li>
+    <li><strong>Supplier:</strong> {{ expense.supplier_name if expense.supplier_name else 'N/A' }}</li>
+    <li><strong>Status:</strong> {{ expense.status|title }}</li>
+    <li><strong>Attached Files:</strong>
+        <ul>
+            {% if expense.quote_filename %}<li>Quote: {{ expense.quote_filename }}</li>{% endif %}
+            {% if expense.invoice_filename %}<li>Invoice: {{ expense.invoice_filename }}</li>{% endif %}
+            {% if expense.receipt_filename %}<li>Receipt: {{ expense.receipt_filename }}</li>{% endif %}
+            {% if not expense.quote_filename and not expense.invoice_filename and not expense.receipt_filename %}
+            <li>No files attached</li>
+            {% endif %}
+        </ul>
+    </li>
+</ul>
+
+<p>If additional information regarding your request becomes available, you will receive a notification.</p>
+"""
+
+EXPENSE_REQUEST_REJECTION_TEMPLATE = """
+<h2>Status Update: Your Request Has Not Been Approved</h2>
+<p>Hello {{ employee.username }},</p>
+
+<p>Unfortunately, your request has not been approved.</p>
+
+<h3>Request Details:</h3>
+<ul>
+    <li><strong>Description:</strong> {{ expense.description }}</li>
+    <li><strong>Amount:</strong> ${{ "%.2f"|format(expense.amount) }}</li>
+    <li><strong>Type of Request:</strong> {{ expense.subcategory.name }}</li>
+    <li><strong>Payment Method:</strong> {{ expense.payment_method }}</li>
+    <li><strong>Supplier:</strong> {{ expense.supplier_name if expense.supplier_name else 'N/A' }}</li>
+    <li><strong>Status:</strong> Rejected</li>
+    <li><strong>Attached Files:</strong>
+        <ul>
+            {% if expense.quote_filename %}<li>Quote: {{ expense.quote_filename }}</li>{% endif %}
+            {% if expense.invoice_filename %}<li>Invoice: {{ expense.invoice_filename }}</li>{% endif %}
+            {% if expense.receipt_filename %}<li>Receipt: {{ expense.receipt_filename }}</li>{% endif %}
+            {% if not expense.quote_filename and not expense.invoice_filename and not expense.receipt_filename %}
+            <li>No files attached</li>
+            {% endif %}
+        </ul>
+    </li>
+</ul>
+
+<p><strong>Reason for Rejection:</strong> {{ expense.rejection_reason }}</p>
+<p><strong>Approval Manager:</strong> {{ expense.handler.username if expense.handler else 'N/A' }}</p>
+
+<p>If you have any questions or wish to appeal the decision, please contact the responsible manager.</p>
+<p>You may submit a new request in the system if there are changes to the request details.</p>
+"""
+
+PASSWORD_CHANGE_CONFIRMATION_TEMPLATE = """
+<h2>Password Change Confirmation</h2>
+<p>Hello {{ user.username }},</p>
+
+<p>Your password in the system has been successfully updated.</p>
+
+<p><strong>If you did not initiate the password change, please contact the system administrator immediately to ensure the security of your account.</strong></p>
+"""
+
+NEW_REQUEST_MANAGER_NOTIFICATION_TEMPLATE = """
+<h2>New Request Awaiting Your Attention</h2>
+<p>Hello {{ manager.username }},</p>
+
+<p>A new request has been submitted by an employee and requires your attention. Below are the request details:</p>
+
+<ul>
+    <li><strong>Employee Name:</strong> {{ expense.user.username }}</li>
+    <li><strong>Department:</strong> {{ expense.user.department.name if expense.user.department else 'N/A' }}</li>
+    <li><strong>Description:</strong> {{ expense.description }}</li>
+    <li><strong>Category:</strong> {{ expense.subcategory.category.name }}</li>
+    <li><strong>Subcategory:</strong> {{ expense.subcategory.name }}</li>
+    <li><strong>Reason:</strong> {{ expense.reason }}</li>
+    <li><strong>Amount:</strong> ${{ "%.2f"|format(expense.amount) }}</li>
+    <li><strong>Payment Method:</strong> {{ expense.payment_method }}</li>
+    <li><strong>Supplier:</strong> {{ expense.supplier_name if expense.supplier_name else 'N/A' }}</li>
+    <li><strong>Status:</strong> {{ expense.status|title }}</li>
+    <li><strong>Attached Files:</strong>
+        <ul>
+            {% if expense.quote_filename %}<li>Quote: {{ expense.quote_filename }}</li>{% endif %}
+            {% if expense.invoice_filename %}<li>Invoice: {{ expense.invoice_filename }}</li>{% endif %}
+            {% if expense.receipt_filename %}<li>Receipt: {{ expense.receipt_filename }}</li>{% endif %}
+            {% if not expense.quote_filename and not expense.invoice_filename and not expense.receipt_filename %}
+            <li>No files attached</li>
+            {% endif %}
+        </ul>
+    </li>
+</ul>
+
+<p>Please login to the expense management system to review this request.</p>
+"""
+
 if __name__ == "__main__":
     test_email_setup()

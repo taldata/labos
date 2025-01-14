@@ -5,7 +5,7 @@ from datetime import datetime
 import os
 from services.document_processor import DocumentProcessor
 from werkzeug.utils import secure_filename
-from utils.email_sender import send_email, EXPENSE_SUBMITTED_TEMPLATE, EXPENSE_STATUS_UPDATE_TEMPLATE, NEW_USER_TEMPLATE
+from utils.email_sender import send_email, EXPENSE_SUBMITTED_TEMPLATE, EXPENSE_STATUS_UPDATE_TEMPLATE, NEW_USER_TEMPLATE, EXPENSE_REQUEST_CONFIRMATION_TEMPLATE, NEW_REQUEST_MANAGER_NOTIFICATION_TEMPLATE, EXPENSE_REQUEST_REJECTION_TEMPLATE, PASSWORD_CHANGE_CONFIRMATION_TEMPLATE
 import logging
 import pytz
 from routes.expense import expense_bp
@@ -378,19 +378,33 @@ def submit_expense():
             # Explicitly load the subcategory relationship
             db.session.refresh(expense)
 
+            # Send confirmation email to employee
+            try:
+                send_email(
+                    subject="Confirmation: Your Request Has Been Successfully Registered",
+                    recipient=current_user.email,
+                    template=EXPENSE_REQUEST_CONFIRMATION_TEMPLATE,
+                    employee=current_user,
+                    expense=expense
+                )
+            except Exception as e:
+                logging.error(f"Failed to send confirmation email: {str(e)}")
+                # Continue even if email fails
+                pass
+
             # Send email notification to managers
             try:
                 managers = User.query.filter_by(is_manager=True).all()
                 for manager in managers:
                     send_email(
-                        subject="New Expense Submission",
+                        subject="New Request Awaiting Your Attention",
                         recipient=manager.email,
-                        template=EXPENSE_SUBMITTED_TEMPLATE,
-                        expense=expense,
-                        submitter=current_user
+                        template=NEW_REQUEST_MANAGER_NOTIFICATION_TEMPLATE,
+                        manager=manager,
+                        expense=expense
                     )
             except Exception as e:
-                logging.error(f"Failed to send email notification: {str(e)}")
+                logging.error(f"Failed to send manager notification: {str(e)}")
                 # Continue even if email fails
                 pass
 
@@ -596,10 +610,14 @@ def handle_expense(expense_id, action):
     if action == 'approve':
         expense.status = 'approved'
         message = 'Expense approved successfully'
+        email_template = EXPENSE_REQUEST_CONFIRMATION_TEMPLATE
+        email_subject = "Confirmation: Your Request Has Been Successfully Registered"
     elif action == 'reject':
         expense.status = 'rejected'
         expense.rejection_reason = request.form.get('rejection_reason')
         message = 'Expense rejected successfully'
+        email_template = EXPENSE_REQUEST_REJECTION_TEMPLATE
+        email_subject = "Status Update: Your Request Has Not Been Approved"
     else:
         flash('Invalid action', 'danger')
         return redirect(url_for('manager_dashboard'))
@@ -614,13 +632,11 @@ def handle_expense(expense_id, action):
         
         # Send email notification to the expense submitter
         send_email(
-            subject='Expense Status Update',
-            recipient=expense.submitter.email,
-            template=EXPENSE_STATUS_UPDATE_TEMPLATE,
-            employee_name=expense.submitter.username,
-            expense=expense,
-            subcategory=expense.subcategory,
-            status=expense.status
+            subject=email_subject,
+            recipient=expense.user.email,
+            template=email_template,
+            employee=expense.user,
+            expense=expense
         )
     except Exception as e:
         db.session.rollback()
@@ -1245,6 +1261,19 @@ def change_password():
         # Update password
         current_user.password = new_password  # In production, use proper password hashing
         db.session.commit()
+        
+        # Send password change confirmation email
+        try:
+            send_email(
+                subject="Password Change Confirmation",
+                recipient=current_user.email,
+                template=PASSWORD_CHANGE_CONFIRMATION_TEMPLATE,
+                user=current_user
+            )
+        except Exception as e:
+            logging.error(f"Failed to send password change confirmation email: {str(e)}")
+            # Continue even if email fails
+            pass
         
         flash('Password changed successfully', 'success')
         return redirect(url_for('change_password'))
@@ -1948,6 +1977,19 @@ def reset_user_password(user_id):
         
         # Log the action
         logging.info(f"Admin {current_user.username} reset password for user {user.username}")
+        
+        # Send password change notification email
+        try:
+            send_email(
+                subject="Password Change Confirmation",
+                recipient=user.email,
+                template=PASSWORD_CHANGE_CONFIRMATION_TEMPLATE,
+                user=user
+            )
+        except Exception as e:
+            logging.error(f"Failed to send password change notification email: {str(e)}")
+            # Continue even if email fails
+            pass
         
         return jsonify({
             'success': True,
