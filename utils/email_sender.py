@@ -28,7 +28,7 @@ def send_email_sendgrid(to_email, subject, html_content):
         # Create the email message
         message = Mail(
             from_email=FROM_EMAIL,
-            to_emails=[{"email": to_email}],
+            to_emails=to_email,
             subject=subject,
             html_content=html_content
         )
