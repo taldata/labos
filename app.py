@@ -629,7 +629,7 @@ def handle_expense(expense_id, action):
     
     # Record manager information
     expense.manager_id = current_user.id
-    expense.handler = current_user  # Add this line to set the handler relationship
+    expense.handler = current_user
     expense.handled_at = datetime.now(pytz.utc).replace(microsecond=0)
     
     try:
@@ -639,12 +639,13 @@ def handle_expense(expense_id, action):
         expense_data = {
             'amount': f"{expense.amount:,.2f}",
             'description': expense.description,
-            'subcategory': {'name': expense.subcategory.name},
+            'subcategory': expense.subcategory,  # Pass the entire subcategory object
             'date': expense.date,
             'payment_method': expense.payment_method,
-            'supplier_name': expense.supplier_name,
-            'rejection_reason': expense.rejection_reason,
-            'handler': {'username': current_user.username}
+            'supplier_name': expense.supplier.name if expense.supplier else None,
+            'rejection_reason': expense.rejection_reason,  # Make sure this is included
+            'handler': current_user,  # Pass the entire handler object
+            'status': expense.status  # Include the status
         }
         
         # Send email notification to the expense submitter
@@ -652,14 +653,15 @@ def handle_expense(expense_id, action):
             subject=email_subject,
             recipient=expense.submitter.email,
             template=email_template,
-            submitter={'username': expense.submitter.username},
+            submitter=expense.submitter,  # Pass the entire submitter object
             expense=expense_data,
-            status=expense.status
+            rejection_reason=expense.rejection_reason  # Add this line to explicitly pass rejection reason
         )
         
         flash(message, 'success')
     except Exception as e:
         db.session.rollback()
+        logging.error(f"Error handling expense: {str(e)}")  # Add logging
         flash(f'Error: {str(e)}', 'danger')
     
     return redirect(url_for('manager_dashboard'))
