@@ -611,7 +611,7 @@ def handle_expense(expense_id, action):
         expense.status = 'approved'
         message = 'Expense approved successfully'
         email_template = EXPENSE_STATUS_UPDATE_TEMPLATE
-        email_subject = "Expense Status Update - Approved"
+        email_subject = "Status Update: Your Request Has Been Approved"
     elif action == 'reject':
         expense.status = 'rejected'
         expense.rejection_reason = request.form.get('rejection_reason')
