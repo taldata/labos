@@ -138,7 +138,7 @@ NEW_USER_TEMPLATE = """
 # New Email Templates
 EXPENSE_REQUEST_CONFIRMATION_TEMPLATE = """
 <h2>Confirmation: Your Request Has Been Successfully Registered</h2>
-<p>Hello {{ employee.username }},</p>
+<p>Hello {{ submitter.username }},</p>
 
 <p>Your request has been successfully registered in the system. Below are the main details of your request:</p>
 
@@ -166,7 +166,7 @@ EXPENSE_REQUEST_CONFIRMATION_TEMPLATE = """
 
 EXPENSE_REQUEST_REJECTION_TEMPLATE = """
 <h2>Status Update: Your Request Has Not Been Approved</h2>
-<p>Hello {{ employee.username }},</p>
+<p>Hello {{ submitter.username }},</p>
 
 <p>Unfortunately, your request has not been approved.</p>
 
@@ -213,8 +213,8 @@ NEW_REQUEST_MANAGER_NOTIFICATION_TEMPLATE = """
 <p>A new request has been submitted by an employee and requires your attention. Below are the request details:</p>
 
 <ul>
-    <li><strong>Employee Name:</strong> {{ expense.user.username }}</li>
-    <li><strong>Department:</strong> {{ expense.user.department.name if expense.user.department else 'N/A' }}</li>
+    <li><strong>Employee Name:</strong> {{ expense.submitter.username }}</li>
+    <li><strong>Department:</strong> {{ expense.submitter.department.name if expense.submitter.department else 'N/A' }}</li>
     <li><strong>Description:</strong> {{ expense.description }}</li>
     <li><strong>Category:</strong> {{ expense.subcategory.category.name }}</li>
     <li><strong>Subcategory:</strong> {{ expense.subcategory.name }}</li>

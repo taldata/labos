@@ -384,7 +384,7 @@ def submit_expense():
                     subject="Confirmation: Your Request Has Been Successfully Registered",
                     recipient=current_user.email,
                     template=EXPENSE_REQUEST_CONFIRMATION_TEMPLATE,
-                    employee=current_user,
+                    submitter=current_user,
                     expense=expense
                 )
             except Exception as e:
@@ -633,9 +633,9 @@ def handle_expense(expense_id, action):
         # Send email notification to the expense submitter
         send_email(
             subject=email_subject,
-            recipient=expense.user.email,
+            recipient=expense.submitter.email,
             template=email_template,
-            employee=expense.user,
+            submitter=expense.submitter,
             expense=expense
         )
     except Exception as e:
