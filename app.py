@@ -610,8 +610,8 @@ def handle_expense(expense_id, action):
     if action == 'approve':
         expense.status = 'approved'
         message = 'Expense approved successfully'
-        email_template = EXPENSE_REQUEST_CONFIRMATION_TEMPLATE
-        email_subject = "Confirmation: Your Request Has Been Successfully Registered"
+        email_template = EXPENSE_STATUS_UPDATE_TEMPLATE
+        email_subject = "Expense Status Update - Approved"
     elif action == 'reject':
         expense.status = 'rejected'
         expense.rejection_reason = request.form.get('rejection_reason')
@@ -636,7 +636,8 @@ def handle_expense(expense_id, action):
             recipient=expense.submitter.email,
             template=email_template,
             submitter=expense.submitter,
-            expense=expense
+            expense=expense,
+            status=expense.status  # Add status parameter for the template
         )
     except Exception as e:
         db.session.rollback()
