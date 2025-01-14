@@ -78,11 +78,10 @@ def test_email_setup():
         logger.error(f"❌ Email setup test failed: {str(e)}")
         return False
 
-def send_async_email(app, recipient, subject, template, **kwargs):
+def send_async_email(app, recipient, subject, html_content):
     """Send email asynchronously"""
     try:
         with app.app_context():
-            html_content = render_template_string(template, **kwargs)
             send_email_sendgrid(recipient, subject, html_content)
     except Exception as e:
         logger.error(f"Failed in async email sending: {str(e)}")
@@ -91,13 +90,26 @@ def send_async_email(app, recipient, subject, template, **kwargs):
 def send_email(subject, recipient, template, **kwargs):
     """Send an email using a template"""
     try:
+        # Create Jinja2 environment for proper template rendering
+        from jinja2 import Environment, select_autoescape
+        env = Environment(autoescape=select_autoescape(['html', 'xml']))
+        
+        # Convert the template string to a Jinja2 template
+        template = env.from_string(template)
+        
+        # Render the template with kwargs
+        html_content = template.render(**kwargs)
+        
+        # Log the rendered content for debugging
+        logger.info(f"Rendered email content: {html_content[:200]}...")  # Log first 200 chars
+        
         # Start async thread for sending email
         Thread(target=send_async_email,
-               args=(current_app._get_current_object(), recipient, subject, template),
-               kwargs=kwargs).start()
+               args=(current_app._get_current_object(), recipient, subject, html_content)).start()
         logger.info(f"Started async email sending to {recipient}")
     except Exception as e:
         logger.error(f"Error preparing email: {str(e)}")
+        logger.error(f"Template kwargs: {kwargs}")
         raise
 
 if __name__ == "__main__":

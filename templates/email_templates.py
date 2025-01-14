@@ -238,9 +238,14 @@ EXPENSE_STATUS_UPDATE_TEMPLATE = EMAIL_STYLE + """
     </div>
     <div class="content">
         <p>Hello {{ submitter.username }},</p>
-        <p>Your expense submission status has been updated to <span class="status status-{{ status.lower() }}">{{ status }}</span></p>
         
-        <div class="amount">${{ "%.2f"|format(expense.amount) }}</div>
+        {% if status == 'approved' %}
+        <p>Your expense request has been approved and will be processed by the Finance department.</p>
+        {% else %}
+        <p>Unfortunately, your expense request has not been approved.</p>
+        {% endif %}
+        
+        <div class="amount">${{ expense.amount }}</div>
         
         <div class="details-list">
             <h3>Expense Details</h3>
@@ -257,19 +262,17 @@ EXPENSE_STATUS_UPDATE_TEMPLATE = EMAIL_STYLE + """
                     <span>Date:</span>
                     <span>{{ expense.date.strftime('%Y-%m-%d') }}</span>
                 </li>
+                <li>
+                    <span>Status:</span>
+                    <span class="status status-{{ status }}">{{ status|title }}</span>
+                </li>
             </ul>
         </div>
 
         {% if status == 'rejected' and expense.rejection_reason %}
         <div class="warning">
-            <strong>Rejection Reason:</strong> {{ expense.rejection_reason }}
+            <strong>Reason for Rejection:</strong> {{ expense.rejection_reason }}
         </div>
-        {% endif %}
-
-        {% if status == 'approved' %}
-        <p>Your expense has been approved and will be processed by the Finance department.</p>
-        {% else %}
-        <p>You may submit a new request with the necessary corrections.</p>
         {% endif %}
 
         <a href="#" class="button">View Expense Details</a>
@@ -509,7 +512,7 @@ EXPENSE_REQUEST_REJECTION_TEMPLATE = EMAIL_STYLE + """
         <p>Hello {{ submitter.username }},</p>
         <p>Unfortunately, your expense request has not been approved.</p>
         
-        <div class="amount">${{ "%.2f"|format(expense.amount) }}</div>
+        <div class="amount">${{ expense.amount }}</div>
         
         <div class="details-list">
             <h3>Request Details</h3>
@@ -517,10 +520,6 @@ EXPENSE_REQUEST_REJECTION_TEMPLATE = EMAIL_STYLE + """
                 <li>
                     <span>Description:</span>
                     <span class="highlight">{{ expense.description }}</span>
-                </li>
-                <li>
-                    <span>Amount:</span>
-                    <span>${{ "%.2f"|format(expense.amount) }}</span>
                 </li>
                 <li>
                     <span>Category:</span>
@@ -531,48 +530,19 @@ EXPENSE_REQUEST_REJECTION_TEMPLATE = EMAIL_STYLE + """
                     <span>{{ expense.payment_method }}</span>
                 </li>
                 <li>
-                    <span>Supplier:</span>
-                    <span>{{ expense.supplier_name if expense.supplier_name else 'N/A' }}</span>
-                </li>
-                <li>
                     <span>Status:</span>
                     <span class="status status-rejected">Rejected</span>
                 </li>
             </ul>
         </div>
 
-        {% if expense.quote_filename or expense.invoice_filename or expense.receipt_filename %}
-        <div class="files-section">
-            <h3>Attached Files</h3>
-            {% if expense.quote_filename %}
-            <div class="file-item">
-                <span class="file-icon">📄</span>
-                <span>Quote: {{ expense.quote_filename }}</span>
-            </div>
-            {% endif %}
-            {% if expense.invoice_filename %}
-            <div class="file-item">
-                <span class="file-icon">📑</span>
-                <span>Invoice: {{ expense.invoice_filename }}</span>
-            </div>
-            {% endif %}
-            {% if expense.receipt_filename %}
-            <div class="file-item">
-                <span class="file-icon">🧾</span>
-                <span>Receipt: {{ expense.receipt_filename }}</span>
-            </div>
-            {% endif %}
-        </div>
-        {% endif %}
-
         <div class="warning">
             <strong>Reason for Rejection:</strong> {{ expense.rejection_reason }}
         </div>
 
-        <p><strong>Reviewing Manager:</strong> {{ expense.handler.username if expense.handler else 'N/A' }}</p>
-        
-        <p>If you have any questions about this decision, please contact your manager. You may submit a new request with the necessary corrections if needed.</p>
-        
+        <p>If you have any questions about this decision, please contact your manager ({{ expense.handler.username }}).</p>
+        <p>You may submit a new request with the necessary corrections if needed.</p>
+
         <a href="#" class="button">View Request Details</a>
     </div>
     <div class="footer">

@@ -605,7 +605,12 @@ def handle_expense(expense_id, action):
     if not current_user.is_manager:
         return redirect(url_for('employee_dashboard'))
     
-    expense = Expense.query.get_or_404(expense_id)
+    # Get expense with all needed relationships loaded
+    expense = Expense.query.options(
+        db.joinedload(Expense.submitter),
+        db.joinedload(Expense.handler),
+        db.joinedload(Expense.subcategory).joinedload(Subcategory.category)
+    ).get_or_404(expense_id)
     
     if action == 'approve':
         expense.status = 'approved'
@@ -624,21 +629,35 @@ def handle_expense(expense_id, action):
     
     # Record manager information
     expense.manager_id = current_user.id
+    expense.handler = current_user  # Add this line to set the handler relationship
     expense.handled_at = datetime.now(pytz.utc).replace(microsecond=0)
     
     try:
         db.session.commit()
-        flash(message, 'success')
+        
+        # Create a dictionary with all the expense data needed for the email
+        expense_data = {
+            'amount': f"{expense.amount:,.2f}",
+            'description': expense.description,
+            'subcategory': {'name': expense.subcategory.name},
+            'date': expense.date,
+            'payment_method': expense.payment_method,
+            'supplier_name': expense.supplier_name,
+            'rejection_reason': expense.rejection_reason,
+            'handler': {'username': current_user.username}
+        }
         
         # Send email notification to the expense submitter
         send_email(
             subject=email_subject,
             recipient=expense.submitter.email,
             template=email_template,
-            submitter=expense.submitter,
-            expense=expense,
-            status=expense.status  # Add status parameter for the template
+            submitter={'username': expense.submitter.username},
+            expense=expense_data,
+            status=expense.status
         )
+        
+        flash(message, 'success')
     except Exception as e:
         db.session.rollback()
         flash(f'Error: {str(e)}', 'danger')
