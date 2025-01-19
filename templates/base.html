@@ -75,7 +75,7 @@
         }
         .menu-toggle {
             display: none;
-            color: white;
+            color: #333333;
             background: none;
             border: none;
             font-size: 1.5rem;
@@ -92,10 +92,11 @@
                 top: 100%;
                 left: 0;
                 right: 0;
-                background-color: #2196F3;
+                background-color: white;
                 flex-direction: column;
-                padding: 0.5rem;
+                padding: 1rem;
                 box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+                border-top: 2px solid #01B08A;
             }
             .nav-items.active {
                 display: flex;
@@ -104,12 +105,29 @@
                 width: 100%;
                 text-align: left;
                 padding: 0.75rem;
+                color: #333333;
+            }
+            .nav-link:hover {
+                background-color: rgba(1,176,138,0.1);
             }
             .user-info {
                 flex-wrap: wrap;
                 justify-content: center;
                 text-align: center;
                 padding: 0.5rem;
+                color: #333333;
+            }
+            .badge {
+                color: white;
+            }
+            .badge.admin {
+                background-color: #01B08A;
+            }
+            .badge.accounting {
+                background-color: #01B08A;
+            }
+            .badge.department {
+                background-color: #01B08A;
             }
             .content {
                 margin-top: 60px;
