@@ -251,10 +251,58 @@
 }
 
 .form-control {
+    width: 100%;
     min-height: 45px;
     padding: 0.75rem;
     font-size: 1rem;
     line-height: 1.5;
+    border: 1px solid #ced4da;
+    border-radius: 8px;
+    background-color: white;
+    transition: all 0.2s ease;
+}
+
+/* Style for select elements */
+select.form-control {
+    appearance: none;
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23495057' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right 0.75rem center;
+    background-size: 1em;
+    padding-right: 2.5rem;
+    cursor: pointer;
+}
+
+/* Style for input groups */
+.input-group {
+    position: relative;
+    display: flex;
+    align-items: stretch;
+    width: 100%;
+}
+
+.input-group-text {
+    display: flex;
+    align-items: center;
+    padding: 0.75rem 1rem;
+    font-size: 1rem;
+    font-weight: 400;
+    line-height: 1.5;
+    color: #495057;
+    text-align: center;
+    white-space: nowrap;
+    background-color: #f8f9fa;
+    border: 1px solid #ced4da;
+    border-radius: 8px 0 0 8px;
+    border-right: none;
+}
+
+.input-group .form-control {
+    border-radius: 0 8px 8px 0;
+    position: relative;
+    flex: 1 1 auto;
+    width: 1%;
+    min-width: 0;
 }
 
 .form-control:focus {
@@ -263,27 +311,21 @@
     box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.25);
 }
 
-.input-group {
-    display: flex;
-    align-items: center;
+/* Style for textareas */
+textarea.form-control {
+    min-height: 100px;
+    resize: vertical;
 }
 
-.input-group-text {
-    padding: 0.75rem;
-    background: #e9ecef;
-    border: 1px solid #ced4da;
-    border-right: none;
-    border-radius: 4px 0 0 4px;
-    color: #495057;
-}
-
-.input-group .form-control {
-    border-radius: 0 4px 4px 0;
+/* Style for date inputs */
+input[type="date"].form-control {
+    min-height: 45px;
+    padding: 0.5rem 0.75rem;
 }
 
 .text-muted {
     display: block;
-    margin-top: 0.25rem;
+    margin-top: 0.5rem;
     color: #6c757d;
     font-size: 0.875rem;
 }
@@ -365,8 +407,21 @@
     line-height: 1.5;
     height: auto;
     border: 1px solid #ced4da;
-    border-radius: 4px;
+    border-radius: 8px;
     background-color: white;
+    appearance: none;
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23495057' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right 0.75rem center;
+    background-size: 1em;
+    padding-right: 2.5rem;
+    cursor: pointer;
+}
+
+.supplier-select-container select:focus {
+    border-color: #3498db;
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.25);
 }
 
 .add-supplier-btn {
@@ -382,6 +437,8 @@
     border: 1px dashed #ced4da;
     color: #495057;
     transition: all 0.2s ease;
+    border-radius: 8px;
+    margin-top: 0.75rem;
 }
 
 .add-supplier-btn:hover {
@@ -393,6 +450,24 @@
 .add-supplier-btn i {
     font-size: 1rem;
     color: #6c757d;
+}
+
+/* Update search input to match select style */
+.supplier-search-container input {
+    width: 100%;
+    padding: 0.75rem;
+    font-size: 1rem;
+    line-height: 1.5;
+    border: 1px solid #ced4da;
+    border-radius: 8px;
+    background-color: white;
+    transition: all 0.2s ease;
+}
+
+.supplier-search-container input:focus {
+    border-color: #3498db;
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.25);
 }
 
 .modal {
