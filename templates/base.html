@@ -27,11 +27,18 @@
             display: flex;
             align-items: center;
             text-decoration: none;
+            gap: 1rem;
         }
         .nav-brand img {
             height: 40px;
             width: auto;
             margin: 4px 0;
+        }
+        .nav-brand h1 {
+            margin: 0;
+            font-size: 1.25rem;
+            color: #333;
+            font-weight: 500;
         }
         .nav-items {
             display: flex;
@@ -86,6 +93,9 @@
             .menu-toggle {
                 display: block;
             }
+            .nav-brand h1 {
+                font-size: 1rem;
+            }
             .nav-items {
                 display: none;
                 position: absolute;
@@ -139,6 +149,7 @@
     <nav class="navbar">
         <a href="/" class="nav-brand">
             <img src="{{ url_for('static', filename='images/labos-logo.svg') }}" alt="Labos Logo">
+            <h1>Expense Management System</h1>
         </a>
         <button class="menu-toggle" aria-label="Toggle menu">
             <i class="fas fa-bars"></i>
