@@ -1098,6 +1098,10 @@ select[multiple].form-select option:checked {
 .expense-form-card {
     max-width: 1400px;
     margin: 0 auto 2rem;
+    background-color: var(--card-bg);
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    padding: 2rem;
 }
 
 .expense-form {
@@ -1110,20 +1114,6 @@ select[multiple].form-select option:checked {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
     gap: 1rem;
-}
-
-@media (max-width: 768px) {
-    .form-grid {
-        grid-template-columns: 1fr;
-    }
-    
-    .expense-form-card {
-        padding: 1rem;
-    }
-    
-    .form-section {
-        padding: 1rem;
-    }
 }
 
 .form-section {
@@ -1146,6 +1136,10 @@ select[multiple].form-select option:checked {
     font-size: 1rem;
 }
 
+.form-section h3.mt-4 {
+    margin-top: 2rem;
+}
+
 .form-group {
     margin-bottom: 1.5rem;
 }
@@ -1157,11 +1151,7 @@ select[multiple].form-select option:checked {
     color: var(--text-color);
 }
 
-.form-group input[type="text"],
-.form-group input[type="number"],
-.form-group input[type="file"],
-.form-group select,
-.form-group textarea {
+.form-group .form-control {
     width: 100%;
     padding: 0.75rem;
     border: 1px solid #ddd;
@@ -1170,7 +1160,7 @@ select[multiple].form-select option:checked {
     transition: border-color 0.2s ease;
 }
 
-.form-group textarea {
+.form-group textarea.form-control {
     min-height: 100px;
     resize: vertical;
 }
@@ -1189,14 +1179,33 @@ select[multiple].form-select option:checked {
     color: var(--text-color);
 }
 
-.input-group input {
+.input-group .form-control {
     border-radius: 0 4px 4px 0;
 }
 
-.form-group input:focus,
-.form-group select:focus,
-.form-group textarea:focus {
+.form-group .form-control:focus {
     outline: none;
     border-color: var(--primary-color);
     box-shadow: 0 0 0 2px rgba(33, 150, 243, 0.1);
+}
+
+.form-group .text-muted {
+    display: block;
+    margin-top: 0.25rem;
+    font-size: 0.875rem;
+    color: #666;
+}
+
+@media (max-width: 768px) {
+    .expense-form-card {
+        padding: 1rem;
+    }
+    
+    .form-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .form-section {
+        padding: 1rem;
+    }
 }
