@@ -1,62 +1,255 @@
 {% extends "base.html" %}
 
 {% block content %}
+<style>
+    .container-fluid {
+        padding: 2rem;
+        background-color: #f8f9fa;
+        min-height: calc(100vh - 60px);
+    }
+    .dashboard-actions {
+        background: white;
+        padding: 1.5rem;
+        border-radius: 10px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        margin-bottom: 1.5rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    .dashboard-actions h2 {
+        color: #2c3e50;
+        font-weight: 600;
+        margin: 0;
+    }
+    .action-buttons {
+        display: flex;
+        gap: 1rem;
+    }
+    .action-button {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.75rem 1.5rem;
+        border-radius: 8px;
+        font-weight: 500;
+        transition: all 0.3s ease;
+        text-decoration: none;
+        border: none;
+        cursor: pointer;
+    }
+    .action-button.primary {
+        background-color: #01B08A;
+        color: white;
+    }
+    .action-button.primary:hover {
+        background-color: #019578;
+        transform: translateY(-1px);
+    }
+    .action-button.secondary {
+        background-color: #3498db;
+        color: white;
+    }
+    .action-button.secondary:hover {
+        background-color: #2980b9;
+        transform: translateY(-1px);
+    }
+    .card {
+        border: none;
+        border-radius: 10px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        margin-bottom: 2rem;
+        overflow: hidden;
+    }
+    .card-body {
+        padding: 0;
+    }
+    .table-container {
+        position: relative;
+        overflow-x: auto;
+        max-width: 100%;
+    }
+    .table {
+        margin: 0;
+        border-collapse: separate;
+        border-spacing: 0;
+    }
+    .table thead {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+    }
+    .table thead th {
+        background-color: #f8f9fa;
+        color: #2c3e50;
+        font-weight: 600;
+        padding: 1rem;
+        border-bottom: 2px solid #e9ecef;
+        white-space: nowrap;
+        min-width: 120px;
+    }
+    .table tbody td {
+        padding: 1rem;
+        vertical-align: middle;
+        white-space: nowrap;
+        border-bottom: 1px solid #e9ecef;
+    }
+    .table-hover tbody tr:hover {
+        background-color: rgba(1,176,138,0.05);
+    }
+    /* Frozen columns */
+    .table th:nth-child(-n+3),
+    .table td:nth-child(-n+3) {
+        position: sticky;
+        left: 0;
+        background-color: white;
+        z-index: 2;
+    }
+    .table th:nth-child(1) { left: 0; z-index: 3; }
+    .table td:nth-child(1) { left: 0; }
+    .table th:nth-child(2) { left: 120px; z-index: 3; }
+    .table td:nth-child(2) { left: 120px; }
+    .table th:nth-child(3) { left: 240px; z-index: 3; }
+    .table td:nth-child(3) { left: 240px; }
+    
+    /* Shadow for frozen columns */
+    .table th:nth-child(3),
+    .table td:nth-child(3) {
+        box-shadow: 2px 0 4px rgba(0,0,0,0.1);
+    }
+    
+    .btn {
+        border-radius: 6px;
+        padding: 0.5rem 1rem;
+        font-weight: 500;
+        transition: all 0.3s ease;
+        white-space: nowrap;
+    }
+    .btn-success {
+        background-color: #01B08A;
+        border-color: #01B08A;
+    }
+    .btn-success:hover {
+        background-color: #019578;
+        border-color: #019578;
+        transform: translateY(-1px);
+    }
+    .btn-warning {
+        background-color: #f39c12;
+        border-color: #f39c12;
+        color: white;
+    }
+    .btn-warning:hover {
+        background-color: #d68910;
+        border-color: #d68910;
+        color: white;
+        transform: translateY(-1px);
+    }
+    .badge {
+        padding: 0.5rem 0.75rem;
+        border-radius: 6px;
+        font-weight: 500;
+        white-space: nowrap;
+    }
+    .badge.bg-success {
+        background-color: #01B08A !important;
+    }
+    .badge.bg-warning {
+        background-color: #f39c12 !important;
+        color: white !important;
+    }
+    .file-link {
+        color: #3498db;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.25rem 0.5rem;
+        border-radius: 4px;
+        transition: all 0.3s ease;
+        white-space: nowrap;
+    }
+    .file-link:hover {
+        background-color: rgba(52,152,219,0.1);
+        color: #2980b9;
+    }
+    
+    /* Column widths */
+    .table th.amount-column,
+    .table td.amount-column {
+        min-width: 100px;
+        text-align: right;
+    }
+    .table th.date-column,
+    .table td.date-column {
+        min-width: 100px;
+    }
+    .table th.status-column,
+    .table td.status-column {
+        min-width: 150px;
+    }
+    .table th.actions-column,
+    .table td.actions-column {
+        min-width: 150px;
+    }
+</style>
+
 <div class="container-fluid">
     <div class="dashboard-actions">
-        <h2 class="mb-0">Accounting Dashboard</h2>
-        <div class="d-flex gap-2">
-            <a href="{{ url_for('manage_suppliers') }}" class="button primary">
+        <h2>Accounting Dashboard</h2>
+        <div class="action-buttons">
+            <a href="{{ url_for('manage_suppliers') }}" class="action-button primary">
                 <i class="fas fa-building"></i>
                 Manage Suppliers
             </a>
-            <a href="{{ url_for('export_accounting_excel') }}" class="button primary">
+            <a href="{{ url_for('export_accounting_excel') }}" class="action-button secondary">
                 <i class="fas fa-file-excel"></i>
                 Export to Excel
             </a>
         </div>
     </div>
-    <div class="card shadow">
+    <div class="card">
         <div class="card-body">
-            <div class="table-responsive">
-                <table class="table table-hover table-striped align-middle">
-                    <thead class="table-light">
+            <div class="table-container">
+                <table class="table table-hover">
+                    <thead>
                         <tr>
                             <th><i class="fas fa-user"></i> Employee</th>
                             <th><i class="fas fa-building"></i> Department</th>
                             <th><i class="fas fa-file-alt"></i> Description</th>
                             <th><i class="fas fa-info-circle"></i> Reason</th>
                             <th><i class="fas fa-tag"></i> Type</th>
-                            <th class="fw-bold text-end">Amount</th>
-                            <th class="fw-bold">Handled by</th>
-                            <th class="fw-bold">Date Handled</th>
-                            <th class="fw-bold">Supplier Name</th>
-                            <th class="fw-bold">Email</th>
-                            <th class="fw-bold">Phone</th>
-                            <th class="fw-bold">Address</th>
-                            <th class="fw-bold">Tax ID</th>
-                            <th class="fw-bold">Bank Name</th>
-                            <th class="fw-bold">Account Number</th>
-                            <th class="fw-bold">Bank Branch</th>
-                            <th class="fw-bold">SWIFT</th>
-                            <th class="fw-bold">Notes</th>
-                            <th class="fw-bold">Supplier Status</th>
-                            <th class="fw-bold">Date of Purchase</th>
-                            <th class="fw-bold">Payment Status</th>
-                            <th class="fw-bold">Attachments</th>
-                            <th class="fw-bold">Actions</th>
+                            <th class="amount-column">Amount</th>
+                            <th>Handled by</th>
+                            <th class="date-column">Date Handled</th>
+                            <th>Supplier Name</th>
+                            <th>Email</th>
+                            <th>Phone</th>
+                            <th>Address</th>
+                            <th>Tax ID</th>
+                            <th>Bank Name</th>
+                            <th>Account Number</th>
+                            <th>Bank Branch</th>
+                            <th>SWIFT</th>
+                            <th>Notes</th>
+                            <th>Supplier Status</th>
+                            <th class="date-column">Date of Purchase</th>
+                            <th class="status-column">Payment Status</th>
+                            <th>Attachments</th>
+                            <th class="actions-column">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
                         {% for expense in expenses %}
-                        <tr class="align-middle">
+                        <tr>
                             <td>{{ expense.submitter.username }}</td>
                             <td>{{ expense.submitter.home_department.name }}</td>
                             <td>{{ expense.description }}</td>
                             <td>{{ expense.reason }}</td>
                             <td>{{ expense.type | format_expense_type }}</td>
-                            <td class="text-end fw-bold">{{ expense.amount | format_currency }}</td>
+                            <td class="amount-column">{{ expense.amount | format_currency }}</td>
                             <td>{{ expense.handler.username if expense.handler else '-' }}</td>
-                            <td>{{ expense.handled_at.strftime('%d/%m/%Y') if expense.handled_at else '-' }}</td>
+                            <td class="date-column">{{ expense.handled_at.strftime('%d/%m/%Y') if expense.handled_at else '-' }}</td>
                             <td>{{ expense.supplier.name if expense.supplier else '-' }}</td>
                             <td>{{ expense.supplier.email if expense.supplier else '-' }}</td>
                             <td>{{ expense.supplier.phone if expense.supplier else '-' }}</td>
@@ -68,43 +261,43 @@
                             <td>{{ expense.supplier.bank_swift if expense.supplier else '-' }}</td>
                             <td>{{ expense.supplier.notes if expense.supplier else '-' }}</td>
                             <td>{{ expense.supplier.status if expense.supplier else '-' }}</td>
-                            <td>{{ expense.purchase_date.strftime('%d/%m/%Y') if expense.purchase_date else '-' }}</td>
-                            <td>
+                            <td class="date-column">{{ expense.purchase_date.strftime('%d/%m/%Y') if expense.purchase_date else '-' }}</td>
+                            <td class="status-column">
                                 {% if expense.is_paid %}
-                                    <div class="d-flex flex-column">
-                                        <span class="badge bg-success mb-1">Paid</span>
-                                        <small class="text-muted">by {{ expense.paid_by.username }}<br>{{ expense.paid_at.strftime('%d/%m/%Y') }}</small>
+                                    <div class="d-flex flex-column align-items-start">
+                                        <span class="badge bg-success">Paid</span>
+                                        <small class="text-muted mt-1">by {{ expense.paid_by.username }}<br>{{ expense.paid_at.strftime('%d/%m/%Y') }}</small>
                                     </div>
                                 {% else %}
-                                    <span class="badge bg-warning text-dark">Pending Payment</span>
+                                    <span class="badge bg-warning">Pending Payment</span>
                                 {% endif %}
                             </td>
                             <td>
-                                <div class="d-flex flex-column gap-1">
+                                <div class="d-flex flex-column gap-2">
                                     {% if expense.quote_filename %}
-                                        <a href="{{ url_for('download_file', filename=expense.quote_filename) }}">
-                                            <i class="fas fa-file-download me-1"></i>Quote
+                                        <a href="{{ url_for('download_file', filename=expense.quote_filename) }}" class="file-link">
+                                            <i class="fas fa-file-download"></i>Quote
                                         </a>
                                     {% endif %}
                                     {% if expense.invoice_filename %}
-                                        <a href="{{ url_for('download_file', filename=expense.invoice_filename) }}">
-                                            <i class="fas fa-file-download me-1"></i>Invoice
+                                        <a href="{{ url_for('download_file', filename=expense.invoice_filename) }}" class="file-link">
+                                            <i class="fas fa-file-download"></i>Invoice
                                         </a>
                                     {% endif %}
                                     {% if expense.receipt_filename %}
-                                        <a href="{{ url_for('download_file', filename=expense.receipt_filename) }}">
-                                            <i class="fas fa-file-download me-1"></i>Receipt
+                                        <a href="{{ url_for('download_file', filename=expense.receipt_filename) }}" class="file-link">
+                                            <i class="fas fa-file-download"></i>Receipt
                                         </a>
                                     {% endif %}
                                 </div>
                             </td>
-                            <td>
+                            <td class="actions-column">
                                 {% if not expense.is_paid %}
-                                    <button class="btn btn-success btn-sm mark-paid-btn" data-expense-id="{{ expense.id }}">
+                                    <button class="btn btn-success mark-paid-btn" data-expense-id="{{ expense.id }}">
                                         <i class="fas fa-check me-1"></i>Mark as Paid
                                     </button>
                                 {% else %}
-                                    <button class="btn btn-warning btn-sm mark-unpaid-btn" data-expense-id="{{ expense.id }}">
+                                    <button class="btn btn-warning mark-unpaid-btn" data-expense-id="{{ expense.id }}">
                                         <i class="fas fa-undo me-1"></i>Mark as Unpaid
                                     </button>
                                 {% endif %}
