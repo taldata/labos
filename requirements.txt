@@ -16,3 +16,4 @@ dash-core-components
 dash-html-components
 dash-bootstrap-components
 plotly
+flask_wtf
