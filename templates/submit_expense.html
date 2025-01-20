@@ -130,10 +130,10 @@
                                     {% endif %}
                                 {% endfor %}
                             </select>
-                            <button type="button" class="button secondary add-supplier-btn" onclick="openAddSupplierModal()">
-                                <i class="fas fa-plus"></i> Add New Supplier
-                            </button>
                         </div>
+                        <button type="button" class="button secondary add-supplier-btn" onclick="openAddSupplierModal()">
+                            <i class="fas fa-plus"></i> Add New Supplier
+                        </button>
                     </div>
                     <div class="form-group">
                         <label for="purchase_date">Purchase Date</label>
@@ -244,17 +244,17 @@
 
 .form-group label {
     display: block;
-    margin-bottom: 0.5rem;
+    margin-bottom: 0.75rem;
     color: #2c3e50;
     font-weight: 500;
+    font-size: 1rem;
 }
 
 .form-control {
-    width: 100%;
+    min-height: 45px;
     padding: 0.75rem;
-    border: 1px solid #ced4da;
-    border-radius: 4px;
-    transition: border-color 0.15s ease-in-out;
+    font-size: 1rem;
+    line-height: 1.5;
 }
 
 .form-control:focus {
@@ -352,20 +352,47 @@
 }
 
 .supplier-select-container {
-    display: flex;
-    gap: 1rem;
-    align-items: flex-start;
+    display: block;
+    width: 100%;
+    margin-bottom: 0.75rem;
 }
 
 .supplier-select-container select {
-    flex: 1;
+    width: 100%;
+    min-width: 300px;
+    padding: 0.75rem;
+    font-size: 1rem;
+    line-height: 1.5;
+    height: auto;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    background-color: white;
 }
 
 .add-supplier-btn {
-    white-space: nowrap;
-    padding: 0.5rem 1rem;
-    height: 38px;
-    font-size: 0.9rem;
+    width: 100%;
+    padding: 0.75rem 1.25rem;
+    height: auto;
+    font-size: 1rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    background-color: #f8f9fa;
+    border: 1px dashed #ced4da;
+    color: #495057;
+    transition: all 0.2s ease;
+}
+
+.add-supplier-btn:hover {
+    background-color: #e9ecef;
+    border-color: #adb5bd;
+    color: #212529;
+}
+
+.add-supplier-btn i {
+    font-size: 1rem;
+    color: #6c757d;
 }
 
 .modal {
@@ -418,27 +445,74 @@
     left: 0;
     right: 0;
     background: white;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    max-height: 200px;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    max-height: 250px;
     overflow-y: auto;
     z-index: 1000;
     display: none;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    margin-top: 4px;
 }
 
 .search-results .result-item {
-    padding: 0.5rem 1rem;
+    padding: 0.75rem 1rem;
     cursor: pointer;
-    border-bottom: 1px solid #eee;
+    border-bottom: 1px solid #f0f0f0;
+    transition: background-color 0.2s ease;
+}
+
+.search-results .result-item:last-child {
+    border-bottom: none;
 }
 
 .search-results .result-item:hover {
-    background: #f5f5f5;
+    background: #f8f9fa;
 }
 
-.search-results .result-item .tax-id {
+.search-results .result-item.searching {
+    color: #666;
+    cursor: default;
+}
+
+.search-results .result-item.searching i {
+    margin-right: 0.5rem;
+    color: #3498db;
+}
+
+.search-results .result-item.error {
+    color: #dc3545;
+    cursor: default;
+}
+
+.search-results .result-item.error i {
+    margin-right: 0.5rem;
+}
+
+.search-results .result-item.no-results {
+    color: #666;
+    cursor: default;
+}
+
+.search-results .result-item.no-results i {
+    margin-right: 0.5rem;
+    color: #6c757d;
+}
+
+.search-results .supplier-name {
+    font-weight: 500;
+    color: #2c3e50;
+    margin-bottom: 0.25rem;
+}
+
+.search-results .tax-id {
     color: #666;
     font-size: 0.9em;
+}
+
+.search-results .tax-id i {
+    margin-right: 0.5rem;
+    color: #6c757d;
 }
 </style>
 
@@ -559,38 +633,30 @@ document.getElementById('supplier_search').addEventListener('input', function(e)
     }
     
     debounceTimeout = setTimeout(() => {
-        resultsDiv.innerHTML = '<div class="result-item">Searching...</div>';
+        resultsDiv.innerHTML = `
+            <div class="result-item searching">
+                <i class="fas fa-spinner fa-spin"></i> Searching...
+            </div>
+        `;
         resultsDiv.style.display = 'block';
         
         const params = new URLSearchParams({
             search_query: searchQuery
         });
         
-        const url = `/api/expense/search_suppliers?${params.toString()}`;
-        console.log('Fetching URL:', url);
-        
-        fetch(url)
+        fetch(`/api/expense/search_suppliers?${params.toString()}`)
             .then(response => {
-                console.log('Response status:', response.status);
-                console.log('Response headers:', response.headers);
                 const contentType = response.headers.get('content-type');
-                console.log('Content-Type:', contentType);
-                
                 if (!contentType || !contentType.includes('application/json')) {
                     return response.text().then(text => {
-                        console.error('Non-JSON response:', text);
                         throw new Error('Server returned non-JSON response. Please try again.');
                     });
                 }
-                
-                return response.json().then(data => {
-                    console.log('Response data:', data);
-                    return {
-                        ok: response.ok,
-                        status: response.status,
-                        data: data
-                    };
-                });
+                return response.json().then(data => ({
+                    ok: response.ok,
+                    status: response.status,
+                    data: data
+                }));
             })
             .then(({ok, status, data}) => {
                 resultsDiv.innerHTML = '';
@@ -604,8 +670,8 @@ document.getElementById('supplier_search').addEventListener('input', function(e)
                         const div = document.createElement('div');
                         div.className = 'result-item';
                         div.innerHTML = `
-                            <div>${supplier.name}</div>
-                            ${supplier.tax_id ? `<div class="tax-id">Tax ID: ${supplier.tax_id}</div>` : ''}
+                            <div class="supplier-name">${supplier.name}</div>
+                            ${supplier.tax_id ? `<div class="tax-id"><i class="fas fa-id-card"></i> ${supplier.tax_id}</div>` : ''}
                         `;
                         div.addEventListener('click', () => {
                             const select = document.getElementById('supplier_id');
@@ -629,22 +695,21 @@ document.getElementById('supplier_search').addEventListener('input', function(e)
                     resultsDiv.style.display = 'block';
                 } else {
                     const div = document.createElement('div');
-                    div.className = 'result-item';
-                    div.textContent = 'No suppliers found';
+                    div.className = 'result-item no-results';
+                    div.innerHTML = '<i class="fas fa-info-circle"></i> No suppliers found';
                     resultsDiv.appendChild(div);
                     resultsDiv.style.display = 'block';
                 }
             })
             .catch(error => {
-                console.error('Error searching suppliers:', error);
                 const div = document.createElement('div');
                 div.className = 'result-item error';
-                div.textContent = error.message || 'Error searching suppliers';
+                div.innerHTML = `<i class="fas fa-exclamation-circle"></i> ${error.message || 'Error searching suppliers'}`;
                 resultsDiv.innerHTML = '';
                 resultsDiv.appendChild(div);
                 resultsDiv.style.display = 'block';
             });
-    }, 300); // Debounce delay
+    }, 300);
 });
 
 // Hide search results when clicking outside
