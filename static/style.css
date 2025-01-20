@@ -1199,13 +1199,79 @@ select[multiple].form-select option:checked {
 @media (max-width: 768px) {
     .expense-form-card {
         padding: 1rem;
+        margin: 1rem;
+        width: auto;
     }
     
     .form-grid {
         grid-template-columns: 1fr;
+        gap: 1rem;
     }
     
     .form-section {
         padding: 1rem;
     }
+
+    .form-control, 
+    .input-group,
+    .supplier-search,
+    .supplier-select,
+    .add-supplier-btn {
+        width: 100%;
+        max-width: 100%;
+        min-width: 0;
+    }
+
+    .form-group {
+        margin-bottom: 1rem;
+    }
+
+    /* Ensure dropdowns and buttons don't overflow */
+    select.form-control {
+        width: 100%;
+        max-width: 100%;
+        min-width: 0;
+        padding-right: 2rem; /* Space for dropdown arrow */
+    }
+
+    /* Improve touch targets */
+    .add-supplier-btn {
+        min-height: 44px;
+        margin: 0.5rem 0;
+    }
+}
+
+/* Supplier Selection Styling */
+.supplier-section {
+    width: 100%;
+}
+
+.supplier-search {
+    width: 100%;
+    margin-bottom: 1rem;
+}
+
+.supplier-select {
+    width: 100%;
+    margin-bottom: 1rem;
+}
+
+.add-supplier-btn {
+    width: 100%;
+    padding: 0.75rem;
+    background: var(--background-light);
+    border: 1px dashed #ddd;
+    border-radius: 4px;
+    color: var(--text-color);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.add-supplier-btn:hover {
+    background: #f0f0f0;
+    border-color: var(--primary-color);
 }
