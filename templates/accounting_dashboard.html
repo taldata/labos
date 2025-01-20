@@ -30,7 +30,16 @@
                             <th class="fw-bold">Handled by</th>
                             <th class="fw-bold">Date Handled</th>
                             <th class="fw-bold">Supplier Name</th>
+                            <th class="fw-bold">Email</th>
+                            <th class="fw-bold">Phone</th>
+                            <th class="fw-bold">Address</th>
                             <th class="fw-bold">Tax ID</th>
+                            <th class="fw-bold">Bank Name</th>
+                            <th class="fw-bold">Account Number</th>
+                            <th class="fw-bold">Bank Branch</th>
+                            <th class="fw-bold">SWIFT</th>
+                            <th class="fw-bold">Notes</th>
+                            <th class="fw-bold">Supplier Status</th>
                             <th class="fw-bold">Date of Purchase</th>
                             <th class="fw-bold">Payment Status</th>
                             <th class="fw-bold">Attachments</th>
@@ -49,7 +58,16 @@
                             <td>{{ expense.handler.username if expense.handler else '-' }}</td>
                             <td>{{ expense.handled_at.strftime('%d/%m/%Y') if expense.handled_at else '-' }}</td>
                             <td>{{ expense.supplier.name if expense.supplier else '-' }}</td>
+                            <td>{{ expense.supplier.email if expense.supplier else '-' }}</td>
+                            <td>{{ expense.supplier.phone if expense.supplier else '-' }}</td>
+                            <td>{{ expense.supplier.address if expense.supplier else '-' }}</td>
                             <td>{{ expense.supplier.tax_id if expense.supplier else '-' }}</td>
+                            <td>{{ expense.supplier.bank_name if expense.supplier else '-' }}</td>
+                            <td>{{ expense.supplier.bank_account_number if expense.supplier else '-' }}</td>
+                            <td>{{ expense.supplier.bank_branch if expense.supplier else '-' }}</td>
+                            <td>{{ expense.supplier.bank_swift if expense.supplier else '-' }}</td>
+                            <td>{{ expense.supplier.notes if expense.supplier else '-' }}</td>
+                            <td>{{ expense.supplier.status if expense.supplier else '-' }}</td>
                             <td>{{ expense.purchase_date.strftime('%d/%m/%Y') if expense.purchase_date else '-' }}</td>
                             <td>
                                 {% if expense.is_paid %}

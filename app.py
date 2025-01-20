@@ -1562,7 +1562,16 @@ def export_accounting_excel():
             'Handled By': expense.handler.username if expense.handler else '-',
             'Date Handled': expense.handled_at.strftime('%d/%m/%Y') if expense.handled_at else '-',
             'Supplier Name': expense.supplier.name if expense.supplier else '-',
+            'Supplier Email': expense.supplier.email if expense.supplier else '-',
+            'Supplier Phone': expense.supplier.phone if expense.supplier else '-',
+            'Supplier Address': expense.supplier.address if expense.supplier else '-',
             'Tax ID': expense.supplier.tax_id if expense.supplier else '-',
+            'Bank Name': expense.supplier.bank_name if expense.supplier else '-',
+            'Bank Account': expense.supplier.bank_account_number if expense.supplier else '-',
+            'Bank Branch': expense.supplier.bank_branch if expense.supplier else '-',
+            'Bank SWIFT': expense.supplier.bank_swift if expense.supplier else '-',
+            'Supplier Notes': expense.supplier.notes if expense.supplier else '-',
+            'Supplier Status': expense.supplier.status if expense.supplier else '-',
             'Date of Purchase': expense.purchase_date.strftime('%d/%m/%Y') if expense.purchase_date else '-',
             'Payment Status': 'Paid' if expense.is_paid else 'Pending Payment'
         })
