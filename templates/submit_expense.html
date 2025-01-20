@@ -113,13 +113,20 @@
                 <div class="form-section">
                     <h3><i class="fas fa-building"></i> Supplier Information</h3>
                     <div class="form-group">
-                        <label for="supplier_id">Select Existing Supplier</label>
+                        <label for="supplier_search">Search Supplier</label>
+                        <div class="supplier-search-container">
+                            <input type="text" id="supplier_search" class="form-control" placeholder="Search by name or tax ID">
+                            <div id="supplier_search_results" class="search-results"></div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="supplier_id">Selected Supplier</label>
                         <div class="supplier-select-container">
-                            <select class="form-control" id="supplier_id" name="supplier_id" onchange="handleSupplierChange()">
-                                <option value="">Choose</option>
+                            <select class="form-control" id="supplier_id" name="supplier_id" required>
+                                <option value="">Choose a supplier</option>
                                 {% for supplier in suppliers %}
                                     {% if supplier.status == 'active' %}
-                                        <option value="{{ supplier.id }}">{{ supplier.name }}</option>
+                                        <option value="{{ supplier.id }}">{{ supplier.name }}{% if supplier.tax_id %} ({{ supplier.tax_id }}){% endif %}</option>
                                     {% endif %}
                                 {% endfor %}
                             </select>
@@ -400,18 +407,38 @@
     color: #555;
 }
 
-.supplier-select-container {
-    display: flex;
-    gap: 10px;
-    align-items: start;
+.supplier-search-container {
+    position: relative;
+    margin-bottom: 1rem;
 }
 
-.supplier-select-container select {
-    flex: 1;
+.search-results {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    max-height: 200px;
+    overflow-y: auto;
+    z-index: 1000;
+    display: none;
 }
 
-.add-supplier-btn {
-    white-space: nowrap;
+.search-results .result-item {
+    padding: 0.5rem 1rem;
+    cursor: pointer;
+    border-bottom: 1px solid #eee;
+}
+
+.search-results .result-item:hover {
+    background: #f5f5f5;
+}
+
+.search-results .result-item .tax-id {
+    color: #666;
+    font-size: 0.9em;
 }
 </style>
 
@@ -518,6 +545,117 @@ window.onclick = function(event) {
         closeAddSupplierModal();
     }
 }
+
+let debounceTimeout;
+
+document.getElementById('supplier_search').addEventListener('input', function(e) {
+    clearTimeout(debounceTimeout);
+    const searchQuery = e.target.value;
+    const resultsDiv = document.getElementById('supplier_search_results');
+    
+    if (!searchQuery.trim()) {
+        resultsDiv.style.display = 'none';
+        return;
+    }
+    
+    debounceTimeout = setTimeout(() => {
+        resultsDiv.innerHTML = '<div class="result-item">Searching...</div>';
+        resultsDiv.style.display = 'block';
+        
+        const params = new URLSearchParams({
+            search_query: searchQuery
+        });
+        
+        const url = `/api/expense/search_suppliers?${params.toString()}`;
+        console.log('Fetching URL:', url);
+        
+        fetch(url)
+            .then(response => {
+                console.log('Response status:', response.status);
+                console.log('Response headers:', response.headers);
+                const contentType = response.headers.get('content-type');
+                console.log('Content-Type:', contentType);
+                
+                if (!contentType || !contentType.includes('application/json')) {
+                    return response.text().then(text => {
+                        console.error('Non-JSON response:', text);
+                        throw new Error('Server returned non-JSON response. Please try again.');
+                    });
+                }
+                
+                return response.json().then(data => {
+                    console.log('Response data:', data);
+                    return {
+                        ok: response.ok,
+                        status: response.status,
+                        data: data
+                    };
+                });
+            })
+            .then(({ok, status, data}) => {
+                resultsDiv.innerHTML = '';
+                
+                if (!ok) {
+                    throw new Error(data.error || 'Search request failed');
+                }
+                
+                if (Array.isArray(data) && data.length > 0) {
+                    data.forEach(supplier => {
+                        const div = document.createElement('div');
+                        div.className = 'result-item';
+                        div.innerHTML = `
+                            <div>${supplier.name}</div>
+                            ${supplier.tax_id ? `<div class="tax-id">Tax ID: ${supplier.tax_id}</div>` : ''}
+                        `;
+                        div.addEventListener('click', () => {
+                            const select = document.getElementById('supplier_id');
+                            // Add option if it doesn't exist
+                            if (!select.querySelector(`option[value="${supplier.id}"]`)) {
+                                const option = new Option(
+                                    supplier.tax_id ? `${supplier.name} (${supplier.tax_id})` : supplier.name,
+                                    supplier.id
+                                );
+                                select.add(option);
+                            }
+                            // Set the selected value
+                            select.value = supplier.id;
+                            // Clear search input
+                            document.getElementById('supplier_search').value = '';
+                            // Hide results
+                            resultsDiv.style.display = 'none';
+                        });
+                        resultsDiv.appendChild(div);
+                    });
+                    resultsDiv.style.display = 'block';
+                } else {
+                    const div = document.createElement('div');
+                    div.className = 'result-item';
+                    div.textContent = 'No suppliers found';
+                    resultsDiv.appendChild(div);
+                    resultsDiv.style.display = 'block';
+                }
+            })
+            .catch(error => {
+                console.error('Error searching suppliers:', error);
+                const div = document.createElement('div');
+                div.className = 'result-item error';
+                div.textContent = error.message || 'Error searching suppliers';
+                resultsDiv.innerHTML = '';
+                resultsDiv.appendChild(div);
+                resultsDiv.style.display = 'block';
+            });
+    }, 300); // Debounce delay
+});
+
+// Hide search results when clicking outside
+document.addEventListener('click', function(e) {
+    const resultsDiv = document.getElementById('supplier_search_results');
+    const searchInput = document.getElementById('supplier_search');
+    
+    if (!resultsDiv.contains(e.target) && e.target !== searchInput) {
+        resultsDiv.style.display = 'none';
+    }
+});
 </script>
 
 {% endblock %}
