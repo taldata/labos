@@ -28,7 +28,7 @@ export FLASK_ENV=development
 
 # Start Flask application
 echo "🌟 Starting Flask application..."
-echo "Access the application at http://localhost:5000"
+echo "Access the application at https://localhost:5000"
 echo "Press Ctrl+C to stop the server"
 echo "----------------------------------------"
-flask run
+flask run --cert=ssl/cert.pem --key=ssl/key.pem

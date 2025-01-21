@@ -11,6 +11,18 @@ class Config:
     # Secret key for session management
     SECRET_KEY = os.getenv('SECRET_KEY', 'your-secret-key-here')
     
+    # Azure AD Configuration
+    AZURE_AD_CLIENT_ID = os.getenv('AZURE_AD_CLIENT_ID')
+    AZURE_AD_CLIENT_SECRET = os.getenv('AZURE_AD_CLIENT_SECRET')
+    AZURE_AD_TENANT_ID = os.getenv('AZURE_AD_TENANT_ID')
+    AZURE_AD_AUTHORITY = f'https://login.microsoftonline.com/{AZURE_AD_TENANT_ID}'
+    AZURE_AD_REDIRECT_PATH = '/auth/callback'  # This will be the callback endpoint
+    AZURE_AD_SCOPES = ['https://graph.microsoft.com/User.Read']  # Only use the Graph API scope
+    
+    # Flask configuration
+    SESSION_TYPE = 'filesystem'
+    PREFERRED_URL_SCHEME = 'https'  # Changed from 'http' to 'https'
+    
     # Database configuration
     # If DATABASE_URL is provided (Render), use it directly
     # Otherwise, construct from individual components

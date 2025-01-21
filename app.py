@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, flash, send_file, jsonify
+from flask import Flask, render_template, request, redirect, url_for, flash, send_file, jsonify, session
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 from datetime import datetime
@@ -14,6 +14,8 @@ from config import Config
 from io import BytesIO
 import pandas as pd
 from models import db, Department, Category, Subcategory, User, Supplier, Expense, CreditCard
+import msal
+import requests
 
 # Configure logging
 logging.basicConfig(
@@ -57,20 +59,6 @@ with app.app_context():
             rd_dept = Department(name='R&D', budget=100000.0)
             db.session.add(rd_dept)
             db.session.commit()
-
-        # Create admin user if it doesn't exist
-        admin_user = User.query.filter_by(username='admin').first()
-        if not admin_user:
-            admin_user = User(
-                username='admin',
-                email='admin@example.com',
-                password='admin123',
-                is_manager=True,
-                is_admin=True
-            )
-            db.session.add(admin_user)
-            db.session.commit()
-            print("Admin user created successfully")
     except Exception as e:
         print(f"Error initializing database: {str(e)}")
         db.session.rollback()
@@ -110,8 +98,52 @@ def index():
         return redirect(url_for('employee_dashboard'))
     return redirect(url_for('login'))
 
+def _build_msal_app(cache=None):
+    return msal.ConfidentialClientApplication(
+        app.config['AZURE_AD_CLIENT_ID'],
+        authority=app.config['AZURE_AD_AUTHORITY'],
+        client_credential=app.config['AZURE_AD_CLIENT_SECRET'],
+        token_cache=cache
+    )
+
+def _get_token_from_cache(scopes):
+    cache = session.get('token_cache')
+    if cache:
+        cca = _build_msal_app(cache)
+        accounts = cca.get_accounts()
+        if accounts:
+            result = cca.acquire_token_silent(scopes, account=accounts[0])
+            return result
+
 @app.route('/login', methods=['GET', 'POST'])
 def login():
+    if current_user.is_authenticated:
+        return redirect(url_for('index'))
+
+    # Check if this is an Azure AD login request
+    if request.args.get('sso'):
+        try:
+            # Get the full URL for the callback
+            redirect_uri = url_for('auth_callback', _external=True, _scheme='https')
+            logging.info(f"Redirect URI: {redirect_uri}")
+            
+            # Initialize MSAL flow with only the required Graph API scope
+            msal_app = _build_msal_app()
+            flow = msal_app.initiate_auth_code_flow(
+                scopes=['https://graph.microsoft.com/User.Read'],
+                redirect_uri=redirect_uri
+            )
+            logging.info(f"MSAL Flow initiated")
+            
+            session["flow"] = flow
+            return redirect(flow["auth_uri"])
+            
+        except Exception as e:
+            logging.error(f"Error initiating Azure AD flow: {str(e)}", exc_info=True)
+            flash('Error initiating login. Please try again.')
+            return redirect(url_for('login'))
+
+    # Handle traditional login
     if request.method == 'POST':
         username = request.form.get('username')
         password = request.form.get('password')
@@ -125,7 +157,91 @@ def login():
                 return redirect(url_for('accounting_dashboard'))
             return redirect(url_for('index'))
         flash('Invalid username or password')
+    
     return render_template('login.html')
+
+@app.route('/auth/callback')
+def auth_callback():
+    if not session.get("flow"):
+        logging.error("No flow found in session")
+        return redirect(url_for('login'))
+    
+    try:
+        logging.info(f"Auth callback received. Args: {request.args}")
+        
+        result = _build_msal_app().acquire_token_by_auth_code_flow(
+            session.get("flow"),
+            request.args,
+            scopes=['https://graph.microsoft.com/User.Read']  # Only request the Graph API scope here
+        )
+        logging.info("Token acquired successfully")
+
+        if "error" in result:
+            error_msg = f"Error during login: {result.get('error_description', 'Unknown error')}"
+            logging.error(error_msg)
+            flash(error_msg)
+            return redirect(url_for('login'))
+
+        # Get user info from Microsoft Graph
+        graph_response = requests.get(
+            'https://graph.microsoft.com/v1.0/me',
+            headers={'Authorization': f"Bearer {result['access_token']}"}
+        )
+        logging.info(f"Graph API response status: {graph_response.status_code}")
+        
+        if not graph_response.ok:
+            logging.error(f"Graph API error: {graph_response.text}")
+            flash('Could not retrieve user information')
+            return redirect(url_for('login'))
+            
+        graph_data = graph_response.json()
+        logging.info("User info retrieved from Graph API")
+
+        # Find or create user based on email
+        email = graph_data.get('mail')
+        if not email:
+            email = graph_data.get('userPrincipalName')  # Use userPrincipalName as fallback
+            logging.info(f"Using userPrincipalName as email: {email}")
+        
+        if not email:
+            logging.error(f"No email found in graph data: {graph_data}")
+            flash('Could not retrieve email from Microsoft account')
+            return redirect(url_for('login'))
+            
+        user = User.query.filter_by(email=email).first()
+        
+        if not user:
+            logging.info(f"Creating new user for email: {email}")
+            # Create new user with Azure AD details
+            user = User(
+                username=email.split('@')[0],
+                email=email,
+                password=None,  # No password for SSO users
+                is_manager=False,
+                is_admin=False,
+                status='active'
+            )
+            db.session.add(user)
+            db.session.commit()
+            logging.info(f"New user created with ID: {user.id}")
+
+        if user.status == 'inactive':
+            logging.warning(f"Inactive user attempted login: {email}")
+            flash('Your account is inactive. Please contact your administrator.')
+            return redirect(url_for('login'))
+
+        login_user(user)
+        session['token_cache'] = result.get('token_cache')
+        logging.info(f"User {email} logged in successfully")
+        
+        if user.is_accounting:
+            return redirect(url_for('accounting_dashboard'))
+        return redirect(url_for('index'))
+        
+    except Exception as e:
+        logging.error(f"Error in auth callback: {str(e)}", exc_info=True)
+        flash('An error occurred during login. Please try again.')
+        return redirect(url_for('login'))
 
 @app.route('/employee/dashboard')
 @login_required

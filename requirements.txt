@@ -17,3 +17,5 @@ dash-html-components
 dash-bootstrap-components
 plotly
 flask_wtf
+msal
+requests
