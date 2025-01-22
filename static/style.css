@@ -506,8 +506,10 @@ tr:hover {
 }
 
 .budget-header h3 {
+    color: white;
     margin: 0;
-    font-size: 1.2rem;
+    font-size: 1.25rem;
+    font-weight: 500;
 }
 
 .budget-body {
