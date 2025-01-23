@@ -97,6 +97,7 @@
                             <th><i class="fas fa-folder-open"></i> Subcategory</th>
                             <th class="type-col"><i class="fas fa-tag"></i> Type</th>
                             <th class="payment-col"><i class="fas fa-credit-card"></i> Payment</th>
+                            <th class="credit-card-col"><i class="fas fa-credit-card"></i> Card Number</th>
                             <th class="amount-col"><i class="fas fa-shekel-sign"></i> Amount</th>
                             <th class="budget-col"><i class="fas fa-chart-pie"></i> Budget</th>
                             <th><i class="fas fa-paperclip"></i> Files</th>
@@ -118,6 +119,7 @@
                             <td>{{ expense.subcategory.name if expense.subcategory else '-' }}</td>
                             <td class="type-col">{{ expense.type|format_expense_type }}</td>
                             <td class="payment-col">{{ "Credit Card (By Employee)" if expense.payment_method == "credit" else "Bank Transfer (By Accounting)" }}</td>
+                            <td class="credit-card-col">{{ "**** " + expense.credit_card.last_four_digits if expense.credit_card else '-' }}</td>
                             <td class="amount-col">₪{{ "%.2f"|format(expense.amount) }}</td>
                             <td class="budget-info">
                                 <div class="budget-column collapsed" onclick="toggleBudgetDetails(this)">
@@ -894,6 +896,13 @@ textarea.form-control {
     white-space: normal;
     word-wrap: break-word;
     line-height: 1.2;
+}
+
+.expenses-table th.credit-card-col,
+.expenses-table td.credit-card-col {
+    width: 120px;
+    min-width: 120px;
+    white-space: nowrap;
 }
 
 .expenses-table th {
