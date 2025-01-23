@@ -216,6 +216,7 @@
                         <tr>
                             <th><i class="fas fa-user"></i> Employee</th>
                             <th><i class="fas fa-building"></i> Department</th>
+                            <th class="date-column"><i class="fas fa-calendar"></i> Date Submitted</th>
                             <th><i class="fas fa-file-alt"></i> Description</th>
                             <th><i class="fas fa-info-circle"></i> Reason</th>
                             <th><i class="fas fa-tag"></i> Type</th>
@@ -246,6 +247,7 @@
                         <tr>
                             <td>{{ expense.submitter.username }}</td>
                             <td>{{ expense.submitter.home_department.name }}</td>
+                            <td class="date-column">{{ expense.date.strftime('%d/%m/%Y') if expense.date else '-' }}</td>
                             <td>{{ expense.description }}</td>
                             <td>{{ expense.reason }}</td>
                             <td>{{ expense.type | format_expense_type }}</td>
