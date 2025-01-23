@@ -136,9 +136,15 @@
                                             <span class="amount">₪{{ "%.2f"|format(dept_budget) }}</span>
                                         </div>
                                         <div class="budget-item">
-                                            <span class="label">Left:</span>
+                                            <span class="label">Left before approval:</span>
                                             <span class="amount {% if dept_remaining < expense.amount %}warning{% endif %}">
                                                 ₪{{ "%.2f"|format(dept_remaining) }}
+                                            </span>
+                                        </div>
+                                        <div class="budget-item">
+                                            <span class="label">Left after approval:</span>
+                                            <span class="amount {% if (dept_remaining - expense.amount) < 0 %}warning{% endif %}">
+                                                ₪{{ "%.2f"|format(dept_remaining - expense.amount) }}
                                             </span>
                                         </div>
                                     </div>
@@ -160,9 +166,15 @@
                                             <span class="amount">₪{{ "%.2f"|format(cat_budget) }}</span>
                                         </div>
                                         <div class="budget-item">
-                                            <span class="label">Left:</span>
+                                            <span class="label">Left before approval:</span>
                                             <span class="amount {% if cat_remaining < expense.amount %}warning{% endif %}">
                                                 ₪{{ "%.2f"|format(cat_remaining) }}
+                                            </span>
+                                        </div>
+                                        <div class="budget-item">
+                                            <span class="label">Left after approval:</span>
+                                            <span class="amount {% if (cat_remaining - expense.amount) < 0 %}warning{% endif %}">
+                                                ₪{{ "%.2f"|format(cat_remaining - expense.amount) }}
                                             </span>
                                         </div>
                                     </div>
@@ -185,9 +197,15 @@
                                             <span class="amount">₪{{ "%.2f"|format(subcat_budget) }}</span>
                                         </div>
                                         <div class="budget-item">
-                                            <span class="label">Left:</span>
+                                            <span class="label">Left before approval:</span>
                                             <span class="amount {% if subcat_remaining < expense.amount %}warning{% endif %}">
                                                 ₪{{ "%.2f"|format(subcat_remaining) }}
+                                            </span>
+                                        </div>
+                                        <div class="budget-item">
+                                            <span class="label">Left after approval:</span>
+                                            <span class="amount {% if (subcat_remaining - expense.amount) < 0 %}warning{% endif %}">
+                                                ₪{{ "%.2f"|format(subcat_remaining - expense.amount) }}
                                             </span>
                                         </div>
                                     </div>
