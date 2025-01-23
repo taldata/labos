@@ -234,6 +234,8 @@
                             <th>Notes</th>
                             <th>Supplier Status</th>
                             <th class="date-column">Date of Purchase</th>
+                            <th>Payment Method</th>
+                            <th>Credit Card</th>
                             <th class="status-column">Payment Status</th>
                             <th>Attachments</th>
                             <th class="actions-column">Actions</th>
@@ -262,6 +264,8 @@
                             <td>{{ expense.supplier.notes if expense.supplier else '-' }}</td>
                             <td>{{ expense.supplier.status if expense.supplier else '-' }}</td>
                             <td class="date-column">{{ expense.purchase_date.strftime('%d/%m/%Y') if expense.purchase_date else '-' }}</td>
+                            <td>{{ expense.payment_method | title }}</td>
+                            <td>{% if expense.credit_card %}{{ expense.credit_card.description }} (*{{ expense.credit_card.last_four_digits }}){% endif %}</td>
                             <td class="status-column">
                                 {% if expense.is_paid %}
                                     <div class="d-flex flex-column align-items-start">
