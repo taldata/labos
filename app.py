@@ -1828,8 +1828,8 @@ def add_supplier():
             
             flash('Supplier added successfully!', 'success')
             # Redirect based on user role
-            if current_user.is_accounting:
-                return redirect(url_for('accounting_dashboard'))
+            if current_user.is_admin or current_user.is_accounting:
+                return redirect(url_for('manage_suppliers'))
             return redirect(url_for('submit_expense'))
             
         except Exception as e:
