@@ -1663,7 +1663,8 @@ def admin_delete_expense(expense_id):
 @app.route('/export_accounting_excel')
 @login_required
 def export_accounting_excel():
-    expenses = Expense.query.all()
+    # Only get approved expenses
+    expenses = Expense.query.filter_by(status='approved').all()
     
     data = []
     for expense in expenses:
