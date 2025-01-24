@@ -168,7 +168,7 @@ EXPENSE_SUBMITTED_TEMPLATE = EMAIL_STYLE + """
         <p>Hello {{ submitter.username }},</p>
         <p>Your expense has been successfully submitted to the system.</p>
         
-        <div class="amount">${{ "%.2f"|format(expense.amount) }}</div>
+        <div class="amount">₪{{ "%.2f"|format(expense.amount) }}</div>
         
         <div class="details-list">
             <h3>Expense Details</h3>
@@ -223,7 +223,7 @@ EXPENSE_SUBMITTED_TEMPLATE = EMAIL_STYLE + """
         {% endif %}
 
         <p>You will be notified once your request has been reviewed.</p>
-        <a href="#" class="button">View Expense Details</a>
+        <a href="https://budget-management-app-noxf.onrender.com/" class="button">View Expense Details</a>
     </div>
     <div class="footer">
         <p>This is an automated message from your Expense Management System</p>
@@ -245,7 +245,7 @@ EXPENSE_STATUS_UPDATE_TEMPLATE = EMAIL_STYLE + """
         <p>Unfortunately, your expense request has not been approved.</p>
         {% endif %}
         
-        <div class="amount">${{ expense.amount }}</div>
+        <div class="amount">₪{{ expense.amount }}</div>
         
         <div class="details-list">
             <h3>Expense Details</h3>
@@ -275,7 +275,7 @@ EXPENSE_STATUS_UPDATE_TEMPLATE = EMAIL_STYLE + """
         </div>
         {% endif %}
 
-        <a href="#" class="button">View Expense Details</a>
+        <a href="https://budget-management-app-noxf.onrender.com/" class="button">View Expense Details</a>
     </div>
     <div class="footer">
         <p>This is an automated message from your Expense Management System</p>
@@ -316,7 +316,7 @@ NEW_USER_TEMPLATE = EMAIL_STYLE + """
             For security reasons, please change your password after your first login.
         </div>
 
-        <a href="#" class="button">Login to System</a>
+        <a href="https://budget-management-app-noxf.onrender.com/" class="button">Login to System</a>
     </div>
     <div class="footer">
         <p>If you have any questions, please contact your department manager.</p>
@@ -334,7 +334,7 @@ NEW_REQUEST_MANAGER_NOTIFICATION_TEMPLATE = EMAIL_STYLE + """
         <p>Hello {{ manager.username }},</p>
         <p>A new expense request has been submitted and requires your attention.</p>
         
-        <div class="amount">${{ "%.2f"|format(expense.amount) }}</div>
+        <div class="amount">₪{{ "%.2f"|format(expense.amount) }}</div>
         
         <div class="details-list">
             <h3>Request Details</h3>
@@ -400,7 +400,7 @@ NEW_REQUEST_MANAGER_NOTIFICATION_TEMPLATE = EMAIL_STYLE + """
         </div>
         {% endif %}
 
-        <a href="#" class="button">Review Request</a>
+        <a href="https://budget-management-app-noxf.onrender.com/" class="button">Review Request</a>
     </div>
     <div class="footer">
         <p>This is an automated message from your Expense Management System</p>
@@ -421,7 +421,7 @@ PASSWORD_CHANGE_CONFIRMATION_TEMPLATE = EMAIL_STYLE + """
             <strong>Security Notice:</strong> If you did not initiate this password change, please contact the system administrator immediately to ensure the security of your account.
         </div>
 
-        <a href="#" class="button">Login to System</a>
+        <a href="https://budget-management-app-noxf.onrender.com/" class="button">Login to System</a>
     </div>
     <div class="footer">
         <p>This is an automated message from your Expense Management System</p>
@@ -438,7 +438,7 @@ EXPENSE_REQUEST_CONFIRMATION_TEMPLATE = EMAIL_STYLE + """
         <p>Hello {{ submitter.username }},</p>
         <p>Your expense request has been successfully registered in the system.</p>
         
-        <div class="amount">${{ "%.2f"|format(expense.amount) }}</div>
+        <div class="amount">₪{{ "%.2f"|format(expense.amount) }}</div>
         
         <div class="details-list">
             <h3>Request Details</h3>
@@ -449,7 +449,7 @@ EXPENSE_REQUEST_CONFIRMATION_TEMPLATE = EMAIL_STYLE + """
                 </li>
                 <li>
                     <span>Amount:</span>
-                    <span>${{ "%.2f"|format(expense.amount) }}</span>
+                    <span>₪{{ "%.2f"|format(expense.amount) }}</span>
                 </li>
                 <li>
                     <span>Category:</span>
@@ -495,7 +495,7 @@ EXPENSE_REQUEST_CONFIRMATION_TEMPLATE = EMAIL_STYLE + """
         {% endif %}
 
         <p>You will receive a notification when your request has been reviewed.</p>
-        <a href="#" class="button">View Request Details</a>
+        <a href="https://budget-management-app-noxf.onrender.com/" class="button">View Request Details</a>
     </div>
     <div class="footer">
         <p>This is an automated message from your Expense Management System</p>
@@ -512,7 +512,7 @@ EXPENSE_REQUEST_REJECTION_TEMPLATE = EMAIL_STYLE + """
         <p>Hello {{ submitter.username }},</p>
         <p>Unfortunately, your expense request has not been approved.</p>
         
-        <div class="amount">${{ expense.amount }}</div>
+        <div class="amount">₪{{ expense.amount }}</div>
         
         <div class="details-list">
             <h3>Request Details</h3>
@@ -543,7 +543,7 @@ EXPENSE_REQUEST_REJECTION_TEMPLATE = EMAIL_STYLE + """
         <p>If you have any questions about this decision, please contact your manager ({{ expense.handler.username }}).</p>
         <p>You may submit a new request with the necessary corrections if needed.</p>
 
-        <a href="#" class="button">View Request Details</a>
+        <a href="https://budget-management-app-noxf.onrender.com/" class="button">View Request Details</a>
     </div>
     <div class="footer">
         <p>This is an automated message from your Expense Management System</p>
