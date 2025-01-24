@@ -1291,3 +1291,111 @@ select[multiple].form-select option:checked {
         margin: 0 1rem;
     }
 }
+
+/* Mobile Responsive Styles */
+@media screen and (max-width: 768px) {
+    .container {
+        padding: var(--spacing-sm);
+    }
+
+    .dashboard-header {
+        flex-direction: column;
+        gap: var(--spacing-md);
+    }
+
+    .header-main h1 {
+        font-size: 1.25rem;
+        text-align: center;
+    }
+
+    .department-cards {
+        width: 100%;
+    }
+
+    .dept-card {
+        padding: var(--spacing-sm);
+    }
+
+    .dept-tags {
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+
+    .action-buttons {
+        flex-direction: column;
+        gap: var(--spacing-sm);
+        width: 100%;
+    }
+
+    .action-buttons .btn {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .card-header {
+        flex-direction: column;
+        gap: var(--spacing-md);
+    }
+
+    .card-actions {
+        flex-direction: column;
+        width: 100%;
+        gap: var(--spacing-sm);
+    }
+
+    .search-input,
+    .filter-select {
+        width: 100%;
+    }
+
+    .table-scroll-container {
+        margin: 0 -var(--spacing-sm);
+    }
+
+    .expenses-table th,
+    .expenses-table td {
+        padding: var(--spacing-xs);
+        font-size: 0.875rem;
+    }
+
+    .budget-info {
+        min-width: auto;
+    }
+
+    .budget-column {
+        min-width: 200px;
+    }
+
+    .document-links {
+        display: flex;
+        flex-direction: column;
+        gap: var(--spacing-xs);
+    }
+
+    .document-links .button {
+        width: 100%;
+        margin: 0;
+    }
+}
+
+/* Improve table scrolling on mobile */
+.table-responsive {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    margin: 0 -var(--spacing-sm);
+    padding: 0 var(--spacing-sm);
+}
+
+.table-scroll-indicator {
+    display: none;
+    text-align: center;
+    padding: var(--spacing-sm);
+    color: #666;
+    font-size: 0.875rem;
+}
+
+@media screen and (max-width: 768px) {
+    .table-scroll-indicator {
+        display: block;
+    }
+}
