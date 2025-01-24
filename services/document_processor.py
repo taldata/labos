@@ -2,6 +2,7 @@ from azure.ai.formrecognizer import DocumentAnalysisClient
 from azure.core.credentials import AzureKeyCredential
 import os
 from dotenv import load_dotenv
+from datetime import datetime
 
 load_dotenv()
 
@@ -13,126 +14,96 @@ class DocumentProcessor:
             endpoint=endpoint, 
             credential=AzureKeyCredential(key)
         )
-
-    def process_invoice(self, document_path):
-        """
-        Process an invoice document and extract relevant information
         
-        Args:
-            document_path (str): Path to the document file
-            
-        Returns:
-            dict: Extracted invoice information
-        """
-        try:
-            with open(document_path, "rb") as f:
-                poller = self.document_analysis_client.begin_analyze_document(
-                    "prebuilt-invoice", document=f
-                )
-            result = poller.result()
-
-            # Extract only amount and date information
-            invoice_data = {
-                "invoice_date": None,
-                "invoice_total": None
+        # Mapping of document types to their field names for amount and date
+        self.field_mappings = {
+            "prebuilt-invoice": {
+                "date": "InvoiceDate",
+                "amount": "InvoiceTotal"
+            },
+            "prebuilt-receipt": {
+                "date": "TransactionDate",
+                "amount": "Total"
+            },
+            "prebuilt-quote": {
+                "date": "QuoteDate",
+                "amount": "TotalAmount"
             }
+        }
 
-            for invoice in result.documents:
-                # Get invoice date
-                try:
-                    invoice_data["invoice_date"] = invoice.fields.get("InvoiceDate").value
-                except:
-                    pass
-
-                # Get total amount
-                try:
-                    invoice_data["invoice_total"] = invoice.fields.get("InvoiceTotal").value
-                except:
-                    pass
-
-            return invoice_data
-
-        except Exception as e:
-            raise Exception(f"Error processing invoice: {str(e)}")
-
-    def process_receipt(self, document_path):
+    def _extract_amount(self, amount_field):
         """
-        Process a receipt document and extract relevant information
+        Extract float amount from a field value that might be a CurrencyValue
+        
+        Args:
+            amount_field: Field value from Form Recognizer
+            
+        Returns:
+            float: The amount value
+        """
+        if amount_field is None:
+            return None
+            
+        if hasattr(amount_field, 'amount'):
+            # Handle CurrencyValue objects
+            return float(amount_field.amount)
+        elif isinstance(amount_field, (int, float)):
+            # Handle direct numeric values
+            return float(amount_field)
+        else:
+            # Try to convert string or other types
+            try:
+                return float(amount_field)
+            except (ValueError, TypeError):
+                return None
+
+    def process_document(self, document_path):
+        """
+        Process any supported document type and extract amount and purchase date
         
         Args:
             document_path (str): Path to the document file
             
         Returns:
-            dict: Extracted receipt information
+            dict: Extracted document information with amount and purchase date
         """
         try:
-            with open(document_path, "rb") as f:
-                poller = self.document_analysis_client.begin_analyze_document(
-                    "prebuilt-receipt", document=f
-                )
-            result = poller.result()
+            # Try each document type until we get valid results
+            for doc_type, fields in self.field_mappings.items():
+                try:
+                    with open(document_path, "rb") as f:
+                        poller = self.document_analysis_client.begin_analyze_document(
+                            doc_type, document=f
+                        )
+                    result = poller.result()
 
-            # Extract only amount and date information
-            receipt_data = {
+                    # If we got any documents, process them
+                    if result.documents:
+                        doc = result.documents[0]
+                        
+                        # Extract date
+                        date_field = doc.fields.get(fields["date"])
+                        date_value = date_field.value if date_field else None
+                        
+                        # Extract amount and convert to float
+                        amount_field = doc.fields.get(fields["amount"])
+                        amount_value = self._extract_amount(amount_field.value if amount_field else None)
+                        
+                        # If we found either date or amount, return the results
+                        if date_value or amount_value:
+                            return {
+                                "purchase_date": date_value,
+                                "amount": amount_value
+                            }
+                except Exception:
+                    # If this document type fails, try the next one
+                    continue
+                    
+            # If we get here, we couldn't extract information from any document type
+            return {
                 "purchase_date": None,
                 "amount": None
             }
 
-            for receipt in result.documents:
-                # Get transaction date
-                try:
-                    receipt_data["purchase_date"] = receipt.fields.get("TransactionDate").value if receipt.fields.get("TransactionDate") else None
-                except:
-                    pass
-
-                # Get total amount
-                try:
-                    receipt_data["amount"] = receipt.fields.get("Total").value if receipt.fields.get("Total") else None
-                except:
-                    pass
-
-            return receipt_data
-
         except Exception as e:
-            raise Exception(f"Error processing receipt: {str(e)}")
-
-    def process_quote(self, document_path):
-        """
-        Process a quote document and extract relevant information
-        
-        Args:
-            document_path (str): Path to the document file
-            
-        Returns:
-            dict: Extracted quote information
-        """
-        try:
-            with open(document_path, "rb") as f:
-                poller = self.document_analysis_client.begin_analyze_document(
-                    "prebuilt-quote", document=f
-                )
-            result = poller.result()
-
-            # Extract only amount and date information
-            quote_data = {
-                "quote_date": None,
-                "total_amount": None
-            }
-
-            for quote in result.documents:
-                # Get quote date
-                try:
-                    quote_data["quote_date"] = quote.fields.get("QuoteDate").value if quote.fields.get("QuoteDate") else None
-                except:
-                    pass
-
-                # Get total amount
-                try:
-                    quote_data["total_amount"] = quote.fields.get("TotalAmount").value if quote.fields.get("TotalAmount") else None
-                except:
-                    pass
-
-            return quote_data
-
-        except Exception as e:
-            raise Exception(f"Error processing quote: {str(e)}")
+            raise Exception(f"Error processing document: {str(e)}")

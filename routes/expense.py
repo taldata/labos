@@ -33,8 +33,8 @@ async def process_expense():
         file.save(file_path)
         
         try:
-            # Process the document
-            result = await document_processor.process_invoice(file_path)
+            # Process the document using unified processor
+            result = await document_processor.process_document(file_path)
             
             # Clean up
             os.remove(file_path)

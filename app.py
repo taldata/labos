@@ -385,29 +385,15 @@ def submit_expense():
                     try:
                         # Process the document
                         doc_processor = DocumentProcessor()
-                        doc_data = doc_processor.process_invoice(filepath)
+                        doc_data = doc_processor.process_document(filepath)
                         logging.info(f"Extracted document data: {doc_data}")
                         
                         # Update expense with document data if available
-                        if doc_data.get('invoice_total'):
-                            invoice_total = doc_data['invoice_total']
-                            if hasattr(invoice_total, 'amount'):
-                                expense.amount = float(invoice_total.amount)
-                            else:
-                                expense.amount = float(invoice_total)
-                            logging.info(f"Updated amount to {expense.amount}")
+                        if doc_data.get('amount'):
+                            expense.amount = doc_data['amount']
+                        if doc_data.get('purchase_date'):
+                            expense.purchase_date = doc_data['purchase_date']
                         
-                        if doc_data.get('items') and doc_data['items'] and doc_data['items'][0].get('description'):
-                            expense.description = doc_data['items'][0]['description']
-                            logging.info(f"Updated description to {expense.description}")
-                        
-                        if doc_data.get('vendor_name'):
-                            expense.supplier_name = doc_data['vendor_name']
-                            logging.info(f"Updated supplier_name to {expense.supplier_name}")
-                        
-                        if doc_data.get('invoice_date'):
-                            expense.purchase_date = doc_data['invoice_date']
-                            logging.info(f"Updated purchase_date to {expense.purchase_date}")
                     except Exception as e:
                         logging.error(f"Error processing invoice: {str(e)}")
                         flash(f'Error processing invoice: {str(e)}', 'error')
@@ -451,29 +437,15 @@ def submit_expense():
                     try:
                         # Process the receipt
                         doc_processor = DocumentProcessor()
-                        receipt_data = doc_processor.process_receipt(filepath)
+                        receipt_data = doc_processor.process_document(filepath)
                         logging.info(f"Extracted receipt data: {receipt_data}")
                         
                         # Update expense with receipt data if available and if not already set by invoice
-                        if not expense.amount and receipt_data.get('total'):
-                            total = receipt_data['total']
-                            if hasattr(total, 'amount'):
-                                expense.amount = float(total.amount)
-                            else:
-                                expense.amount = float(total)
-                            logging.info(f"Updated amount from receipt to {expense.amount}")
+                        if receipt_data.get('amount'):
+                            expense.amount = receipt_data['amount']
+                        if receipt_data.get('purchase_date'):
+                            expense.purchase_date = receipt_data['purchase_date']
                         
-                        if not expense.description and receipt_data.get('items') and receipt_data['items'] and receipt_data['items'][0].get('description'):
-                            expense.description = receipt_data['items'][0]['description']
-                            logging.info(f"Updated description from receipt to {expense.description}")
-                        
-                        if not expense.supplier_name and receipt_data.get('merchant_name'):
-                            expense.supplier_name = receipt_data['merchant_name']
-                            logging.info(f"Updated supplier_name from receipt to {expense.supplier_name}")
-                        
-                        if not expense.purchase_date and receipt_data.get('transaction_date'):
-                            expense.purchase_date = receipt_data['transaction_date']
-                            logging.info(f"Updated purchase_date from receipt to {expense.purchase_date}")
                     except Exception as e:
                         logging.error(f"Error processing receipt: {str(e)}")
                         flash(f'Error processing receipt: {str(e)}', 'error')
@@ -1293,25 +1265,17 @@ def edit_expense(expense_id):
                         # Process document if it's an invoice or receipt
                         if doc_type in ['invoice', 'receipt']:
                             try:
+                                # Process the document
                                 doc_processor = DocumentProcessor()
-                                process_method = getattr(doc_processor, f"process_{doc_type}")
-                                doc_data = process_method(file_path)
-                                logging.info(f"Extracted {doc_type} data: {doc_data}")
+                                doc_data = doc_processor.process_document(file_path)
+                                logging.info(f"Extracted document data: {doc_data}")
                                 
-                                # Update expense with document data if not already set by user
-                                if doc_type == 'invoice' and doc_data.get('invoice_total') and not request.form.get('amount'):
-                                    total = doc_data['invoice_total']
-                                    expense.amount = float(total.amount if hasattr(total, 'amount') else total)
-                                    
-                                if doc_data.get('items') and doc_data['items'] and not request.form.get('description'):
-                                    expense.description = doc_data['items'][0].get('description', '')
-                                    
-                                if doc_type == 'invoice' and doc_data.get('vendor_name'):
-                                    expense.supplier_name = doc_data['vendor_name']
-                                    
-                                if doc_data.get(f"{doc_type}_date") and not request.form.get('purchase_date'):
-                                    expense.purchase_date = doc_data[f"{doc_type}_date"]
-                                    
+                                # Update expense with document data if available and if not already set by user
+                                if doc_data.get('amount'):
+                                    expense.amount = doc_data['amount']
+                                if doc_data.get('purchase_date'):
+                                    expense.purchase_date = doc_data['purchase_date']
+                                
                             except Exception as e:
                                 logging.error(f"Error processing {doc_type}: {str(e)}")
 
@@ -2039,7 +2003,7 @@ def process_quote_endpoint(document_path):
         document_path (str): Path to the quote document.
     """
     try:
-        quote_data = processor.process_quote(document_path)
+        quote_data = processor.process_document(document_path)
         return quote_data
     except Exception as e:
         return {"error": str(e)}
@@ -2063,7 +2027,7 @@ def process_expense_document():
             
             # Process the document
             doc_processor = DocumentProcessor()
-            doc_data = doc_processor.process_invoice(filepath)
+            doc_data = doc_processor.process_document(filepath)
             
             # Clean up temporary file
             os.remove(filepath)
@@ -2094,7 +2058,7 @@ def process_receipt_document():
             
             # Process the receipt
             doc_processor = DocumentProcessor()
-            receipt_data = doc_processor.process_receipt(filepath)
+            receipt_data = doc_processor.process_document(filepath)
             
             # Clean up temporary file
             os.remove(filepath)
