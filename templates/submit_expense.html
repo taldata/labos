@@ -542,10 +542,12 @@ function saveField(button, field, value) {
         }
     }
     
-    // Disable both buttons after saving
-    const buttons = fieldDiv.querySelectorAll('button');
-    buttons.forEach(btn => btn.disabled = true);
-    button.textContent = 'Saved';
+    // Hide the field with a fade out effect
+    fieldDiv.style.transition = 'opacity 0.3s ease';
+    fieldDiv.style.opacity = '0';
+    setTimeout(() => {
+        fieldDiv.style.display = 'none';
+    }, 300);
 }
 
 function ignoreField(button, field) {
@@ -564,10 +566,12 @@ function ignoreField(button, field) {
         document.getElementById('purchase_date').value = '';
     }
     
-    // Disable both buttons after ignoring
-    const buttons = fieldDiv.querySelectorAll('button');
-    buttons.forEach(btn => btn.disabled = true);
-    button.textContent = 'Ignored';
+    // Hide the field with a fade out effect
+    fieldDiv.style.transition = 'opacity 0.3s ease';
+    fieldDiv.style.opacity = '0';
+    setTimeout(() => {
+        fieldDiv.style.display = 'none';
+    }, 300);
 }
 </script>
 
