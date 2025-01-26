@@ -1511,9 +1511,13 @@ def delete_user(user_id):
         
         # Check if user has any expenses
         if user.submitted_expenses:
-            return jsonify({'error': 'Cannot delete user with existing expenses. Please delete or reassign their expenses first.'}), 400
+            # Instead of deleting, mark as inactive
+            user.status = 'inactive'
+            flash('User has associated expenses. Marked as inactive instead of deleting.', 'success')
+        else:
+            db.session.delete(user)
+            flash('User deleted successfully!', 'success')
         
-        db.session.delete(user)
         db.session.commit()
         
         return jsonify({'message': f'User {username} deleted successfully'}), 200
@@ -2021,22 +2025,32 @@ def process_expense_document():
     if file and allowed_file(file.filename):
         try:
             # Save file temporarily
-            filename = secure_filename(f"temp_{datetime.now().strftime('%Y%m%d%H%M%S')}_{file.filename}")
-            filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-            file.save(filepath)
+            filename = secure_filename(file.filename)
+            temp_path = os.path.join(app.config['UPLOAD_FOLDER'], 'temp', filename)
+            os.makedirs(os.path.dirname(temp_path), exist_ok=True)
+            file.save(temp_path)
             
             # Process the document
-            doc_processor = DocumentProcessor()
-            doc_data = doc_processor.process_document(filepath)
+            document_type = request.form.get('document_type', 'receipt')  # receipt, invoice, or quote
+            if document_type == 'receipt':
+                extracted_data = processor.process_document(temp_path)
+            elif document_type == 'invoice':
+                extracted_data = processor.process_document(temp_path)
+            else:
+                extracted_data = processor.process_document(temp_path)
             
             # Clean up temporary file
-            os.remove(filepath)
+            os.remove(temp_path)
             
-            return jsonify(doc_data)
+            return jsonify({
+                'success': True,
+                'extracted_data': extracted_data,
+                'filename': filename
+            })
+            
         except Exception as e:
-            logging.error(f"Error processing document: {str(e)}")
             return jsonify({'error': str(e)}), 500
-    
+            
     return jsonify({'error': 'Invalid file type'}), 400
 
 @app.route('/api/expense/process-receipt', methods=['POST'])
@@ -2052,16 +2066,17 @@ def process_receipt_document():
     if file and allowed_file(file.filename):
         try:
             # Save file temporarily
-            filename = secure_filename(f"temp_{datetime.now().strftime('%Y%m%d%H%M%S')}_{file.filename}")
-            filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-            file.save(filepath)
+            filename = secure_filename(file.filename)
+            temp_path = os.path.join(app.config['UPLOAD_FOLDER'], 'temp', filename)
+            os.makedirs(os.path.dirname(temp_path), exist_ok=True)
+            file.save(temp_path)
             
             # Process the receipt
             doc_processor = DocumentProcessor()
-            receipt_data = doc_processor.process_document(filepath)
+            receipt_data = doc_processor.process_document(temp_path)
             
             # Clean up temporary file
-            os.remove(filepath)
+            os.remove(temp_path)
             
             return jsonify(receipt_data)
         except Exception as e:
@@ -2112,6 +2127,47 @@ def reset_user_password(user_id):
         db.session.rollback()
         logging.error(f"Error resetting password: {str(e)}")
         return jsonify({'error': f'Error resetting password: {str(e)}'}), 500
+
+@app.route('/api/expense/process-document', methods=['POST'])
+@login_required
+def process_document():
+    if 'document' not in request.files:
+        return jsonify({'error': 'No document provided'}), 400
+    
+    file = request.files['document']
+    if file.filename == '':
+        return jsonify({'error': 'No selected file'}), 400
+    
+    if file and allowed_file(file.filename):
+        try:
+            # Save the file temporarily
+            filename = secure_filename(file.filename)
+            temp_path = os.path.join(app.config['UPLOAD_FOLDER'], 'temp', filename)
+            os.makedirs(os.path.dirname(temp_path), exist_ok=True)
+            file.save(temp_path)
+            
+            # Process the document
+            document_type = request.form.get('document_type', 'receipt')  # receipt, invoice, or quote
+            if document_type == 'receipt':
+                extracted_data = processor.process_document(temp_path)
+            elif document_type == 'invoice':
+                extracted_data = processor.process_document(temp_path)
+            else:
+                extracted_data = processor.process_document(temp_path)
+            
+            # Clean up temporary file
+            os.remove(temp_path)
+            
+            return jsonify({
+                'success': True,
+                'extracted_data': extracted_data,
+                'filename': filename
+            })
+            
+        except Exception as e:
+            return jsonify({'error': str(e)}), 500
+            
+    return jsonify({'error': 'Invalid file type'}), 400
 
 if __name__ == '__main__':
     app.run(debug=True)

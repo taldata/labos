@@ -90,22 +90,25 @@
                         <label for="quote">
                             <i class="fas fa-file-invoice"></i> Quote
                         </label>
-                        <input type="file" name="quote" id="quote" class="form-control" accept=".pdf,.png,.jpg,.jpeg">
+                        <input type="file" name="quote" id="quote" class="form-control document-upload" data-type="quote" accept=".pdf,.png,.jpg,.jpeg">
                         <small class="text-muted">Upload a quote document (PDF, PNG, JPG)</small>
+                        <div id="quote_preview" class="document-preview"></div>
                     </div>
                     <div class="form-group">
                         <label for="invoice">
                             <i class="fas fa-file-invoice-dollar"></i> Invoice
                         </label>
-                        <input type="file" name="invoice" id="invoice" class="form-control" accept=".pdf,.png,.jpg,.jpeg">
+                        <input type="file" name="invoice" id="invoice" class="form-control document-upload" data-type="invoice" accept=".pdf,.png,.jpg,.jpeg">
                         <small class="text-muted">Upload an invoice document (PDF, PNG, JPG)</small>
+                        <div id="invoice_preview" class="document-preview"></div>
                     </div>
                     <div class="form-group">
                         <label for="receipt">
                             <i class="fas fa-receipt"></i> Receipt
                         </label>
-                        <input type="file" name="receipt" id="receipt" class="form-control" accept=".pdf,.png,.jpg,.jpeg">
+                        <input type="file" name="receipt" id="receipt" class="form-control document-upload" data-type="receipt" accept=".pdf,.png,.jpg,.jpeg">
                         <small class="text-muted">Upload a receipt document (PDF, PNG, JPG)</small>
+                        <div id="receipt_preview" class="document-preview"></div>
                     </div>
                 </div>
 
@@ -192,6 +195,44 @@
         </div>
     </div>
 </div>
+
+<style>
+.document-preview {
+    margin-top: 10px;
+    padding: 15px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    display: none;
+}
+
+.document-preview.active {
+    display: block;
+}
+
+.extracted-field {
+    margin-bottom: 10px;
+}
+
+.extracted-field label {
+    font-weight: bold;
+    display: block;
+}
+
+.field-actions {
+    margin-top: 5px;
+}
+
+.field-actions button {
+    margin-right: 5px;
+    padding: 2px 8px;
+    font-size: 12px;
+}
+
+.ignored-field {
+    opacity: 0.5;
+    text-decoration: line-through;
+}
+</style>
 
 <script>
 function openAddSupplierModal() {
@@ -398,6 +439,136 @@ document.addEventListener('click', function(e) {
         resultsDiv.style.display = 'none';
     }
 });
+
+document.querySelectorAll('.document-upload').forEach(input => {
+    input.addEventListener('change', async function(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const documentType = this.dataset.type;
+        const previewDiv = document.getElementById(`${documentType}_preview`);
+        
+        // Show loading state
+        previewDiv.innerHTML = '<div class="loading">Processing document...</div>';
+        previewDiv.classList.add('active');
+
+        const formData = new FormData();
+        formData.append('document', file);
+        formData.append('document_type', documentType);
+
+        try {
+            const response = await fetch('/api/expense/process-document', {
+                method: 'POST',
+                body: formData
+            });
+
+            const data = await response.json();
+            
+            if (data.success) {
+                // Clear loading state
+                previewDiv.innerHTML = '';
+                
+                // Display extracted fields
+                Object.entries(data.extracted_data).forEach(([field, value]) => {
+                    const fieldDiv = document.createElement('div');
+                    fieldDiv.className = 'extracted-field';
+                    fieldDiv.innerHTML = `
+                        <label>${field}:</label>
+                        <div class="field-value">${value}</div>
+                        <div class="field-actions">
+                            <button type="button" class="button primary" onclick="saveField(this, '${field}', '${value}')">Save</button>
+                            <button type="button" class="button secondary" onclick="ignoreField(this, '${field}')">Ignore</button>
+                        </div>
+                        <input type="hidden" name="${documentType}_${field}" value="${value}">
+                    `;
+                    previewDiv.appendChild(fieldDiv);
+                });
+            } else {
+                previewDiv.innerHTML = `<div class="error">Error: ${data.error}</div>`;
+            }
+        } catch (error) {
+            previewDiv.innerHTML = `<div class="error">Error processing document: ${error.message}</div>`;
+        }
+    });
+});
+
+function formatDateForInput(dateStr) {
+    try {
+        // Handle different date formats
+        let date;
+        if (dateStr.includes('GMT')) {
+            // Handle "Mon, 16 Dec 2024 00:00:00 GMT" format
+            date = new Date(dateStr);
+        } else {
+            // Try parsing as is
+            date = new Date(dateStr);
+        }
+        
+        if (isNaN(date.getTime())) {
+            return ''; // Return empty string if date is invalid
+        }
+        
+        // Format as YYYY-MM-DD
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    } catch (e) {
+        console.error('Error formatting date:', e);
+        return '';
+    }
+}
+
+function saveField(button, field, value) {
+    const fieldDiv = button.closest('.extracted-field');
+    fieldDiv.classList.remove('ignored-field');
+    const input = fieldDiv.querySelector('input[type="hidden"]');
+    input.disabled = false;
+    
+    // Auto-fill form fields when saving
+    if (field === 'amount') {
+        document.getElementById('amount').value = value;
+    } else if (field === 'supplier_name') {
+        const supplierSelect = document.getElementById('supplier_id');
+        const supplierOption = Array.from(supplierSelect.options)
+            .find(option => option.text.toLowerCase().includes(value.toLowerCase()));
+        if (supplierOption) {
+            supplierOption.selected = true;
+        }
+    } else if (field === 'purchase_date' || field === 'date') {
+        const formattedDate = formatDateForInput(value);
+        if (formattedDate) {
+            document.getElementById('purchase_date').value = formattedDate;
+        }
+    }
+    
+    // Disable both buttons after saving
+    const buttons = fieldDiv.querySelectorAll('button');
+    buttons.forEach(btn => btn.disabled = true);
+    button.textContent = 'Saved';
+}
+
+function ignoreField(button, field) {
+    const fieldDiv = button.closest('.extracted-field');
+    fieldDiv.classList.add('ignored-field');
+    const input = fieldDiv.querySelector('input[type="hidden"]');
+    input.disabled = true;
+    
+    // Clear form field if it was previously auto-filled
+    if (field === 'amount') {
+        document.getElementById('amount').value = '';
+    } else if (field === 'supplier_name') {
+        const supplierSelect = document.getElementById('supplier_id');
+        supplierSelect.selectedIndex = 0;
+    } else if (field === 'purchase_date' || field === 'date') {
+        document.getElementById('purchase_date').value = '';
+    }
+    
+    // Disable both buttons after ignoring
+    const buttons = fieldDiv.querySelectorAll('button');
+    buttons.forEach(btn => btn.disabled = true);
+    button.textContent = 'Ignored';
+}
 </script>
 
 {% endblock %}
