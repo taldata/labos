@@ -168,7 +168,14 @@ EXPENSE_SUBMITTED_TEMPLATE = EMAIL_STYLE + """
         <p>Hello {{ submitter.username }},</p>
         <p>Your expense has been successfully submitted to the system.</p>
         
-        <div class="amount">₪{{ "%.2f"|format(expense.amount) }}</div>
+        <div class="info-group">
+            <div class="label">Amount:</div>
+            {% if expense.currency == 'USD' %}
+            <div class="amount">${{ "%.2f"|format(expense.amount) }}</div>
+            {% else %}
+            <div class="amount">₪{{ "%.2f"|format(expense.amount) }}</div>
+            {% endif %}
+        </div>
         
         <div class="details-list">
             <h3>Expense Details</h3>
@@ -245,7 +252,11 @@ EXPENSE_STATUS_UPDATE_TEMPLATE = EMAIL_STYLE + """
         <p>Unfortunately, your expense request has not been approved.</p>
         {% endif %}
         
-        <div class="amount">₪{{ expense.amount }}</div>
+        {% if expense.currency == 'USD' %}
+        <div class="amount">${{ "%.2f"|format(expense.amount) }}</div>
+        {% else %}
+        <div class="amount">₪{{ "%.2f"|format(expense.amount) }}</div>
+        {% endif %}
         
         <div class="details-list">
             <h3>Expense Details</h3>
@@ -334,7 +345,11 @@ NEW_REQUEST_MANAGER_NOTIFICATION_TEMPLATE = EMAIL_STYLE + """
         <p>Hello {{ manager.username }},</p>
         <p>A new expense request has been submitted and requires your attention.</p>
         
+        {% if expense.currency == 'USD' %}
+        <div class="amount">${{ "%.2f"|format(expense.amount) }}</div>
+        {% else %}
         <div class="amount">₪{{ "%.2f"|format(expense.amount) }}</div>
+        {% endif %}
         
         <div class="details-list">
             <h3>Request Details</h3>
@@ -438,7 +453,11 @@ EXPENSE_REQUEST_CONFIRMATION_TEMPLATE = EMAIL_STYLE + """
         <p>Hello {{ submitter.username }},</p>
         <p>Your expense request has been successfully registered in the system.</p>
         
+        {% if expense.currency == 'USD' %}
+        <div class="amount">${{ "%.2f"|format(expense.amount) }}</div>
+        {% else %}
         <div class="amount">₪{{ "%.2f"|format(expense.amount) }}</div>
+        {% endif %}
         
         <div class="details-list">
             <h3>Request Details</h3>
@@ -449,7 +468,11 @@ EXPENSE_REQUEST_CONFIRMATION_TEMPLATE = EMAIL_STYLE + """
                 </li>
                 <li>
                     <span>Amount:</span>
+                    {% if expense.currency == 'USD' %}
+                    <span>${{ "%.2f"|format(expense.amount) }}</span>
+                    {% else %}
                     <span>₪{{ "%.2f"|format(expense.amount) }}</span>
+                    {% endif %}
                 </li>
                 <li>
                     <span>Category:</span>

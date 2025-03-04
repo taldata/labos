@@ -29,7 +29,7 @@
             <div class="stat-label">Rejected</div>
         </div>
         <div class="stat-card">
-            <div class="stat-value">₪{{ "%.2f"|format(total_approved_amount) }}</div>
+            <div class="stat-value">{{ total_approved_amount|format_currency }}</div>
             <div class="stat-label">Total Approved Amount</div>
         </div>
     </div>
@@ -57,7 +57,7 @@
                         <th><i class="fas fa-folder-open"></i> Subcategory</th>
                         <th><i class="fas fa-tag"></i> Type</th>
                         <th><i class="fas fa-credit-card"></i> Payment Method</th>
-                        <th><i class="fas fa-shekel-sign"></i> Amount (VAT included)</th>
+                        <th><i class="fas fa-money-bill-wave"></i> Amount</th>
                         <th><i class="fas fa-check-circle"></i> Status</th>
                         <th>Handled By</th>
                         <th>Handled at</th>
@@ -79,7 +79,7 @@
                         <td>{{ expense.subcategory.name if expense.subcategory else '-' }}</td>
                         <td>{{ expense.type }}</td>
                         <td>{{ "Credit Card (By Employee)" if expense.payment_method == "credit" else "Bank Transfer (By Accounting)" }}</td>
-                        <td class="amount">₪{{ "%.2f"|format(expense.amount) }}</td>
+                        <td class="amount">{{ expense.amount|format_currency(expense.currency) }}</td>
                         <td class="status-{{ expense.status }}">
                             {% if expense.status == 'rejected' %}
                                 <span class="badge danger">Rejected</span>

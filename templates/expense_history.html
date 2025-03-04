@@ -114,8 +114,8 @@
                             <td>{{ expense.subcategory.category.name if expense.subcategory else '-' }}</td>
                             <td>{{ expense.subcategory.name if expense.subcategory else '-' }}</td>
                             <td>{{ expense.type|format_expense_type }}</td>
-                            <td>{{ "Credit Card" if expense.payment_method == "credit" else "Bank Transfer" }}</td>
-                            <td class="col-amount">₪{{ "%.2f"|format(expense.amount) }}</td>
+                            <td>{{ expense.payment_method }}</td>
+                            <td class="col-amount">{{ expense.amount|format_currency(expense.currency) }}</td>
                             <td class="status-{{ expense.status }}">
                                 {% if expense.status == 'rejected' %}
                                     <span class="badge danger">Rejected</span>

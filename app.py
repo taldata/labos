@@ -77,8 +77,13 @@ def min_value(value, limit):
 
 # Custom template filters
 @app.template_filter('format_currency')
-def format_currency(value):
-    return f"₪{value:,.2f}"
+def format_currency(value, currency='ILS'):
+    if isinstance(value, (int, float)):
+        if currency == 'USD':
+            return f"${value:,.2f}"
+        else:  # Default to ILS
+            return f"₪{value:,.2f}"
+    return value
 
 @app.template_filter('format_expense_type')
 def format_expense_type(value):
@@ -292,47 +297,38 @@ def submit_expense():
         # Get form data
         amount = float(request.form['amount'])
         description = request.form['description']
-        reason = request.form['reason']
-        expense_type = request.form['type']
+        reason = request.form.get('reason', '')
+        expense_type = request.form.get('type', 'needs_approval')
         subcategory_id = int(request.form['subcategory_id'])
-        payment_method = request.form['payment_method']
-        supplier_id = request.form.get('supplier_id')
-        supplier_name = request.form.get('supplier_name')
-        bank_name = request.form.get('bank_name')
-        bank_account_number = request.form.get('bank_account_number')
-        bank_branch = request.form.get('bank_branch')
-        bank_swift = request.form.get('bank_swift')
-        purchase_date_str = request.form.get('purchase_date')
-        credit_card_id = request.form.get('credit_card_id')
-        
-        if supplier_id:
-            try:
-                supplier_id = int(supplier_id)
-            except (ValueError, TypeError):
-                supplier_id = None
-        else:
+        payment_method = request.form.get('payment_method', 'credit')
+        supplier_id = request.form.get('supplier_id', None)
+        currency = request.form.get('currency', 'ILS')  # Get currency from form
+
+        if not supplier_id or supplier_id == '':
             supplier_id = None
+        else:
+            supplier_id = int(supplier_id)
         
         # Convert purchase_date string to datetime if provided
         purchase_date = None
-        if purchase_date_str:
+        if request.form.get('purchase_date'):
             try:
-                purchase_date = datetime.strptime(purchase_date_str, '%Y-%m-%d')
+                purchase_date = datetime.strptime(request.form['purchase_date'], '%Y-%m-%d')
             except ValueError:
-                logging.error(f"Invalid purchase date format: {purchase_date_str}")
+                logging.error(f"Invalid purchase date format: {request.form['purchase_date']}")
                 flash('Invalid purchase date format. Please use DD/MM/YYYY format.', 'error')
                 return redirect(url_for('submit_expense'))
         
         # Handle supplier
-        if supplier_name and not supplier_id:
+        if request.form.get('supplier_name') and not supplier_id:
             try:
                 # Create new supplier
                 supplier = Supplier(
-                    name=supplier_name,
-                    bank_name=bank_name,
-                    bank_account_number=bank_account_number,
-                    bank_branch=bank_branch,
-                    bank_swift=bank_swift
+                    name=request.form['supplier_name'],
+                    bank_name=request.form.get('bank_name'),
+                    bank_account_number=request.form.get('bank_account_number'),
+                    bank_branch=request.form.get('bank_branch'),
+                    bank_swift=request.form.get('bank_swift')
                 )
                 db.session.add(supplier)
                 db.session.commit()
@@ -344,10 +340,10 @@ def submit_expense():
         
         # Validate credit card if payment method is credit
         if payment_method == 'credit':
-            if not credit_card_id:
+            if not request.form.get('credit_card_id'):
                 flash('Please select a credit card for credit card payments', 'error')
                 return redirect(url_for('submit_expense'))
-            credit_card = CreditCard.query.get(credit_card_id)
+            credit_card = CreditCard.query.get(request.form['credit_card_id'])
             if not credit_card or credit_card.status != 'active':
                 flash('Selected credit card is not valid or inactive', 'error')
                 return redirect(url_for('submit_expense'))
@@ -357,6 +353,7 @@ def submit_expense():
         # Create new expense
         expense = Expense(
             amount=amount,
+            currency=currency,  # Add currency to the expense
             description=description,
             reason=reason,
             type=expense_type,
@@ -1200,6 +1197,7 @@ def edit_expense(expense_id):
             supplier_id = request.form.get('supplier_id')
             purchase_date_str = request.form.get('purchase_date')
             credit_card_id = request.form.get('credit_card_id')
+            currency = request.form.get('currency', 'ILS')  # Get currency from form
             
             # Convert purchase_date string to datetime if provided
             purchase_date = None
@@ -1233,8 +1231,9 @@ def edit_expense(expense_id):
             else:
                 credit_card_id = None
             
-            # Update expense details
+            # Update expense fields
             expense.amount = amount
+            expense.currency = currency  # Update currency
             expense.description = description
             expense.reason = reason
             expense.type = expense_type

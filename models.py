@@ -124,6 +124,7 @@ class Expense(db.Model):
     __tablename__ = 'expense'
     id = db.Column(db.Integer, primary_key=True)
     amount = db.Column(db.Float, nullable=False)
+    currency = db.Column(db.String(3), nullable=False, default='ILS')
     description = db.Column(db.String(200))
     reason = db.Column(db.String(500))
     type = db.Column(db.String(50), nullable=False, default='needs_approval')
