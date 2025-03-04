@@ -1,9 +1,9 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="container">
+<div class="login-container">
     <div class="login-card">
-        <h1>Login</h1>
+        <h1 class="text-center">Login</h1>
         {% with messages = get_flashed_messages() %}
             {% if messages %}
                 {% for message in messages %}
@@ -12,10 +12,17 @@
             {% endif %}
         {% endwith %}
         
-        <a href="{{ url_for('login', sso=1) }}" class="button azure-ad-button">
-            <img src="{{ url_for('static', filename='images/ms-symbollockup_signin_light.svg') }}" alt="Sign in with Microsoft" class="ms-logo">
-            Sign in with Microsoft
-        </a>
+        <div class="recommended-login">
+            <a href="{{ url_for('login', sso=1) }}" class="button microsoft-login-button" id="microsoft-login" autofocus>
+                <svg class="ms-logo-svg" width="96" height="96" viewBox="0 0 96 96">
+                    <rect x="0" y="0" width="44" height="44" fill="#f25022"/>
+                    <rect x="52" y="0" width="44" height="44" fill="#7fba00"/>
+                    <rect x="0" y="52" width="44" height="44" fill="#00a4ef"/>
+                    <rect x="52" y="52" width="44" height="44" fill="#ffb900"/>
+                </svg>
+                Sign in with Microsoft
+            </a>
+        </div>
         
         <div class="divider">
             <span>or</span>
@@ -23,11 +30,11 @@
         
         <form method="POST" class="login-form">
             <div class="form-group">
-                <label for="username">Username</label>
+                <label for="username" class="text-center">Username</label>
                 <input type="text" id="username" name="username" required>
             </div>
             <div class="form-group">
-                <label for="password">Password</label>
+                <label for="password" class="text-center">Password</label>
                 <input type="password" id="password" name="password" required>
             </div>
             <button type="submit" class="button primary">Login with Password</button>
@@ -36,13 +43,95 @@
 </div>
 
 <style>
-.login-card {
-    max-width: 400px;
-    margin: 2rem auto;
+body {
+    background-color: #f5f7fa;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+}
+
+.login-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
     padding: 2rem;
+}
+
+.login-card {
+    max-width: 420px;
+    width: 100%;
+    padding: 2.5rem;
     background: white;
+    border-radius: 12px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+    text-align: center;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.login-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 15px 30px rgba(0,0,0,0.08);
+}
+
+h1 {
+    color: #2d3748;
+    margin-bottom: 1.5rem;
+    font-weight: 600;
+    font-size: 2rem;
+}
+
+.text-center {
+    text-align: center;
+    width: 100%;
+    display: block;
+}
+
+.recommended-login {
+    text-align: center;
+    margin-bottom: 1.5rem;
+    padding: 1.25rem;
+    background-color: #f0f7ff;
+    border-radius: 10px;
+    border: 1px solid #e1eeff;
+    transition: all 0.2s ease;
+}
+
+.recommended-login:hover {
+    background-color: #e6f2ff;
+}
+
+.login-recommendation {
+    margin-bottom: 0.5rem;
+    color: #0078d4;
+    font-weight: bold;
+    font-size: 0.9rem;
+}
+
+.microsoft-login-button {
+    background-color: #0078d4;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    margin-top: 0.5rem;
+    font-size: 1.1rem;
+    padding: 1rem;
+    box-shadow: 0 4px 6px rgba(0,120,212,0.15);
+    transition: all 0.3s ease;
     border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    text-align: center;
+    font-weight: 500;
+}
+
+.microsoft-login-button:hover {
+    background-color: #106ebe;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(0,120,212,0.2);
+}
+
+.microsoft-login-button:focus {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(0,120,212,0.3);
 }
 
 .login-form {
@@ -50,57 +139,71 @@
 }
 
 .form-group {
-    margin-bottom: 1rem;
+    margin-bottom: 1.25rem;
+    text-align: center;
 }
 
 .form-group label {
     display: block;
     margin-bottom: 0.5rem;
-    color: #333;
+    color: #4a5568;
+    text-align: center;
+    font-weight: 500;
+    font-size: 0.95rem;
 }
 
 .form-group input {
     width: 100%;
-    padding: 0.5rem;
-    border: 1px solid #ddd;
-    border-radius: 4px;
+    padding: 0.75rem;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    text-align: center;
+    font-size: 1rem;
+    transition: all 0.2s ease;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+.form-group input:focus {
+    border-color: #4299e1;
+    box-shadow: 0 0 0 3px rgba(66,153,225,0.15);
+    outline: none;
 }
 
 .button {
     width: 100%;
     margin-top: 1rem;
-    padding: 0.75rem;
+    padding: 0.875rem;
     border: none;
-    border-radius: 4px;
+    border-radius: 8px;
     cursor: pointer;
     text-align: center;
     text-decoration: none;
     display: inline-block;
     font-size: 1rem;
+    font-weight: 500;
+    transition: all 0.2s ease;
 }
 
-.azure-ad-button {
-    background-color: #ffffff;
-    color: #5E5E5E;
-    border: 1px solid #8C8C8C;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.5rem;
-    margin-top: 1rem;
+.primary {
+    background-color: #4299e1;
+    color: white;
 }
 
-.azure-ad-button:hover {
-    background-color: #f3f3f3;
+.primary:hover {
+    background-color: #3182ce;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 6px rgba(49,130,206,0.2);
 }
 
-.ms-logo {
+.ms-logo-svg {
+    width: 32px;
     height: 32px;
+    flex-shrink: 0;
 }
 
 .divider {
     text-align: center;
-    margin: 1.5rem 0;
+    margin: 2rem 0;
     position: relative;
 }
 
@@ -111,7 +214,7 @@
     top: 50%;
     width: 45%;
     height: 1px;
-    background-color: #ddd;
+    background-color: #e2e8f0;
 }
 
 .divider::before {
@@ -124,18 +227,37 @@
 
 .divider span {
     background-color: white;
-    padding: 0 10px;
-    color: #666;
+    padding: 0 12px;
+    color: #718096;
     font-size: 0.9rem;
+    position: relative;
+    z-index: 1;
 }
 
-.primary {
-    background-color: #0078d4;
-    color: white;
+@media (max-width: 480px) {
+    .login-card {
+        padding: 1.5rem;
+    }
+    
+    h1 {
+        font-size: 1.75rem;
+    }
 }
 
-.primary:hover {
-    background-color: #006abc;
+.alert.error {
+    background-color: #fff5f5;
+    color: #e53e3e;
+    padding: 0.75rem;
+    border-radius: 8px;
+    margin-bottom: 1.5rem;
+    border: 1px solid #fed7d7;
 }
 </style>
+
+<script>
+  // Set focus on the Microsoft login button when the page loads
+  window.onload = function() {
+    document.getElementById('microsoft-login').focus();
+  }
+</script>
 {% endblock %}
