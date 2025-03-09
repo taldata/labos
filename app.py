@@ -279,9 +279,10 @@ def submit_expense():
             Department.id == current_user.department_id
         ).all()
         
-        subcategories = []
-        if categories:
-            subcategories = Subcategory.query.filter_by(category_id=categories[0].id).all()
+        # Replace limited subcategory loading with all subcategories from the user's department
+        subcategories = Subcategory.query.join(Category).filter(
+            Category.department_id == current_user.department_id
+        ).all()
         
         suppliers = Supplier.query.filter_by(status='active').order_by(Supplier.name).all()
         credit_cards = CreditCard.query.filter_by(status='active').order_by(CreditCard.last_four_digits).all()
