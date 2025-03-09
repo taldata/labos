@@ -344,7 +344,8 @@ def submit_expense():
             if not request.form.get('credit_card_id'):
                 flash('Please select a credit card for credit card payments', 'error')
                 return redirect(url_for('submit_expense'))
-            credit_card = CreditCard.query.get(request.form['credit_card_id'])
+            credit_card_id = request.form['credit_card_id']
+            credit_card = CreditCard.query.get(credit_card_id)
             if not credit_card or credit_card.status != 'active':
                 flash('Selected credit card is not valid or inactive', 'error')
                 return redirect(url_for('submit_expense'))
