@@ -1647,6 +1647,8 @@ def export_accounting_excel():
             'Amount': expense.amount,
             'Handled By': expense.handler.username if expense.handler else '-',
             'Date Handled': expense.handled_at.strftime('%d/%m/%Y') if expense.handled_at else '-',
+            'Credit Card Last 4 Digits': expense.credit_card.last_four_digits if expense.credit_card else '-',
+            'Payment Method': expense.payment_method,
             'Supplier Name': expense.supplier.name if expense.supplier else '-',
             'Supplier Email': expense.supplier.email if expense.supplier else '-',
             'Supplier Phone': expense.supplier.phone if expense.supplier else '-',
