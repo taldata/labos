@@ -305,6 +305,7 @@ def submit_expense():
         payment_method = request.form.get('payment_method', 'credit')
         supplier_id = request.form.get('supplier_id', None)
         currency = request.form.get('currency', 'ILS')  # Get currency from form
+        payment_due_date = request.form.get('payment_due_date', 'end_of_month')  # Get payment due date
 
         # Check for duplicate submissions in the last minute
         time_threshold = datetime.now() - timedelta(minutes=1)
@@ -380,6 +381,7 @@ def submit_expense():
             supplier_id=supplier_id,
             purchase_date=purchase_date,
             credit_card_id=credit_card_id,
+            payment_due_date=payment_due_date,  # Add payment due date
             status='approved' if expense_type == 'auto_approved' else 'pending'
         )
         
@@ -1243,6 +1245,7 @@ def edit_expense(expense_id):
             purchase_date_str = request.form.get('purchase_date')
             credit_card_id = request.form.get('credit_card_id')
             currency = request.form.get('currency', 'ILS')  # Get currency from form
+            payment_due_date = request.form.get('payment_due_date', 'end_of_month')  # Get payment due date
             
             # Convert purchase_date string to datetime if provided
             purchase_date = None
@@ -1287,6 +1290,7 @@ def edit_expense(expense_id):
             expense.supplier_id = supplier_id if supplier_id else None
             expense.purchase_date = purchase_date
             expense.credit_card_id = credit_card_id
+            expense.payment_due_date = payment_due_date
             
             # Handle file uploads with document processing
             for doc_type in ['quote', 'invoice', 'receipt']:
@@ -1704,6 +1708,7 @@ def export_accounting_excel():
             'Supplier Notes': expense.supplier.notes if expense.supplier else '-',
             'Supplier Status': expense.supplier.status if expense.supplier else '-',
             'Date of Purchase': expense.purchase_date.strftime('%d/%m/%Y') if expense.purchase_date else '-',
+            'Payment Due Date': 'Start of month' if expense.payment_due_date == 'start_of_month' else 'End of month',
             'Payment Status': 'Paid' if expense.is_paid else 'Pending Payment'
         })
     
@@ -1765,8 +1770,7 @@ def accounting_dashboard():
     month_filter = request.args.get('month', 'all')
     payment_method_filter = request.args.get('payment_method', 'all')
     payment_status_filter = request.args.get('payment_status', 'all')
-    purchase_date_start = request.args.get('purchase_date_start', '')
-    purchase_date_end = request.args.get('purchase_date_end', '')
+    payment_due_date_filter = request.args.get('payment_due_date', 'all')
     
     # Start with base query for approved expenses
     query = Expense.query.filter_by(status='approved')
@@ -1781,16 +1785,9 @@ def accounting_dashboard():
             end_date = datetime(int(year), int(month) + 1, 1)
         query = query.filter(Expense.purchase_date >= start_date, Expense.purchase_date < end_date)
     
-    # Apply purchase date range filter (serves as payment due date filter)
-    if purchase_date_start:
-        start_date = datetime.strptime(purchase_date_start, '%Y-%m-%d')
-        query = query.filter(Expense.purchase_date >= start_date)
-    
-    if purchase_date_end:
-        end_date = datetime.strptime(purchase_date_end, '%Y-%m-%d')
-        # Add one day to include the end date fully
-        end_date = end_date + timedelta(days=1)
-        query = query.filter(Expense.purchase_date < end_date)
+    # Apply payment due date filter
+    if payment_due_date_filter != 'all':
+        query = query.filter(Expense.payment_due_date == payment_due_date_filter)
     
     # Apply payment method filter
     if payment_method_filter != 'all':
@@ -1819,8 +1816,7 @@ def accounting_dashboard():
                           selected_month=month_filter,
                           selected_payment_method=payment_method_filter,
                           selected_payment_status=payment_status_filter,
-                          selected_purchase_date_start=purchase_date_start,
-                          selected_purchase_date_end=purchase_date_end,
+                          selected_payment_due_date=payment_due_date_filter,
                           month_options=month_options)
 
 @app.route('/mark_expense_paid/<int:expense_id>', methods=['POST'])

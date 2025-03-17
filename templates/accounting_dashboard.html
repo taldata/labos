@@ -282,23 +282,20 @@
             </div>
             
             <div class="filter-item">
-                <label for="purchase_date_start"><i class="fas fa-calendar-alt"></i> Purchase Date (From)</label>
-                <input type="date" name="purchase_date_start" id="purchase_date_start" class="form-control" 
-                       value="{{ selected_purchase_date_start }}" onchange="this.form.submit()">
-            </div>
-            
-            <div class="filter-item">
-                <label for="purchase_date_end"><i class="fas fa-calendar-alt"></i> Purchase Date (To)</label>
-                <input type="date" name="purchase_date_end" id="purchase_date_end" class="form-control" 
-                       value="{{ selected_purchase_date_end }}" onchange="this.form.submit()">
-            </div>
-            
-            <div class="filter-item">
                 <label for="payment_method"><i class="fas fa-credit-card"></i> Payment Method</label>
                 <select name="payment_method" id="payment_method" class="form-control" onchange="this.form.submit()">
                     <option value="all" {% if selected_payment_method == 'all' %}selected{% endif %}>All Methods</option>
                     <option value="credit" {% if selected_payment_method == 'credit' %}selected{% endif %}>Credit Card</option>
                     <option value="transfer" {% if selected_payment_method == 'transfer' %}selected{% endif %}>Bank Transfer</option>
+                </select>
+            </div>
+            
+            <div class="filter-item">
+                <label for="payment_due_date"><i class="fas fa-calendar-check"></i> Payment Due Date</label>
+                <select name="payment_due_date" id="payment_due_date" class="form-control" onchange="this.form.submit()">
+                    <option value="all" {% if selected_payment_due_date == 'all' %}selected{% endif %}>All Dates</option>
+                    <option value="start_of_month" {% if selected_payment_due_date == 'start_of_month' %}selected{% endif %}>Start of month</option>
+                    <option value="end_of_month" {% if selected_payment_due_date == 'end_of_month' %}selected{% endif %}>End of month</option>
                 </select>
             </div>
             
@@ -346,6 +343,7 @@
                             <th class="date-column">Date of Purchase</th>
                             <th>Payment Method</th>
                             <th>Credit Card</th>
+                            <th>Payment Due Date</th>
                             <th class="status-column">Payment Status</th>
                             <th>Attachments</th>
                             <th class="actions-column">Actions</th>
@@ -377,6 +375,7 @@
                             <td class="date-column">{{ expense.purchase_date.strftime('%d/%m/%Y') if expense.purchase_date else '-' }}</td>
                             <td>{{ expense.payment_method | title }}</td>
                             <td>{% if expense.credit_card %}{{ expense.credit_card.description }} (*{{ expense.credit_card.last_four_digits }}){% endif %}</td>
+                            <td>{{ "Start of month" if expense.payment_due_date == "start_of_month" else "End of month" }}</td>
                             <td class="status-column">
                                 {% if expense.is_paid %}
                                     <div class="d-flex flex-column align-items-start">
@@ -438,27 +437,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Get filter elements
     const monthFilter = document.getElementById('month');
-    const startDateFilter = document.getElementById('purchase_date_start');
-    const endDateFilter = document.getElementById('purchase_date_end');
     
     // When month filter changes, clear date range filters
     monthFilter.addEventListener('change', function() {
         if (this.value !== 'all') {
-            startDateFilter.value = '';
-            endDateFilter.value = '';
-        }
-    });
-    
-    // When date range filters change, set month filter to "All"
-    startDateFilter.addEventListener('change', function() {
-        if (this.value && monthFilter.value !== 'all') {
-            monthFilter.value = 'all';
-        }
-    });
-    
-    endDateFilter.addEventListener('change', function() {
-        if (this.value && monthFilter.value !== 'all') {
-            monthFilter.value = 'all';
+            // Clear date range filters
         }
     });
     

@@ -79,6 +79,14 @@
             </div>
 
             <div class="form-group">
+                <label for="payment_due_date">Payment Due Date:</label>
+                <select class="form-control" id="payment_due_date" name="payment_due_date">
+                    <option value="start_of_month" {% if expense.payment_due_date == 'start_of_month' %}selected{% endif %}>Start of month</option>
+                    <option value="end_of_month" {% if expense.payment_due_date == 'end_of_month' or not expense.payment_due_date %}selected{% endif %}>End of month</option>
+                </select>
+            </div>
+
+            <div class="form-group">
                 <label for="payment_method">Payment Method</label>
                 <select class="form-control" id="payment_method" name="payment_method" required onchange="toggleCreditCardField()">
                     <option value="credit" {% if expense.payment_method == 'credit' %}selected{% endif %}>Credit Card</option>
