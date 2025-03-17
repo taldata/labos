@@ -1,7 +1,7 @@
 from flask import Flask, render_template, request, redirect, url_for, flash, send_file, jsonify, session
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
-from datetime import datetime
+from datetime import datetime, timedelta
 import os
 from services.document_processor import DocumentProcessor
 from werkzeug.utils import secure_filename
@@ -304,6 +304,20 @@ def submit_expense():
         payment_method = request.form.get('payment_method', 'credit')
         supplier_id = request.form.get('supplier_id', None)
         currency = request.form.get('currency', 'ILS')  # Get currency from form
+
+        # Check for duplicate submissions in the last minute
+        time_threshold = datetime.now() - timedelta(minutes=1)
+        recent_expense = Expense.query.filter(
+            Expense.user_id == current_user.id,
+            Expense.amount == amount,
+            Expense.description == description,
+            Expense.subcategory_id == subcategory_id,
+            Expense.date >= time_threshold
+        ).first()
+        
+        if recent_expense:
+            flash('A similar expense was just submitted. Please wait a moment before submitting again.', 'warning')
+            return redirect(url_for('employee_dashboard'))
 
         if not supplier_id or supplier_id == '':
             supplier_id = None

@@ -142,6 +142,13 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!amount || !type || !description || !reason || !subcategory) {
             e.preventDefault();
             alert('Please fill in all required fields.');
+        } else {
+            // If form is valid, disable the submit button to prevent multiple submissions
+            const submitButton = document.querySelector('button[type="submit"]');
+            if (submitButton) {
+                submitButton.disabled = true;
+                submitButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting...';
+            }
         }
     });
 });

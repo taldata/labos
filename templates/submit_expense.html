@@ -707,6 +707,22 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 });
+
+// Add protection against double submission
+document.getElementById('expense-form').addEventListener('submit', function(e) {
+    // Check if the form was already submitted
+    if (this.dataset.submitted) {
+        e.preventDefault();
+        return;
+    }
+    
+    // Mark the form as submitted
+    this.dataset.submitted = true;
+    
+    // Disable the submit button
+    document.querySelector('button[type="submit"]').disabled = true;
+    document.querySelector('button[type="submit"]').innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting...';
+});
 </script>
 
 {% endblock %}
