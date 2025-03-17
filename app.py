@@ -968,18 +968,44 @@ def add_department():
     if not is_admin():
         return jsonify({'error': 'Unauthorized'}), 403
     
-    data = request.get_json()
-    name = data.get('name')
-    budget = data.get('budget')
-    
-    if not name or budget is None:
-        return jsonify({'error': 'Missing required fields'}), 400
-    
-    department = Department(name=name, budget=float(budget))
-    db.session.add(department)
-    db.session.commit()
-    
-    return jsonify({'success': True}), 201
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({'error': 'Invalid JSON data'}), 400
+            
+        name = data.get('name')
+        budget = data.get('budget')
+        
+        if not name or budget is None:
+            return jsonify({'error': 'Missing required fields'}), 400
+        
+        # Ensure we're getting the proper data types
+        name = str(name).strip()
+        try:
+            budget = float(budget)
+        except (ValueError, TypeError):
+            return jsonify({'error': 'Budget must be a valid number'}), 400
+            
+        if not name:
+            return jsonify({'error': 'Department name cannot be empty'}), 400
+            
+        # Check if department with this name already exists
+        existing_dept = Department.query.filter_by(name=name).first()
+        if existing_dept:
+            return jsonify({'error': 'A department with this name already exists'}), 400
+        
+        # Get currency from request or use default 'ILS'
+        currency = data.get('currency', 'ILS')
+        
+        department = Department(name=name, budget=budget, currency=currency)
+        db.session.add(department)
+        db.session.commit()
+        
+        return jsonify({'success': True, 'department': {'id': department.id, 'name': department.name, 'budget': department.budget}}), 201
+    except Exception as e:
+        db.session.rollback()
+        app.logger.error(f"Error adding department: {str(e)}")
+        return jsonify({'error': f'Failed to add department: {str(e)}'}), 500
 
 @app.route('/manager/departments/<int:dept_id>', methods=['PUT'])
 @login_required
@@ -994,6 +1020,8 @@ def update_department(dept_id):
         department.name = data['name']
     if 'budget' in data:
         department.budget = float(data['budget'])
+    if 'currency' in data:
+        department.currency = data['currency']
     
     db.session.commit()
     return jsonify({'success': True})

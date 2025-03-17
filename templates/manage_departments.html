@@ -22,8 +22,12 @@
                 <h3>{{ department.name }}</h3>
                 {% if current_user.username == 'admin' %}
                 <div class="department-actions">
-                    <button onclick="showEditDepartmentModal({{ department.id }}, '{{ department.name }}', {{ department.budget }})" class="button small">Edit</button>
-                    <button onclick="deleteDepartment({{ department.id }})" class="button small danger">Delete</button>
+                    <button data-department-id="{{ department.id }}" 
+                            data-department-name="{{ department.name }}" 
+                            data-department-budget="{{ department.budget }}" 
+                            data-department-currency="{{ department.currency }}" 
+                            class="button small edit-department-btn">Edit</button>
+                    <button data-department-id="{{ department.id }}" class="button small danger delete-department-btn">Delete</button>
                 </div>
                 {% endif %}
             </div>
@@ -74,6 +78,13 @@
                 <label for="newDepartmentBudget">Initial Budget:</label>
                 <input type="number" id="newDepartmentBudget" step="0.01" min="0" required>
             </div>
+            <div class="form-group">
+                <label for="newDepartmentCurrency">Currency:</label>
+                <select id="newDepartmentCurrency">
+                    <option value="ILS" selected>ILS</option>
+                    <option value="USD">USD</option>
+                </select>
+            </div>
             <div class="form-actions">
                 <button type="button" onclick="closeAddDepartmentModal()" class="button secondary">Cancel</button>
                 <button type="submit" class="button primary">Add Department</button>
@@ -95,6 +106,13 @@
             <div class="form-group">
                 <label for="editDepartmentBudget">Budget:</label>
                 <input type="number" id="editDepartmentBudget" step="0.01" min="0" required>
+            </div>
+            <div class="form-group">
+                <label for="editDepartmentCurrency">Currency:</label>
+                <select id="editDepartmentCurrency">
+                    <option value="ILS">ILS</option>
+                    <option value="USD">USD</option>
+                </select>
             </div>
             <div class="form-actions">
                 <button type="button" onclick="closeEditDepartmentModal()" class="button secondary">Cancel</button>
@@ -147,10 +165,20 @@ function closeAddDepartmentModal() {
 }
 
 // Edit Department Modal Functions
-function showEditDepartmentModal(id, name, budget) {
+function showEditDepartmentModal(id, name, budget, currency = 'ILS') {
     document.getElementById('editDepartmentId').value = id;
     document.getElementById('editDepartmentName').value = name;
     document.getElementById('editDepartmentBudget').value = budget;
+    
+    // Set the currency dropdown
+    const currencySelect = document.getElementById('editDepartmentCurrency');
+    for (let i = 0; i < currencySelect.options.length; i++) {
+        if (currencySelect.options[i].value === currency) {
+            currencySelect.selectedIndex = i;
+            break;
+        }
+    }
+    
     document.getElementById('editDepartmentModal').style.display = 'block';
 }
 
@@ -178,26 +206,74 @@ function deleteDepartment(departmentId) {
     });
 }
 
+// Add event listeners for data-attribute buttons
+document.addEventListener('DOMContentLoaded', function() {
+    // Add event listeners for edit buttons
+    document.querySelectorAll('.edit-department-btn').forEach(button => {
+        button.addEventListener('click', function() {
+            const id = this.getAttribute('data-department-id');
+            const name = this.getAttribute('data-department-name');
+            const budget = this.getAttribute('data-department-budget');
+            const currency = this.getAttribute('data-department-currency') || 'ILS';
+            
+            showEditDepartmentModal(id, name, budget, currency);
+        });
+    });
+    
+    // Add event listeners for delete buttons
+    document.querySelectorAll('.delete-department-btn').forEach(button => {
+        button.addEventListener('click', function() {
+            const id = this.getAttribute('data-department-id');
+            deleteDepartment(id);
+        });
+    });
+});
+
 // Form Submit Handlers
 document.getElementById('addDepartmentForm').addEventListener('submit', function(e) {
     e.preventDefault();
-    const name = document.getElementById('newDepartmentName').value;
-    const budget = parseFloat(document.getElementById('newDepartmentBudget').value);
+    const nameInput = document.getElementById('newDepartmentName');
+    const budgetInput = document.getElementById('newDepartmentBudget');
+    const currencySelect = document.getElementById('newDepartmentCurrency');
+    const name = nameInput.value.trim();
+    const budget = parseFloat(budgetInput.value);
+    const currency = currencySelect.value;
+    
+    // Client-side validation
+    if (!name) {
+        alert('Department name cannot be empty');
+        nameInput.focus();
+        return;
+    }
+    
+    if (isNaN(budget) || budget < 0) {
+        alert('Please enter a valid budget amount');
+        budgetInput.focus();
+        return;
+    }
 
     fetch('/manager/departments', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ name, budget })
+        body: JSON.stringify({ name, budget, currency })
     })
     .then(response => {
-        if (!response.ok) {
-            throw new Error('Failed to add department');
-        }
+        return response.json().then(data => {
+            if (!response.ok) {
+                throw new Error(data.error || 'Failed to add department');
+            }
+            return data;
+        });
+    })
+    .then(data => {
+        // Show success message
+        alert('Department added successfully!');
         location.reload();
     })
     .catch(error => {
+        console.error('Error adding department:', error);
         alert('Error adding department: ' + error.message);
     });
 });
@@ -205,15 +281,29 @@ document.getElementById('addDepartmentForm').addEventListener('submit', function
 document.getElementById('editDepartmentForm').addEventListener('submit', function(e) {
     e.preventDefault();
     const id = document.getElementById('editDepartmentId').value;
-    const name = document.getElementById('editDepartmentName').value;
+    const name = document.getElementById('editDepartmentName').value.trim();
     const budget = parseFloat(document.getElementById('editDepartmentBudget').value);
+    const currency = document.getElementById('editDepartmentCurrency').value;
+
+    // Client-side validation
+    if (!name) {
+        alert('Department name cannot be empty');
+        document.getElementById('editDepartmentName').focus();
+        return;
+    }
+    
+    if (isNaN(budget) || budget < 0) {
+        alert('Please enter a valid budget amount');
+        document.getElementById('editDepartmentBudget').focus();
+        return;
+    }
 
     fetch(`/manager/departments/${id}`, {
         method: 'PUT',
         headers: {
             'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ name, budget })
+        body: JSON.stringify({ name, budget, currency })
     })
     .then(response => {
         if (!response.ok) {

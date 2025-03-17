@@ -9,6 +9,7 @@ class Department(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
     budget = db.Column(db.Float, default=0.0)
+    currency = db.Column(db.String(3), nullable=False, default='ILS')
     employees = db.relationship('User', foreign_keys='User.department_id', back_populates='home_department')
     categories = db.relationship('Category', backref='department', lazy=True)
 
