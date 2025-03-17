@@ -16,6 +16,7 @@ import pandas as pd
 from models import db, Department, Category, Subcategory, User, Supplier, Expense, CreditCard
 import msal
 import requests
+from dateutil.relativedelta import relativedelta
 
 # Configure logging
 logging.basicConfig(
@@ -1760,10 +1761,67 @@ def accounting_dashboard():
         flash('Access denied. You must be an accounting user to view this page.', 'danger')
         return redirect(url_for('index'))
     
-    # Get all approved expenses
-    expenses = Expense.query.filter_by(status='approved').order_by(Expense.date.desc()).all()
+    # Get filter parameters
+    month_filter = request.args.get('month', 'all')
+    payment_method_filter = request.args.get('payment_method', 'all')
+    payment_status_filter = request.args.get('payment_status', 'all')
+    purchase_date_start = request.args.get('purchase_date_start', '')
+    purchase_date_end = request.args.get('purchase_date_end', '')
     
-    return render_template('accounting_dashboard.html', expenses=expenses)
+    # Start with base query for approved expenses
+    query = Expense.query.filter_by(status='approved')
+    
+    # Apply month filter (based on purchase_date)
+    if month_filter != 'all':
+        year, month = month_filter.split('-')
+        start_date = datetime(int(year), int(month), 1)
+        if int(month) == 12:
+            end_date = datetime(int(year) + 1, 1, 1)
+        else:
+            end_date = datetime(int(year), int(month) + 1, 1)
+        query = query.filter(Expense.purchase_date >= start_date, Expense.purchase_date < end_date)
+    
+    # Apply purchase date range filter (serves as payment due date filter)
+    if purchase_date_start:
+        start_date = datetime.strptime(purchase_date_start, '%Y-%m-%d')
+        query = query.filter(Expense.purchase_date >= start_date)
+    
+    if purchase_date_end:
+        end_date = datetime.strptime(purchase_date_end, '%Y-%m-%d')
+        # Add one day to include the end date fully
+        end_date = end_date + timedelta(days=1)
+        query = query.filter(Expense.purchase_date < end_date)
+    
+    # Apply payment method filter
+    if payment_method_filter != 'all':
+        query = query.filter(Expense.payment_method == payment_method_filter)
+    
+    # Apply payment status filter
+    if payment_status_filter == 'paid':
+        query = query.filter(Expense.is_paid == True)
+    elif payment_status_filter == 'pending':
+        query = query.filter(Expense.is_paid == False)
+    
+    # Get the expenses
+    expenses = query.order_by(Expense.date.desc()).all()
+    
+    # Generate month options for the filter dropdown (last 12 months)
+    current_date = datetime.now()
+    month_options = []
+    for i in range(12):
+        date = current_date - relativedelta(months=i)
+        month_str = date.strftime('%Y-%m')
+        month_display = date.strftime('%B %Y')
+        month_options.append((month_str, month_display))
+    
+    return render_template('accounting_dashboard.html', 
+                          expenses=expenses,
+                          selected_month=month_filter,
+                          selected_payment_method=payment_method_filter,
+                          selected_payment_status=payment_status_filter,
+                          selected_purchase_date_start=purchase_date_start,
+                          selected_purchase_date_end=purchase_date_end,
+                          month_options=month_options)
 
 @app.route('/mark_expense_paid/<int:expense_id>', methods=['POST'])
 @login_required

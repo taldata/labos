@@ -192,6 +192,64 @@
     .table td.actions-column {
         min-width: 150px;
     }
+    
+    /* Filter styles */
+    .filter-container {
+        background: white;
+        padding: 1.5rem;
+        border-radius: 10px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        margin-bottom: 1.5rem;
+    }
+    
+    .filter-form {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+    }
+    
+    .filter-item {
+        margin-bottom: 0.5rem;
+    }
+    
+    .filter-item label {
+        display: block;
+        margin-bottom: 0.5rem;
+        color: #495057;
+        font-weight: 500;
+    }
+    
+    .filter-item select,
+    .filter-item input {
+        width: 100%;
+        padding: 0.5rem;
+        border-radius: 6px;
+        border: 1px solid #ced4da;
+        background-color: white;
+    }
+    
+    .filter-item select:focus,
+    .filter-item input:focus {
+        border-color: #01B08A;
+        box-shadow: 0 0 0 0.2rem rgba(1, 176, 138, 0.15);
+        outline: none;
+    }
+    
+    .filter-title {
+        margin-bottom: 1rem;
+        font-size: 1.2rem;
+        color: #2c3e50;
+    }
+    
+    .filter-submit {
+        display: flex;
+        align-items: flex-end;
+    }
+    
+    .filter-submit button {
+        height: 38px;
+        width: 100%;
+    }
 </style>
 
 <div class="container-fluid">
@@ -208,6 +266,57 @@
             </a>
         </div>
     </div>
+    
+    <!-- Filter Form -->
+    <div class="filter-container">
+        <h3 class="filter-title"><i class="fas fa-filter"></i> Filter Expenses</h3>
+        <form method="GET" action="{{ url_for('accounting_dashboard') }}" class="filter-form">
+            <div class="filter-item">
+                <label for="month"><i class="fas fa-calendar"></i> Month</label>
+                <select name="month" id="month" class="form-control" onchange="this.form.submit()">
+                    <option value="all" {% if selected_month == 'all' %}selected{% endif %}>All Months</option>
+                    {% for month_value, month_display in month_options %}
+                    <option value="{{ month_value }}" {% if selected_month == month_value %}selected{% endif %}>{{ month_display }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="filter-item">
+                <label for="purchase_date_start"><i class="fas fa-calendar-alt"></i> Purchase Date (From)</label>
+                <input type="date" name="purchase_date_start" id="purchase_date_start" class="form-control" 
+                       value="{{ selected_purchase_date_start }}" onchange="this.form.submit()">
+            </div>
+            
+            <div class="filter-item">
+                <label for="purchase_date_end"><i class="fas fa-calendar-alt"></i> Purchase Date (To)</label>
+                <input type="date" name="purchase_date_end" id="purchase_date_end" class="form-control" 
+                       value="{{ selected_purchase_date_end }}" onchange="this.form.submit()">
+            </div>
+            
+            <div class="filter-item">
+                <label for="payment_method"><i class="fas fa-credit-card"></i> Payment Method</label>
+                <select name="payment_method" id="payment_method" class="form-control" onchange="this.form.submit()">
+                    <option value="all" {% if selected_payment_method == 'all' %}selected{% endif %}>All Methods</option>
+                    <option value="credit" {% if selected_payment_method == 'credit' %}selected{% endif %}>Credit Card</option>
+                    <option value="transfer" {% if selected_payment_method == 'transfer' %}selected{% endif %}>Bank Transfer</option>
+                </select>
+            </div>
+            
+            <div class="filter-item">
+                <label for="payment_status"><i class="fas fa-check-circle"></i> Payment Status</label>
+                <select name="payment_status" id="payment_status" class="form-control" onchange="this.form.submit()">
+                    <option value="all" {% if selected_payment_status == 'all' %}selected{% endif %}>All Statuses</option>
+                    <option value="paid" {% if selected_payment_status == 'paid' %}selected{% endif %}>Paid</option>
+                    <option value="pending" {% if selected_payment_status == 'pending' %}selected{% endif %}>Pending Payment</option>
+                </select>
+            </div>
+            
+            <div class="filter-item filter-submit">
+                <button type="submit" class="btn btn-primary"><i class="fas fa-search"></i> Apply Filters</button>
+            </div>
+        </form>
+    </div>
+    
     <div class="card">
         <div class="card-body">
             <div class="table-container">
@@ -298,15 +407,17 @@
                                 </div>
                             </td>
                             <td class="actions-column">
-                                {% if not expense.is_paid %}
+                                <div class="btn-group">
+                                    {% if not expense.is_paid %}
                                     <button class="btn btn-success mark-paid-btn" data-expense-id="{{ expense.id }}">
                                         <i class="fas fa-check me-1"></i>Mark as Paid
                                     </button>
-                                {% else %}
+                                    {% else %}
                                     <button class="btn btn-warning mark-unpaid-btn" data-expense-id="{{ expense.id }}">
                                         <i class="fas fa-undo me-1"></i>Mark as Unpaid
                                     </button>
-                                {% endif %}
+                                    {% endif %}
+                                </div>
                             </td>
                         </tr>
                         {% endfor %}
@@ -325,6 +436,32 @@ document.addEventListener('DOMContentLoaded', function() {
         return new bootstrap.Tooltip(tooltipTriggerEl)
     });
 
+    // Get filter elements
+    const monthFilter = document.getElementById('month');
+    const startDateFilter = document.getElementById('purchase_date_start');
+    const endDateFilter = document.getElementById('purchase_date_end');
+    
+    // When month filter changes, clear date range filters
+    monthFilter.addEventListener('change', function() {
+        if (this.value !== 'all') {
+            startDateFilter.value = '';
+            endDateFilter.value = '';
+        }
+    });
+    
+    // When date range filters change, set month filter to "All"
+    startDateFilter.addEventListener('change', function() {
+        if (this.value && monthFilter.value !== 'all') {
+            monthFilter.value = 'all';
+        }
+    });
+    
+    endDateFilter.addEventListener('change', function() {
+        if (this.value && monthFilter.value !== 'all') {
+            monthFilter.value = 'all';
+        }
+    });
+    
     // Handle mark as paid buttons
     document.querySelectorAll('.mark-paid-btn').forEach(button => {
         button.addEventListener('click', async function() {
@@ -353,7 +490,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     });
-
+    
     // Handle mark as unpaid buttons
     document.querySelectorAll('.mark-unpaid-btn').forEach(button => {
         button.addEventListener('click', async function() {
