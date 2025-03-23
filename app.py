@@ -392,6 +392,12 @@ def submit_expense():
             expense.paid_by_id = current_user.id
         
         # Process document if uploaded
+        file_upload_start_time = datetime.now()
+        doc_processor = None  # Initialize once for all documents
+        processed_files = 0
+        processing_time = 0
+        
+        # Process document if uploaded
         if 'invoice' in request.files:
             invoice_file = request.files['invoice']
             if invoice_file and allowed_file(invoice_file.filename):
@@ -406,8 +412,14 @@ def submit_expense():
                     
                     try:
                         # Process the document
-                        doc_processor = DocumentProcessor()
+                        if doc_processor is None:
+                            doc_processor = DocumentProcessor()
+                        
+                        process_start = datetime.now()
                         doc_data = doc_processor.process_document(filepath)
+                        processing_time += (datetime.now() - process_start).total_seconds()
+                        processed_files += 1
+                        
                         logging.info(f"Extracted document data: {doc_data}")
                         
                         # Update expense with document data if available
@@ -458,8 +470,14 @@ def submit_expense():
                     
                     try:
                         # Process the receipt
-                        doc_processor = DocumentProcessor()
+                        if doc_processor is None:
+                            doc_processor = DocumentProcessor()
+                        
+                        process_start = datetime.now()
                         receipt_data = doc_processor.process_document(filepath)
+                        processing_time += (datetime.now() - process_start).total_seconds()
+                        processed_files += 1
+                        
                         logging.info(f"Extracted receipt data: {receipt_data}")
                         
                         # Update expense with receipt data if available and if not already set by invoice
@@ -479,6 +497,12 @@ def submit_expense():
             elif receipt and not allowed_file(receipt.filename):
                 flash('Invalid receipt file type. Allowed types are: PDF, PNG, JPG, JPEG', 'error')
                 return redirect(url_for('submit_expense'))
+        
+        if processed_files > 0:
+            logging.info(f"Document processing stats: {processed_files} files processed in {processing_time:.2f} seconds. Average: {processing_time/processed_files:.2f} seconds per file")
+            
+        file_upload_time = (datetime.now() - file_upload_start_time).total_seconds()
+        logging.info(f"Total file upload and processing time: {file_upload_time:.2f} seconds")
         
         # Save the expense to database
         try:
