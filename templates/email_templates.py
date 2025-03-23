@@ -572,4 +572,50 @@ EXPENSE_REQUEST_REJECTION_TEMPLATE = EMAIL_STYLE + """
         <p>This is an automated message from your Expense Management System</p>
     </div>
 </div>
+"""
+
+EXPENSE_PAYMENT_NOTIFICATION_TEMPLATE = EMAIL_STYLE + """
+<div class="email-container">
+    <div class="header" style="background: linear-gradient(135deg, #38a169, #276749);">
+        <h2>Payment Notification</h2>
+    </div>
+    <div class="content">
+        <p>Hello {{ expense.submitter.username }},</p>
+        <p>We're pleased to inform you that your expense has been processed and paid.</p>
+        
+        <div class="info-group">
+            <div class="label">Amount:</div>
+            <div class="amount">{{ amount }}</div>
+        </div>
+        
+        <div class="details-list">
+            <h3>Expense Details</h3>
+            <ul>
+                <li>
+                    <span>Description:</span>
+                    <span class="highlight">{{ description }}</span>
+                </li>
+                <li>
+                    <span>Date:</span>
+                    <span>{{ date }}</span>
+                </li>
+                <li>
+                    <span>Payment Method:</span>
+                    <span>{{ payment_method }}</span>
+                </li>
+                <li>
+                    <span>Status:</span>
+                    <span class="status status-approved">PAID</span>
+                </li>
+            </ul>
+        </div>
+
+        <p>Thank you for using our Expense Management System.</p>
+        <a href="https://budget-management-app-noxf.onrender.com/" class="button">View Expense Details</a>
+    </div>
+    <div class="footer">
+        <p>This is an automated message from your Expense Management System</p>
+        <p>Please do not reply to this email.</p>
+    </div>
+</div>
 """ 

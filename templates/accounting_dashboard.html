@@ -407,14 +407,16 @@
                             </td>
                             <td class="actions-column">
                                 <div class="btn-group">
-                                    {% if not expense.is_paid %}
+                                    {% if not expense.is_paid and expense.payment_method != 'credit' %}
                                     <button class="btn btn-success mark-paid-btn" data-expense-id="{{ expense.id }}">
                                         <i class="fas fa-check me-1"></i>Mark as Paid
                                     </button>
-                                    {% else %}
+                                    {% elif expense.is_paid %}
                                     <button class="btn btn-warning mark-unpaid-btn" data-expense-id="{{ expense.id }}">
                                         <i class="fas fa-undo me-1"></i>Mark as Unpaid
                                     </button>
+                                    {% elif expense.payment_method == 'credit' %}
+                                    <span class="badge bg-info">Auto-paid (Credit Card)</span>
                                     {% endif %}
                                 </div>
                             </td>

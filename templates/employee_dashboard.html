@@ -59,6 +59,7 @@
                         <th><i class="fas fa-credit-card"></i> Payment Method</th>
                         <th><i class="fas fa-money-bill-wave"></i> Amount</th>
                         <th><i class="fas fa-check-circle"></i> Status</th>
+                        <th><i class="fas fa-hand-holding-usd"></i> Payment</th>
                         <th>Handled By</th>
                         <th>Handled at</th>
                         <th>Documents</th>
@@ -92,6 +93,20 @@
                                 <span class="badge success">Approved</span>
                             {% elif expense.status == 'pending' %}
                                 <span class="badge warning">Pending</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if expense.status == 'approved' %}
+                                {% if expense.is_paid %}
+                                    <span class="badge payment-paid">Paid</span>
+                                    {% if expense.paid_at %}
+                                        <div class="paid-date">{{ expense.paid_at.replace(tzinfo=pytz.UTC).astimezone(pytz.timezone('Asia/Jerusalem')).strftime('%d/%m/%Y') }}</div>
+                                    {% endif %}
+                                {% else %}
+                                    <span class="badge payment-pending">Pending Payment</span>
+                                {% endif %}
+                            {% else %}
+                                -
                             {% endif %}
                         </td>
                         <td>
@@ -238,6 +253,22 @@
 .badge.danger {
     background-color: #f8d7da;
     color: #721c24;
+}
+
+.badge.payment-paid {
+    background-color: #c3e6cb;
+    color: #155724;
+}
+
+.badge.payment-pending {
+    background-color: #ffeeba;
+    color: #856404;
+}
+
+.paid-date {
+    margin-top: 4px;
+    font-size: 0.75rem;
+    color: #6c757d;
 }
 
 .rejection-reason {

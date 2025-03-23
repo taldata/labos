@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 import os
 from services.document_processor import DocumentProcessor
 from werkzeug.utils import secure_filename
-from utils.email_sender import send_email, EXPENSE_SUBMITTED_TEMPLATE, EXPENSE_STATUS_UPDATE_TEMPLATE, NEW_USER_TEMPLATE, EXPENSE_REQUEST_CONFIRMATION_TEMPLATE, NEW_REQUEST_MANAGER_NOTIFICATION_TEMPLATE, EXPENSE_REQUEST_REJECTION_TEMPLATE, PASSWORD_CHANGE_CONFIRMATION_TEMPLATE
+from utils.email_sender import send_email, EXPENSE_SUBMITTED_TEMPLATE, EXPENSE_STATUS_UPDATE_TEMPLATE, NEW_USER_TEMPLATE, EXPENSE_REQUEST_CONFIRMATION_TEMPLATE, NEW_REQUEST_MANAGER_NOTIFICATION_TEMPLATE, EXPENSE_REQUEST_REJECTION_TEMPLATE, PASSWORD_CHANGE_CONFIRMATION_TEMPLATE, EXPENSE_PAYMENT_NOTIFICATION_TEMPLATE
 import logging
 import pytz
 from routes.expense import expense_bp
@@ -384,6 +384,12 @@ def submit_expense():
             payment_due_date=payment_due_date,  # Add payment due date
             status='approved' if expense_type == 'auto_approved' else 'pending'
         )
+        
+        # Auto-mark credit card payments as paid
+        if payment_method == 'credit' and expense.status == 'approved':
+            expense.is_paid = True
+            expense.paid_at = datetime.utcnow()
+            expense.paid_by_id = current_user.id
         
         # Process document if uploaded
         if 'invoice' in request.files:
@@ -1833,6 +1839,26 @@ def mark_expense_paid(expense_id):
     expense.paid_by_id = current_user.id
     expense.paid_at = datetime.utcnow()
     db.session.commit()
+    
+    # Send email notification to the submitter
+    try:
+        submitter = User.query.get(expense.user_id)
+        if submitter and submitter.email:
+            subject = "Expense Payment Notification"
+            
+            send_email(
+                subject=subject,
+                recipient=submitter.email,
+                template=EXPENSE_PAYMENT_NOTIFICATION_TEMPLATE,
+                amount=format_currency(expense.amount, expense.currency),
+                description=expense.description,
+                date=expense.date.strftime('%d/%m/%Y'),
+                payment_method=expense.payment_method,
+                expense=expense
+            )
+            logging.info(f"Payment notification sent to {submitter.email} for expense {expense.id}")
+    except Exception as e:
+        logging.error(f"Failed to send payment notification: {str(e)}")
     
     return jsonify({'success': True})
 
