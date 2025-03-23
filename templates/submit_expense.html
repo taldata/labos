@@ -146,7 +146,7 @@
                     <div class="form-group">
                         <label for="supplier_id">Selected Supplier</label>
                         <div class="supplier-select-container">
-                            <select class="form-control" id="supplier_id" name="supplier_id" required>
+                            <select class="form-control" id="supplier_id" name="supplier_id">
                                 <option value="">Choose a supplier</option>
                                 {% for supplier in suppliers %}
                                     {% if supplier.status == 'active' %}
