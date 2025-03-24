@@ -102,6 +102,7 @@
                             <th class="budget-col"><i class="fas fa-chart-pie"></i> Budget</th>
                             <th><i class="fas fa-paperclip"></i> Files</th>
                             <th class="status-col"><i class="fas fa-info-circle"></i> Status</th>
+                            <th><i class="fas fa-hand-holding-usd"></i> Payment Status</th>
                             <th class="actions-col"><i class="fas fa-cogs"></i> Actions</th>
                         </tr>
                     </thead>
@@ -250,6 +251,20 @@
                                         <span>Pending</span>
                                     {% endif %}
                                 </div>
+                            </td>
+                            <td>
+                                {% if expense.status == 'approved' %}
+                                    {% if expense.is_paid %}
+                                        <span class="badge payment-paid">Paid</span>
+                                        {% if expense.paid_at %}
+                                            <div class="paid-date">{{ expense.paid_at.strftime('%d/%m/%Y') if expense.paid_at else '' }}</div>
+                                        {% endif %}
+                                    {% else %}
+                                        <span class="badge payment-pending">Pending Payment</span>
+                                    {% endif %}
+                                {% else %}
+                                    -
+                                {% endif %}
                             </td>
                             <td class="actions">
                                 <div class="action-buttons">
@@ -929,6 +944,33 @@ textarea.form-control {
 .expenses-table th.actions-col,
 .expenses-table td.actions-col {
     white-space: nowrap;
+}
+
+/* Payment status badges */
+.badge.payment-paid {
+    background-color: #d4edda;
+    color: #155724;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    display: inline-block;
+}
+
+.badge.payment-pending {
+    background-color: #fff3cd;
+    color: #856404;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    display: inline-block;
+}
+
+.paid-date {
+    font-size: 0.7rem;
+    color: #6c757d;
+    margin-top: 3px;
 }
 </style>
 
