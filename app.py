@@ -1709,13 +1709,29 @@ def admin_delete_expense(expense_id):
 @app.route('/export_accounting_excel')
 @login_required
 def export_accounting_excel():
-    # Only get approved expenses
-    expenses = Expense.query.filter_by(status='approved').all()
+    # Get the month filter parameter (same as in accounting_dashboard)
+    month_filter = request.args.get('month', 'all')
+    
+    # Start with query for approved expenses
+    query = Expense.query.filter_by(status='approved')
+    
+    # Apply month filter if selected (based on date submitted)
+    if month_filter != 'all':
+        year, month = month_filter.split('-')
+        start_date = datetime(int(year), int(month), 1)
+        if int(month) == 12:
+            end_date = datetime(int(year) + 1, 1, 1)
+        else:
+            end_date = datetime(int(year), int(month) + 1, 1)
+        query = query.filter(Expense.date >= start_date, Expense.date < end_date)
+    
+    # Get the filtered expenses
+    expenses = query.all()
     
     data = []
     for expense in expenses:
         data.append({
-            'Date': expense.date.strftime('%d/%m/%Y'),
+            'Date Submitted': expense.date.strftime('%d/%m/%Y'),
             'Employee': expense.submitter.username,
             'Department': expense.submitter.home_department.name,
             'Description': expense.description,
@@ -1805,7 +1821,7 @@ def accounting_dashboard():
     # Start with base query for approved expenses
     query = Expense.query.filter_by(status='approved')
     
-    # Apply month filter (based on purchase_date)
+    # Apply month filter (based on date submitted instead of purchase_date)
     if month_filter != 'all':
         year, month = month_filter.split('-')
         start_date = datetime(int(year), int(month), 1)
@@ -1813,7 +1829,7 @@ def accounting_dashboard():
             end_date = datetime(int(year) + 1, 1, 1)
         else:
             end_date = datetime(int(year), int(month) + 1, 1)
-        query = query.filter(Expense.purchase_date >= start_date, Expense.purchase_date < end_date)
+        query = query.filter(Expense.date >= start_date, Expense.date < end_date)
     
     # Apply payment due date filter
     if payment_due_date_filter != 'all':
