@@ -40,10 +40,6 @@ login_manager.login_view = 'login'
 # Register blueprints
 app.register_blueprint(expense_bp, url_prefix='/api/expense')
 
-# Initialize Dash admin dashboard
-from dashboards.admin_dash import create_admin_dashboard
-admin_dash = create_admin_dashboard(app)
-
 ALLOWED_EXTENSIONS = {'pdf', 'png', 'jpg', 'jpeg', 'gif'}
 
 def allowed_file(filename):
@@ -675,7 +671,31 @@ def manager_dashboard():
                 (Subcategory.budget - db.func.coalesce(subcat_expenses.c.total_expenses, 0)).label('subcategory_remaining')
             ).order_by(Expense.date.desc()).all()
     
-    return render_template('manager_dashboard.html', expenses=pending_expenses)
+    # Budget summaries for manager's departments and categories
+    if current_user.username == 'admin':
+        managed_depts = Department.query.all()
+    else:
+        managed_depts = current_user.managed_departments
+    dept_budgets = []
+    for dept in managed_depts:
+        used = db.session.query(db.func.coalesce(dept_expenses.c.total_expenses, 0)).filter(dept_expenses.c.id == dept.id).scalar() or 0
+        dept_budgets.append({
+            'id': dept.id,
+            'name': dept.name,
+            'budget': dept.budget,
+            'used': used,
+            'remaining': dept.budget - used
+        })
+    cat_summary = db.session.query(
+        Category.id, Category.name, Category.budget,
+        db.func.coalesce(cat_expenses.c.total_expenses, 0).label('used'),
+        (Category.budget - db.func.coalesce(cat_expenses.c.total_expenses, 0)).label('remaining')
+    ).outerjoin(cat_expenses, Category.id == cat_expenses.c.id
+    ).filter(Category.department_id.in_([d.id for d in managed_depts])
+    ).all()
+    cat_budgets = [{'id': row[0], 'name': row[1], 'budget': row[2], 'used': row[3], 'remaining': row[4]} for row in cat_summary]
+    
+    return render_template('manager_dashboard.html', expenses=pending_expenses, dept_budgets=dept_budgets, cat_budgets=cat_budgets)
 
 @app.route('/manager/history')
 @login_required
@@ -1027,8 +1047,6 @@ def add_department():
         if not name or budget is None:
             return jsonify({'error': 'Missing required fields'}), 400
         
-        # Ensure we're getting the proper data types
-        name = str(name).strip()
         try:
             budget = float(budget)
         except (ValueError, TypeError):

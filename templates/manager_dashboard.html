@@ -55,6 +55,47 @@
         </div>
     </div>
 
+    <!-- Budget Summary -->
+    <div class="card budget-summary-card" style="margin-top:20px;">
+        <div class="card-header">
+            <h2><i class="fas fa-wallet"></i> Budget Summary</h2>
+        </div>
+        <div class="card-content">
+            <h3>Department Budgets</h3>
+            <table class="budget-table">
+                <thead>
+                    <tr><th>Department</th><th>Total</th><th>Used</th><th>Remaining</th></tr>
+                </thead>
+                <tbody>
+                    {% for dept in dept_budgets %}
+                    <tr>
+                        <td>{{ dept.name }}</td>
+                        <td>{{ dept.budget|format_currency }}</td>
+                        <td>{{ dept.used|format_currency }}</td>
+                        <td>{{ dept.remaining|format_currency }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            <h3>Category Budgets</h3>
+            <table class="budget-table">
+                <thead>
+                    <tr><th>Category</th><th>Total</th><th>Used</th><th>Remaining</th></tr>
+                </thead>
+                <tbody>
+                    {% for cat in cat_budgets %}
+                    <tr>
+                        <td>{{ cat.name }}</td>
+                        <td>{{ cat.budget|format_currency }}</td>
+                        <td>{{ cat.used|format_currency }}</td>
+                        <td>{{ cat.remaining|format_currency }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
     <div class="card expenses-card">
         <div class="card-header">
             <h2><i class="fas fa-clock"></i> Pending Expenses</h2>
