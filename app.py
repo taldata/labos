@@ -526,21 +526,22 @@ def submit_expense():
                 # Continue even if email fails
                 pass
 
-            # Send email notification to managers
-            try:
-                managers = User.query.filter_by(is_manager=True).all()
-                for manager in managers:
-                    send_email(
-                        subject="New Request Awaiting Your Attention",
-                        recipient=manager.email,
-                        template=NEW_REQUEST_MANAGER_NOTIFICATION_TEMPLATE,
-                        manager=manager,
-                        expense=expense
-                    )
-            except Exception as e:
-                logging.error(f"Failed to send manager notification: {str(e)}")
-                # Continue even if email fails
-                pass
+            # Send email notification to managers only if expense pending approval
+            if expense.status == 'pending':
+                try:
+                    managers = User.query.filter_by(is_manager=True).all()
+                    for manager in managers:
+                        send_email(
+                            subject="New Request Awaiting Your Attention",
+                            recipient=manager.email,
+                            template=NEW_REQUEST_MANAGER_NOTIFICATION_TEMPLATE,
+                            manager=manager,
+                            expense=expense
+                        )
+                except Exception as e:
+                    logging.error(f"Failed to send manager notification: {str(e)}")
+                    # Continue even if email fails
+                    pass
 
             flash('Expense submitted successfully!', 'success')
             return redirect(url_for('employee_dashboard'))
