@@ -320,59 +320,56 @@
                 <table class="table table-hover">
                     <thead>
                         <tr>
-                            <th><i class="fas fa-user"></i> Employee</th>
-                            <th><i class="fas fa-building"></i> Department</th>
+                            <th class="actions-column"><i class="fas fa-cogs"></i> Actions</th>
                             <th class="date-column"><i class="fas fa-calendar"></i> Date Submitted</th>
                             <th><i class="fas fa-file-alt"></i> Description</th>
-                            <th><i class="fas fa-info-circle"></i> Reason</th>
-                            <th><i class="fas fa-tag"></i> Type</th>
                             <th class="amount-column">Amount</th>
-                            <th>Handled by</th>
-                            <th class="date-column">Date Handled</th>
+                            <th>Payment Method</th>
+                            <th>Credit Card</th>
+                            <th>Payment Due Date</th>
+                            <th class="status-column">Payment Status</th>
+                            <th>Attachments</th>
+                            <th class="date-column">Date of Purchase</th>
                             <th>Supplier Name</th>
-                            <th>Email</th>
-                            <th>Phone</th>
-                            <th>Address</th>
                             <th>Tax ID</th>
                             <th>Bank Name</th>
                             <th>Account Number</th>
                             <th>Bank Branch</th>
                             <th>SWIFT</th>
                             <th>Notes</th>
+                            <th>Email</th>
+                            <th>Phone</th>
+                            <th>Address</th>
                             <th>Supplier Status</th>
-                            <th class="date-column">Date of Purchase</th>
-                            <th>Payment Method</th>
-                            <th>Credit Card</th>
-                            <th>Payment Due Date</th>
-                            <th class="status-column">Payment Status</th>
-                            <th>Attachments</th>
-                            <th class="actions-column">Actions</th>
+                            <th><i class="fas fa-user"></i> Employee</th>
+                            <th><i class="fas fa-building"></i> Department</th>
+                            <th><i class="fas fa-info-circle"></i> Reason</th>
+                            <th><i class="fas fa-tag"></i> Type</th>
+                            <th>Handled by</th>
+                            <th class="date-column">Date Handled</th>
                         </tr>
                     </thead>
                     <tbody>
                         {% for expense in expenses %}
                         <tr>
-                            <td>{{ expense.submitter.username }}</td>
-                            <td>{{ expense.submitter.home_department.name }}</td>
+                            <td class="actions-column">
+                                <div class="btn-group">
+                                    {% if not expense.is_paid and expense.payment_method != 'credit' %}
+                                    <button class="btn btn-success mark-paid-btn" data-expense-id="{{ expense.id }}">
+                                        <i class="fas fa-check me-1"></i>Mark as Paid
+                                    </button>
+                                    {% elif expense.is_paid %}
+                                    <button class="btn btn-warning mark-unpaid-btn" data-expense-id="{{ expense.id }}">
+                                        <i class="fas fa-undo me-1"></i>Mark as Unpaid
+                                    </button>
+                                    {% elif expense.payment_method == 'credit' %}
+                                    <span class="badge bg-info">Auto-paid (Credit Card)</span>
+                                    {% endif %}
+                                </div>
+                            </td>
                             <td class="date-column">{{ expense.date.strftime('%d/%m/%Y') if expense.date else '-' }}</td>
                             <td>{{ expense.description }}</td>
-                            <td>{{ expense.reason }}</td>
-                            <td>{{ expense.type | format_expense_type }}</td>
                             <td class="amount-column">{{ expense.amount | format_currency }}</td>
-                            <td>{{ expense.handler.username if expense.handler else '-' }}</td>
-                            <td class="date-column">{{ expense.handled_at.strftime('%d/%m/%Y') if expense.handled_at else '-' }}</td>
-                            <td>{{ expense.supplier.name if expense.supplier else '-' }}</td>
-                            <td>{{ expense.supplier.email if expense.supplier else '-' }}</td>
-                            <td>{{ expense.supplier.phone if expense.supplier else '-' }}</td>
-                            <td>{{ expense.supplier.address if expense.supplier else '-' }}</td>
-                            <td>{{ expense.supplier.tax_id if expense.supplier else '-' }}</td>
-                            <td>{{ expense.supplier.bank_name if expense.supplier else '-' }}</td>
-                            <td>{{ expense.supplier.bank_account_number if expense.supplier else '-' }}</td>
-                            <td>{{ expense.supplier.bank_branch if expense.supplier else '-' }}</td>
-                            <td>{{ expense.supplier.bank_swift if expense.supplier else '-' }}</td>
-                            <td>{{ expense.supplier.notes if expense.supplier else '-' }}</td>
-                            <td>{{ expense.supplier.status if expense.supplier else '-' }}</td>
-                            <td class="date-column">{{ expense.purchase_date.strftime('%d/%m/%Y') if expense.purchase_date else '-' }}</td>
                             <td>{{ expense.payment_method | title }}</td>
                             <td>{% if expense.credit_card %}{{ expense.credit_card.description }} (*{{ expense.credit_card.last_four_digits }}){% endif %}</td>
                             <td>{{ "Start of month" if expense.payment_due_date == "start_of_month" else "End of month" }}</td>
@@ -405,21 +402,24 @@
                                     {% endif %}
                                 </div>
                             </td>
-                            <td class="actions-column">
-                                <div class="btn-group">
-                                    {% if not expense.is_paid and expense.payment_method != 'credit' %}
-                                    <button class="btn btn-success mark-paid-btn" data-expense-id="{{ expense.id }}">
-                                        <i class="fas fa-check me-1"></i>Mark as Paid
-                                    </button>
-                                    {% elif expense.is_paid %}
-                                    <button class="btn btn-warning mark-unpaid-btn" data-expense-id="{{ expense.id }}">
-                                        <i class="fas fa-undo me-1"></i>Mark as Unpaid
-                                    </button>
-                                    {% elif expense.payment_method == 'credit' %}
-                                    <span class="badge bg-info">Auto-paid (Credit Card)</span>
-                                    {% endif %}
-                                </div>
-                            </td>
+                            <td class="date-column">{{ expense.purchase_date.strftime('%d/%m/%Y') if expense.purchase_date else '-' }}</td>
+                            <td>{{ expense.supplier.name if expense.supplier else '-' }}</td>
+                            <td>{{ expense.supplier.tax_id if expense.supplier else '-' }}</td>
+                            <td>{{ expense.supplier.bank_name if expense.supplier else '-' }}</td>
+                            <td>{{ expense.supplier.bank_account_number if expense.supplier else '-' }}</td>
+                            <td>{{ expense.supplier.bank_branch if expense.supplier else '-' }}</td>
+                            <td>{{ expense.supplier.bank_swift if expense.supplier else '-' }}</td>
+                            <td>{{ expense.supplier.notes if expense.supplier else '-' }}</td>
+                            <td>{{ expense.supplier.email if expense.supplier else '-' }}</td>
+                            <td>{{ expense.supplier.phone if expense.supplier else '-' }}</td>
+                            <td>{{ expense.supplier.address if expense.supplier else '-' }}</td>
+                            <td>{{ expense.supplier.status if expense.supplier else '-' }}</td>
+                            <td>{{ expense.submitter.username }}</td>
+                            <td>{{ expense.submitter.home_department.name }}</td>
+                            <td>{{ expense.reason }}</td>
+                            <td>{{ expense.type | format_expense_type }}</td>
+                            <td>{{ expense.handler.username if expense.handler else '-' }}</td>
+                            <td class="date-column">{{ expense.handled_at.strftime('%d/%m/%Y') if expense.handled_at else '-' }}</td>
                         </tr>
                         {% endfor %}
                     </tbody>
