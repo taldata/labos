@@ -415,7 +415,7 @@ NEW_REQUEST_MANAGER_NOTIFICATION_TEMPLATE = EMAIL_STYLE + """
         </div>
         {% endif %}
 
-        <a href="https://budget-management-app-noxf.onrender.com/" class="button">Review Request</a>
+        <a href="https://budget-management-app-noxf.onrender.com/" class="button" style="color:#2b6cb0; text-decoration:underline;">Review Request</a>
     </div>
     <div class="footer">
         <p>This is an automated message from your Expense Management System</p>
