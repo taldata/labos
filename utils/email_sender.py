@@ -24,7 +24,9 @@ SENDGRID_API_KEY = os.getenv('SENDGRID_API_KEY')
 if not SENDGRID_API_KEY:
     raise ValueError("SendGrid API key not found. Please set the SENDGRID_API_KEY environment variable.")
 
-FROM_EMAIL = os.getenv('SENDGRID_FROM_EMAIL', 'sabag.tal@gmail.com')  # Replace with your verified sender email
+# Email sender information
+FROM_EMAIL_ADDRESS = os.getenv('SENDGRID_FROM_EMAIL', 'sabag.tal@gmail.com')  # Verified sender email
+FROM_NAME = 'LabOS- expenses system'  # Friendly sender name
 
 def send_email_sendgrid(to_email, subject, html_content):
     """Send email using SendGrid"""
@@ -35,9 +37,10 @@ def send_email_sendgrid(to_email, subject, html_content):
         # Log attempt
         logger.info(f"Attempting to send email to {to_email}")
         
-        # Create the email message
+        # Create the email message with sender name
+        from_email = Email(FROM_EMAIL_ADDRESS, name=FROM_NAME)
         message = Mail(
-            from_email=FROM_EMAIL,
+            from_email=from_email,
             to_emails=to_email,
             subject=subject,
             html_content=html_content
