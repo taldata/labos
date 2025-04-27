@@ -99,8 +99,8 @@ EMAIL_STYLE = """
         display: inline-block;
         padding: 12px 24px;
         background: linear-gradient(135deg, #4299e1, #2b6cb0);
-        color: white;
-        text-decoration: none;
+        color: white !important; /* Force white text on all buttons */
+        text-decoration: none !important; /* Prevent underlines */
         border-radius: 6px;
         margin-top: 20px;
         font-weight: 600;
@@ -415,7 +415,7 @@ NEW_REQUEST_MANAGER_NOTIFICATION_TEMPLATE = EMAIL_STYLE + """
         </div>
         {% endif %}
 
-        <a href="https://budget-management-app-noxf.onrender.com/" class="button" style="color:#2b6cb0; text-decoration:underline;">Review Request</a>
+        <a href="https://budget-management-app-noxf.onrender.com/" class="button">Review Request</a>
     </div>
     <div class="footer">
         <p>This is an automated message from your Expense Management System</p>
