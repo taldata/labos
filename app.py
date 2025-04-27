@@ -1909,8 +1909,12 @@ def mark_expense_paid(expense_id):
     try:
         submitter = User.query.get(expense.user_id)
         if submitter and submitter.email:
-            subject = "Expense Payment Notification"
+            subject = "Your Expense Has Been Paid"
             
+            # Prepare payment method display text
+            payment_method_display = "Credit Card" if expense.payment_method == "credit" else "Bank Transfer"
+            
+            # Send the notification email
             send_email(
                 subject=subject,
                 recipient=submitter.email,
@@ -1918,12 +1922,17 @@ def mark_expense_paid(expense_id):
                 amount=format_currency(expense.amount, expense.currency),
                 description=expense.description,
                 date=expense.date.strftime('%d/%m/%Y'),
-                payment_method=expense.payment_method,
-                expense=expense
+                payment_method=payment_method_display,
+                expense=expense,
+                paid_by=current_user.username,
+                paid_date=datetime.now().strftime('%d/%m/%Y')
             )
             logging.info(f"Payment notification sent to {submitter.email} for expense {expense.id}")
     except Exception as e:
+        # Log the error but don't prevent the expense from being marked as paid
         logging.error(f"Failed to send payment notification: {str(e)}")
+        # Still save the payment status even if email fails
+        db.session.commit()
     
     return jsonify({'success': True})
 

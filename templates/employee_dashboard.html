@@ -98,9 +98,14 @@
                         <td>
                             {% if expense.status == 'approved' %}
                                 {% if expense.is_paid %}
-                                    <span class="badge payment-paid">Paid</span>
+                                    <span class="badge payment-paid"><i class="fas fa-check-circle"></i> PAID</span>
                                     {% if expense.paid_at %}
-                                        <div class="paid-date">{{ expense.paid_at.replace(tzinfo=pytz.UTC).astimezone(pytz.timezone('Asia/Jerusalem')).strftime('%d/%m/%Y') }}</div>
+                                        <div class="paid-date">
+                                            <strong>Date:</strong> {{ expense.paid_at.replace(tzinfo=pytz.UTC).astimezone(pytz.timezone('Asia/Jerusalem')).strftime('%d/%m/%Y') }}
+                                            {% if expense.paid_by %}
+                                                <br><strong>By:</strong> {{ expense.paid_by.username }}
+                                            {% endif %}
+                                        </div>
                                     {% endif %}
                                 {% else %}
                                     <span class="badge payment-pending">Pending Payment</span>
