@@ -72,16 +72,26 @@
                             {% endfor %}
                         </select>
                         
-                        <!-- Custom styled dropdown -->
+                        <!-- Custom styled dropdown with search -->
                         <div class="custom-select-wrapper">
                             <div class="custom-select form-control" id="custom-subcategory-select">
                                 <span class="custom-select-trigger">Select a category</span>
                                 <div class="custom-options">
-                                    {% for subcategory in subcategories %}
-                                    <span class="custom-option" data-value="{{ subcategory.id }}">
-                                        {{ subcategory.category.department.name }} > {{ subcategory.category.name }} > <strong>{{ subcategory.name }}</strong>
-                                    </span>
-                                    {% endfor %}
+                                    <div class="category-search-container">
+                                        <input type="text" class="category-search" id="category-search" placeholder="Search categories..." autocomplete="off">
+                                        <i class="fas fa-search search-icon"></i>
+                                    </div>
+                                    <div class="options-container">
+                                        {% for subcategory in subcategories %}
+                                        <span class="custom-option" data-value="{{ subcategory.id }}" 
+                                              data-dept="{{ subcategory.category.department.name }}" 
+                                              data-cat="{{ subcategory.category.name }}" 
+                                              data-subcat="{{ subcategory.name }}">
+                                            {{ subcategory.category.department.name }} > {{ subcategory.category.name }} > <strong>{{ subcategory.name }}</strong>
+                                        </span>
+                                        {% endfor %}
+                                    </div>
+                                    <div class="no-results" style="display:none;">No matching categories found</div>
                                 </div>
                             </div>
                         </div>
@@ -301,20 +311,63 @@
 
 .custom-options {
     position: absolute;
-    display: none;
+    display: block;
     top: 100%;
     left: 0;
     right: 0;
+    border: 1px solid #ddd;
+    border-top: 0;
+    background: #fff;
+    transition: all 0.2s ease-in-out;
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    z-index: 2;
     max-height: 300px;
     overflow-y: auto;
-    z-index: 10;
-    border: 1px solid #ddd;
-    background: white;
     box-shadow: 0 2px 10px rgba(0,0,0,0.1);
 }
 
+.category-search-container {
+    padding: 10px;
+    position: sticky;
+    top: 0;
+    background: #fff;
+    z-index: 3;
+    border-bottom: 1px solid #eee;
+}
+
+.category-search {
+    width: 100%;
+    padding: 8px 30px 8px 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+.search-icon {
+    position: absolute;
+    right: 20px;
+    top: 18px;
+    color: #888;
+}
+
+.options-container {
+    max-height: 250px;
+    overflow-y: auto;
+}
+
+.no-results {
+    padding: 12px;
+    text-align: center;
+    color: #666;
+    font-style: italic;
+}
+
 .custom-options.open {
-    display: block;
+    opacity: 1;
+    visibility: visible;
+    pointer-events: all;
 }
 
 .custom-option {
@@ -685,26 +738,86 @@ document.getElementById('currency').addEventListener('change', function() {
     }
 });
 
-// Custom select implementation
+// Custom select implementation with search functionality
 document.addEventListener('DOMContentLoaded', function() {
     const customSelect = document.getElementById('custom-subcategory-select');
     const selectTrigger = customSelect.querySelector('.custom-select-trigger');
     const options = customSelect.querySelector('.custom-options');
     const originalSelect = document.getElementById('subcategory');
+    const searchInput = document.getElementById('category-search');
+    const optionsContainer = document.querySelector('.options-container');
+    const noResultsElement = document.querySelector('.no-results');
+    const allOptions = document.querySelectorAll('.custom-option');
     
     // Toggle dropdown
     customSelect.addEventListener('click', function(e) {
+        // Don't close dropdown when clicking on search input
+        if (e.target === searchInput || e.target.closest('.category-search-container')) {
+            e.stopPropagation();
+            return;
+        }
+        
         e.stopPropagation();
         options.classList.toggle('open');
+        
+        // Focus search input when opening dropdown
+        if (options.classList.contains('open')) {
+            setTimeout(() => {
+                searchInput.focus();
+            }, 100);
+        }
     });
     
     // Close dropdown when clicking outside
     document.addEventListener('click', function() {
         options.classList.remove('open');
+        // Clear search when closing
+        if (searchInput) {
+            searchInput.value = '';
+            filterOptions('');
+        }
     });
     
+    // Filter options when typing in search box
+    if (searchInput) {
+        searchInput.addEventListener('click', function(e) {
+            e.stopPropagation(); // Prevent dropdown from closing
+        });
+        
+        searchInput.addEventListener('keyup', function() {
+            const searchTerm = this.value.toLowerCase();
+            filterOptions(searchTerm);
+        });
+    }
+    
+    // Function to filter options based on search term
+    function filterOptions(searchTerm) {
+        let visibleCount = 0;
+        
+        allOptions.forEach(option => {
+            const dept = option.getAttribute('data-dept').toLowerCase();
+            const cat = option.getAttribute('data-cat').toLowerCase();
+            const subcat = option.getAttribute('data-subcat').toLowerCase();
+            const fullText = `${dept} ${cat} ${subcat}`.toLowerCase();
+            
+            if (fullText.includes(searchTerm)) {
+                option.style.display = '';
+                visibleCount++;
+            } else {
+                option.style.display = 'none';
+            }
+        });
+        
+        // Show/hide no results message
+        if (visibleCount === 0) {
+            noResultsElement.style.display = 'block';
+        } else {
+            noResultsElement.style.display = 'none';
+        }
+    }
+    
     // Select option
-    document.querySelectorAll('.custom-option').forEach(option => {
+    allOptions.forEach(option => {
         option.addEventListener('click', function() {
             const value = this.getAttribute('data-value');
             originalSelect.value = value;
@@ -713,6 +826,12 @@ document.addEventListener('DOMContentLoaded', function() {
             // Trigger change event on original select
             const event = new Event('change', { bubbles: true });
             originalSelect.dispatchEvent(event);
+            
+            // Clear search
+            if (searchInput) {
+                searchInput.value = '';
+                filterOptions('');
+            }
         });
     });
 });
