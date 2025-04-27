@@ -381,11 +381,16 @@ def submit_expense():
             status='approved' if expense_type == 'auto_approved' else 'pending'
         )
         
+        # Set payment_status to 'Pending attention' for 'Transfer' payment method
+        if payment_method == 'transfer':
+            expense.payment_status = 'pending_attention'
+        
         # Auto-mark credit card payments as paid
         if payment_method == 'credit' and expense.status == 'approved':
             expense.is_paid = True
             expense.paid_at = datetime.utcnow()
             expense.paid_by_id = current_user.id
+            expense.payment_status = 'paid'
         
         # Process document if uploaded
         file_upload_start_time = datetime.now()
@@ -1295,7 +1300,7 @@ def edit_expense(expense_id):
             credit_card_id = request.form.get('credit_card_id')
             currency = request.form.get('currency', 'ILS')  # Get currency from form
             payment_due_date = request.form.get('payment_due_date', 'end_of_month')  # Get payment due date
-            
+
             # Convert purchase_date string to datetime if provided
             purchase_date = None
             if purchase_date_str:
@@ -1897,6 +1902,7 @@ def mark_expense_paid(expense_id):
     expense.is_paid = True
     expense.paid_by_id = current_user.id
     expense.paid_at = datetime.utcnow()
+    expense.payment_status = 'paid'
     db.session.commit()
     
     # Send email notification to the submitter
@@ -1934,8 +1940,23 @@ def mark_expense_unpaid(expense_id):
     expense.is_paid = False
     expense.paid_by_id = None
     expense.paid_at = None
+    expense.payment_status = 'pending_payment'
     db.session.commit()
     
+    return jsonify({'success': True})
+
+@app.route('/mark_expense_pending_payment/<int:expense_id>', methods=['POST'])
+@login_required
+def mark_expense_pending_payment(expense_id):
+    if not current_user.is_accounting:
+        return jsonify({'error': 'Access denied'}), 403
+    
+    expense = Expense.query.get_or_404(expense_id)
+    if expense.is_paid:
+        return jsonify({'error': 'Already paid'}), 400
+    
+    expense.payment_status = 'pending_payment'
+    db.session.commit()
     return jsonify({'success': True})
 
 @app.route('/manage_suppliers')

@@ -147,6 +147,8 @@ class Expense(db.Model):
     payment_method = db.Column(db.String(50), default='credit')
     credit_card_id = db.Column(db.Integer, db.ForeignKey('credit_card.id'), nullable=True)
     payment_due_date = db.Column(db.String(20), default='end_of_month')  # 'start_of_month' or 'end_of_month'
+    # Payment workflow status: waiting accounting review, then pending payment, then paid
+    payment_status = db.Column(db.String(20), default='pending_attention')  # pending_attention, pending_payment, paid
     paid_by = db.relationship('User', 
                             foreign_keys=[paid_by_id],
                             backref=db.backref('paid_expenses', lazy='dynamic'))

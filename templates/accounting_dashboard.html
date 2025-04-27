@@ -354,16 +354,26 @@
                         <tr>
                             <td class="actions-column">
                                 <div class="btn-group">
-                                    {% if not expense.is_paid and expense.payment_method != 'credit' %}
+                                    {% if expense.payment_method == 'credit' %}
+                                    <span class="badge bg-info">Auto-paid (Credit Card)</span>
+                                    {% elif expense.payment_status == 'pending_attention' %}
+                                    <button class="btn btn-primary mark-pending-payment-btn" data-expense-id="{{ expense.id }}">
+                                        <i class="fas fa-hourglass-start me-1"></i>Pending Payment
+                                    </button>
                                     <button class="btn btn-success mark-paid-btn" data-expense-id="{{ expense.id }}">
                                         <i class="fas fa-check me-1"></i>Mark as Paid
                                     </button>
-                                    {% elif expense.is_paid %}
+                                    {% elif expense.payment_status == 'pending_payment' %}
+                                    <button class="btn btn-success mark-paid-btn" data-expense-id="{{ expense.id }}">
+                                        <i class="fas fa-check me-1"></i>Mark as Paid
+                                    </button>
                                     <button class="btn btn-warning mark-unpaid-btn" data-expense-id="{{ expense.id }}">
                                         <i class="fas fa-undo me-1"></i>Mark as Unpaid
                                     </button>
-                                    {% elif expense.payment_method == 'credit' %}
-                                    <span class="badge bg-info">Auto-paid (Credit Card)</span>
+                                    {% elif expense.payment_status == 'paid' %}
+                                    <button class="btn btn-warning mark-unpaid-btn" data-expense-id="{{ expense.id }}">
+                                        <i class="fas fa-undo me-1"></i>Mark as Unpaid
+                                    </button>
                                     {% endif %}
                                 </div>
                             </td>
@@ -374,13 +384,19 @@
                             <td>{% if expense.credit_card %}{{ expense.credit_card.description }} (*{{ expense.credit_card.last_four_digits }}){% endif %}</td>
                             <td>{{ "Start of month" if expense.payment_due_date == "start_of_month" else "End of month" }}</td>
                             <td class="status-column">
-                                {% if expense.is_paid %}
+                                {% if expense.payment_status == 'pending_attention' %}
+                                <span class="badge bg-warning">Pending Attention</span>
+                                {% elif expense.payment_status == 'pending_payment' %}
+                                <span class="badge bg-warning">Pending Payment</span>
+                                {% elif expense.payment_status == 'paid' %}
+                                    {% if expense.payment_method == 'credit' %}
+                                    <span class="badge bg-info">Auto-paid (Credit Card)</span>
+                                    {% else %}
                                     <div class="d-flex flex-column align-items-start">
                                         <span class="badge bg-success">Paid</span>
                                         <small class="text-muted mt-1">by {{ expense.paid_by.username }}<br>{{ expense.paid_at.strftime('%d/%m/%Y') }}</small>
                                     </div>
-                                {% else %}
-                                    <span class="badge bg-warning">Pending Payment</span>
+                                    {% endif %}
                                 {% endif %}
                             </td>
                             <td>
@@ -501,6 +517,35 @@ document.addEventListener('DOMContentLoaded', function() {
                 alert(error.message);
                 button.disabled = false;
                 button.innerHTML = '<i class="fas fa-undo me-1"></i>Mark as Unpaid';
+            }
+        });
+    });
+    
+    // Handle mark as pending payment buttons
+    document.querySelectorAll('.mark-pending-payment-btn').forEach(button => {
+        button.addEventListener('click', async function() {
+            const expenseId = this.dataset.expenseId;
+            try {
+                button.disabled = true;
+                button.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Processing...';
+                
+                const response = await fetch(`/mark_expense_pending_payment/${expenseId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (!response.ok) {
+                    const data = await response.json();
+                    throw new Error(data.error || 'Failed to mark as pending payment');
+                }
+                
+                location.reload();
+            } catch (error) {
+                alert(error.message);
+                button.disabled = false;
+                button.innerHTML = '<i class="fas fa-hourglass-start me-1"></i>Pending Payment';
             }
         });
     });
