@@ -322,6 +322,7 @@
                         <tr>
                             <th class="actions-column"><i class="fas fa-cogs"></i> Actions</th>
                             <th class="date-column"><i class="fas fa-calendar"></i> Date Submitted</th>
+                            <th><i class="fas fa-building"></i> Supplier Name</th>
                             <th><i class="fas fa-file-alt"></i> Description</th>
                             <th class="amount-column">Amount</th>
                             <th>Payment Method</th>
@@ -330,7 +331,7 @@
                             <th class="status-column">Payment Status</th>
                             <th>Attachments</th>
                             <th class="date-column">Date of Purchase</th>
-                            <th>Supplier Name</th>
+
                             <th>Tax ID</th>
                             <th>Bank Name</th>
                             <th>Account Number</th>
@@ -378,6 +379,7 @@
                                 </div>
                             </td>
                             <td class="date-column">{{ expense.date.strftime('%d/%m/%Y') if expense.date else '-' }}</td>
+                            <td>{{ expense.supplier.name if expense.supplier else '-' }}</td>
                             <td>{{ expense.description }}</td>
                             <td class="amount-column">{{ expense.amount | format_currency }}</td>
                             <td>{{ expense.payment_method | title }}</td>
@@ -419,7 +421,7 @@
                                 </div>
                             </td>
                             <td class="date-column">{{ expense.purchase_date.strftime('%d/%m/%Y') if expense.purchase_date else '-' }}</td>
-                            <td>{{ expense.supplier.name if expense.supplier else '-' }}</td>
+
                             <td>{{ expense.supplier.tax_id if expense.supplier else '-' }}</td>
                             <td>{{ expense.supplier.bank_name if expense.supplier else '-' }}</td>
                             <td>{{ expense.supplier.bank_account_number if expense.supplier else '-' }}</td>
