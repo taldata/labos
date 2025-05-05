@@ -1,5 +1,6 @@
 from flask import Flask, render_template, request, redirect, url_for, flash, send_file, jsonify, session
 from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy.sql import func
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 from datetime import datetime, timedelta
 import os
@@ -1539,7 +1540,296 @@ def change_password():
 @login_required
 def logout():
     logout_user()
+    session.clear()  # Clear the session when logging out
+    flash('You have been logged out.', 'info')
     return redirect(url_for('login'))
+    
+@app.route('/admin/dashboard')
+@login_required
+def admin_dashboard():
+    if not current_user.is_admin:
+        flash('You do not have permission to access the admin dashboard.', 'danger')
+        return redirect(url_for('index'))
+    
+    # Get filter parameters
+    selected_department = request.args.get('department', 'all')
+    selected_category = request.args.get('category', 'all')
+    selected_subcategory = request.args.get('subcategory', 'all')
+    selected_time_period = request.args.get('time_period', 'this_month')
+    
+    # Initialize date range based on selected time period
+    today = datetime.now()
+    start_date = None
+    end_date = today
+    
+    if selected_time_period == 'this_month':
+        start_date = datetime(today.year, today.month, 1)
+    elif selected_time_period == 'last_month':
+        if today.month == 1:
+            start_date = datetime(today.year - 1, 12, 1)
+            end_date = datetime(today.year, 1, 1) - timedelta(days=1)
+        else:
+            start_date = datetime(today.year, today.month - 1, 1)
+            end_date = datetime(today.year, today.month, 1) - timedelta(days=1)
+    elif selected_time_period == 'this_quarter':
+        current_quarter = (today.month - 1) // 3 + 1
+        start_date = datetime(today.year, (current_quarter - 1) * 3 + 1, 1)
+    elif selected_time_period == 'this_year':
+        start_date = datetime(today.year, 1, 1)
+    
+    # Base query for expenses
+    expense_query = Expense.query.filter(
+        Expense.status == 'approved',
+        Expense.date >= start_date,
+        Expense.date <= end_date
+    )
+    
+    # Apply department filter if specified
+    if selected_department != 'all':
+        expense_query = expense_query.join(User, Expense.user_id == User.id).filter(
+            User.department_id == selected_department
+        )
+    
+    # Apply category filter if specified
+    if selected_category != 'all':
+        expense_query = expense_query.join(Subcategory, Expense.subcategory_id == Subcategory.id).filter(
+            Subcategory.category_id == selected_category
+        )
+    
+    # Apply subcategory filter if specified
+    if selected_subcategory != 'all':
+        expense_query = expense_query.filter(Expense.subcategory_id == selected_subcategory)
+    
+    # Get all departments for filters
+    departments = Department.query.all()
+    
+    # Get categories based on department selection
+    categories = []
+    if selected_department != 'all':
+        categories = Category.query.filter_by(department_id=selected_department).all()
+    
+    # Get subcategories based on category selection
+    subcategories = []
+    if selected_category != 'all':
+        subcategories = Subcategory.query.filter_by(category_id=selected_category).all()
+    
+    # Calculate total budget and spent amounts
+    if selected_department != 'all':
+        department = Department.query.get(selected_department)
+        total_budget = department.budget if department else 0
+    else:
+        total_budget = db.session.query(func.sum(Department.budget)).scalar() or 0
+    
+    # Calculate total spent in the period
+    total_spent = db.session.query(func.sum(Expense.amount)).filter(
+        Expense.status == 'approved',
+        Expense.date >= start_date,
+        Expense.date <= end_date
+    )
+    
+    if selected_department != 'all':
+        total_spent = total_spent.join(User, Expense.user_id == User.id).filter(
+            User.department_id == selected_department
+        )
+    
+    if selected_category != 'all':
+        total_spent = total_spent.join(Subcategory, Expense.subcategory_id == Subcategory.id).filter(
+            Subcategory.category_id == selected_category
+        )
+    
+    if selected_subcategory != 'all':
+        total_spent = total_spent.filter(Expense.subcategory_id == selected_subcategory)
+    
+    total_spent = total_spent.scalar() or 0
+    
+    # Calculate remaining budget and usage percentage
+    total_remaining = total_budget - total_spent
+    usage_percentage = round((total_spent / total_budget * 100) if total_budget > 0 else 0, 2)
+    
+    # Department budget data for table and chart
+    department_budgets = []
+    department_names = []
+    department_budgets_data = []
+    department_spent_data = []
+    
+    for dept in departments:
+        # Calculate spent amount for the department
+        dept_spent = db.session.query(func.sum(Expense.amount)).join(
+            User, Expense.user_id == User.id
+        ).filter(
+            User.department_id == dept.id,
+            Expense.status == 'approved',
+            Expense.date >= start_date,
+            Expense.date <= end_date
+        ).scalar() or 0
+        
+        dept_remaining = dept.budget - dept_spent
+        dept_usage = round((dept_spent / dept.budget * 100) if dept.budget > 0 else 0, 2)
+        
+        department_budgets.append({
+            'name': dept.name,
+            'budget': dept.budget,
+            'spent': dept_spent,
+            'remaining': dept_remaining,
+            'usage': dept_usage
+        })
+        
+        department_names.append(dept.name)
+        department_budgets_data.append(float(dept.budget))
+        department_spent_data.append(float(dept_spent))
+    
+    # Category distribution data for pie chart
+    category_names = []
+    category_spent_data = []
+    
+    # Query to get spending by category
+    category_spending = db.session.query(
+        Category.name,
+        func.sum(Expense.amount).label('total')
+    ).join(
+        Subcategory, Category.id == Subcategory.category_id
+    ).join(
+        Expense, Subcategory.id == Expense.subcategory_id
+    ).filter(
+        Expense.status == 'approved',
+        Expense.date >= start_date,
+        Expense.date <= end_date
+    )
+    
+    if selected_department != 'all':
+        category_spending = category_spending.join(
+            User, Expense.user_id == User.id
+        ).filter(User.department_id == selected_department)
+    
+    category_spending = category_spending.group_by(Category.name).all()
+    
+    for cat_name, total in category_spending:
+        category_names.append(cat_name)
+        category_spent_data.append(float(total))
+    
+    # Subcategory distribution data for doughnut chart
+    subcategory_names = []
+    subcategory_spent_data = []
+    
+    # Query to get spending by subcategory
+    subcategory_spending = db.session.query(
+        Subcategory.name,
+        func.sum(Expense.amount).label('total')
+    ).join(
+        Expense, Subcategory.id == Expense.subcategory_id
+    ).filter(
+        Expense.status == 'approved',
+        Expense.date >= start_date,
+        Expense.date <= end_date
+    )
+    
+    if selected_department != 'all':
+        subcategory_spending = subcategory_spending.join(
+            User, Expense.user_id == User.id
+        ).filter(User.department_id == selected_department)
+    
+    if selected_category != 'all':
+        subcategory_spending = subcategory_spending.filter(Subcategory.category_id == selected_category)
+    
+    subcategory_spending = subcategory_spending.group_by(Subcategory.name).all()
+    
+    for subcat_name, total in subcategory_spending:
+        subcategory_names.append(subcat_name)
+        subcategory_spent_data.append(float(total))
+    
+    # Expense trend data for line chart
+    expense_trend_labels = []
+    expense_trend_data = []
+    
+    # Determine the number of months to include in the trend
+    if selected_time_period == 'this_year':
+        months_to_include = 12
+    else:
+        months_to_include = 6  # Default to last 6 months for other time periods
+    
+    # Generate the trend data for the last N months
+    for i in range(months_to_include - 1, -1, -1):
+        month_date = today - relativedelta(months=i)
+        month_start = datetime(month_date.year, month_date.month, 1)
+        if month_date.month == 12:
+            month_end = datetime(month_date.year + 1, 1, 1) - timedelta(days=1)
+        else:
+            month_end = datetime(month_date.year, month_date.month + 1, 1) - timedelta(days=1)
+        
+        # Format the month label
+        month_label = month_date.strftime('%b %Y')
+        expense_trend_labels.append(month_label)
+        
+        # Calculate total expenses for the month
+        month_expenses = db.session.query(func.sum(Expense.amount)).filter(
+            Expense.status == 'approved',
+            Expense.date >= month_start,
+            Expense.date <= month_end
+        )
+        
+        if selected_department != 'all':
+            month_expenses = month_expenses.join(
+                User, Expense.user_id == User.id
+            ).filter(User.department_id == selected_department)
+        
+        if selected_category != 'all':
+            month_expenses = month_expenses.join(
+                Subcategory, Expense.subcategory_id == Subcategory.id
+            ).filter(Subcategory.category_id == selected_category)
+        
+        if selected_subcategory != 'all':
+            month_expenses = month_expenses.filter(Expense.subcategory_id == selected_subcategory)
+        
+        month_total = month_expenses.scalar() or 0
+        expense_trend_data.append(float(month_total))
+    
+    return render_template(
+        'admin_dashboard.html',
+        departments=departments,
+        categories=categories,
+        subcategories=subcategories,
+        selected_department=selected_department,
+        selected_category=selected_category,
+        selected_subcategory=selected_subcategory,
+        selected_time_period=selected_time_period,
+        total_budget=total_budget,
+        total_spent=total_spent,
+        total_remaining=total_remaining,
+        usage_percentage=usage_percentage,
+        department_budgets=department_budgets,
+        department_names=department_names,
+        department_budgets_data=department_budgets_data,
+        department_spent_data=department_spent_data,
+        category_names=category_names,
+        category_spent_data=category_spent_data,
+        subcategory_names=subcategory_names,
+        subcategory_spent_data=subcategory_spent_data,
+        expense_trend_labels=expense_trend_labels,
+        expense_trend_data=expense_trend_data
+    )
+
+# API endpoints for dynamic filtering
+@app.route('/api/categories')
+@login_required
+def get_categories():
+    department_id = request.args.get('department_id')
+    if not department_id:
+        return jsonify({'error': 'Missing department_id parameter'}), 400
+    
+    categories = Category.query.filter_by(department_id=department_id).all()
+    result = {'categories': [{'id': cat.id, 'name': cat.name} for cat in categories]}
+    return jsonify(result)
+
+@app.route('/api/subcategories')
+@login_required
+def get_subcategories():
+    category_id = request.args.get('category_id')
+    if not category_id:
+        return jsonify({'error': 'Missing category_id parameter'}), 400
+    
+    subcategories = Subcategory.query.filter_by(category_id=category_id).all()
+    result = {'subcategories': [{'id': subcat.id, 'name': subcat.name} for subcat in subcategories]}
+    return jsonify(result)
 
 @app.route('/admin/users')
 @login_required
