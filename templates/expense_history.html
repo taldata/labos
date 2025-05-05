@@ -93,6 +93,7 @@
                             <th><i class="fas fa-credit-card text-primary"></i> Payment</th>
                             <th class="col-amount"><i class="fas fa-shekel-sign text-primary"></i> Amount</th>
                             <th><i class="fas fa-info-circle text-primary"></i> Status</th>
+                            <th><i class="fas fa-money-bill-wave text-primary"></i> Payment Status</th>
                             <th class="col-actions"><i class="fas fa-user-check text-primary"></i> Handled By</th>
                             <th class="col-actions"><i class="fas fa-clock text-primary"></i> Handled At</th>
                             <th><i class="fas fa-paperclip text-primary"></i> Files</th>
@@ -128,6 +129,22 @@
                                     <span class="badge success">Approved</span>
                                 {% elif expense.status == 'pending' %}
                                     <span class="badge warning">Pending</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if expense.payment_status == 'paid' %}
+                                    <span class="badge success">PAID</span>
+                                    {% if expense.paid_at %}
+                                        <div class="small text-muted">
+                                            {{ expense.paid_at.strftime('%d/%m/%Y') }}
+                                        </div>
+                                    {% endif %}
+                                {% elif expense.payment_status == 'pending_payment' %}
+                                    <span class="badge warning">Payment Pending</span>
+                                {% elif expense.payment_status == 'pending_attention' and expense.status == 'approved' %}
+                                    <span class="badge warning">Processing</span>
+                                {% else %}
+                                    <span class="text-muted">-</span>
                                 {% endif %}
                             </td>
                             <td class="col-actions">{{ expense.handler.username if expense.handler and expense.status != 'pending' else '-' }}</td>
@@ -181,7 +198,7 @@
                         {% endfor %}
                         {% if not expenses %}
                         <tr>
-                            <td colspan="16" class="text-center py-5 text-muted">
+                            <td colspan="17" class="text-center py-5 text-muted">
                                 <i class="fas fa-inbox fa-2x mb-3 d-block"></i>
                                 No expenses found
                             </td>
