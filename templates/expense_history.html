@@ -68,6 +68,62 @@
                                 {% endfor %}
                             </select>
                         </div>
+                        
+                        {% if current_user.is_admin %}
+                        <!-- New admin filters -->
+                        <div class="filter-item">
+                            <label for="adding_month">
+                                <i class="fas fa-calendar-plus filter-icon"></i>Month Added
+                            </label>
+                            <select name="adding_month" id="adding_month" class="form-select" onchange="this.form.submit()">
+                                <option value="all" {% if selected_adding_month == 'all' %}selected{% endif %}>All Months</option>
+                                {% for month_value, month_display in months %}
+                                <option value="{{ month_value }}" {% if selected_adding_month == month_value %}selected{% endif %}>
+                                    {{ month_display }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="filter-item">
+                            <label for="purchase_month">
+                                <i class="fas fa-shopping-cart filter-icon"></i>Purchase Month
+                            </label>
+                            <select name="purchase_month" id="purchase_month" class="form-select" onchange="this.form.submit()">
+                                <option value="all" {% if selected_purchase_month == 'all' %}selected{% endif %}>All Months</option>
+                                {% for month_value, month_display in months %}
+                                <option value="{{ month_value }}" {% if selected_purchase_month == month_value %}selected{% endif %}>
+                                    {{ month_display }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="filter-item">
+                            <label for="supplier">
+                                <i class="fas fa-store filter-icon"></i>Supplier Name
+                            </label>
+                            <select name="supplier" id="supplier" class="form-select" onchange="this.form.submit()">
+                                <option value="all" {% if selected_supplier == 'all' %}selected{% endif %}>All Suppliers</option>
+                                {% for supplier in suppliers %}
+                                <option value="{{ supplier.id }}" {% if selected_supplier|string == supplier.id|string %}selected{% endif %}>
+                                    {{ supplier.name }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="filter-item">
+                            <label for="payment_method">
+                                <i class="fas fa-money-check-alt filter-icon"></i>Payment Type
+                            </label>
+                            <select name="payment_method" id="payment_method" class="form-select" onchange="this.form.submit()">
+                                <option value="all" {% if selected_payment_method == 'all' %}selected{% endif %}>All Payment Types</option>
+                                <option value="credit" {% if selected_payment_method == 'credit' %}selected{% endif %}>Credit Card</option>
+                                <option value="transfer" {% if selected_payment_method == 'transfer' %}selected{% endif %}>Bank Transfer</option>
+                            </select>
+                        </div>
+                        {% endif %}
                     </form>
                 </div>
             </div>

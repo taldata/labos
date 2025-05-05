@@ -728,20 +728,30 @@ def expense_history():
     if current_user.is_admin:
         employees = User.query.all()  # Show all employees for admin
         departments = Department.query.all()
+        # Get all suppliers for admin filters
+        suppliers = Supplier.query.order_by(Supplier.name).all()
     elif current_user.is_manager:
         # Only show employees from manager's departments
         managed_dept_ids = [dept.id for dept in current_user.managed_departments]
         managed_dept_ids.append(current_user.department_id)
         employees = User.query.filter(User.department_id.in_(managed_dept_ids)).all()
         departments = [dept for dept in Department.query.filter(Department.id.in_(managed_dept_ids)).all()]
+        suppliers = []
     else:
         employees = []
         departments = []
+        suppliers = []
     
     # Get filter parameters
     status = request.args.get('status', 'all')
     employee = request.args.get('employee', 'all')
     department = request.args.get('department', 'all')
+    
+    # New filter parameters for admin
+    adding_month = request.args.get('adding_month', 'all')
+    purchase_month = request.args.get('purchase_month', 'all')
+    supplier_id = request.args.get('supplier', 'all')
+    payment_method = request.args.get('payment_method', 'all')
     
     # Apply filters
     if status != 'all':
@@ -751,13 +761,54 @@ def expense_history():
     if department != 'all':
         expenses = [expense for expense in expenses if expense.submitter.department_id == int(department)]
     
+    # Apply new admin filters
+    if current_user.is_admin:
+        # Filter by month of addition (date field)
+        if adding_month != 'all':
+            year, month = adding_month.split('-')
+            expenses = [expense for expense in expenses if 
+                        expense.date.year == int(year) and expense.date.month == int(month)]
+        
+        # Filter by month of purchase (purchase_date field)
+        if purchase_month != 'all':
+            year, month = purchase_month.split('-')
+            expenses = [expense for expense in expenses if 
+                        expense.purchase_date and expense.purchase_date.year == int(year) and 
+                        expense.purchase_date.month == int(month)]
+        
+        # Filter by supplier
+        if supplier_id != 'all':
+            expenses = [expense for expense in expenses if 
+                        expense.supplier_id and expense.supplier_id == int(supplier_id)]
+        
+        # Filter by payment method (transfer or credit)
+        if payment_method != 'all':
+            expenses = [expense for expense in expenses if expense.payment_method == payment_method]
+    
+    # Generate month options for dropdowns
+    current_year = datetime.now().year
+    months = []
+    for year in range(current_year-2, current_year+1):
+        for month in range(1, 13):
+            if year == current_year and month > datetime.now().month:
+                continue
+            month_str = f"{year}-{month:02d}"
+            month_display = f"{month:02d}/{year}"
+            months.append((month_str, month_display))
+    
     return render_template('expense_history.html', 
                          expenses=expenses,
                          employees=employees,
                          departments=departments,
+                         suppliers=suppliers,
+                         months=months,
                          selected_status=status,
                          selected_employee=employee,
-                         selected_department=department)
+                         selected_department=department,
+                         selected_adding_month=adding_month,
+                         selected_purchase_month=purchase_month,
+                         selected_supplier=supplier_id,
+                         selected_payment_method=payment_method)
 
 @app.route('/expense/<int:expense_id>/<action>', methods=['GET', 'POST'])
 @login_required
