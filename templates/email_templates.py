@@ -98,7 +98,8 @@ EMAIL_STYLE = """
     .button {
         display: inline-block;
         padding: 12px 24px;
-        background: linear-gradient(135deg, #4299e1, #2b6cb0);
+        background: linear-gradient(135deg, #4299e1, #2b6cb0) !important;
+        background-color: #2b6cb0 !important; /* Fallback color */
         color: white !important; /* Force white text on all buttons */
         text-decoration: none !important; /* Prevent underlines */
         border-radius: 6px;
@@ -107,6 +108,7 @@ EMAIL_STYLE = """
         text-align: center;
         transition: all 0.3s ease;
         box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        border: 1px solid #1b4f91 !important; /* Add border for contrast */
     }
     .button:hover {
         transform: translateY(-1px);
