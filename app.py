@@ -565,32 +565,67 @@ def submit_expense():
 @app.route('/download/<filename>')
 @login_required
 def download_file(filename):
-    # Check all document type fields for the file
-    expense = Expense.query.filter(
-        db.or_(
-            Expense.quote_filename == filename,
-            Expense.invoice_filename == filename,
-            Expense.receipt_filename == filename
-        )
-    ).first_or_404() # If file not found in DB, this will raise a 404
-    
     # Determine the appropriate redirect URL based on user role
-    redirect_url = 'accounting_dashboard' if current_user.is_accounting else 'employee_dashboard'
+    if current_user.is_accounting:
+        redirect_url = 'accounting_dashboard'
+    elif current_user.is_admin:
+        redirect_url = 'admin_dashboard'
+    else:
+        redirect_url = 'employee_dashboard'
 
-    if current_user.is_manager or current_user.is_accounting or expense.user_id == current_user.id:
-        try:
-            filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-            if not os.path.exists(filepath):
-                flash('File not found', 'error')
-                return redirect(url_for(redirect_url))
-            return send_file(filepath, as_attachment=True)
-        except Exception as e:
-            logging.error(f"Error downloading file {filename}: {str(e)}")
-            flash('Error downloading file', 'error')
+    try:
+        # Basic validation for filename
+        if not filename or filename == 'None': # Handles if filename is None or string 'None'
+            flash('No file associated with this record or filename is invalid.', 'error')
+            return redirect(url_for(redirect_url))
+
+        # Ensure the filename is secure and not trying to access directories
+        if '..' in filename or filename.startswith('/'):
+            flash('Invalid filename.', 'error')
+            return redirect(url_for(redirect_url))
+
+        logging.info(f"Attempting to download: Original filename from DB: '{filename}'")
+        upload_folder = app.config.get('UPLOAD_FOLDER')
+        logging.info(f"UPLOAD_FOLDER is: '{upload_folder}'")
+        
+        if not upload_folder:
+            logging.error("UPLOAD_FOLDER is not configured.")
+            flash('Server configuration error: Upload directory not set.', 'error')
             return redirect(url_for(redirect_url))
             
-    flash('Unauthorized access', 'error') # Added 'error' category for consistency
-    return redirect(url_for(redirect_url))
+        filepath = os.path.join(upload_folder, filename)
+        logging.info(f"Constructed filepath for download: '{filepath}'")
+
+        if not os.path.exists(filepath):
+            logging.error(f"File not found at path: {filepath}. UPLOAD_FOLDER: {upload_folder}, Filename: {filename}")
+            flash('File not found', 'error')
+            return redirect(url_for(redirect_url))
+        
+        # Check all document type fields for the file
+        expense = Expense.query.filter(
+            db.or_(
+                Expense.quote_filename == filename,
+                Expense.invoice_filename == filename,
+                Expense.receipt_filename == filename
+            )
+        ).first_or_404() # If file not found in DB, this will raise a 404
+        
+        # Check permissions for the specific user role
+        if current_user.is_manager or current_user.is_accounting or expense.user_id == current_user.id:
+            try:
+                return send_file(filepath, as_attachment=True)
+            except Exception as e:
+                logging.error(f"Error downloading file {filename}: {str(e)}")
+                flash('Error downloading file', 'error')
+                return redirect(url_for(redirect_url))
+                
+        flash('Unauthorized access', 'error') # Added 'error' category for consistency
+        return redirect(url_for(redirect_url))
+
+    except Exception as e:
+        logging.error(f"Error downloading file: {str(e)}")
+        flash('Error downloading file', 'error')
+        return redirect(url_for(redirect_url))
 
 @app.route('/manager/dashboard')
 @login_required
