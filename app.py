@@ -572,22 +572,25 @@ def download_file(filename):
             Expense.invoice_filename == filename,
             Expense.receipt_filename == filename
         )
-    ).first_or_404()
+    ).first_or_404() # If file not found in DB, this will raise a 404
     
+    # Determine the appropriate redirect URL based on user role
+    redirect_url = 'accounting_dashboard' if current_user.is_accounting else 'employee_dashboard'
+
     if current_user.is_manager or current_user.is_accounting or expense.user_id == current_user.id:
         try:
             filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
             if not os.path.exists(filepath):
                 flash('File not found', 'error')
-                return redirect(url_for('employee_dashboard'))
+                return redirect(url_for(redirect_url))
             return send_file(filepath, as_attachment=True)
         except Exception as e:
             logging.error(f"Error downloading file {filename}: {str(e)}")
             flash('Error downloading file', 'error')
-            return redirect(url_for('employee_dashboard'))
+            return redirect(url_for(redirect_url))
             
-    flash('Unauthorized access')
-    return redirect(url_for('employee_dashboard'))
+    flash('Unauthorized access', 'error') # Added 'error' category for consistency
+    return redirect(url_for(redirect_url))
 
 @app.route('/manager/dashboard')
 @login_required
