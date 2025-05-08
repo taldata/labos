@@ -158,8 +158,12 @@
         background-color: #f39c12 !important;
         color: white !important;
     }
+    .badge.bg-info {
+        color: #052c65 !important; /* Dark blue text for good contrast on light blue bg */
+        /* background-color: #0dcaf0 !important; */ /* Ensure Bootstrap's info bg if needed */
+    }
     .file-link {
-        color: #3498db;
+        color: #3498db !important; /* Ensure this blue color is applied */
         text-decoration: none;
         display: inline-flex;
         align-items: center;
