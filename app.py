@@ -2288,6 +2288,7 @@ def accounting_dashboard():
     payment_method_filter = request.args.get('payment_method', 'all')
     payment_status_filter = request.args.get('payment_status', 'all')
     payment_due_date_filter = request.args.get('payment_due_date', 'all')
+    invoice_date_filter = request.args.get('invoice_date', 'all')
     
     # Start with base query for approved expenses
     query = Expense.query.filter_by(status='approved')
@@ -2301,6 +2302,35 @@ def accounting_dashboard():
         else:
             end_date = datetime(int(year), int(month) + 1, 1)
         query = query.filter(Expense.date >= start_date, Expense.date < end_date)
+    
+    # Apply invoice date filter
+    if invoice_date_filter != 'all':
+        today = datetime.now()
+        if invoice_date_filter == 'this_month':
+            start_date = datetime(today.year, today.month, 1)
+            if today.month == 12:
+                end_date = datetime(today.year + 1, 1, 1)
+            else:
+                end_date = datetime(today.year, today.month + 1, 1)
+        elif invoice_date_filter == 'last_month':
+            if today.month == 1:
+                start_date = datetime(today.year - 1, 12, 1)
+                end_date = datetime(today.year, 1, 1)
+            else:
+                start_date = datetime(today.year, today.month - 1, 1)
+                end_date = datetime(today.year, today.month, 1)
+        elif invoice_date_filter == 'this_quarter':
+            current_quarter = (today.month - 1) // 3 + 1
+            start_date = datetime(today.year, 3 * current_quarter - 2, 1)
+            if current_quarter == 4:
+                end_date = datetime(today.year + 1, 1, 1)
+            else:
+                end_date = datetime(today.year, 3 * current_quarter + 1, 1)
+        elif invoice_date_filter == 'this_year':
+            start_date = datetime(today.year, 1, 1)
+            end_date = datetime(today.year + 1, 1, 1)
+        
+        query = query.filter(Expense.purchase_date >= start_date, Expense.purchase_date < end_date)
     
     # Apply payment due date filter
     if payment_due_date_filter != 'all':
@@ -2334,6 +2364,7 @@ def accounting_dashboard():
                           selected_payment_method=payment_method_filter,
                           selected_payment_status=payment_status_filter,
                           selected_payment_due_date=payment_due_date_filter,
+                          selected_invoice_date=invoice_date_filter,
                           month_options=month_options)
 
 @app.route('/mark_expense_paid/<int:expense_id>', methods=['POST'])

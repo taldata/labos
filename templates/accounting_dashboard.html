@@ -312,6 +312,17 @@
                 </select>
             </div>
             
+            <div class="filter-item">
+                <label for="invoice_date"><i class="fas fa-file-invoice"></i> Date of Invoice</label>
+                <select name="invoice_date" id="invoice_date" class="form-control" onchange="this.form.submit()">
+                    <option value="all" {% if selected_invoice_date == 'all' %}selected{% endif %}>All Dates</option>
+                    <option value="this_month" {% if selected_invoice_date == 'this_month' %}selected{% endif %}>This Month</option>
+                    <option value="last_month" {% if selected_invoice_date == 'last_month' %}selected{% endif %}>Last Month</option>
+                    <option value="this_quarter" {% if selected_invoice_date == 'this_quarter' %}selected{% endif %}>This Quarter</option>
+                    <option value="this_year" {% if selected_invoice_date == 'this_year' %}selected{% endif %}>This Year</option>
+                </select>
+            </div>
+            
             <div class="filter-item filter-submit">
                 <button type="submit" class="btn btn-primary"><i class="fas fa-search"></i> Apply Filters</button>
             </div>
