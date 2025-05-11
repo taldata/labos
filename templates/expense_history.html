@@ -166,7 +166,7 @@
                             <td class="col-department">{{ expense.submitter.home_department.name if expense.submitter.home_department else 'No Department' }}</td>
                             <td>{{ expense.description }}</td>
                             <td>{{ expense.reason }}</td>
-                            <td>{{ expense.supplier_name if expense.supplier_name else '-' }}</td>
+                            <td>{{ expense.supplier.name if expense.supplier else '-' }}</td>
                             <td class="col-date small">{{ expense.purchase_date.strftime('%d/%m/%Y') if expense.purchase_date else '-' }}</td>
                             <td>{{ expense.subcategory.category.name if expense.subcategory else '-' }}</td>
                             <td>{{ expense.subcategory.name if expense.subcategory else '-' }}</td>
