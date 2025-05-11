@@ -1368,17 +1368,36 @@ def employee_view_budget():
 @app.route('/expense/edit/<int:expense_id>', methods=['GET', 'POST'])
 @login_required
 def edit_expense(expense_id):
-    # Get the expense and verify ownership and status
+    # Get the expense and verify ownership
     expense = Expense.query.get_or_404(expense_id)
     if expense.user_id != current_user.id:
         flash('You can only edit your own expenses')
         return redirect(url_for('employee_dashboard'))
-    if expense.status != 'pending':
-        flash('You can only edit pending expenses')
+    
+    # Check if expense can be edited
+    if expense.status == 'rejected':
+        flash('Rejected expenses cannot be edited')
+        return redirect(url_for('employee_dashboard'))
+    
+    # Check if accounting has processed the expense
+    if expense.payment_status == 'paid':
+        flash('Cannot edit expenses that have been paid')
         return redirect(url_for('employee_dashboard'))
     
     if request.method == 'POST':
         try:
+            # For approved expenses, only allow editing supplier details
+            if expense.status == 'approved':
+                supplier_id = request.form.get('supplier_id')
+                if supplier_id:
+                    expense.supplier_id = int(supplier_id)
+                else:
+                    expense.supplier_id = None
+                db.session.commit()
+                flash('Supplier details updated successfully')
+                return redirect(url_for('employee_dashboard'))
+            
+            # For pending expenses, allow full editing
             amount = float(request.form.get('amount'))
             description = request.form.get('description')
             reason = request.form.get('reason')
@@ -1388,8 +1407,8 @@ def edit_expense(expense_id):
             supplier_id = request.form.get('supplier_id')
             purchase_date_str = request.form.get('purchase_date')
             credit_card_id = request.form.get('credit_card_id')
-            currency = request.form.get('currency', 'ILS')  # Get currency from form
-            payment_due_date = request.form.get('payment_due_date', 'end_of_month')  # Get payment due date
+            currency = request.form.get('currency', 'ILS')
+            payment_due_date = request.form.get('payment_due_date', 'end_of_month')
 
             # Convert purchase_date string to datetime if provided
             purchase_date = None
@@ -1425,7 +1444,7 @@ def edit_expense(expense_id):
             
             # Update expense fields
             expense.amount = amount
-            expense.currency = currency  # Update currency
+            expense.currency = currency
             expense.description = description
             expense.reason = reason
             expense.type = expense_type
@@ -1449,7 +1468,7 @@ def edit_expense(expense_id):
                                 os.remove(old_file_path)
                         
                         # Save new file
-                        filename = secure_filename(f"{datetime.utcnow().strftime('%Y%m%d%H%M%S')}_{doc_type}_{file.filename}")
+                        filename = secure_filename(f"{datetime.now().strftime('%Y%m%d_%H%M%S')}_{file.filename}")
                         file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
                         file.save(file_path)
                         setattr(expense, f"{doc_type}_filename", filename)

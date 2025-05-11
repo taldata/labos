@@ -19,6 +19,20 @@
         {% endwith %}
 
         <form method="POST" enctype="multipart/form-data">
+            {% if expense.status == 'approved' %}
+            <div class="form-group">
+                <label for="supplier_id">Supplier:</label>
+                <select id="supplier_id" name="supplier_id" class="form-control">
+                    <option value="">-- Select Supplier (Optional) --</option>
+                    {% for supplier in suppliers %}
+                    <option value="{{ supplier.id }}" {% if supplier.id == expense.supplier_id %}selected{% endif %}>
+                        {{ supplier.name }}
+                    </option>
+                    {% endfor %}
+                </select>
+                <p class="form-text text-muted">You can only edit the supplier for approved expenses that haven't been paid yet.</p>
+            </div>
+            {% else %}
             <div class="form-group">
                 <label for="amount">Amount (VAT included)</label>
                 <div class="input-group">
@@ -150,6 +164,7 @@
                     <span class="file-help">Leave empty to keep the current receipt. Supported formats: PDF, PNG, JPG, JPEG</span>
                 </div>
             </div>
+            {% endif %}
 
             <div class="form-actions">
                 <button type="submit" class="button primary">Save Changes</button>
