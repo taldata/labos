@@ -84,11 +84,33 @@
                 </thead>
                 <tbody>
                     {% for cat in cat_budgets %}
-                    <tr>
-                        <td>{{ cat.name }}</td>
+                    <tr class="category-row" data-category-id="{{ cat.id }}">
+                        <td class="clickable">{{ cat.name }} <i class="fas fa-chevron-right"></i></td>
                         <td>{{ cat.budget|format_currency }}</td>
                         <td>{{ cat.used|format_currency }}</td>
                         <td>{{ cat.remaining|format_currency }}</td>
+                    </tr>
+                    <tr class="subcategory-row" data-category-id="{{ cat.id }}" style="display: none;">
+                        <td colspan="4">
+                            <div class="subcategory-container">
+                                <h4>Subcategories for {{ cat.name }}</h4>
+                                <table class="budget-table subcategory-table">
+                                    <thead>
+                                        <tr><th>Subcategory</th><th>Total</th><th>Used</th><th>Remaining</th></tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for subcat in cat.subcategories %}
+                                        <tr>
+                                            <td>{{ subcat.name }}</td>
+                                            <td>{{ subcat.budget|format_currency }}</td>
+                                            <td>{{ subcat.used|format_currency }}</td>
+                                            <td>{{ subcat.remaining|format_currency }}</td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </td>
                     </tr>
                     {% endfor %}
                 </tbody>
@@ -1013,6 +1035,44 @@ textarea.form-control {
     color: #6c757d;
     margin-top: 3px;
 }
+
+.clickable {
+    cursor: pointer;
+    color: #3498db;
+}
+
+.clickable:hover {
+    text-decoration: underline;
+}
+
+.subcategory-container {
+    padding: 1rem;
+    background-color: #f8f9fa;
+    border-radius: 4px;
+    margin: 0.5rem 0;
+}
+
+.subcategory-table {
+    margin-top: 0.5rem;
+}
+
+.subcategory-table th,
+.subcategory-table td {
+    padding: 0.5rem;
+    font-size: 0.9rem;
+}
+
+.subcategory-row td {
+    padding: 0 !important;
+}
+
+.fa-chevron-right {
+    transition: transform 0.3s ease;
+}
+
+.category-row.expanded .fa-chevron-right {
+    transform: rotate(90deg);
+}
 </style>
 
 <script>
@@ -1063,5 +1123,26 @@ window.onclick = function(event) {
 function toggleBudgetDetails(element) {
     element.classList.toggle('collapsed');
 }
+
+// Add category row click handler
+document.addEventListener('DOMContentLoaded', function() {
+    const categoryRows = document.querySelectorAll('.category-row');
+    
+    categoryRows.forEach(row => {
+        row.querySelector('.clickable').addEventListener('click', function() {
+            const categoryId = row.dataset.categoryId;
+            const subcategoryRow = document.querySelector(`.subcategory-row[data-category-id="${categoryId}"]`);
+            
+            // Toggle the subcategory row
+            if (subcategoryRow.style.display === 'none') {
+                subcategoryRow.style.display = 'table-row';
+                row.classList.add('expanded');
+            } else {
+                subcategoryRow.style.display = 'none';
+                row.classList.remove('expanded');
+            }
+        });
+    });
+});
 </script>
 {% endblock %}

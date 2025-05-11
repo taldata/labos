@@ -737,7 +737,38 @@ def manager_dashboard():
     ).outerjoin(cat_expenses, Category.id == cat_expenses.c.id
     ).filter(Category.department_id.in_([d.id for d in managed_depts])
     ).all()
-    cat_budgets = [{'id': row[0], 'name': row[1], 'budget': row[2], 'used': row[3], 'remaining': row[4]} for row in cat_summary]
+    
+    # Get subcategory budgets for each category
+    cat_budgets = []
+    for row in cat_summary:
+        category = {
+            'id': row[0],
+            'name': row[1],
+            'budget': row[2],
+            'used': row[3],
+            'remaining': row[4],
+            'subcategories': []
+        }
+        
+        # Get subcategories for this category
+        subcat_summary = db.session.query(
+            Subcategory.id, Subcategory.name, Subcategory.budget,
+            db.func.coalesce(subcat_expenses.c.total_expenses, 0).label('used'),
+            (Subcategory.budget - db.func.coalesce(subcat_expenses.c.total_expenses, 0)).label('remaining')
+        ).outerjoin(subcat_expenses, Subcategory.id == subcat_expenses.c.id
+        ).filter(Subcategory.category_id == row[0]
+        ).all()
+        
+        for subcat_row in subcat_summary:
+            category['subcategories'].append({
+                'id': subcat_row[0],
+                'name': subcat_row[1],
+                'budget': subcat_row[2],
+                'used': subcat_row[3],
+                'remaining': subcat_row[4]
+            })
+        
+        cat_budgets.append(category)
     
     return render_template('manager_dashboard.html', expenses=pending_expenses, dept_budgets=dept_budgets, cat_budgets=cat_budgets)
 
