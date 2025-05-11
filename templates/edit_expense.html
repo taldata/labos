@@ -97,6 +97,7 @@
                 <select class="form-control" id="payment_due_date" name="payment_due_date">
                     <option value="start_of_month" {% if expense.payment_due_date == 'start_of_month' %}selected{% endif %}>Start of month</option>
                     <option value="end_of_month" {% if expense.payment_due_date == 'end_of_month' or not expense.payment_due_date %}selected{% endif %}>End of month</option>
+                    <option value="international_transfer" {% if expense.payment_due_date == 'international_transfer' %}selected{% endif %}>International Bank Transfer</option>
                 </select>
             </div>
 

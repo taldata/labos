@@ -388,7 +388,17 @@
                             <td class="amount-column">{{ expense.amount | format_currency }}</td>
                             <td>{{ expense.payment_method | title }}</td>
                             <td>{% if expense.credit_card %}{{ expense.credit_card.description }} (*{{ expense.credit_card.last_four_digits }}){% endif %}</td>
-                            <td>{{ "Start of month" if expense.payment_due_date == "start_of_month" else "End of month" }}</td>
+                            <td>
+                                {% if expense.payment_due_date == 'start_of_month' %}
+                                    Start of month
+                                {% elif expense.payment_due_date == 'end_of_month' %}
+                                    End of month
+                                {% elif expense.payment_due_date == 'international_transfer' %}
+                                    International Bank Transfer
+                                {% else %}
+                                    End of month
+                                {% endif %}
+                            </td>
                             <td class="status-column">
                                 {% if expense.payment_status == 'pending_attention' %}
                                 <span class="badge bg-warning">Pending Attention</span>
