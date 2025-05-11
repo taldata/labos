@@ -598,6 +598,18 @@ EXPENSE_PAYMENT_NOTIFICATION_TEMPLATE = EMAIL_STYLE + """
                     <span class="highlight">{{ description }}</span>
                 </li>
                 <li>
+                    <span>Category:</span>
+                    <span>{{ expense.subcategory.category.name }}</span>
+                </li>
+                <li>
+                    <span>Subcategory:</span>
+                    <span>{{ expense.subcategory.name }}</span>
+                </li>
+                <li>
+                    <span>Supplier:</span>
+                    <span>{{ expense.supplier.name if expense.supplier else 'N/A' }}</span>
+                </li>
+                <li>
                     <span>Date:</span>
                     <span>{{ date }}</span>
                 </li>
