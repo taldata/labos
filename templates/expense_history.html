@@ -68,6 +68,34 @@
                                 {% endfor %}
                             </select>
                         </div>
+
+                        <div class="filter-item">
+                            <label for="category">
+                                <i class="fas fa-folder filter-icon"></i>Category
+                            </label>
+                            <select name="category" id="category" class="form-select" onchange="this.form.submit()">
+                                <option value="all" {% if selected_category == 'all' %}selected{% endif %}>All Categories</option>
+                                {% for cat in categories %}
+                                <option value="{{ cat.id }}" {% if selected_category|string == cat.id|string %}selected{% endif %}>
+                                    {{ cat.name }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="filter-item">
+                            <label for="subcategory">
+                                <i class="fas fa-folder-open filter-icon"></i>Subcategory
+                            </label>
+                            <select name="subcategory" id="subcategory" class="form-select" onchange="this.form.submit()">
+                                <option value="all" {% if selected_subcategory == 'all' %}selected{% endif %}>All Subcategories</option>
+                                {% for subcat in subcategories %}
+                                <option value="{{ subcat.id }}" {% if selected_subcategory|string == subcat.id|string %}selected{% endif %}>
+                                    {{ subcat.category.name }} - {{ subcat.name }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
                         
                         {% if current_user.is_admin %}
                         <!-- New admin filters -->

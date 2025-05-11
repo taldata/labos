@@ -769,6 +769,9 @@ def expense_history():
         departments = Department.query.all()
         # Get all suppliers for admin filters
         suppliers = Supplier.query.order_by(Supplier.name).all()
+        # Get all categories and subcategories for admin
+        categories = Category.query.all()
+        subcategories = Subcategory.query.all()
     elif current_user.is_manager:
         # Only show employees from manager's departments
         managed_dept_ids = [dept.id for dept in current_user.managed_departments]
@@ -776,15 +779,22 @@ def expense_history():
         employees = User.query.filter(User.department_id.in_(managed_dept_ids)).all()
         departments = [dept for dept in Department.query.filter(Department.id.in_(managed_dept_ids)).all()]
         suppliers = []
+        # Get categories and subcategories from manager's departments
+        categories = Category.query.filter(Category.department_id.in_(managed_dept_ids)).all()
+        subcategories = Subcategory.query.join(Category).filter(Category.department_id.in_(managed_dept_ids)).all()
     else:
         employees = []
         departments = []
         suppliers = []
+        categories = []
+        subcategories = []
     
     # Get filter parameters
     status = request.args.get('status', 'all')
     employee = request.args.get('employee', 'all')
     department = request.args.get('department', 'all')
+    category = request.args.get('category', 'all')
+    subcategory = request.args.get('subcategory', 'all')
     
     # New filter parameters for admin
     adding_month = request.args.get('adding_month', 'all')
@@ -799,6 +809,10 @@ def expense_history():
         expenses = [expense for expense in expenses if expense.user_id == int(employee)]
     if department != 'all':
         expenses = [expense for expense in expenses if expense.submitter.department_id == int(department)]
+    if category != 'all':
+        expenses = [expense for expense in expenses if expense.subcategory and expense.subcategory.category_id == int(category)]
+    if subcategory != 'all':
+        expenses = [expense for expense in expenses if expense.subcategory_id == int(subcategory)]
     
     # Apply new admin filters
     if current_user.is_admin:
@@ -839,11 +853,15 @@ def expense_history():
                          expenses=expenses,
                          employees=employees,
                          departments=departments,
+                         categories=categories,
+                         subcategories=subcategories,
                          suppliers=suppliers,
                          months=months,
                          selected_status=status,
                          selected_employee=employee,
                          selected_department=department,
+                         selected_category=category,
+                         selected_subcategory=subcategory,
                          selected_adding_month=adding_month,
                          selected_purchase_month=purchase_month,
                          selected_supplier=supplier_id,
