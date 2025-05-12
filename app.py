@@ -2345,7 +2345,7 @@ def accounting_dashboard():
             start_date = datetime(today.year, 1, 1)
             end_date = datetime(today.year + 1, 1, 1)
         
-        query = query.filter(Expense.purchase_date >= start_date, Expense.purchase_date < end_date)
+        query = query.filter(Expense.invoice_date >= start_date, Expense.invoice_date < end_date)
     
     # Apply payment due date filter
     if payment_due_date_filter != 'all':
