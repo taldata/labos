@@ -166,6 +166,7 @@
                             <th><i class="fas fa-paperclip"></i> Files</th>
                             <th class="status-col"><i class="fas fa-info-circle"></i> Status</th>
                             <th><i class="fas fa-hand-holding-usd"></i> Payment Status</th>
+                            <th>Date of Invoice</th>
                             <th class="actions-col"><i class="fas fa-cogs"></i> Actions</th>
                         </tr>
                     </thead>
@@ -328,6 +329,9 @@
                                 {% else %}
                                     -
                                 {% endif %}
+                            </td>
+                            <td>
+                                {{ expense.invoice_date.strftime('%d/%m/%Y') if expense.invoice_date else '-' }}
                             </td>
                             <td class="actions">
                                 <div class="action-buttons">

@@ -225,6 +225,7 @@
                             <th><i class="fas fa-money-bill-wave text-primary"></i> Spent</th>
                             <th><i class="fas fa-balance-scale text-primary"></i> Remaining</th>
                             <th><i class="fas fa-percentage text-primary"></i> Usage</th>
+                            <th><i class="fas fa-calendar-alt text-primary"></i> Date of Invoice</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -245,6 +246,9 @@
                                     </div>
                                 </div>
                                 <span class="small">{{ dept.usage }}%</span>
+                            </td>
+                            <td>
+                                {{ dept.invoice_date.strftime('%d/%m/%Y') if dept.invoice_date else '-' }}
                             </td>
                         </tr>
                         {% endfor %}

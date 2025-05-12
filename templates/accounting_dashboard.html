@@ -346,7 +346,7 @@
                             <th class="status-column">Payment Status</th>
                             <th>Attachments</th>
                             <th class="date-column">Date of Purchase</th>
-
+                            <th>Date of Invoice</th>
                             <th>Tax ID</th>
                             <th>Bank Name</th>
                             <th>Account Number</th>
@@ -446,7 +446,9 @@
                                 </div>
                             </td>
                             <td class="date-column">{{ expense.purchase_date.strftime('%d/%m/%Y') if expense.purchase_date else '-' }}</td>
-
+                            <td>
+                                {{ expense.invoice_date.strftime('%d/%m/%Y') if expense.invoice_date else '-' }}
+                            </td>
                             <td>{{ expense.supplier.tax_id if expense.supplier else '-' }}</td>
                             <td>{{ expense.supplier.bank_name if expense.supplier else '-' }}</td>
                             <td>{{ expense.supplier.bank_account_number if expense.supplier else '-' }}</td>

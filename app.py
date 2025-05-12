@@ -303,6 +303,8 @@ def submit_expense():
         supplier_id = request.form.get('supplier_id', None)
         currency = request.form.get('currency', 'ILS')  # Get currency from form
         payment_due_date = request.form.get('payment_due_date', 'end_of_month')  # Get payment due date
+        invoice_date_str = request.form.get('invoice_date')
+        invoice_date = datetime.strptime(invoice_date_str, '%Y-%m-%d') if invoice_date_str else None
 
         # Check for duplicate submissions in the last minute
         time_threshold = datetime.now() - timedelta(minutes=1)
@@ -379,7 +381,8 @@ def submit_expense():
             purchase_date=purchase_date,
             credit_card_id=credit_card_id,
             payment_due_date=payment_due_date,  # Add payment due date
-            status='approved' if expense_type == 'auto_approved' else 'pending'
+            status='approved' if expense_type == 'auto_approved' else 'pending',
+            invoice_date=invoice_date,
         )
         
         # Set payment_status to 'Pending attention' for 'Transfer' payment method
@@ -1455,6 +1458,7 @@ def edit_expense(expense_id):
             payment_method = request.form.get('payment_method')
             supplier_id = request.form.get('supplier_id')
             purchase_date_str = request.form.get('purchase_date')
+            invoice_date_str = request.form.get('invoice_date')
             credit_card_id = request.form.get('credit_card_id')
             currency = request.form.get('currency', 'ILS')
             payment_due_date = request.form.get('payment_due_date', 'end_of_month')
@@ -1466,7 +1470,17 @@ def edit_expense(expense_id):
                     purchase_date = datetime.strptime(purchase_date_str, '%Y-%m-%d')
                 except ValueError:
                     logging.error(f"Invalid purchase date format: {purchase_date_str}")
-                    flash('Invalid purchase date format. Please use DD/MM/YYYY format.', 'error')
+                    flash('Invalid purchase date format. Please use YYYY-MM-DD format.', 'error')
+                    return redirect(url_for('edit_expense', expense_id=expense_id))
+
+            # Convert invoice_date string to datetime if provided
+            invoice_date = None
+            if invoice_date_str:
+                try:
+                    invoice_date = datetime.strptime(invoice_date_str, '%Y-%m-%d')
+                except ValueError:
+                    logging.error(f"Invalid invoice date format: {invoice_date_str}")
+                    flash('Invalid invoice date format. Please use YYYY-MM-DD format.', 'error')
                     return redirect(url_for('edit_expense', expense_id=expense_id))
             
             # Verify that the subcategory belongs to the user's department
@@ -1501,7 +1515,8 @@ def edit_expense(expense_id):
             expense.payment_method = payment_method
             expense.supplier_id = supplier_id if supplier_id else None
             expense.purchase_date = purchase_date
-            expense.credit_card_id = credit_card_id
+            expense.invoice_date = invoice_date
+            expense.credit_card_id = credit_card_id if credit_card_id else None
             expense.payment_due_date = payment_due_date
             
             # Handle file uploads with document processing

@@ -144,6 +144,7 @@ class Expense(db.Model):
     paid_at = db.Column(db.DateTime, nullable=True)
     supplier_id = db.Column(db.Integer, db.ForeignKey('supplier.id'), nullable=True)
     purchase_date = db.Column(db.DateTime, nullable=True)
+    invoice_date = db.Column(db.DateTime, nullable=True)
     payment_method = db.Column(db.String(50), default='credit')
     credit_card_id = db.Column(db.Integer, db.ForeignKey('credit_card.id'), nullable=True)
     payment_due_date = db.Column(db.String(20), default='end_of_month')  # 'start_of_month' or 'end_of_month'
