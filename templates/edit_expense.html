@@ -112,6 +112,7 @@
                 <select class="form-control" id="payment_method" name="payment_method" required onchange="toggleCreditCardField()">
                     <option value="credit" {% if expense.payment_method == 'credit' %}selected{% endif %}>Credit Card</option>
                     <option value="transfer" {% if expense.payment_method == 'transfer' %}selected{% endif %}>Bank Transfer</option>
+                    <option value="standing_order" {% if expense.payment_method == 'standing_order' %}selected{% endif %}>Standing Order (הוראת קבע)</option>
                 </select>
             </div>
 

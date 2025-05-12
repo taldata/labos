@@ -389,8 +389,8 @@ def submit_expense():
         if payment_method == 'transfer':
             expense.payment_status = 'pending_attention'
         
-        # Auto-mark credit card payments as paid
-        if payment_method == 'credit' and expense.status == 'approved':
+        # Auto-mark credit card and standing order payments as paid
+        if (payment_method == 'credit' or payment_method == 'standing_order') and expense.status == 'approved':
             expense.is_paid = True
             expense.paid_at = datetime.utcnow()
             expense.paid_by_id = current_user.id
