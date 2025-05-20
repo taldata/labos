@@ -18,6 +18,7 @@ from models import db, Department, Category, Subcategory, User, Supplier, Expens
 import msal
 import requests
 from dateutil.relativedelta import relativedelta
+from sqlalchemy import or_
 
 # Configure logging
 logging.basicConfig(
@@ -2304,9 +2305,25 @@ def accounting_dashboard():
     payment_status_filter = request.args.get('payment_status', 'all')
     payment_due_date_filter = request.args.get('payment_due_date', 'all')
     invoice_date_filter = request.args.get('invoice_date', 'all')
+    search_text = request.args.get('search_text', '')
     
     # Start with base query for approved expenses
     query = Expense.query.filter_by(status='approved')
+    
+    # Apply search text filter if provided
+    if search_text:
+        search_term = f'%{search_text}%'
+        query = query.join(Supplier, Expense.supplier_id == Supplier.id).filter(
+            or_(
+                Expense.description.ilike(search_term),
+                Supplier.name.ilike(search_term),
+                Supplier.notes.ilike(search_term),
+                Supplier.email.ilike(search_term),
+                Supplier.phone.ilike(search_term),
+                Supplier.address.ilike(search_term),
+                Supplier.tax_id.ilike(search_term)
+            )
+        )
     
     # Apply month filter (based on date submitted instead of purchase_date)
     if month_filter != 'all':
@@ -2380,6 +2397,7 @@ def accounting_dashboard():
                           selected_payment_status=payment_status_filter,
                           selected_payment_due_date=payment_due_date_filter,
                           selected_invoice_date=invoice_date_filter,
+                          search_text=search_text,
                           month_options=month_options)
 
 @app.route('/mark_expense_paid/<int:expense_id>', methods=['POST'])
