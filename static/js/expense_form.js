@@ -6,6 +6,57 @@ document.addEventListener('DOMContentLoaded', function() {
     const purchaseDateInput = document.getElementById('purchase_date');
     const form = document.getElementById('expense-form');
 
+    // Create preview container for OCR data
+    const previewContainer = document.createElement('div');
+    previewContainer.id = 'ocr-preview';
+    previewContainer.style.display = 'none';
+    previewContainer.style.marginTop = '10px';
+    previewContainer.style.padding = '10px';
+    previewContainer.style.border = '1px solid #ddd';
+    previewContainer.style.borderRadius = '4px';
+    previewContainer.style.backgroundColor = '#f8f9fa';
+    form.insertBefore(previewContainer, form.querySelector('.form-actions'));
+
+    function showOcrPreview(data, documentType) {
+        previewContainer.innerHTML = `
+            <h4>Extracted Data from ${documentType}</h4>
+            <div class="ocr-data">
+                ${data.amount ? `<p><strong>Amount:</strong> ${data.amount}</p>` : ''}
+                ${data.purchase_date ? `<p><strong>Date:</strong> ${new Date(data.purchase_date).toLocaleDateString()}</p>` : ''}
+            </div>
+            <div class="ocr-actions">
+                <button type="button" class="button primary" onclick="applyOcrData()">Apply Data</button>
+                <button type="button" class="button secondary" onclick="dismissOcrPreview()">Dismiss</button>
+            </div>
+        `;
+        previewContainer.style.display = 'block';
+        // Store the OCR data for later use
+        window.ocrData = data;
+    }
+
+    function applyOcrData() {
+        if (window.ocrData) {
+            if (window.ocrData.amount && !amountInput.value) {
+                amountInput.value = window.ocrData.amount;
+            }
+            if (window.ocrData.purchase_date && !purchaseDateInput.value) {
+                const date = new Date(window.ocrData.purchase_date);
+                const formattedDate = date.toISOString().split('T')[0];
+                purchaseDateInput.value = formattedDate;
+            }
+        }
+        dismissOcrPreview();
+    }
+
+    function dismissOcrPreview() {
+        previewContainer.style.display = 'none';
+        window.ocrData = null;
+    }
+
+    // Make functions globally available
+    window.applyOcrData = applyOcrData;
+    window.dismissOcrPreview = dismissOcrPreview;
+
     if (invoiceInput) {
         invoiceInput.addEventListener('change', async function(e) {
             const file = e.target.files[0];
@@ -25,20 +76,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
 
                 const data = await response.json();
-                
-                // Auto-fill only amount and date fields if they're empty
-                if (data.invoice_total && !amountInput.value) {
-                    amountInput.value = data.invoice_total;
-                }
-                if (data.invoice_date && !purchaseDateInput.value) {
-                    // Convert date to YYYY-MM-DD format
-                    const date = new Date(data.invoice_date);
-                    const formattedDate = date.toISOString().split('T')[0];
-                    purchaseDateInput.value = formattedDate;
-                }
+                showOcrPreview(data, 'Invoice');
             } catch (error) {
                 console.error('Error processing invoice:', error);
-                // Continue with form submission even if document processing fails
             }
         });
     }
@@ -62,20 +102,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
 
                 const data = await response.json();
-                
-                // Auto-fill only amount and date fields if they're empty
-                if (data.amount && !amountInput.value) {
-                    amountInput.value = data.amount;
-                }
-                if (data.purchase_date && !purchaseDateInput.value) {
-                    // Convert date to YYYY-MM-DD format
-                    const date = new Date(data.purchase_date);
-                    const formattedDate = date.toISOString().split('T')[0];
-                    purchaseDateInput.value = formattedDate;
-                }
+                showOcrPreview(data, 'Receipt');
             } catch (error) {
                 console.error('Error processing receipt:', error);
-                // Continue with form submission even if document processing fails
             }
         });
     }
@@ -99,20 +128,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
 
                 const data = await response.json();
-                
-                // Auto-fill only amount and date fields if they're empty
-                if (data.total_amount && !amountInput.value) {
-                    amountInput.value = data.total_amount;
-                }
-                if (data.quote_date && !purchaseDateInput.value) {
-                    // Convert date to YYYY-MM-DD format
-                    const date = new Date(data.quote_date);
-                    const formattedDate = date.toISOString().split('T')[0];
-                    purchaseDateInput.value = formattedDate;
-                }
+                showOcrPreview(data, 'Quote');
             } catch (error) {
                 console.error('Error processing quote:', error);
-                // Continue with form submission even if document processing fails
             }
         });
     }
