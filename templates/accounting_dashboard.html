@@ -254,6 +254,102 @@
         height: 38px;
         width: 100%;
     }
+    
+    /* External Accounting Column Styles */
+    .external-accounting-column {
+        min-width: 160px !important;
+        max-width: 180px !important;
+        padding: 0.5rem !important;
+    }
+    
+    .external-entry-container {
+        background: #f8f9fa;
+        border-radius: 8px;
+        padding: 0.75rem;
+        border: 1px solid #e9ecef;
+        position: relative;
+        transition: all 0.2s ease;
+    }
+    
+    .external-entry-container.entered {
+        background: linear-gradient(135deg, #d4edda 0%, #f8f9fa 100%);
+        border-color: #c3e6cb;
+    }
+    
+    .external-entry-container.not-entered {
+        background: linear-gradient(135deg, #fff3cd 0%, #f8f9fa 100%);
+        border-color: #ffeaa7;
+    }
+    
+    .entry-status {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        margin-bottom: 0.5rem;
+        font-weight: 600;
+        font-size: 0.85rem;
+    }
+    
+    .entry-status i {
+        font-size: 1rem;
+    }
+    
+    .status-text {
+        color: #495057;
+    }
+    
+    .entry-details {
+        margin-bottom: 0.5rem;
+    }
+    
+    .detail-item {
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+        font-size: 0.75rem;
+        color: #6c757d;
+        margin-bottom: 0.2rem;
+    }
+    
+    .detail-item i {
+        width: 12px;
+        font-size: 0.7rem;
+        opacity: 0.7;
+    }
+    
+    .detail-item span {
+        line-height: 1.2;
+    }
+    
+    .mark-external-accounting-btn {
+        font-size: 0.75rem;
+        padding: 0.35rem 0.75rem;
+        border-radius: 5px;
+        transition: all 0.2s ease;
+        font-weight: 500;
+        width: 100%;
+    }
+    
+    .mark-external-accounting-btn:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 3px 8px rgba(0,0,0,0.15);
+    }
+    
+    .btn-link.mark-external-accounting-btn {
+        position: absolute;
+        top: 0.25rem;
+        right: 0.25rem;
+        width: auto;
+        padding: 0.2rem;
+        background: rgba(255,255,255,0.8);
+        border-radius: 50%;
+        font-size: 0.7rem;
+    }
+    
+    .btn-link.mark-external-accounting-btn:hover {
+        background: rgba(255,255,255,1);
+        transform: scale(1.1);
+    }
 </style>
 
 <div class="container-fluid">
@@ -359,7 +455,7 @@
                             <th>Credit Card</th>
                             <th>Payment Due Date</th>
                             <th class="status-column">Payment Status</th>
-                            <th class="status-column">External Accounting</th>
+                            <th class="status-column external-accounting-column"><i class="fas fa-building-columns"></i> External Accounting</th>
                             <th>Attachments</th>
                             <th class="date-column">Date of Purchase</th>
                             <th>Date of Invoice</th>
@@ -442,21 +538,38 @@
                                     {% endif %}
                                 {% endif %}
                             </td>
-                            <td class="status-column">
-                                <div class="d-flex flex-column align-items-start gap-2">
-                                    {% if expense.external_accounting_entry %}
-                                        <span class="badge bg-success">Entered in External System</span>
-                                        <small class="text-muted">by {{ expense.external_accounting_entry_by.username }}<br>{{ expense.external_accounting_entry_at.strftime('%d/%m/%Y %H:%M') if expense.external_accounting_entry_at }}</small>
-                                        <button class="btn btn-sm btn-warning mark-external-accounting-btn" data-expense-id="{{ expense.id }}" data-action="unmark">
-                                            <i class="fas fa-undo me-1"></i>Remove External Mark
+                            <td class="status-column external-accounting-column">
+                                {% if expense.external_accounting_entry %}
+                                    <div class="external-entry-container entered">
+                                        <div class="entry-status">
+                                            <i class="fas fa-check-circle text-success"></i>
+                                            <span class="status-text">Entered</span>
+                                        </div>
+                                        <div class="entry-details">
+                                            <div class="detail-item">
+                                                <i class="fas fa-user"></i>
+                                                <span>{{ expense.external_accounting_entry_by.username }}</span>
+                                            </div>
+                                            <div class="detail-item">
+                                                <i class="fas fa-clock"></i>
+                                                <span>{{ expense.external_accounting_entry_at.strftime('%d/%m %H:%M') if expense.external_accounting_entry_at }}</span>
+                                            </div>
+                                        </div>
+                                        <button class="btn btn-sm btn-link text-danger mark-external-accounting-btn p-1" data-expense-id="{{ expense.id }}" data-action="unmark" title="Remove external entry mark">
+                                            <i class="fas fa-times"></i>
                                         </button>
-                                    {% else %}
-                                        <span class="badge bg-warning">Not in External System</span>
-                                        <button class="btn btn-sm btn-success mark-external-accounting-btn" data-expense-id="{{ expense.id }}" data-action="mark">
-                                            <i class="fas fa-check me-1"></i>Mark as External Entry
+                                    </div>
+                                {% else %}
+                                    <div class="external-entry-container not-entered">
+                                        <div class="entry-status">
+                                            <i class="fas fa-exclamation-triangle text-warning"></i>
+                                            <span class="status-text">Not Entered</span>
+                                        </div>
+                                        <button class="btn btn-sm btn-success mark-external-accounting-btn" data-expense-id="{{ expense.id }}" data-action="mark" title="Mark as entered in external system">
+                                            <i class="fas fa-check me-1"></i>Mark
                                         </button>
-                                    {% endif %}
-                                </div>
+                                    </div>
+                                {% endif %}
                             </td>
                             <td>
                                 <div class="d-flex flex-column gap-2">
