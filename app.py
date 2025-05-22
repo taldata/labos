@@ -428,10 +428,11 @@ def submit_expense():
                         
                         logging.info(f"Extracted document data: {doc_data}")
                         
-                        # Update expense with document data if available
-                        if doc_data.get('amount'):
+                        # Update expense with document data if available and user has chosen to save it
+                        # Check if user has explicitly saved the OCR amount field
+                        if doc_data.get('amount') and 'invoice_amount' in request.form:
                             expense.amount = doc_data['amount']
-                        if doc_data.get('purchase_date'):
+                        if doc_data.get('purchase_date') and ('invoice_purchase_date' in request.form or 'invoice_date' in request.form):
                             expense.purchase_date = doc_data['purchase_date']
                         
                     except Exception as e:
@@ -486,10 +487,11 @@ def submit_expense():
                         
                         logging.info(f"Extracted receipt data: {receipt_data}")
                         
-                        # Update expense with receipt data if available and if not already set by invoice
-                        if receipt_data.get('amount'):
+                        # Update expense with receipt data if available and user has chosen to save it
+                        # Check if user has explicitly saved the OCR amount field
+                        if receipt_data.get('amount') and 'receipt_amount' in request.form:
                             expense.amount = receipt_data['amount']
-                        if receipt_data.get('purchase_date'):
+                        if receipt_data.get('purchase_date') and ('receipt_purchase_date' in request.form or 'receipt_date' in request.form):
                             expense.purchase_date = receipt_data['purchase_date']
                         
                     except Exception as e:
@@ -1546,10 +1548,11 @@ def edit_expense(expense_id):
                                 doc_data = doc_processor.process_document(file_path)
                                 logging.info(f"Extracted document data: {doc_data}")
                                 
-                                # Update expense with document data if available and if not already set by user
-                                if doc_data.get('amount'):
+                                # Update expense with document data if available and user has chosen to save it
+                                # Check if user has explicitly saved the OCR amount field
+                                if doc_data.get('amount') and f'{doc_type}_amount' in request.form:
                                     expense.amount = doc_data['amount']
-                                if doc_data.get('purchase_date'):
+                                if doc_data.get('purchase_date') and (f'{doc_type}_purchase_date' in request.form or f'{doc_type}_date' in request.form):
                                     expense.purchase_date = doc_data['purchase_date']
                                 
                             except Exception as e:
