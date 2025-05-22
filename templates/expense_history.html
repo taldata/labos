@@ -171,7 +171,7 @@
                             <th><i class="fas fa-file-alt text-primary"></i> Description</th>
                             <th><i class="fas fa-comment text-primary"></i> Reason</th>
                             <th><i class="fas fa-store text-primary"></i> Supplier</th>
-                            <th class="col-date"><i class="fas fa-calendar-alt text-primary"></i> Purchase Date</th>
+                            <th class="col-date"><i class="fas fa-calendar-alt text-primary"></i> Invoice Date</th>
                             <th><i class="fas fa-folder text-primary"></i> Category</th>
                             <th><i class="fas fa-folder-open text-primary"></i> Subcategory</th>
                             <th><i class="fas fa-tag text-primary"></i> Type</th>
@@ -197,7 +197,7 @@
                             <td>{{ expense.description }}</td>
                             <td>{{ expense.reason }}</td>
                             <td>{{ expense.supplier.name if expense.supplier else '-' }}</td>
-                            <td class="col-date small">{{ expense.purchase_date.strftime('%d/%m/%Y') if expense.purchase_date else '-' }}</td>
+                            <td class="col-date small">{{ expense.invoice_date.strftime('%d/%m/%Y') if expense.invoice_date else '-' }}</td>
                             <td>{{ expense.subcategory.category.name if expense.subcategory else '-' }}</td>
                             <td>{{ expense.subcategory.name if expense.subcategory else '-' }}</td>
                             <td>{{ expense.type|format_expense_type }}</td>

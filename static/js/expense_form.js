@@ -3,7 +3,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const receiptInput = document.getElementById('receipt');
     const quoteInput = document.getElementById('quote');
     const amountInput = document.getElementById('amount');
-    const purchaseDateInput = document.getElementById('purchase_date');
+    const invoiceDateInput = document.getElementById('invoice_date');
     const form = document.getElementById('expense-form');
 
     // Create preview container for OCR data
@@ -39,10 +39,10 @@ document.addEventListener('DOMContentLoaded', function() {
             if (window.ocrData.amount && !amountInput.value) {
                 amountInput.value = window.ocrData.amount;
             }
-            if (window.ocrData.purchase_date && !purchaseDateInput.value) {
+            if (window.ocrData.purchase_date && !invoiceDateInput.value) {
                 const date = new Date(window.ocrData.purchase_date);
                 const formattedDate = date.toISOString().split('T')[0];
-                purchaseDateInput.value = formattedDate;
+                invoiceDateInput.value = formattedDate;
             }
         }
         dismissOcrPreview();

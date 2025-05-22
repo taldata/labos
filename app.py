@@ -326,15 +326,7 @@ def submit_expense():
         else:
             supplier_id = int(supplier_id)
         
-        # Convert purchase_date string to datetime if provided
-        purchase_date = None
-        if request.form.get('purchase_date'):
-            try:
-                purchase_date = datetime.strptime(request.form['purchase_date'], '%Y-%m-%d')
-            except ValueError:
-                logging.error(f"Invalid purchase date format: {request.form['purchase_date']}")
-                flash('Invalid purchase date format. Please use DD/MM/YYYY format.', 'error')
-                return redirect(url_for('submit_expense'))
+        # invoice_date is handled separately below
         
         # Handle supplier
         if request.form.get('supplier_name') and not supplier_id:
@@ -379,7 +371,6 @@ def submit_expense():
             user_id=current_user.id,
             payment_method=payment_method,
             supplier_id=supplier_id,
-            purchase_date=purchase_date,
             credit_card_id=credit_card_id,
             payment_due_date=payment_due_date,  # Add payment due date
             status='approved' if expense_type == 'auto_approved' else 'pending',
@@ -433,7 +424,7 @@ def submit_expense():
                         if doc_data.get('amount') and 'invoice_amount' in request.form:
                             expense.amount = doc_data['amount']
                         if doc_data.get('purchase_date') and ('invoice_purchase_date' in request.form or 'invoice_date' in request.form):
-                            expense.purchase_date = doc_data['purchase_date']
+                            expense.invoice_date = doc_data['purchase_date']
                         
                     except Exception as e:
                         logging.error(f"Error processing invoice: {str(e)}")
@@ -492,7 +483,7 @@ def submit_expense():
                         if receipt_data.get('amount') and 'receipt_amount' in request.form:
                             expense.amount = receipt_data['amount']
                         if receipt_data.get('purchase_date') and ('receipt_purchase_date' in request.form or 'receipt_date' in request.form):
-                            expense.purchase_date = receipt_data['purchase_date']
+                            expense.invoice_date = receipt_data['purchase_date']
                         
                     except Exception as e:
                         logging.error(f"Error processing receipt: {str(e)}")
@@ -859,12 +850,12 @@ def expense_history():
             expenses = [expense for expense in expenses if 
                         expense.date.year == int(year) and expense.date.month == int(month)]
         
-        # Filter by month of purchase (purchase_date field)
+        # Filter by month of invoice (invoice_date field)
         if purchase_month != 'all':
             year, month = purchase_month.split('-')
             expenses = [expense for expense in expenses if 
-                        expense.purchase_date and expense.purchase_date.year == int(year) and 
-                        expense.purchase_date.month == int(month)]
+                        expense.invoice_date and expense.invoice_date.year == int(year) and 
+                        expense.invoice_date.month == int(month)]
         
         # Filter by supplier
         if supplier_id != 'all':
@@ -1460,21 +1451,10 @@ def edit_expense(expense_id):
             subcategory_id = request.form.get('subcategory_id')
             payment_method = request.form.get('payment_method')
             supplier_id = request.form.get('supplier_id')
-            purchase_date_str = request.form.get('purchase_date')
             invoice_date_str = request.form.get('invoice_date')
             credit_card_id = request.form.get('credit_card_id')
             currency = request.form.get('currency', 'ILS')
             payment_due_date = request.form.get('payment_due_date', 'end_of_month')
-
-            # Convert purchase_date string to datetime if provided
-            purchase_date = None
-            if purchase_date_str:
-                try:
-                    purchase_date = datetime.strptime(purchase_date_str, '%Y-%m-%d')
-                except ValueError:
-                    logging.error(f"Invalid purchase date format: {purchase_date_str}")
-                    flash('Invalid purchase date format. Please use YYYY-MM-DD format.', 'error')
-                    return redirect(url_for('edit_expense', expense_id=expense_id))
 
             # Convert invoice_date string to datetime if provided
             invoice_date = None
@@ -1517,7 +1497,6 @@ def edit_expense(expense_id):
             expense.subcategory_id = subcategory_id
             expense.payment_method = payment_method
             expense.supplier_id = supplier_id if supplier_id else None
-            expense.purchase_date = purchase_date
             expense.invoice_date = invoice_date
             expense.credit_card_id = credit_card_id if credit_card_id else None
             expense.payment_due_date = payment_due_date
@@ -1553,7 +1532,7 @@ def edit_expense(expense_id):
                                 if doc_data.get('amount') and f'{doc_type}_amount' in request.form:
                                     expense.amount = doc_data['amount']
                                 if doc_data.get('purchase_date') and (f'{doc_type}_purchase_date' in request.form or f'{doc_type}_date' in request.form):
-                                    expense.purchase_date = doc_data['purchase_date']
+                                    expense.invoice_date = doc_data['purchase_date']
                                 
                             except Exception as e:
                                 logging.error(f"Error processing {doc_type}: {str(e)}")
@@ -2116,8 +2095,6 @@ def admin_edit_expense(expense_id):
         # Date fields
         if request.form['date']:
             expense.date = datetime.strptime(request.form['date'], '%Y-%m-%d')
-        if request.form['purchase_date']:
-            expense.purchase_date = datetime.strptime(request.form['purchase_date'], '%Y-%m-%d')
         if request.form['invoice_date']:
             expense.invoice_date = datetime.strptime(request.form['invoice_date'], '%Y-%m-%d')
         
@@ -2302,7 +2279,7 @@ def export_accounting_excel():
             'Bank SWIFT': expense.supplier.bank_swift if expense.supplier else '-',
             'Supplier Notes': expense.supplier.notes if expense.supplier else '-',
             'Supplier Status': expense.supplier.status if expense.supplier else '-',
-            'Date of Purchase': expense.purchase_date.strftime('%d/%m/%Y') if expense.purchase_date else '-',
+            'Date of Invoice': expense.invoice_date.strftime('%d/%m/%Y') if expense.invoice_date else '-',
             'Payment Due Date': 'Start of month' if expense.payment_due_date == 'start_of_month' else 'End of month',
             'Payment Status': 'Paid' if expense.is_paid else 'Pending Payment',
             'External Accounting Entry': 'Yes' if expense.external_accounting_entry else 'No',

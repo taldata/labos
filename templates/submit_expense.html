@@ -171,12 +171,6 @@
                         </button>
                     </div>
                     <div class="form-group">
-                        <label for="purchase_date">Purchase Date</label>
-                        <input type="date" class="form-control" id="purchase_date" name="purchase_date">
-                        <small class="text-muted">Leave empty if this is a future purchase</small>
-                    </div>
-                    
-                    <div class="form-group">
                         <label for="payment_due_date">Payment Due Date</label>
                         <select class="form-control" id="payment_due_date" name="payment_due_date">
                             <option value="start_of_month">Start of month</option>
@@ -746,7 +740,7 @@ function saveField(button, field, value) {
     } else if (field === 'purchase_date' || field === 'date') {
         const formattedDate = formatDateForInput(value);
         if (formattedDate) {
-            document.getElementById('purchase_date').value = formattedDate;
+            document.getElementById('invoice_date').value = formattedDate;
         }
     }
     
@@ -771,7 +765,7 @@ function ignoreField(button, field) {
         const supplierSelect = document.getElementById('supplier_id');
         supplierSelect.selectedIndex = 0;
     } else if (field === 'purchase_date' || field === 'date') {
-        document.getElementById('purchase_date').value = '';
+        document.getElementById('invoice_date').value = '';
     }
     
     // Hide the field with a fade out effect
