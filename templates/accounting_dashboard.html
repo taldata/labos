@@ -325,6 +325,15 @@
             </div>
             
             <div class="filter-item">
+                <label for="external_accounting_filter"><i class="fas fa-building-columns"></i> External Accounting</label>
+                <select name="external_accounting_filter" id="external_accounting_filter" class="form-control" onchange="this.form.submit()">
+                    <option value="all" {% if selected_external_accounting == 'all' %}selected{% endif %}>All Status</option>
+                    <option value="entered" {% if selected_external_accounting == 'entered' %}selected{% endif %}>Entered in External System</option>
+                    <option value="not_entered" {% if selected_external_accounting == 'not_entered' %}selected{% endif %}>Not in External System</option>
+                </select>
+            </div>
+            
+            <div class="filter-item">
                 <label for="search_text"><i class="fas fa-search"></i> Search</label>
                 <input type="text" name="search_text" id="search_text" class="form-control" placeholder="Search in description, supplier, notes..." value="{{ search_text }}">
             </div>
@@ -350,6 +359,7 @@
                             <th>Credit Card</th>
                             <th>Payment Due Date</th>
                             <th class="status-column">Payment Status</th>
+                            <th class="status-column">External Accounting</th>
                             <th>Attachments</th>
                             <th class="date-column">Date of Purchase</th>
                             <th>Date of Invoice</th>
@@ -431,6 +441,22 @@
                                     </div>
                                     {% endif %}
                                 {% endif %}
+                            </td>
+                            <td class="status-column">
+                                <div class="d-flex flex-column align-items-start gap-2">
+                                    {% if expense.external_accounting_entry %}
+                                        <span class="badge bg-success">Entered in External System</span>
+                                        <small class="text-muted">by {{ expense.external_accounting_entry_by.username }}<br>{{ expense.external_accounting_entry_at.strftime('%d/%m/%Y %H:%M') if expense.external_accounting_entry_at }}</small>
+                                        <button class="btn btn-sm btn-warning mark-external-accounting-btn" data-expense-id="{{ expense.id }}" data-action="unmark">
+                                            <i class="fas fa-undo me-1"></i>Remove External Mark
+                                        </button>
+                                    {% else %}
+                                        <span class="badge bg-warning">Not in External System</span>
+                                        <button class="btn btn-sm btn-success mark-external-accounting-btn" data-expense-id="{{ expense.id }}" data-action="mark">
+                                            <i class="fas fa-check me-1"></i>Mark as External Entry
+                                        </button>
+                                    {% endif %}
+                                </div>
                             </td>
                             <td>
                                 <div class="d-flex flex-column gap-2">
@@ -581,6 +607,43 @@ document.addEventListener('DOMContentLoaded', function() {
                 alert(error.message);
                 button.disabled = false;
                 button.innerHTML = '<i class="fas fa-hourglass-start me-1"></i>Pending Payment';
+            }
+        });
+    });
+    
+    // Handle external accounting mark/unmark buttons
+    document.querySelectorAll('.mark-external-accounting-btn').forEach(button => {
+        button.addEventListener('click', async function() {
+            const expenseId = this.dataset.expenseId;
+            const action = this.dataset.action;
+            const isMarking = action === 'mark';
+            
+            try {
+                button.disabled = true;
+                button.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Processing...';
+                
+                const url = isMarking ? `/mark_expense_external_accounting/${expenseId}` : `/unmark_expense_external_accounting/${expenseId}`;
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (!response.ok) {
+                    const data = await response.json();
+                    throw new Error(data.error || `Failed to ${isMarking ? 'mark' : 'unmark'} expense in external accounting`);
+                }
+                
+                location.reload();
+            } catch (error) {
+                alert(error.message);
+                button.disabled = false;
+                if (isMarking) {
+                    button.innerHTML = '<i class="fas fa-check me-1"></i>Mark as External Entry';
+                } else {
+                    button.innerHTML = '<i class="fas fa-undo me-1"></i>Remove External Mark';
+                }
             }
         });
     });

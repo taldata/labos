@@ -2304,7 +2304,10 @@ def export_accounting_excel():
             'Supplier Status': expense.supplier.status if expense.supplier else '-',
             'Date of Purchase': expense.purchase_date.strftime('%d/%m/%Y') if expense.purchase_date else '-',
             'Payment Due Date': 'Start of month' if expense.payment_due_date == 'start_of_month' else 'End of month',
-            'Payment Status': 'Paid' if expense.is_paid else 'Pending Payment'
+            'Payment Status': 'Paid' if expense.is_paid else 'Pending Payment',
+            'External Accounting Entry': 'Yes' if expense.external_accounting_entry else 'No',
+            'External Accounting Entry By': expense.external_accounting_entry_by.username if expense.external_accounting_entry_by else '-',
+            'External Accounting Entry Date': expense.external_accounting_entry_at.strftime('%d/%m/%Y %H:%M') if expense.external_accounting_entry_at else '-'
         })
     
     df = pd.DataFrame(data)
@@ -2367,6 +2370,7 @@ def accounting_dashboard():
     payment_status_filter = request.args.get('payment_status', 'all')
     payment_due_date_filter = request.args.get('payment_due_date', 'all')
     invoice_date_filter = request.args.get('invoice_date', 'all')
+    external_accounting_filter = request.args.get('external_accounting_filter', 'all')
     search_text = request.args.get('search_text', '')
     
     # Start with base query for approved expenses
@@ -2440,6 +2444,12 @@ def accounting_dashboard():
     elif payment_status_filter == 'pending':
         query = query.filter(Expense.is_paid == False)
     
+    # Apply external accounting filter
+    if external_accounting_filter == 'entered':
+        query = query.filter(Expense.external_accounting_entry == True)
+    elif external_accounting_filter == 'not_entered':
+        query = query.filter(Expense.external_accounting_entry == False)
+    
     # Get the expenses
     expenses = query.order_by(Expense.date.desc()).all()
     
@@ -2459,6 +2469,7 @@ def accounting_dashboard():
                           selected_payment_status=payment_status_filter,
                           selected_payment_due_date=payment_due_date_filter,
                           selected_invoice_date=invoice_date_filter,
+                          selected_external_accounting=external_accounting_filter,
                           search_text=search_text,
                           month_options=month_options)
 
@@ -2539,6 +2550,40 @@ def mark_expense_pending_payment(expense_id):
     
     expense.payment_status = 'pending_payment'
     db.session.commit()
+    return jsonify({'success': True})
+
+@app.route('/mark_expense_external_accounting/<int:expense_id>', methods=['POST'])
+@login_required
+def mark_expense_external_accounting(expense_id):
+    if not current_user.is_accounting:
+        return jsonify({'error': 'Access denied'}), 403
+    
+    expense = Expense.query.get_or_404(expense_id)
+    if expense.status != 'approved':
+        return jsonify({'error': 'Only approved expenses can be marked as entered in external accounting'}), 400
+    
+    expense.external_accounting_entry = True
+    expense.external_accounting_entry_by_id = current_user.id
+    expense.external_accounting_entry_at = datetime.utcnow()
+    db.session.commit()
+    
+    return jsonify({'success': True})
+
+@app.route('/unmark_expense_external_accounting/<int:expense_id>', methods=['POST'])
+@login_required
+def unmark_expense_external_accounting(expense_id):
+    if not current_user.is_accounting:
+        return jsonify({'error': 'Access denied'}), 403
+    
+    expense = Expense.query.get_or_404(expense_id)
+    if not expense.external_accounting_entry:
+        return jsonify({'error': 'Expense is not marked as entered in external accounting'}), 400
+    
+    expense.external_accounting_entry = False
+    expense.external_accounting_entry_by_id = None
+    expense.external_accounting_entry_at = None
+    db.session.commit()
+    
     return jsonify({'success': True})
 
 @app.route('/manage_suppliers')

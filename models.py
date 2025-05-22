@@ -150,6 +150,13 @@ class Expense(db.Model):
     payment_due_date = db.Column(db.String(20), default='end_of_month')  # 'start_of_month' or 'end_of_month'
     # Payment workflow status: waiting accounting review, then pending payment, then paid
     payment_status = db.Column(db.String(20), default='pending_attention')  # pending_attention, pending_payment, paid
+    # Track if this expense was entered in external accounting system
+    external_accounting_entry = db.Column(db.Boolean, default=False)
+    external_accounting_entry_by_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
+    external_accounting_entry_at = db.Column(db.DateTime, nullable=True)
     paid_by = db.relationship('User', 
                             foreign_keys=[paid_by_id],
                             backref=db.backref('paid_expenses', lazy='dynamic'))
+    external_accounting_entry_by = db.relationship('User',
+                            foreign_keys=[external_accounting_entry_by_id],
+                            backref=db.backref('external_accounting_entries', lazy='dynamic'))
