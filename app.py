@@ -2101,21 +2101,68 @@ def admin_edit_expense(expense_id):
     expense = Expense.query.get_or_404(expense_id)
     
     if request.method == 'POST':
+        # Basic fields
         expense.amount = float(request.form['amount'])
+        expense.currency = request.form['currency']
         expense.description = request.form['description']
         expense.reason = request.form['reason']
         expense.type = request.form['type']
         expense.subcategory_id = int(request.form['subcategory_id'])
-        expense.status = request.form['status']  # Add status field
+        expense.status = request.form['status']
+        
+        # Date fields
+        if request.form['date']:
+            expense.date = datetime.strptime(request.form['date'], '%Y-%m-%d')
+        if request.form['purchase_date']:
+            expense.purchase_date = datetime.strptime(request.form['purchase_date'], '%Y-%m-%d')
+        if request.form['invoice_date']:
+            expense.invoice_date = datetime.strptime(request.form['invoice_date'], '%Y-%m-%d')
+        
+        # User assignments
+        if request.form['user_id']:
+            expense.user_id = int(request.form['user_id'])
+        if request.form['manager_id']:
+            expense.manager_id = int(request.form['manager_id'])
+        elif expense.status in ['approved', 'rejected'] and not expense.manager_id:
+            # If changing to approved/rejected and no handler set, set current admin as handler
+            expense.manager_id = current_user.id
+            expense.handled_at = datetime.now(pytz.utc).replace(microsecond=0)
         
         # Reset handler info if status changed to pending
         if expense.status == 'pending':
-            expense.handler = None
+            expense.manager_id = None
             expense.handled_at = None
-        elif expense.status in ['approved', 'rejected'] and not expense.handler:
-            # If changing to approved/rejected and no handler set, set current admin as handler
-            expense.handler = current_user
-            expense.handled_at = datetime.now(pytz.utc).replace(microsecond=0)
+        
+        # Rejection reason
+        expense.rejection_reason = request.form['rejection_reason'] if request.form['rejection_reason'] else None
+        
+        # Payment related fields
+        expense.payment_method = request.form['payment_method']
+        expense.payment_due_date = request.form['payment_due_date']
+        expense.payment_status = request.form['payment_status']
+        expense.is_paid = request.form.get('is_paid') == 'on'
+        
+        # Supplier and credit card
+        if request.form['supplier_id']:
+            expense.supplier_id = int(request.form['supplier_id'])
+        else:
+            expense.supplier_id = None
+            
+        if request.form['credit_card_id']:
+            expense.credit_card_id = int(request.form['credit_card_id'])
+        else:
+            expense.credit_card_id = None
+        
+        # Payment tracking
+        if request.form['paid_by_id']:
+            expense.paid_by_id = int(request.form['paid_by_id'])
+        else:
+            expense.paid_by_id = None
+            
+        if request.form['paid_at']:
+            expense.paid_at = datetime.strptime(request.form['paid_at'], '%Y-%m-%dT%H:%M')
+        else:
+            expense.paid_at = None
         
         # Handle file uploads if provided
         if 'quote' in request.files:
@@ -2155,9 +2202,21 @@ def admin_edit_expense(expense_id):
     .join(Department)\
     .all()
     
+    # Get all users for dropdowns
+    users = User.query.all()
+    
+    # Get all suppliers for dropdown
+    suppliers = Supplier.query.filter_by(status='active').all()
+    
+    # Get all credit cards for dropdown
+    credit_cards = CreditCard.query.filter_by(status='active').all()
+    
     return render_template('admin_edit_expense.html', 
                          expense=expense, 
-                         subcategories=subcategories)
+                         subcategories=subcategories,
+                         users=users,
+                         suppliers=suppliers,
+                         credit_cards=credit_cards)
 
 @app.route('/admin/expense/<int:expense_id>/delete', methods=['POST'])
 @login_required
