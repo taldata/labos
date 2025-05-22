@@ -458,7 +458,6 @@
                             <th class="status-column external-accounting-column"><i class="fas fa-building-columns"></i> External Accounting</th>
                             <th>Attachments</th>
                             <th class="date-column">Date of Invoice</th>
-                            <th>Date of Invoice</th>
                             <th>Tax ID</th>
                             <th>Bank Name</th>
                             <th>Account Number</th>
@@ -591,9 +590,6 @@
                                 </div>
                             </td>
                             <td class="date-column">{{ expense.invoice_date.strftime('%d/%m/%Y') if expense.invoice_date else '-' }}</td>
-                            <td>
-                                {{ expense.invoice_date.strftime('%d/%m/%Y') if expense.invoice_date else '-' }}
-                            </td>
                             <td>{{ expense.supplier.tax_id if expense.supplier else '-' }}</td>
                             <td>{{ expense.supplier.bank_name if expense.supplier else '-' }}</td>
                             <td>{{ expense.supplier.bank_account_number if expense.supplier else '-' }}</td>

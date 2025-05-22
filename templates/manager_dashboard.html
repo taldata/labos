@@ -155,7 +155,6 @@
                             <th><i class="fas fa-file-alt"></i> Description</th>
                             <th><i class="fas fa-comment"></i> Reason</th>
                             <th><i class="fas fa-store"></i> Supplier</th>
-                            <th class="date-col"><i class="fas fa-calendar-alt"></i> Purchase Date</th>
                             <th><i class="fas fa-folder"></i> Category</th>
                             <th><i class="fas fa-folder-open"></i> Subcategory</th>
                             <th class="type-col"><i class="fas fa-tag"></i> Type</th>
@@ -179,7 +178,6 @@
                             <td>{{ expense.description }}</td>
                             <td>{{ expense.reason }}</td>
                             <td>{{ expense.supplier.name if expense.supplier else '-' }}</td>
-                            <td>{{ expense.invoice_date.strftime('%d/%m/%Y') if expense.invoice_date else '-' }}</td>
                             <td>{{ expense.subcategory.category.name if expense.subcategory else '-' }}</td>
                             <td>{{ expense.subcategory.name if expense.subcategory else '-' }}</td>
                             <td class="type-col">{{ expense.type|format_expense_type }}</td>
@@ -1076,6 +1074,90 @@ textarea.form-control {
 
 .category-row.expanded .fa-chevron-right {
     transform: rotate(90deg);
+}
+
+.document-links {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.stats-summary {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+.stat-card {
+    background: white;
+    border-radius: 8px;
+    padding: 1.5rem;
+    text-align: center;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    transition: transform 0.2s ease;
+}
+
+.stat-card:hover {
+    transform: translateY(-2px);
+}
+
+.stat-value {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: #2c3e50;
+    margin-bottom: 0.5rem;
+}
+
+.stat-label {
+    font-size: 0.9rem;
+    color: #7f8c8d;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.action-buttons {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.action-buttons .button {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.875rem;
+}
+
+.expense-type {
+    display: inline-block;
+    padding: 4px 8px;
+    background-color: #e9ecef;
+    border-radius: 4px;
+    font-size: 0.875rem;
+    color: #495057;
+    font-weight: 500;
+}
+
+.badge {
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    display: inline-block;
+}
+
+.badge.success {
+    background-color: #d4edda;
+    color: #155724;
+}
+
+.badge.warning {
+    background-color: #fff3cd;
+    color: #856404;
+}
+
+.badge.danger {
+    background-color: #f8d7da;
+    color: #721c24;
 }
 </style>
 

@@ -182,7 +182,6 @@
                             <th class="col-actions"><i class="fas fa-user-check text-primary"></i> Handled By</th>
                             <th class="col-actions"><i class="fas fa-clock text-primary"></i> Handled At</th>
                             <th><i class="fas fa-paperclip text-primary"></i> Files</th>
-                            <th>Date of Invoice</th>
                             {% if current_user.username == 'admin' %}
                             <th class="col-actions"><i class="fas fa-cogs text-primary"></i> Actions</th>
                             {% endif %}
@@ -261,9 +260,6 @@
                                         </span>
                                     {% endif %}
                                 </div>
-                            </td>
-                            <td>
-                                {{ expense.invoice_date.strftime('%d/%m/%Y') if expense.invoice_date else '-' }}
                             </td>
                             {% if current_user.username == 'admin' %}
                             <td class="col-actions">
