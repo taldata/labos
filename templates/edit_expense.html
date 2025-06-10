@@ -37,7 +37,7 @@
                 <label for="amount">Amount (VAT included)</label>
                 <div class="input-group">
                     <span class="input-group-text" id="currency-symbol">{{ '₪' if expense.currency == 'ILS' else '$' }}</span>
-                    <input type="number" step="0.01" min="0" name="amount" id="amount" required class="form-control" value="{{ expense.amount }}">
+                    <input type="number" step="0.01" name="amount" id="amount" required class="form-control" value="{{ expense.amount }}">
                     <select name="currency" id="currency" class="form-control currency-select">
                         <option value="ILS" {% if expense.currency == 'ILS' %}selected{% endif %}>ILS</option>
                         <option value="USD" {% if expense.currency == 'USD' %}selected{% endif %}>USD</option>
