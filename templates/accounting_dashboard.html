@@ -552,7 +552,7 @@
             
             <div class="filter-item filter-submit">
                 <button type="submit" class="btn btn-primary"><i class="fas fa-search"></i> Apply Filters</button>
-                <a href="{{ url_for('accounting_dashboard') }}" class="btn btn-secondary"><i class="fas fa-times"></i> Clear Filters</a>
+                <button type="button" class="btn btn-secondary" id="clearFiltersBtn"><i class="fas fa-times"></i> Clear Filters</button>
             </div>
         </form>
     </div>
@@ -749,6 +749,27 @@ document.addEventListener('DOMContentLoaded', function() {
             // Clear date range filters
         }
     });
+    
+    // Handle clear filters button
+    const clearFiltersBtn = document.getElementById('clearFiltersBtn');
+    if (clearFiltersBtn) {
+        clearFiltersBtn.addEventListener('click', function() {
+            // Reset all form fields to default values
+            document.getElementById('month').value = 'all';
+            document.getElementById('payment_method').value = 'all';
+            document.getElementById('payment_due_date').value = 'all';
+            document.getElementById('payment_status').value = 'all';
+            document.getElementById('invoice_date').value = 'all';
+            document.getElementById('external_accounting_filter').value = 'all';
+            document.getElementById('supplier_search').value = '';
+            document.getElementById('amount_min').value = '';
+            document.getElementById('amount_max').value = '';
+            document.getElementById('search_text').value = '';
+            
+            // Auto-submit the form to show results immediately
+            this.closest('form').submit();
+        });
+    }
     
     // Handle mark as paid buttons
     document.querySelectorAll('.mark-paid-btn').forEach(button => {
