@@ -8,19 +8,28 @@
         min-height: calc(100vh - 60px);
     }
     .dashboard-actions {
-        background: white;
-        padding: 1.5rem;
-        border-radius: 10px;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-        margin-bottom: 1.5rem;
+        background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+        padding: 2rem;
+        border-radius: 15px;
+        box-shadow: 0 8px 25px rgba(0,0,0,0.08);
+        margin-bottom: 2rem;
         display: flex;
         justify-content: space-between;
         align-items: center;
+        border: 1px solid rgba(1, 176, 138, 0.1);
     }
     .dashboard-actions h2 {
         color: #2c3e50;
-        font-weight: 600;
+        font-weight: 700;
+        font-size: 1.75rem;
         margin: 0;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+    .dashboard-actions h2::before {
+        content: "📊";
+        font-size: 1.5rem;
     }
     .action-buttons {
         display: flex;
@@ -30,29 +39,33 @@
         display: inline-flex;
         align-items: center;
         gap: 0.5rem;
-        padding: 0.75rem 1.5rem;
-        border-radius: 8px;
-        font-weight: 500;
+        padding: 0.875rem 2rem;
+        border-radius: 10px;
+        font-weight: 600;
+        font-size: 0.95rem;
         transition: all 0.3s ease;
         text-decoration: none;
         border: none;
         cursor: pointer;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
     }
     .action-button.primary {
-        background-color: #01B08A;
+        background: linear-gradient(135deg, #01B08A 0%, #019578 100%);
         color: white;
     }
     .action-button.primary:hover {
-        background-color: #019578;
-        transform: translateY(-1px);
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(1, 176, 138, 0.3);
+        color: white;
     }
     .action-button.secondary {
-        background-color: #3498db;
+        background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
         color: white;
     }
     .action-button.secondary:hover {
-        background-color: #2980b9;
-        transform: translateY(-1px);
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(52, 152, 219, 0.3);
+        color: white;
     }
     .card {
         border: none;
@@ -199,60 +212,149 @@
     
     /* Filter styles */
     .filter-container {
-        background: white;
-        padding: 1.5rem;
-        border-radius: 10px;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-        margin-bottom: 1.5rem;
+        background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+        padding: 2rem;
+        border-radius: 15px;
+        box-shadow: 0 8px 25px rgba(0,0,0,0.08);
+        margin-bottom: 2rem;
+        border: 1px solid rgba(1, 176, 138, 0.1);
     }
     
     .filter-form {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-        gap: 1rem;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 1.5rem;
+        align-items: end;
     }
     
     .filter-item {
-        margin-bottom: 0.5rem;
+        margin-bottom: 0;
     }
     
     .filter-item label {
         display: block;
-        margin-bottom: 0.5rem;
-        color: #495057;
-        font-weight: 500;
+        margin-bottom: 0.75rem;
+        color: #2c3e50;
+        font-weight: 600;
+        font-size: 0.9rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
     }
     
     .filter-item select,
     .filter-item input {
         width: 100%;
-        padding: 0.5rem;
-        border-radius: 6px;
-        border: 1px solid #ced4da;
+        padding: 0.75rem 1rem;
+        border-radius: 8px;
+        border: 2px solid #e9ecef;
         background-color: white;
+        font-size: 0.95rem;
+        transition: all 0.3s ease;
     }
     
     .filter-item select:focus,
     .filter-item input:focus {
         border-color: #01B08A;
-        box-shadow: 0 0 0 0.2rem rgba(1, 176, 138, 0.15);
+        box-shadow: 0 0 0 0.25rem rgba(1, 176, 138, 0.1);
         outline: none;
+        transform: translateY(-1px);
+    }
+    
+    .filter-item select:hover,
+    .filter-item input:hover {
+        border-color: #01B08A;
     }
     
     .filter-title {
-        margin-bottom: 1rem;
-        font-size: 1.2rem;
+        margin-bottom: 1.5rem;
+        font-size: 1.4rem;
         color: #2c3e50;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    
+    .filter-title i {
+        color: #01B08A;
     }
     
     .filter-submit {
         display: flex;
-        align-items: flex-end;
+        flex-direction: column;
+        gap: 0.5rem;
     }
     
-    .filter-submit button {
-        height: 38px;
+    .filter-submit button,
+    .filter-submit a {
+        height: 45px;
         width: 100%;
+        border-radius: 8px;
+        font-weight: 600;
+        font-size: 0.9rem;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        text-decoration: none;
+    }
+    
+    .filter-submit .btn-primary {
+        background: linear-gradient(135deg, #01B08A 0%, #019578 100%);
+        border: none;
+        box-shadow: 0 4px 15px rgba(1, 176, 138, 0.3);
+    }
+    
+    .filter-submit .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(1, 176, 138, 0.4);
+    }
+    
+    .filter-submit .btn-secondary {
+        background: linear-gradient(135deg, #6c757d 0%, #5a6268 100%);
+        border: none;
+        color: white;
+        box-shadow: 0 4px 15px rgba(108, 117, 125, 0.3);
+    }
+    
+    .filter-submit .btn-secondary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(108, 117, 125, 0.4);
+        color: white;
+    }
+    
+    /* Amount range styling */
+    .amount-range-container {
+        display: flex;
+        gap: 0.75rem;
+        align-items: center;
+    }
+    
+    .amount-range-container input {
+        flex: 1;
+    }
+    
+    .amount-range-separator {
+        color: #6c757d;
+        font-weight: 600;
+        margin: 0 0.25rem;
+    }
+    
+    /* Responsive adjustments */
+    @media (max-width: 768px) {
+        .filter-form {
+            grid-template-columns: 1fr;
+            gap: 1rem;
+        }
+        
+        .filter-container {
+            padding: 1.5rem;
+        }
+        
+        .filter-submit {
+            margin-top: 1rem;
+        }
     }
     
     /* External Accounting Column Styles */
@@ -430,12 +532,27 @@
             </div>
             
             <div class="filter-item">
-                <label for="search_text"><i class="fas fa-search"></i> Search</label>
-                <input type="text" name="search_text" id="search_text" class="form-control" placeholder="Search in description, supplier, notes..." value="{{ search_text }}">
+                <label for="supplier_search"><i class="fas fa-building"></i> Supplier Search</label>
+                <input type="text" name="supplier_search" id="supplier_search" class="form-control" placeholder="Search supplier name..." value="{{ supplier_search }}">
+            </div>
+            
+            <div class="filter-item">
+                <label for="amount_min"><i class="fas fa-dollar-sign"></i> Amount Range</label>
+                <div class="amount-range-container">
+                    <input type="number" name="amount_min" id="amount_min" class="form-control" placeholder="Min amount" step="0.01" value="{{ amount_min }}">
+                    <span class="amount-range-separator">to</span>
+                    <input type="number" name="amount_max" id="amount_max" class="form-control" placeholder="Max amount" step="0.01" value="{{ amount_max }}">
+                </div>
+            </div>
+            
+            <div class="filter-item">
+                <label for="search_text"><i class="fas fa-search"></i> General Search</label>
+                <input type="text" name="search_text" id="search_text" class="form-control" placeholder="Search in description, notes..." value="{{ search_text }}">
             </div>
             
             <div class="filter-item filter-submit">
                 <button type="submit" class="btn btn-primary"><i class="fas fa-search"></i> Apply Filters</button>
+                <a href="{{ url_for('accounting_dashboard') }}" class="btn btn-secondary"><i class="fas fa-times"></i> Clear Filters</a>
             </div>
         </form>
     </div>

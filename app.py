@@ -2349,6 +2349,9 @@ def accounting_dashboard():
     invoice_date_filter = request.args.get('invoice_date', 'all')
     external_accounting_filter = request.args.get('external_accounting_filter', 'all')
     search_text = request.args.get('search_text', '')
+    supplier_search = request.args.get('supplier_search', '')
+    amount_min = request.args.get('amount_min', '')
+    amount_max = request.args.get('amount_max', '')
     
     # Start with base query for approved expenses
     query = Expense.query.filter_by(status='approved')
@@ -2359,7 +2362,6 @@ def accounting_dashboard():
         query = query.join(Supplier, Expense.supplier_id == Supplier.id).filter(
             or_(
                 Expense.description.ilike(search_term),
-                Supplier.name.ilike(search_term),
                 Supplier.notes.ilike(search_term),
                 Supplier.email.ilike(search_term),
                 Supplier.phone.ilike(search_term),
@@ -2367,6 +2369,28 @@ def accounting_dashboard():
                 Supplier.tax_id.ilike(search_term)
             )
         )
+    
+    # Apply supplier search filter if provided
+    if supplier_search:
+        supplier_search_term = f'%{supplier_search}%'
+        # Ensure Supplier table is joined (safe to call multiple times)
+        query = query.join(Supplier, Expense.supplier_id == Supplier.id)
+        query = query.filter(Supplier.name.ilike(supplier_search_term))
+    
+    # Apply amount range filter if provided
+    if amount_min:
+        try:
+            min_amount = float(amount_min)
+            query = query.filter(Expense.amount >= min_amount)
+        except ValueError:
+            pass  # Ignore invalid amount values
+    
+    if amount_max:
+        try:
+            max_amount = float(amount_max)
+            query = query.filter(Expense.amount <= max_amount)
+        except ValueError:
+            pass  # Ignore invalid amount values
     
     # Apply month filter (based on date submitted instead of purchase_date)
     if month_filter != 'all':
@@ -2448,6 +2472,9 @@ def accounting_dashboard():
                           selected_invoice_date=invoice_date_filter,
                           selected_external_accounting=external_accounting_filter,
                           search_text=search_text,
+                          supplier_search=supplier_search,
+                          amount_min=amount_min,
+                          amount_max=amount_max,
                           month_options=month_options)
 
 @app.route('/mark_expense_paid/<int:expense_id>', methods=['POST'])
