@@ -1,9 +1,11 @@
 from flask import current_app, render_template_string
 from threading import Thread
 import logging
-from sendgrid import SendGridAPIClient
-from sendgrid.helpers.mail import Mail, Email, To, Content, HtmlContent
 import os
+import smtplib
+import ssl
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
 from templates.email_templates import (
     EXPENSE_SUBMITTED_TEMPLATE,
     EXPENSE_STATUS_UPDATE_TEMPLATE,
@@ -19,44 +21,47 @@ from templates.email_templates import (
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# SendGrid configuration - using environment variables for security
-SENDGRID_API_KEY = os.getenv('SENDGRID_API_KEY')
-if not SENDGRID_API_KEY:
-    raise ValueError("SendGrid API key not found. Please set the SENDGRID_API_KEY environment variable.")
+# SMTP (AWS SES) configuration - using environment variables for security
+SMTP_SERVER = os.getenv('SMTP_SERVER', 'email-smtp.eu-west-1.amazonaws.com')
+SMTP_PORT = int(os.getenv('SMTP_PORT', '587'))  # TLS
+SMTP_USERNAME = os.getenv('SMTP_USERNAME')
+SMTP_PASSWORD = os.getenv('SMTP_PASSWORD')
 
 # Email sender information
-FROM_EMAIL_ADDRESS = os.getenv('SENDGRID_FROM_EMAIL', 'sabag.tal@gmail.com')  # Verified sender email
-FROM_NAME = 'LabOS- expenses system'  # Friendly sender name
+FROM_EMAIL_ADDRESS = os.getenv('FROM_EMAIL', 'budget-sys@labos.co')  # Verified sender email in SES
+FROM_NAME = os.getenv('FROM_NAME', 'LabOS - Expenses System')  # Friendly sender name
 
-def send_email_sendgrid(to_email, subject, html_content):
-    """Send email using SendGrid"""
+def send_email_smtp(to_email, subject, html_content):
+    """Send email using SMTP (AWS SES)."""
     try:
-        # Create SendGrid client
-        sg = SendGridAPIClient(SENDGRID_API_KEY)
-        
-        # Log attempt
-        logger.info(f"Attempting to send email to {to_email}")
-        
-        # Create the email message with sender name
-        from_email = Email(FROM_EMAIL_ADDRESS, name=FROM_NAME)
-        message = Mail(
-            from_email=from_email,
-            to_emails=to_email,
-            subject=subject,
-            html_content=html_content
-        )
-        
-        # Send the email
-        response = sg.send(message)
-        
-        # Log success
-        logger.info(f"Email sent successfully. Status code: {response.status_code}")
-        return response
-        
+        if not (SMTP_USERNAME and SMTP_PASSWORD):
+            raise ValueError("SMTP credentials not configured. Set SMTP_USERNAME and SMTP_PASSWORD environment variables.")
+
+        logger.info(f"Attempting to send email via SMTP to {to_email} using server {SMTP_SERVER}:{SMTP_PORT}")
+
+        # Build MIME email
+        msg = MIMEMultipart('alternative')
+        msg['Subject'] = subject
+        msg['From'] = f"{FROM_NAME} <{FROM_EMAIL_ADDRESS}>"
+        msg['To'] = to_email
+
+        part_html = MIMEText(html_content, 'html', 'utf-8')
+        msg.attach(part_html)
+
+        # Connect and send using STARTTLS
+        context = ssl.create_default_context()
+        with smtplib.SMTP(SMTP_SERVER, SMTP_PORT) as server:
+            server.ehlo()
+            server.starttls(context=context)
+            server.ehlo()
+            server.login(SMTP_USERNAME, SMTP_PASSWORD)
+            server.sendmail(FROM_EMAIL_ADDRESS, [to_email], msg.as_string())
+
+        logger.info("Email sent successfully via SMTP.")
+        return True
+
     except Exception as e:
-        logger.error(f"Failed to send email: {str(e)}")
-        logger.error(f"API Key present: {'Yes' if SENDGRID_API_KEY else 'No'}")
-        logger.error(f"From email: {FROM_EMAIL}")
+        logger.error(f"Failed to send email via SMTP: {str(e)}")
         raise
 
 def test_email_setup():
@@ -65,18 +70,13 @@ def test_email_setup():
         test_subject = "Test Email"
         test_content = """
         <h1>Test Email</h1>
-        <p>This is a test email to verify your SendGrid setup.</p>
+        <p>This is a test email to verify your SMTP (AWS SES) setup.</p>
         """
         
         logger.info("Sending test email...")
-        response = send_email_sendgrid(FROM_EMAIL, test_subject, test_content)
-        
-        if response.status_code == 202:
-            logger.info("✅ Email setup is working correctly!")
-            return True
-        else:
-            logger.error(f"❌ Unexpected status code: {response.status_code}")
-            return False
+        result = send_email_smtp(FROM_EMAIL_ADDRESS, test_subject, test_content)
+        logger.info("✅ Email setup is working correctly!" if result else "❌ Email setup failed")
+        return bool(result)
             
     except Exception as e:
         logger.error(f"❌ Email setup test failed: {str(e)}")
@@ -86,7 +86,7 @@ def send_async_email(app, recipient, subject, html_content):
     """Send email asynchronously"""
     try:
         with app.app_context():
-            send_email_sendgrid(recipient, subject, html_content)
+            send_email_smtp(recipient, subject, html_content)
     except Exception as e:
         logger.error(f"Failed in async email sending: {str(e)}")
         raise

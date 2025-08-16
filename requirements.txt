@@ -4,7 +4,6 @@ Flask-Login
 Flask-Migrate
 Werkzeug
 gunicorn
-sendgrid
 pytz
 azure-ai-formrecognizer
 python-dotenv
