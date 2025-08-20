@@ -21,18 +21,18 @@ from templates.email_templates import (
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# SMTP (AWS SES) configuration - using environment variables for security
-SMTP_SERVER = os.getenv('SMTP_SERVER', 'email-smtp.eu-west-1.amazonaws.com')
+# SMTP (Mailgun) configuration - using environment variables for security
+SMTP_SERVER = os.getenv('SMTP_SERVER', 'smtp.mailgun.org')
 SMTP_PORT = int(os.getenv('SMTP_PORT', '587'))  # TLS
 SMTP_USERNAME = os.getenv('SMTP_USERNAME')
 SMTP_PASSWORD = os.getenv('SMTP_PASSWORD')
 
 # Email sender information
-FROM_EMAIL_ADDRESS = os.getenv('FROM_EMAIL', 'budget-sys@labos.co')  # Verified sender email in SES
+FROM_EMAIL_ADDRESS = os.getenv('FROM_EMAIL', 'mailgun@labos.co')  # Verified sender email in Mailgun
 FROM_NAME = os.getenv('FROM_NAME', 'LabOS - Expenses System')  # Friendly sender name
 
 def send_email_smtp(to_email, subject, html_content):
-    """Send email using SMTP (AWS SES)."""
+    """Send email using SMTP (Mailgun)."""
     try:
         if not (SMTP_USERNAME and SMTP_PASSWORD):
             raise ValueError("SMTP credentials not configured. Set SMTP_USERNAME and SMTP_PASSWORD environment variables.")
@@ -57,11 +57,11 @@ def send_email_smtp(to_email, subject, html_content):
             server.login(SMTP_USERNAME, SMTP_PASSWORD)
             server.sendmail(FROM_EMAIL_ADDRESS, [to_email], msg.as_string())
 
-        logger.info("Email sent successfully via SMTP.")
+        logger.info("Email sent successfully via SMTP (Mailgun).")
         return True
 
     except Exception as e:
-        logger.error(f"Failed to send email via SMTP: {str(e)}")
+        logger.error(f"Failed to send email via SMTP (Mailgun): {str(e)}")
         raise
 
 def test_email_setup():
@@ -70,7 +70,7 @@ def test_email_setup():
         test_subject = "Test Email"
         test_content = """
         <h1>Test Email</h1>
-        <p>This is a test email to verify your SMTP (AWS SES) setup.</p>
+        <p>This is a test email to verify your SMTP (Mailgun) setup.</p>
         """
         
         logger.info("Sending test email...")
