@@ -12,10 +12,21 @@ class DocumentProcessor:
     def __init__(self):
         endpoint = "https://budgetpricingscan.cognitiveservices.azure.com/"
         key = os.environ.get('AZURE_FORM_RECOGNIZER_KEY')
-        self.document_analysis_client = DocumentAnalysisClient(
-            endpoint=endpoint, 
-            credential=AzureKeyCredential(key)
-        )
+        
+        # Check if Azure Form Recognizer is properly configured
+        if not key or key.strip() == '':
+            print("⚠️  Warning: AZURE_FORM_RECOGNIZER_KEY not set. Document processing will be disabled.")
+            self.document_analysis_client = None
+        else:
+            try:
+                self.document_analysis_client = DocumentAnalysisClient(
+                    endpoint=endpoint, 
+                    credential=AzureKeyCredential(key)
+                )
+                print("✅ Azure Form Recognizer initialized successfully")
+            except Exception as e:
+                print(f"⚠️  Warning: Failed to initialize Azure Form Recognizer: {e}")
+                self.document_analysis_client = None
         
         # Mapping of document types to their field names for amount and date
         self.field_mappings = {
@@ -85,6 +96,17 @@ class DocumentProcessor:
         Returns:
             dict: Extracted document information with amount and purchase date
         """
+        # Check if Azure Form Recognizer is available
+        if self.document_analysis_client is None:
+            print("⚠️  Document processing skipped: Azure Form Recognizer not configured")
+            return {
+                'amount': None,
+                'purchase_date': None,
+                'document_type': None,
+                'confidence': 0,
+                'processing_status': 'skipped_no_service'
+            }
+            
         try:
             # Calculate file hash for caching
             file_hash = self._calculate_file_hash(document_path)

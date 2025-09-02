@@ -2,99 +2,307 @@
 
 {% block content %}
 <div class="container">
-    <header>
-        <h1>{{ category.name }} - Subcategories Management</h1>
+    <!-- Modern Header Section -->
+    <div class="modern-header">
+        <div class="header-content">
+            <div class="header-left">
+                <div class="header-icon">
+                    <i class="fas fa-layer-group"></i>
+                </div>
+                <div class="header-text">
+                    <h1>{{ category.name }} Subcategories</h1>
+                    <p class="header-subtitle">Manage subcategory budgets within {{ category.department.name }} > {{ category.name }}</p>
+                </div>
+            </div>
         <div class="header-actions">
-            <a href="{{ url_for('manage_categories', dept_id=category.department.id) }}" class="button secondary">Back to Categories</a>
+                {% if current_user.username == 'admin' or (current_user.is_manager and current_user.department_id == category.department.id) %}
+                <button onclick="showAddSubcategoryModal()" class="button-modern primary">
+                    <i class="fas fa-plus"></i>
+                    Add Subcategory
+                </button>
+                {% endif %}
+                <a href="{{ url_for('manage_categories', dept_id=category.department.id) }}" class="button-modern secondary">
+                    <i class="fas fa-arrow-left"></i>
+                    Back to Categories
+                </a>
+            </div>
         </div>
-    </header>
-
-    {% if current_user.username == 'admin' or (current_user.is_manager and current_user.department_id == category.department.id) %}
-    <div class="admin-controls">
-        <button onclick="showAddSubcategoryModal()" class="button primary">Add New Subcategory</button>
+        
+        <!-- Quick Stats Overview -->
+        <div class="stats-overview">
+            {% set total_budget = namespace(value=0) %}
+            {% set total_spent = namespace(value=0) %}
+            {% set subcategory_count = category.subcategories|length %}
+            
+            {% for subcategory in category.subcategories %}
+                {% set total_budget.value = total_budget.value + (subcategory.budget or 0) %}
+                {% set subcat_expenses = namespace(value=0) %}
+                {% for expense in subcategory.expenses %}
+                    {% if expense.status == 'approved' %}
+                        {% set subcat_expenses.value = subcat_expenses.value + expense.amount %}
+                    {% endif %}
+                {% endfor %}
+                {% set total_spent.value = total_spent.value + subcat_expenses.value %}
+            {% endfor %}
+            
+            <div class="stat-card">
+                <div class="stat-icon">
+                    <i class="fas fa-layer-group"></i>
+                </div>
+                <div class="stat-content">
+                    <div class="stat-value">{{ subcategory_count }}</div>
+                    <div class="stat-label">Total Subcategories</div>
+                </div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-icon">
+                    <i class="fas fa-wallet"></i>
+                </div>
+                <div class="stat-content">
+                    <div class="stat-value">{{ total_budget.value|format_currency }}</div>
+                    <div class="stat-label">Total Budget</div>
+                </div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-icon">
+                    <i class="fas fa-chart-line"></i>
+                </div>
+                <div class="stat-content">
+                    <div class="stat-value">{{ total_spent.value|format_currency }}</div>
+                    <div class="stat-label">Total Spent</div>
+                </div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-icon">
+                    <i class="fas fa-percentage"></i>
+                </div>
+                <div class="stat-content">
+                    {% set overall_usage = (total_spent.value / total_budget.value * 100) if total_budget.value > 0 else 0 %}
+                    <div class="stat-value">{{ "%.1f"|format(overall_usage) }}%</div>
+                    <div class="stat-label">Overall Usage</div>
+                </div>
+            </div>
+        </div>
     </div>
-    {% endif %}
 
-    <div class="budget-grid">
+    <!-- Subcategory Cards Grid -->
+    <div class="subcategories-grid">
         {% for subcategory in category.subcategories %}
-        <div class="budget-card">
-            <div class="budget-header">
-                <h3>{{ subcategory.name }}</h3>
-                {% if current_user.username == 'admin' or (current_user.is_manager and current_user.department_id == category.department.id) %}
-                <div class="subcategory-actions">
-                    <button onclick="showEditSubcategoryModal({{ subcategory.id }}, '{{ subcategory.name }}', {{ subcategory.budget }})" class="button small">Edit</button>
-                    <button onclick="deleteSubcategory({{ subcategory.id }})" class="button small danger">Delete</button>
-                </div>
-                {% endif %}
-            </div>
-            <div class="budget-body">
-                <div class="budget-info">
-                    <p><strong>Current Budget:</strong> {{ subcategory.budget|format_currency }}</p>
-                </div>
-                <div class="budget-progress">
-                    {% set total_expenses = namespace(value=0) %}
-                    {% for expense in subcategory.expenses %}
-                        {% if expense.status == 'approved' %}
-                            {% set total_expenses.value = total_expenses.value + expense.amount %}
-                        {% endif %}
-                    {% endfor %}
-                    {% set usage_percent = (total_expenses.value / subcategory.budget * 100) if subcategory.budget > 0 else 0 %}
-                    <div class="progress-bar">
-                        <div class="progress-fill" style="width: {{ usage_percent|min_value(100) }}%" data-usage="{{ "%.1f"|format(usage_percent) }}%"></div>
+        {% set subcat_expenses = namespace(value=0) %}
+        {% for expense in subcategory.expenses %}
+            {% if expense.status == 'approved' %}
+                {% set subcat_expenses.value = subcat_expenses.value + expense.amount %}
+            {% endif %}
+        {% endfor %}
+        {% set usage_percent = (subcat_expenses.value / subcategory.budget * 100) if subcategory.budget > 0 else 0 %}
+        {% set remaining_budget = (subcategory.budget - subcat_expenses.value) if subcategory.budget > 0 else 0 %}
+        
+        <div class="subcategory-card">
+            <!-- Card Header -->
+            <div class="card-header">
+                <div class="subcategory-info">
+                    <div class="subcategory-icon">
+                        <i class="fas fa-cube"></i>
+                    </div>
+                    <div class="subcategory-details">
+                        <h3 class="subcategory-name">{{ subcategory.name }}</h3>
+                        <span class="expense-count">{{ subcategory.expenses|length }} expenses</span>
                     </div>
                 </div>
                 {% if current_user.username == 'admin' or (current_user.is_manager and current_user.department_id == category.department.id) %}
-                <div class="budget-form">
-                    <div class="budget-input">
-                        <input type="number" step="0.01" min="0" value="{{ subcategory.budget }}" id="budget-{{ subcategory.id }}" class="form-control">
-                        <button onclick="updateBudget({{ subcategory.id }})" class="button primary">Update</button>
-                    </div>
+                <div class="card-actions">
+                    <button onclick="showEditSubcategoryModal({{ subcategory.id }}, '{{ subcategory.name }}', {{ subcategory.budget }})" 
+                            class="action-btn edit-subcategory-btn" title="Edit Subcategory">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    <button onclick="deleteSubcategory({{ subcategory.id }})" 
+                            class="action-btn delete-btn delete-subcategory-btn" title="Delete Subcategory">
+                        <i class="fas fa-trash"></i>
+                    </button>
                 </div>
                 {% endif %}
             </div>
+            
+            <!-- Budget Metrics -->
+            <div class="budget-metrics">
+                <div class="metric-item">
+                    <div class="metric-icon">
+                        <i class="fas fa-wallet"></i>
+                    </div>
+                    <div class="metric-content">
+                        <div class="metric-value">{{ subcategory.budget|format_currency }}</div>
+                        <div class="metric-label">Total Budget</div>
+                    </div>
+                </div>
+                
+                <div class="metric-item">
+                    <div class="metric-icon spent">
+                        <i class="fas fa-credit-card"></i>
+                    </div>
+                    <div class="metric-content">
+                        <div class="metric-value">{{ subcat_expenses.value|format_currency }}</div>
+                        <div class="metric-label">Spent</div>
+                    </div>
+                </div>
+                
+                <div class="metric-item">
+                    <div class="metric-icon remaining">
+                        <i class="fas fa-piggy-bank"></i>
+                    </div>
+                    <div class="metric-content">
+                        <div class="metric-value">{{ remaining_budget|format_currency }}</div>
+                        <div class="metric-label">Remaining</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Enhanced Progress Visualization -->
+            <div class="progress-section">
+                <div class="progress-header">
+                    <span class="progress-label">Budget Usage</span>
+                    <span class="progress-percentage">{{ "%.1f"|format(usage_percent) }}%</span>
+                </div>
+                <div class="progress-bar-modern">
+                    <div class="progress-fill-modern {% if usage_percent > 90 %}danger{% elif usage_percent > 75 %}warning{% else %}success{% endif %}" 
+                         style="width: {{ usage_percent|min_value(100) }}%">
+                    </div>
+                </div>
+                <div class="progress-indicators">
+                    <div class="indicator">
+                        <div class="indicator-dot success"></div>
+                        <span>Under Budget</span>
+                    </div>
+                    <div class="indicator">
+                        <div class="indicator-dot warning"></div>
+                        <span>75%+ Used</span>
+                    </div>
+                    <div class="indicator">
+                        <div class="indicator-dot danger"></div>
+                        <span>90%+ Used</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Budget Update Section -->
+                {% if current_user.username == 'admin' or (current_user.is_manager and current_user.department_id == category.department.id) %}
+            <div class="budget-update">
+                <div class="update-header">
+                    <i class="fas fa-edit"></i>
+                    <span>Update Budget</span>
+                </div>
+                <div class="update-form">
+                    <div class="input-group-modern">
+                        <input type="number" step="0.01" min="0" value="{{ subcategory.budget }}" 
+                               id="budget-{{ subcategory.id }}" class="budget-input-modern"
+                               placeholder="Enter budget amount">
+                        <button onclick="updateBudget({{ subcategory.id }})" class="update-btn">
+                            <i class="fas fa-check"></i>
+                            Update
+                        </button>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
         </div>
         {% endfor %}
     </div>
 </div>
 
-<!-- Add Subcategory Modal -->
-<div id="addSubcategoryModal" class="modal">
-    <div class="modal-content">
+<!-- Modern Add Subcategory Modal -->
+<div id="addSubcategoryModal" class="modal-overlay">
+    <div class="modal-container">
+        <div class="modal-header">
+            <div class="modal-title">
+                <i class="fas fa-cube"></i>
         <h2>Add New Subcategory</h2>
-        <form id="addSubcategoryForm">
-            <div class="form-group">
-                <label for="newSubcategoryName">Subcategory Name:</label>
-                <input type="text" id="newSubcategoryName" required>
             </div>
-            <div class="form-group">
-                <label for="newSubcategoryBudget">Initial Budget:</label>
-                <input type="number" id="newSubcategoryBudget" step="0.01" min="0" required>
+            <button class="modal-close" onclick="closeAddSubcategoryModal()">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        
+        <form id="addSubcategoryForm" class="modal-form">
+            <div class="form-section-modern">
+                <div class="form-group-modern">
+                    <label for="newSubcategoryName">
+                        <i class="fas fa-cube"></i>
+                        Subcategory Name
+                    </label>
+                    <input type="text" id="newSubcategoryName" class="form-input-modern" 
+                           placeholder="Enter subcategory name" required>
+                </div>
+                
+                <div class="form-group-modern">
+                    <label for="newSubcategoryBudget">
+                        <i class="fas fa-wallet"></i>
+                        Initial Budget
+                    </label>
+                    <input type="number" id="newSubcategoryBudget" class="form-input-modern" 
+                           step="0.01" min="0" placeholder="Enter budget amount" required>
+                </div>
             </div>
-            <div class="form-actions">
-                <button type="button" onclick="closeAddSubcategoryModal()" class="button secondary">Cancel</button>
-                <button type="submit" class="button primary">Add Subcategory</button>
+            
+            <div class="modal-actions">
+                <button type="button" onclick="closeAddSubcategoryModal()" class="button-modern secondary">
+                    <i class="fas fa-times"></i>
+                    Cancel
+                </button>
+                <button type="submit" class="button-modern primary">
+                    <i class="fas fa-plus"></i>
+                    Add Subcategory
+                </button>
             </div>
         </form>
     </div>
 </div>
 
-<!-- Edit Subcategory Modal -->
-<div id="editSubcategoryModal" class="modal">
-    <div class="modal-content">
+<!-- Modern Edit Subcategory Modal -->
+<div id="editSubcategoryModal" class="modal-overlay">
+    <div class="modal-container">
+        <div class="modal-header">
+            <div class="modal-title">
+                <i class="fas fa-edit"></i>
         <h2>Edit Subcategory</h2>
-        <form id="editSubcategoryForm">
+            </div>
+            <button class="modal-close" onclick="closeEditSubcategoryModal()">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        
+        <form id="editSubcategoryForm" class="modal-form">
             <input type="hidden" id="editSubcategoryId">
-            <div class="form-group">
-                <label for="editSubcategoryName">Subcategory Name:</label>
-                <input type="text" id="editSubcategoryName" required>
+            <div class="form-section-modern">
+                <div class="form-group-modern">
+                    <label for="editSubcategoryName">
+                        <i class="fas fa-cube"></i>
+                        Subcategory Name
+                    </label>
+                    <input type="text" id="editSubcategoryName" class="form-input-modern" 
+                           placeholder="Enter subcategory name" required>
+                </div>
+                
+                <div class="form-group-modern">
+                    <label for="editSubcategoryBudget">
+                        <i class="fas fa-wallet"></i>
+                        Budget Amount
+                    </label>
+                    <input type="number" id="editSubcategoryBudget" class="form-input-modern" 
+                           step="0.01" min="0" placeholder="Enter budget amount" required>
             </div>
-            <div class="form-group">
-                <label for="editSubcategoryBudget">Budget:</label>
-                <input type="number" id="editSubcategoryBudget" step="0.01" min="0" required>
             </div>
-            <div class="form-actions">
-                <button type="button" onclick="closeEditSubcategoryModal()" class="button secondary">Cancel</button>
-                <button type="submit" class="button primary">Save Changes</button>
+            
+            <div class="modal-actions">
+                <button type="button" onclick="closeEditSubcategoryModal()" class="button-modern secondary">
+                    <i class="fas fa-times"></i>
+                    Cancel
+                </button>
+                <button type="submit" class="button-modern primary">
+                    <i class="fas fa-save"></i>
+                    Save Changes
+                </button>
             </div>
         </form>
     </div>
@@ -130,7 +338,7 @@ function updateBudget(subcategoryId) {
 
 // Add Subcategory Modal Functions
 function showAddSubcategoryModal() {
-    document.getElementById('addSubcategoryModal').style.display = 'block';
+    document.getElementById('addSubcategoryModal').style.display = 'flex';
 }
 
 function closeAddSubcategoryModal() {
@@ -142,7 +350,7 @@ function showEditSubcategoryModal(id, name, budget) {
     document.getElementById('editSubcategoryId').value = id;
     document.getElementById('editSubcategoryName').value = name;
     document.getElementById('editSubcategoryBudget').value = budget;
-    document.getElementById('editSubcategoryModal').style.display = 'block';
+    document.getElementById('editSubcategoryModal').style.display = 'flex';
 }
 
 function closeEditSubcategoryModal() {
@@ -219,71 +427,596 @@ document.getElementById('editSubcategoryForm').addEventListener('submit', functi
 </script>
 
 <style>
-.modal {
-    display: none;
-    position: fixed;
-    z-index: 1000;
-    left: 0;
-    top: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0,0,0,0.5);
+/* Modern Header Styles */
+.modern-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 16px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+    color: white;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
 }
 
-.modal-content {
-    background-color: #fff;
-    margin: 15% auto;
-    padding: 20px;
-    border-radius: 8px;
-    width: 80%;
-    max-width: 500px;
-}
-
-.form-group {
-    margin-bottom: 15px;
-}
-
-.form-group label {
-    display: block;
-    margin-bottom: 5px;
-}
-
-.form-group input {
-    width: 100%;
-    padding: 8px;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-}
-
-.form-actions {
+.header-content {
     display: flex;
-    justify-content: flex-end;
-    gap: 10px;
-    margin-top: 20px;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
 }
 
-.admin-controls {
-    margin-bottom: 20px;
-}
-
-.subcategory-actions {
+.header-left {
     display: flex;
-    gap: 8px;
-    margin-top: 8px;
+    align-items: center;
+    gap: 1.5rem;
 }
 
-.button.small {
-    padding: 4px 8px;
-    font-size: 0.9em;
+.header-icon {
+    background: rgba(255, 255, 255, 0.2);
+    padding: 1rem;
+    border-radius: 12px;
+    backdrop-filter: blur(10px);
 }
 
-.button.danger {
-    background-color: #dc3545;
+.header-icon i {
+    font-size: 2rem;
     color: white;
 }
 
-.button.danger:hover {
-    background-color: #c82333;
+.header-text h1 {
+    margin: 0;
+    font-size: 2.2rem;
+    font-weight: 600;
+    color: white;
+}
+
+.header-subtitle {
+    margin: 0.5rem 0 0 0;
+    font-size: 1.1rem;
+    opacity: 0.9;
+    color: white;
+}
+
+.header-actions {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+}
+
+/* Modern Button Styles */
+.button-modern {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.5rem;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    font-weight: 500;
+    text-decoration: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    backdrop-filter: blur(10px);
+}
+
+.button-modern.primary {
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.button-modern.secondary {
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.button-modern:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+}
+
+/* Stats Overview */
+.stats-overview {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1.5rem;
+}
+
+.stat-card {
+    background: rgba(255, 255, 255, 0.15);
+    padding: 1.5rem;
+    border-radius: 12px;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.stat-icon {
+    background: rgba(255, 255, 255, 0.2);
+    padding: 0.75rem;
+    border-radius: 8px;
+    font-size: 1.2rem;
+}
+
+.stat-content {
+    flex: 1;
+}
+
+.stat-value {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: white;
+    margin-bottom: 0.25rem;
+}
+
+.stat-label {
+    font-size: 0.9rem;
+    opacity: 0.8;
+    color: white;
+}
+
+/* Subcategory Cards */
+.subcategories-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+    gap: 2rem;
+    margin-top: 2rem;
+}
+
+.subcategory-card {
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    overflow: hidden;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.subcategory-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 40px rgba(0, 0, 0, 0.12);
+}
+
+.card-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    padding: 1.5rem;
+    color: white;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.subcategory-info {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.subcategory-icon {
+    background: rgba(255, 255, 255, 0.2);
+    padding: 0.75rem;
+    border-radius: 8px;
+    backdrop-filter: blur(10px);
+}
+
+.subcategory-icon i {
+    font-size: 1.2rem;
+    color: white;
+}
+
+.subcategory-name {
+    margin: 0;
+    font-size: 1.3rem;
+    font-weight: 600;
+    color: white;
+}
+
+.expense-count {
+    font-size: 0.9rem;
+    opacity: 0.8;
+    color: white;
+}
+
+.card-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.action-btn {
+    background: rgba(255, 255, 255, 0.2);
+    border: none;
+    padding: 0.5rem;
+    border-radius: 6px;
+    color: white;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    backdrop-filter: blur(10px);
+}
+
+.action-btn:hover {
+    background: rgba(255, 255, 255, 0.3);
+    transform: scale(1.05);
+}
+
+.delete-btn:hover {
+    background: rgba(220, 53, 69, 0.8);
+}
+
+/* Budget Metrics */
+.budget-metrics {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+    padding: 1.5rem;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.metric-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    text-align: center;
+}
+
+.metric-icon {
+    background: #f8f9fa;
+    padding: 0.75rem;
+    border-radius: 8px;
+    color: #667eea;
+    font-size: 1rem;
+}
+
+.metric-icon.spent {
+    background: #fef3e2;
+    color: #f59e0b;
+}
+
+.metric-icon.remaining {
+    background: #ecfdf5;
+    color: #10b981;
+}
+
+.metric-value {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #1f2937;
+    margin-bottom: 0.25rem;
+}
+
+.metric-label {
+    font-size: 0.8rem;
+    color: #6b7280;
+}
+
+/* Progress Section */
+.progress-section {
+    padding: 1.5rem;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.progress-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.progress-label {
+    font-weight: 500;
+    color: #374151;
+}
+
+.progress-percentage {
+    font-weight: 600;
+    color: #667eea;
+}
+
+.progress-bar-modern {
+    height: 8px;
+    background: #f3f4f6;
+    border-radius: 4px;
+    overflow: hidden;
+    margin-bottom: 1rem;
+}
+
+.progress-fill-modern {
+    height: 100%;
+    border-radius: 4px;
+    transition: width 0.3s ease;
+}
+
+.progress-fill-modern.success {
+    background: linear-gradient(90deg, #10b981, #059669);
+}
+
+.progress-fill-modern.warning {
+    background: linear-gradient(90deg, #f59e0b, #d97706);
+}
+
+.progress-fill-modern.danger {
+    background: linear-gradient(90deg, #ef4444, #dc2626);
+}
+
+.progress-indicators {
+    display: flex;
+    gap: 1rem;
+    font-size: 0.8rem;
+}
+
+.indicator {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.indicator-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+}
+
+.indicator-dot.success { background: #10b981; }
+.indicator-dot.warning { background: #f59e0b; }
+.indicator-dot.danger { background: #ef4444; }
+
+/* Budget Update Section */
+.budget-update {
+    padding: 1.5rem;
+}
+
+.update-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+    font-weight: 500;
+    color: #374151;
+}
+
+.input-group-modern {
+    display: flex;
+    gap: 0.75rem;
+}
+
+.budget-input-modern {
+    flex: 1;
+    padding: 0.75rem;
+    border: 2px solid #e5e7eb;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    transition: border-color 0.2s ease;
+}
+
+.budget-input-modern:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.update-btn {
+    background: #667eea;
+    color: white;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.update-btn:hover {
+    background: #5a67d8;
+    transform: translateY(-1px);
+}
+
+/* Modern Modal Styles */
+.modal-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(4px);
+    z-index: 1000;
+    align-items: center;
+    justify-content: center;
+}
+
+.modal-container {
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    width: 90%;
+    max-width: 500px;
+    max-height: 90vh;
+    overflow: hidden;
+    animation: modalAppear 0.3s ease;
+}
+
+@keyframes modalAppear {
+    from {
+        opacity: 0;
+        transform: scale(0.9) translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+.modal-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    padding: 1.5rem;
+    color: white;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.modal-title {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.modal-title h2 {
+    margin: 0;
+    font-size: 1.3rem;
+    font-weight: 600;
+    color: white;
+}
+
+.modal-close {
+    background: rgba(255, 255, 255, 0.2);
+    border: none;
+    padding: 0.5rem;
+    border-radius: 8px;
+    color: white;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    backdrop-filter: blur(10px);
+}
+
+.modal-close:hover {
+    background: rgba(255, 255, 255, 0.3);
+}
+
+.modal-form {
+    padding: 2rem;
+}
+
+.form-section-modern {
+    margin-bottom: 2rem;
+}
+
+.form-group-modern {
+    margin-bottom: 1.5rem;
+}
+
+.form-group-modern label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+    color: #374151;
+}
+
+.form-input-modern,
+.form-select-modern {
+    width: 100%;
+    padding: 0.75rem;
+    border: 2px solid #e5e7eb;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    transition: border-color 0.2s ease;
+}
+
+.form-input-modern:focus,
+.form-select-modern:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.modal-actions {
+    display: flex;
+    gap: 1rem;
+    justify-content: flex-end;
+}
+
+.modal-actions .button-modern {
+    background: #667eea;
+    color: white;
+    border: 2px solid #667eea;
+}
+
+.modal-actions .button-modern.secondary {
+    background: transparent;
+    color: #667eea;
+}
+
+.modal-actions .button-modern:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+/* Mobile Responsive Design */
+@media (max-width: 768px) {
+    .modern-header {
+        padding: 1.5rem;
+        border-radius: 12px;
+    }
+    
+    .header-content {
+        flex-direction: column;
+        gap: 1.5rem;
+        align-items: stretch;
+    }
+    
+    .header-left {
+        flex-direction: column;
+        text-align: center;
+        gap: 1rem;
+    }
+    
+    .header-text h1 {
+        font-size: 1.8rem;
+    }
+    
+    .header-actions {
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+    
+    .stats-overview {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1rem;
+    }
+    
+    .subcategories-grid {
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
+    }
+    
+    .budget-metrics {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+    
+    .input-group-modern {
+        flex-direction: column;
+    }
+    
+    .modal-container {
+        width: 95%;
+        margin: 1rem;
+    }
+    
+    .modal-actions {
+        flex-direction: column;
+    }
+}
+
+@media (max-width: 480px) {
+    .stats-overview {
+        grid-template-columns: 1fr;
+    }
+    
+    .metric-item {
+        justify-content: center;
+    }
+    
+    .progress-indicators {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
 }
 </style>
 {% endblock %}
