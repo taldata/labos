@@ -86,34 +86,59 @@ def send_async_email(app, recipient, subject, html_content):
     """Send email asynchronously"""
     try:
         with app.app_context():
-            send_email_smtp(recipient, subject, html_content)
+            logger.info(f"Async email thread started for {recipient}")
+            result = send_email_smtp(recipient, subject, html_content)
+            logger.info(f"Async email thread completed successfully for {recipient}")
+            return result
     except Exception as e:
-        logger.error(f"Failed in async email sending: {str(e)}")
+        logger.error(f"Failed in async email sending to {recipient}: {str(e)}")
+        import traceback
+        logger.error(f"Full traceback: {traceback.format_exc()}")
         raise
 
 def send_email(subject, recipient, template, **kwargs):
-    """Send an email using a template"""
+    """Send an email using a template - now with improved reliability"""
     try:
+        logger.info(f"Preparing to send email to {recipient} with subject: {subject}")
+        
+        # Validate inputs
+        if not recipient:
+            raise ValueError("Recipient email address is required")
+        if not subject:
+            raise ValueError("Email subject is required")
+        if not template:
+            raise ValueError("Email template is required")
+            
         # Create Jinja2 environment for proper template rendering
         from jinja2 import Environment, select_autoescape
         env = Environment(autoescape=select_autoescape(['html', 'xml']))
         
         # Convert the template string to a Jinja2 template
-        template = env.from_string(template)
+        template_obj = env.from_string(template)
         
         # Render the template with kwargs
-        html_content = template.render(**kwargs)
+        html_content = template_obj.render(**kwargs)
         
         # Log the rendered content for debugging
-        logger.info(f"Rendered email content: {html_content[:200]}...")  # Log first 200 chars
+        logger.info(f"Rendered email content preview: {html_content[:200]}...")
         
-        # Start async thread for sending email
-        Thread(target=send_async_email,
-               args=(current_app._get_current_object(), recipient, subject, html_content)).start()
-        logger.info(f"Started async email sending to {recipient}")
+        # SYNCHRONOUS EMAIL SENDING for better reliability
+        # This ensures emails are sent before the request completes
+        logger.info(f"Sending email synchronously to {recipient}")
+        result = send_email_smtp(recipient, subject, html_content)
+        
+        if result:
+            logger.info(f"✅ Email sent successfully to {recipient}")
+        else:
+            logger.error(f"❌ Email sending failed to {recipient}")
+            
+        return result
+            
     except Exception as e:
-        logger.error(f"Error preparing email: {str(e)}")
+        logger.error(f"❌ Error in send_email for {recipient}: {str(e)}")
         logger.error(f"Template kwargs: {kwargs}")
+        import traceback
+        logger.error(f"Full traceback: {traceback.format_exc()}")
         raise
 
 if __name__ == "__main__":

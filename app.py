@@ -2315,24 +2315,59 @@ def export_accounting_excel():
 @app.route('/test_email')
 def test_email():
     try:
-        print("Attempting to send test email...")
-        send_email(
-            subject='Test Email from SendGrid',
-            recipient='sabag.tal@gmail.com',  # Replace with the email where you want to receive the test
+        logging.info("Testing email functionality...")
+        
+        # Test email content
+        test_email_address = 'sabag.tal@gmail.com'  # Replace with desired test email
+        
+        # Send test email
+        result = send_email(
+            subject='Test Email from LabOS - Mailgun Configuration',
+            recipient=test_email_address,
             template="""
-            <h2>Test Email from SendGrid</h2>
-            <p>This is a test email from your Expense Management System using SendGrid.</p>
+            <h2>✅ Test Email from LabOS</h2>
+            <p>This is a test email from your Expense Management System using <strong>Mailgun SMTP</strong>.</p>
             <p>If you received this email, the email notification system is working correctly!</p>
-            <p>Time sent: {{ time }}</p>
+            <div style="background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin: 10px 0;">
+                <h4>System Information:</h4>
+                <ul>
+                    <li><strong>Time sent:</strong> {{ time }}</li>
+                    <li><strong>SMTP Server:</strong> {{ smtp_server }}</li>
+                    <li><strong>From Email:</strong> {{ from_email }}</li>
+                </ul>
+            </div>
+            <p><em>This email was sent synchronously to ensure delivery.</em></p>
             """,
-            time=datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            time=datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+            smtp_server=os.getenv('SMTP_SERVER', 'smtp.mailgun.org'),
+            from_email=os.getenv('FROM_EMAIL', 'mailgun@labos.co')
         )
-        return 'Test email sent! Please check your inbox.'
+        
+        if result:
+            return '''
+            <h1>✅ Test Email Sent Successfully!</h1>
+            <p>Email was sent to: <strong>{}</strong></p>
+            <p>Please check your inbox (and spam folder) for the test email.</p>
+            <p><a href="/">← Back to Home</a></p>
+            '''.format(test_email_address)
+        else:
+            return '''
+            <h1>❌ Test Email Failed</h1>
+            <p>Email sending failed. Check the application logs for details.</p>
+            <p><a href="/">← Back to Home</a></p>
+            '''
+            
     except Exception as e:
-        print(f"Error sending email: {str(e)}")
+        logging.error(f"Error in test_email route: {str(e)}")
         import traceback
         traceback.print_exc()
-        return f'Error sending email: {str(e)}'
+        
+        return f'''
+        <h1>❌ Test Email Error</h1>
+        <p><strong>Error:</strong> {str(e)}</p>
+        <p>Check the application logs for full details.</p>
+        <p><a href="/">← Back to Home</a></p>
+        '''
 
 @app.route('/accounting_dashboard')
 @login_required
