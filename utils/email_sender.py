@@ -6,6 +6,7 @@ import smtplib
 import ssl
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
+from dotenv import load_dotenv
 from templates.email_templates import (
     EXPENSE_SUBMITTED_TEMPLATE,
     EXPENSE_STATUS_UPDATE_TEMPLATE,
@@ -16,6 +17,9 @@ from templates.email_templates import (
     PASSWORD_CHANGE_CONFIRMATION_TEMPLATE,
     EXPENSE_PAYMENT_NOTIFICATION_TEMPLATE
 )
+
+# Load environment variables from .env file
+load_dotenv()
 
 # Initialize logging
 logging.basicConfig(level=logging.INFO)
