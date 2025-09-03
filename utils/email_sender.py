@@ -28,8 +28,8 @@ SMTP_USERNAME = os.getenv('SMTP_USERNAME')
 SMTP_PASSWORD = os.getenv('SMTP_PASSWORD')
 
 # Email sender information
-FROM_EMAIL_ADDRESS = os.getenv('FROM_EMAIL', 'mailgun@labos.co')  # Verified sender email in Mailgun
-FROM_NAME = os.getenv('FROM_NAME', 'LabOS - Expenses System')  # Friendly sender name
+FROM_EMAIL_ADDRESS = os.getenv('FROM_EMAIL', 'expenses-app@labos.com')  # Verified sender email in Mailgun
+FROM_NAME = os.getenv('FROM_NAME', 'LabOS Expenses App')  # Friendly sender name
 
 def send_email_smtp(to_email, subject, html_content):
     """Send email using SMTP (Mailgun)."""
