@@ -980,22 +980,10 @@ def manage_departments():
         # Planned Budget - the initial budget set for the department
         planned_budget = dept.budget or 0
         
-        # Allocated Budget - sum of all category budgets within the department
-        allocated_budget = sum(cat.budget or 0 for cat in dept.categories)
-        
-        # Balance to Distribute - Planned minus Allocated
-        balance_to_distribute = planned_budget - allocated_budget
-        
-        # Actual Expenditure - sum of all approved expenses in the department
-        actual_expenditure = 0
-        for category in dept.categories:
-            for subcategory in category.subcategories:
-                for expense in subcategory.expenses:
-                    if expense.status == 'approved' and expense.type != 'future_approval':
-                        actual_expenditure += expense.amount
-        
-        # Calculate category metrics
+        # Calculate category metrics first to get their allocated budgets
         categories_with_metrics = []
+        total_category_allocated = 0
+        
         for cat in dept.categories:
             cat_planned = cat.budget or 0
             cat_allocated = sum(subcat.budget or 0 for subcat in cat.subcategories)
@@ -1029,6 +1017,17 @@ def manage_departments():
                 'actual': cat_actual,
                 'subcategories': subcategories_with_metrics
             })
+            
+            total_category_allocated += cat_allocated
+        
+        # Allocated Budget - sum of all category allocated budgets within the department
+        allocated_budget = total_category_allocated
+        
+        # Balance to Distribute - Planned minus Allocated
+        balance_to_distribute = planned_budget - allocated_budget
+        
+        # Actual Expenditure - sum of all approved expenses in the department (calculated from categories)
+        actual_expenditure = sum(cat_data['actual'] for cat_data in categories_with_metrics)
         
         departments_with_metrics.append({
             'department': dept,
