@@ -974,7 +974,72 @@ def manage_departments():
     else:
         departments = current_user.managed_departments
     
-    return render_template('manage_departments.html', departments=departments)
+    # Calculate budget metrics for each department
+    departments_with_metrics = []
+    for dept in departments:
+        # Planned Budget - the initial budget set for the department
+        planned_budget = dept.budget or 0
+        
+        # Allocated Budget - sum of all category budgets within the department
+        allocated_budget = sum(cat.budget or 0 for cat in dept.categories)
+        
+        # Balance to Distribute - Planned minus Allocated
+        balance_to_distribute = planned_budget - allocated_budget
+        
+        # Actual Expenditure - sum of all approved expenses in the department
+        actual_expenditure = 0
+        for category in dept.categories:
+            for subcategory in category.subcategories:
+                for expense in subcategory.expenses:
+                    if expense.status == 'approved' and expense.type != 'future_approval':
+                        actual_expenditure += expense.amount
+        
+        # Calculate category metrics
+        categories_with_metrics = []
+        for cat in dept.categories:
+            cat_planned = cat.budget or 0
+            cat_allocated = sum(subcat.budget or 0 for subcat in cat.subcategories)
+            cat_balance = cat_planned - cat_allocated
+            
+            cat_actual = 0
+            for subcategory in cat.subcategories:
+                for expense in subcategory.expenses:
+                    if expense.status == 'approved' and expense.type != 'future_approval':
+                        cat_actual += expense.amount
+            
+            # Calculate subcategory metrics
+            subcategories_with_metrics = []
+            for subcat in cat.subcategories:
+                subcat_planned = subcat.budget or 0
+                subcat_actual = sum(expense.amount for expense in subcat.expenses 
+                                  if expense.status == 'approved' and expense.type != 'future_approval')
+                
+                subcategories_with_metrics.append({
+                    'subcategory': subcat,
+                    'planned': subcat_planned,
+                    'actual': subcat_actual,
+                    'remaining': subcat_planned - subcat_actual
+                })
+            
+            categories_with_metrics.append({
+                'category': cat,
+                'planned': cat_planned,
+                'allocated': cat_allocated,
+                'balance': cat_balance,
+                'actual': cat_actual,
+                'subcategories': subcategories_with_metrics
+            })
+        
+        departments_with_metrics.append({
+            'department': dept,
+            'planned': planned_budget,
+            'allocated': allocated_budget,
+            'balance': balance_to_distribute,
+            'actual': actual_expenditure,
+            'categories': categories_with_metrics
+        })
+    
+    return render_template('manage_departments.html', departments_data=departments_with_metrics)
 
 @app.route('/manager/categories/<int:dept_id>')
 @login_required

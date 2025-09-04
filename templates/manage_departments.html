@@ -118,20 +118,11 @@
 
     <!-- Hierarchical Budget Management -->
     <div class="hierarchy-container">
-        {% if departments %}
-        {% for department in departments %}
-        {% set dept_expenses = namespace(value=0) %}
-        {% for category in department.categories %}
-            {% for subcategory in category.subcategories %}
-                {% for expense in subcategory.expenses %}
-                    {% if expense.status == 'approved' and expense.type != 'future_approval' %}
-                        {% set dept_expenses.value = dept_expenses.value + expense.amount %}
-                    {% endif %}
-                {% endfor %}
-            {% endfor %}
-        {% endfor %}
-        {% set usage_percent = (dept_expenses.value / department.budget * 100) if department.budget > 0 else 0 %}
-        {% set remaining_budget = (department.budget - dept_expenses.value) if department.budget > 0 else 0 %}
+        {% if departments_data %}
+        {% for dept_data in departments_data %}
+        {% set department = dept_data.department %}
+        {% set usage_percent = (dept_data.actual / dept_data.planned * 100) if dept_data.planned > 0 else 0 %}
+        {% set remaining_budget = dept_data.planned - dept_data.actual %}
         
         <div class="hierarchy-item department-level">
             <!-- Department Header -->
@@ -150,8 +141,8 @@
                 </div>
                 <div class="hierarchy-right">
                     <div class="level-budget">
-                        <span class="budget-amount">{{ department.budget|format_currency }}</span>
-                        <span class="budget-used">{{ dept_expenses.value|format_currency }} spent</span>
+                        <span class="budget-amount">{{ dept_data.planned|format_currency }}</span>
+                        <span class="budget-used">{{ dept_data.actual|format_currency }} spent</span>
                     </div>
                 {% if current_user.username == 'admin' %}
                     <div class="level-actions" onclick="event.stopPropagation()">
@@ -176,6 +167,47 @@
             
             <!-- Department Content (Expandable) -->
             <div id="dept-{{ department.id }}" class="hierarchy-content">
+                <!-- Budget Metrics Cards -->
+                <div class="budget-metrics-section">
+                    <div class="budget-metrics-cards">
+                        <div class="budget-metric-card planned">
+                            <div class="metric-header">
+                                <i class="fas fa-clipboard-list"></i>
+                                <span class="metric-title">Planned Budget</span>
+                            </div>
+                            <div class="metric-value">{{ dept_data.planned|format_currency }}</div>
+                            <div class="metric-description">Top-down amount set initially</div>
+                        </div>
+                        
+                        <div class="budget-metric-card allocated">
+                            <div class="metric-header">
+                                <i class="fas fa-share-alt"></i>
+                                <span class="metric-title">Allocated Budget</span>
+                            </div>
+                            <div class="metric-value">{{ dept_data.allocated|format_currency }}</div>
+                            <div class="metric-description">Assigned to categories</div>
+                        </div>
+                        
+                        <div class="budget-metric-card balance {% if dept_data.balance < 0 %}negative{% endif %}">
+                            <div class="metric-header">
+                                <i class="fas fa-balance-scale"></i>
+                                <span class="metric-title">Balance to Distribute</span>
+                            </div>
+                            <div class="metric-value">{{ dept_data.balance|format_currency }}</div>
+                            <div class="metric-description">Available for assignment</div>
+                        </div>
+                        
+                        <div class="budget-metric-card actual">
+                            <div class="metric-header">
+                                <i class="fas fa-receipt"></i>
+                                <span class="metric-title">Actual Expenditure</span>
+                            </div>
+                            <div class="metric-value">{{ dept_data.actual|format_currency }}</div>
+                            <div class="metric-description">Costs already spent</div>
+                        </div>
+                    </div>
+                </div>
+                
                 <!-- Department Budget Form -->
                 <div class="budget-update-inline">
                     <div class="update-form-inline">
@@ -194,16 +226,9 @@
                 
                 <!-- Categories -->
                 <div class="categories-container">
-                    {% for category in department.categories %}
-                    {% set cat_expenses = namespace(value=0) %}
-                    {% for subcategory in category.subcategories %}
-                        {% for expense in subcategory.expenses %}
-                            {% if expense.status == 'approved' %}
-                                {% set cat_expenses.value = cat_expenses.value + expense.amount %}
-                            {% endif %}
-                        {% endfor %}
-                    {% endfor %}
-                    {% set cat_usage_percent = (cat_expenses.value / category.budget * 100) if category.budget > 0 else 0 %}
+                    {% for cat_data in dept_data.categories %}
+                    {% set category = cat_data.category %}
+                    {% set cat_usage_percent = (cat_data.actual / cat_data.planned * 100) if cat_data.planned > 0 else 0 %}
                     
                     <div class="hierarchy-item category-level">
                         <!-- Category Header -->
@@ -222,8 +247,8 @@
                 </div>
                             <div class="hierarchy-right">
                                 <div class="level-budget">
-                                    <span class="budget-amount">{{ category.budget|format_currency }}</span>
-                                    <span class="budget-used">{{ cat_expenses.value|format_currency }} spent</span>
+                                    <span class="budget-amount">{{ cat_data.planned|format_currency }}</span>
+                                    <span class="budget-used">{{ cat_data.actual|format_currency }} spent</span>
                 </div>
                                 {% if current_user.username == 'admin' or (current_user.is_manager and current_user.department_id == department.id) %}
                                 <div class="level-actions" onclick="event.stopPropagation()">
@@ -245,6 +270,47 @@
                         
                         <!-- Category Content (Expandable) -->
                         <div id="cat-{{ category.id }}" class="hierarchy-content">
+                            <!-- Category Budget Metrics Cards -->
+                            <div class="budget-metrics-section category-metrics">
+                                <div class="budget-metrics-cards">
+                                    <div class="budget-metric-card planned">
+                                        <div class="metric-header">
+                                            <i class="fas fa-clipboard-list"></i>
+                                            <span class="metric-title">Planned Budget</span>
+                                        </div>
+                                        <div class="metric-value">{{ cat_data.planned|format_currency }}</div>
+                                        <div class="metric-description">Category budget allocation</div>
+                                    </div>
+                                    
+                                    <div class="budget-metric-card allocated">
+                                        <div class="metric-header">
+                                            <i class="fas fa-share-alt"></i>
+                                            <span class="metric-title">Allocated Budget</span>
+                                        </div>
+                                        <div class="metric-value">{{ cat_data.allocated|format_currency }}</div>
+                                        <div class="metric-description">Assigned to subcategories</div>
+                                    </div>
+                                    
+                                    <div class="budget-metric-card balance {% if cat_data.balance < 0 %}negative{% endif %}">
+                                        <div class="metric-header">
+                                            <i class="fas fa-balance-scale"></i>
+                                            <span class="metric-title">Balance to Distribute</span>
+                                        </div>
+                                        <div class="metric-value">{{ cat_data.balance|format_currency }}</div>
+                                        <div class="metric-description">Available for subcategories</div>
+                                    </div>
+                                    
+                                    <div class="budget-metric-card actual">
+                                        <div class="metric-header">
+                                            <i class="fas fa-receipt"></i>
+                                            <span class="metric-title">Actual Expenditure</span>
+                                        </div>
+                                        <div class="metric-value">{{ cat_data.actual|format_currency }}</div>
+                                        <div class="metric-description">Total expenses</div>
+                                    </div>
+                                </div>
+                            </div>
+                            
                             <!-- Category Budget Form -->
                             {% if current_user.username == 'admin' or (current_user.is_manager and current_user.department_id == department.id) %}
                             <div class="budget-update-inline">
@@ -265,14 +331,9 @@
                             
                             <!-- Subcategories -->
                             <div class="subcategories-container">
-                                {% for subcategory in category.subcategories %}
-                                {% set subcat_expenses = namespace(value=0) %}
-                                {% for expense in subcategory.expenses %}
-                                    {% if expense.status == 'approved' %}
-                                        {% set subcat_expenses.value = subcat_expenses.value + expense.amount %}
-                                    {% endif %}
-        {% endfor %}
-                                {% set subcat_usage_percent = (subcat_expenses.value / subcategory.budget * 100) if subcategory.budget > 0 else 0 %}
+                                {% for subcat_data in cat_data.subcategories %}
+                                {% set subcategory = subcat_data.subcategory %}
+                                {% set subcat_usage_percent = (subcat_data.actual / subcat_data.planned * 100) if subcat_data.planned > 0 else 0 %}
                                 
                                 <div class="hierarchy-item subcategory-level">
                                     <div class="hierarchy-header">
@@ -287,8 +348,8 @@
                                         </div>
                                         <div class="hierarchy-right">
                                             <div class="level-budget">
-                                                <span class="budget-amount">{{ subcategory.budget|format_currency }}</span>
-                                                <span class="budget-used">{{ subcat_expenses.value|format_currency }} spent</span>
+                                                <span class="budget-amount">{{ subcat_data.planned|format_currency }}</span>
+                                                <span class="budget-used">{{ subcat_data.actual|format_currency }} spent</span>
                                             </div>
                                             {% if current_user.username == 'admin' or (current_user.is_manager and current_user.department_id == department.id) %}
                                             <div class="level-actions">
@@ -2081,6 +2142,142 @@ document.getElementById('editSubcategoryForm').addEventListener('submit', functi
     max-width: 400px;
     margin-left: auto;
     margin-right: auto;
+}
+
+/* Budget Metrics Cards Styling */
+.budget-metrics-section {
+    margin: 1.5rem 0;
+    padding: 1.5rem;
+    background: #f8f9fa;
+    border-radius: 12px;
+    border-left: 4px solid #007bff;
+}
+
+.budget-metrics-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1rem;
+}
+
+.budget-metric-card {
+    background: white;
+    border-radius: 8px;
+    padding: 1.5rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    border-left: 4px solid #e9ecef;
+    transition: all 0.3s ease;
+}
+
+.budget-metric-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.budget-metric-card.planned {
+    border-left-color: #007bff;
+}
+
+.budget-metric-card.allocated {
+    border-left-color: #28a745;
+}
+
+.budget-metric-card.balance {
+    border-left-color: #ffc107;
+}
+
+.budget-metric-card.balance.negative {
+    border-left-color: #dc3545;
+    background: #fff5f5;
+}
+
+.budget-metric-card.actual {
+    border-left-color: #6f42c1;
+}
+
+.metric-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+.metric-header i {
+    font-size: 1.2rem;
+    opacity: 0.7;
+}
+
+.budget-metric-card.planned .metric-header i {
+    color: #007bff;
+}
+
+.budget-metric-card.allocated .metric-header i {
+    color: #28a745;
+}
+
+.budget-metric-card.balance .metric-header i {
+    color: #ffc107;
+}
+
+.budget-metric-card.balance.negative .metric-header i {
+    color: #dc3545;
+}
+
+.budget-metric-card.actual .metric-header i {
+    color: #6f42c1;
+}
+
+.metric-title {
+    font-weight: 600;
+    color: #2c3e50;
+    font-size: 0.9rem;
+}
+
+.metric-value {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #2c3e50;
+    margin-bottom: 0.5rem;
+}
+
+.budget-metric-card.balance.negative .metric-value {
+    color: #dc3545;
+}
+
+.metric-description {
+    font-size: 0.8rem;
+    color: #6c757d;
+    line-height: 1.4;
+}
+
+.category-metrics {
+    border-left-color: #28a745;
+}
+
+.category-metrics .budget-metrics-cards {
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 0.75rem;
+}
+
+.category-metrics .budget-metric-card {
+    padding: 1rem;
+}
+
+.category-metrics .metric-value {
+    font-size: 1.2rem;
+}
+
+@media (max-width: 768px) {
+    .budget-metrics-cards {
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    }
+    
+    .budget-metric-card {
+        padding: 1rem;
+    }
+    
+    .metric-value {
+        font-size: 1.2rem;
+    }
 }
 </style>
 {% endblock %}
