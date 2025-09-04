@@ -15,6 +15,15 @@
                 </div>
             </div>
             <div class="header-actions">
+                <div class="search-container">
+                    <div class="search-input-wrapper">
+                        <i class="fas fa-search search-icon"></i>
+                        <input type="text" id="subcategorySearch" placeholder="Search subcategories..." class="search-input-modern">
+                        <button onclick="clearSearch()" class="clear-search-btn" id="clearSearchBtn" style="display: none;">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                </div>
     {% if current_user.username == 'admin' %}
                 <button onclick="showAddDepartmentModal()" class="button-modern primary">
                     <i class="fas fa-plus"></i>
@@ -32,25 +41,17 @@
         <div class="stats-overview">
             {% set total_budget = namespace(value=0) %}
             {% set total_spent = namespace(value=0) %}
-            {% set department_count = departments|length %}
+            {% set department_count = departments_data|length %}
             {% set category_count = namespace(value=0) %}
             {% set subcategory_count = namespace(value=0) %}
             
-            {% for department in departments %}
-                {% set total_budget.value = total_budget.value + (department.budget or 0) %}
-                {% set category_count.value = category_count.value + department.categories|length %}
-                {% set dept_expenses = namespace(value=0) %}
-                {% for category in department.categories %}
-                    {% set subcategory_count.value = subcategory_count.value + category.subcategories|length %}
-                    {% for subcategory in category.subcategories %}
-                        {% for expense in subcategory.expenses %}
-                            {% if expense.status == 'approved' and expense.type != 'future_approval' %}
-                                {% set dept_expenses.value = dept_expenses.value + expense.amount %}
-    {% endif %}
-                        {% endfor %}
-                    {% endfor %}
+            {% for dept_data in departments_data %}
+                {% set total_budget.value = total_budget.value + dept_data.planned %}
+                {% set total_spent.value = total_spent.value + dept_data.actual %}
+                {% set category_count.value = category_count.value + dept_data.categories|length %}
+                {% for cat_data in dept_data.categories %}
+                    {% set subcategory_count.value = subcategory_count.value + cat_data.subcategories|length %}
                 {% endfor %}
-                {% set total_spent.value = total_spent.value + dept_expenses.value %}
             {% endfor %}
             
             <div class="stat-card">
@@ -335,14 +336,14 @@
                                 {% set subcategory = subcat_data.subcategory %}
                                 {% set subcat_usage_percent = (subcat_data.actual / subcat_data.planned * 100) if subcat_data.planned > 0 else 0 %}
                                 
-                                <div class="hierarchy-item subcategory-level">
+                                <div class="hierarchy-item subcategory-level" data-subcategory-name="{{ subcategory.name|lower }}" data-category-name="{{ category.name|lower }}" data-department-name="{{ department.name|lower }}">
                                     <div class="hierarchy-header">
                                         <div class="hierarchy-left">
                                             <div class="level-icon subcategory">
                                                 <i class="fas fa-cube"></i>
                                             </div>
                                             <div class="level-info">
-                                                <h5>{{ subcategory.name }}</h5>
+                                                <h5 class="subcategory-name">{{ subcategory.name }}</h5>
                                                 <span class="level-meta">{{ subcategory.expenses|length }} expenses • {{ subcat_usage_percent|round(1) }}% used</span>
                                             </div>
                                         </div>
@@ -727,6 +728,205 @@
 </div>
 
 <script>
+// Subcategory Search Functionality
+let searchTimeout;
+const searchInput = document.getElementById('subcategorySearch');
+const clearBtn = document.getElementById('clearSearchBtn');
+
+document.addEventListener('DOMContentLoaded', function() {
+    if (searchInput) {
+        searchInput.addEventListener('input', function() {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(performSearch, 300);
+        });
+    }
+});
+
+function performSearch() {
+    const searchTerm = searchInput.value.toLowerCase().trim();
+    const subcategoryItems = document.querySelectorAll('.subcategory-level');
+    const departmentItems = document.querySelectorAll('.department-level');
+    const categoryItems = document.querySelectorAll('.category-level');
+    
+    // Show/hide clear button
+    if (searchTerm) {
+        clearBtn.style.display = 'block';
+    } else {
+        clearBtn.style.display = 'none';
+    }
+    
+    if (!searchTerm) {
+        // Reset all visibility and highlighting
+        resetSearch();
+        return;
+    }
+    
+    let hasVisibleResults = false;
+    
+    // First, hide all subcategories
+    subcategoryItems.forEach(item => {
+        item.style.display = 'none';
+        item.classList.remove('search-highlight');
+    });
+    
+    // Hide all categories and departments initially
+    categoryItems.forEach(item => {
+        item.style.display = 'none';
+    });
+    
+    departmentItems.forEach(item => {
+        item.style.display = 'none';
+    });
+    
+    // Search through subcategories
+    subcategoryItems.forEach(item => {
+        const subcategoryName = item.getAttribute('data-subcategory-name') || '';
+        const categoryName = item.getAttribute('data-category-name') || '';
+        const departmentName = item.getAttribute('data-department-name') || '';
+        
+        if (subcategoryName.includes(searchTerm) || 
+            categoryName.includes(searchTerm) || 
+            departmentName.includes(searchTerm)) {
+            
+            item.style.display = 'block';
+            item.classList.add('search-highlight');
+            hasVisibleResults = true;
+            
+            // Show parent category and department
+            const categoryContainer = item.closest('.category-level');
+            const departmentContainer = item.closest('.department-level');
+            
+            if (categoryContainer) {
+                categoryContainer.style.display = 'block';
+                // Expand category to show subcategories
+                const categoryId = categoryContainer.querySelector('.hierarchy-header').getAttribute('onclick');
+                if (categoryId) {
+                    const catId = categoryId.match(/cat-(\d+)/);
+                    if (catId) {
+                        const categoryContent = document.getElementById('cat-' + catId[1]);
+                        if (categoryContent) {
+                            categoryContent.style.display = 'block';
+                            const expandIcon = categoryContainer.querySelector('.expand-icon i');
+                            if (expandIcon) {
+                                expandIcon.classList.remove('fa-chevron-right');
+                                expandIcon.classList.add('fa-chevron-down');
+                            }
+                        }
+                    }
+                }
+            }
+            
+            if (departmentContainer) {
+                departmentContainer.style.display = 'block';
+                // Expand department to show categories
+                const departmentId = departmentContainer.querySelector('.hierarchy-header').getAttribute('onclick');
+                if (departmentId) {
+                    const deptId = departmentId.match(/dept-(\d+)/);
+                    if (deptId) {
+                        const departmentContent = document.getElementById('dept-' + deptId[1]);
+                        if (departmentContent) {
+                            departmentContent.style.display = 'block';
+                            const expandIcon = departmentContainer.querySelector('.expand-icon i');
+                            if (expandIcon) {
+                                expandIcon.classList.remove('fa-chevron-right');
+                                expandIcon.classList.add('fa-chevron-down');
+                            }
+                        }
+                    }
+                }
+            }
+            
+            // Highlight matching text
+            highlightSearchTerm(item, searchTerm);
+        }
+    });
+    
+    // Show message if no results found
+    showNoResultsMessage(!hasVisibleResults);
+}
+
+function highlightSearchTerm(item, searchTerm) {
+    const nameElement = item.querySelector('.subcategory-name');
+    if (nameElement) {
+        const originalText = nameElement.textContent;
+        const regex = new RegExp(`(${searchTerm})`, 'gi');
+        const highlightedText = originalText.replace(regex, '<mark>$1</mark>');
+        nameElement.innerHTML = highlightedText;
+    }
+}
+
+function clearSearch() {
+    searchInput.value = '';
+    clearBtn.style.display = 'none';
+    resetSearch();
+}
+
+function resetSearch() {
+    const subcategoryItems = document.querySelectorAll('.subcategory-level');
+    const departmentItems = document.querySelectorAll('.department-level');
+    const categoryItems = document.querySelectorAll('.category-level');
+    
+    // Show all items
+    subcategoryItems.forEach(item => {
+        item.style.display = 'block';
+        item.classList.remove('search-highlight');
+        // Remove highlighting
+        const nameElement = item.querySelector('.subcategory-name');
+        if (nameElement) {
+            nameElement.innerHTML = nameElement.textContent;
+        }
+    });
+    
+    categoryItems.forEach(item => {
+        item.style.display = 'block';
+    });
+    
+    departmentItems.forEach(item => {
+        item.style.display = 'block';
+    });
+    
+    // Collapse all expanded sections
+    const allContent = document.querySelectorAll('.hierarchy-content');
+    allContent.forEach(content => {
+        content.style.display = 'none';
+    });
+    
+    const allExpandIcons = document.querySelectorAll('.expand-icon i');
+    allExpandIcons.forEach(icon => {
+        icon.classList.remove('fa-chevron-down');
+        icon.classList.add('fa-chevron-right');
+    });
+    
+    hideNoResultsMessage();
+}
+
+function showNoResultsMessage(show) {
+    let noResultsDiv = document.getElementById('noSearchResults');
+    
+    if (show && !noResultsDiv) {
+        noResultsDiv = document.createElement('div');
+        noResultsDiv.id = 'noSearchResults';
+        noResultsDiv.className = 'no-search-results';
+        noResultsDiv.innerHTML = `
+            <div class="no-results-content">
+                <i class="fas fa-search"></i>
+                <h3>No subcategories found</h3>
+                <p>Try adjusting your search terms or browse all subcategories.</p>
+            </div>
+        `;
+        document.querySelector('.hierarchy-container').appendChild(noResultsDiv);
+    } else if (!show && noResultsDiv) {
+        noResultsDiv.remove();
+    }
+}
+
+function hideNoResultsMessage() {
+    const noResultsDiv = document.getElementById('noSearchResults');
+    if (noResultsDiv) {
+        noResultsDiv.remove();
+    }
+}
+
 // Hierarchy toggle functionality
 function toggleHierarchy(elementId) {
     const content = document.getElementById(elementId);
@@ -2277,6 +2477,143 @@ document.getElementById('editSubcategoryForm').addEventListener('submit', functi
     
     .metric-value {
         font-size: 1.2rem;
+    }
+}
+
+/* Search Functionality Styling */
+.search-container {
+    margin-right: 1rem;
+}
+
+.search-input-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+    background: white;
+    border-radius: 8px;
+    border: 2px solid #e9ecef;
+    padding: 0.5rem;
+    transition: all 0.3s ease;
+    min-width: 300px;
+}
+
+.search-input-wrapper:focus-within {
+    border-color: #007bff;
+    box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+}
+
+.search-icon {
+    color: #6c757d;
+    margin-right: 0.5rem;
+    font-size: 1rem;
+}
+
+.search-input-modern {
+    border: none;
+    outline: none;
+    flex: 1;
+    font-size: 0.9rem;
+    color: #495057;
+    background: transparent;
+}
+
+.search-input-modern::placeholder {
+    color: #adb5bd;
+}
+
+.clear-search-btn {
+    background: none;
+    border: none;
+    color: #6c757d;
+    cursor: pointer;
+    padding: 0.25rem;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+    margin-left: 0.5rem;
+}
+
+.clear-search-btn:hover {
+    background: #f8f9fa;
+    color: #495057;
+}
+
+/* Search Results Highlighting */
+.search-highlight {
+    background: #fff3cd;
+    border-left: 4px solid #ffc107 !important;
+    animation: highlightPulse 0.5s ease-in-out;
+}
+
+@keyframes highlightPulse {
+    0% { background: #fff3cd; }
+    50% { background: #ffeaa7; }
+    100% { background: #fff3cd; }
+}
+
+.search-highlight .subcategory-name mark {
+    background: #ffc107;
+    color: #212529;
+    padding: 0.1rem 0.2rem;
+    border-radius: 3px;
+    font-weight: 600;
+}
+
+/* No Results Message */
+.no-search-results {
+    text-align: center;
+    padding: 3rem 2rem;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    margin: 2rem 0;
+}
+
+.no-results-content i {
+    font-size: 3rem;
+    color: #6c757d;
+    margin-bottom: 1rem;
+}
+
+.no-results-content h3 {
+    color: #495057;
+    margin-bottom: 0.5rem;
+    font-size: 1.25rem;
+}
+
+.no-results-content p {
+    color: #6c757d;
+    margin: 0;
+}
+
+/* Mobile Responsive for Search */
+@media (max-width: 768px) {
+    .header-actions {
+        flex-direction: column;
+        gap: 1rem;
+        width: 100%;
+    }
+    
+    .search-container {
+        margin-right: 0;
+        width: 100%;
+    }
+    
+    .search-input-wrapper {
+        min-width: 100%;
+    }
+    
+    .search-input-modern {
+        font-size: 1rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .search-input-wrapper {
+        padding: 0.75rem;
+    }
+    
+    .search-input-modern {
+        font-size: 1rem;
     }
 }
 </style>
