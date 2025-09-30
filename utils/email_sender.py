@@ -6,6 +6,8 @@ import smtplib
 import ssl
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
+from email.mime.base import MIMEBase
+from email import encoders
 from dotenv import load_dotenv
 from templates.email_templates import (
     EXPENSE_SUBMITTED_TEMPLATE,
@@ -35,8 +37,15 @@ SMTP_PASSWORD = os.getenv('SMTP_PASSWORD')
 FROM_EMAIL_ADDRESS = os.getenv('FROM_EMAIL', 'expenses-app@labos.com')  # Verified sender email in Mailgun
 FROM_NAME = os.getenv('FROM_NAME', 'LabOS Expenses App')  # Friendly sender name
 
-def send_email_smtp(to_email, subject, html_content):
-    """Send email using SMTP (Mailgun)."""
+def send_email_smtp(to_email, subject, html_content, attachments=None):
+    """Send email using SMTP (Mailgun).
+    
+    Args:
+        to_email: Recipient email address
+        subject: Email subject
+        html_content: HTML content of the email
+        attachments: List of file paths to attach to the email
+    """
     try:
         if not (SMTP_USERNAME and SMTP_PASSWORD):
             raise ValueError("SMTP credentials not configured. Set SMTP_USERNAME and SMTP_PASSWORD environment variables.")
@@ -51,6 +60,25 @@ def send_email_smtp(to_email, subject, html_content):
 
         part_html = MIMEText(html_content, 'html', 'utf-8')
         msg.attach(part_html)
+
+        # Attach files if provided
+        if attachments:
+            for file_path in attachments:
+                if os.path.exists(file_path):
+                    try:
+                        with open(file_path, 'rb') as f:
+                            part = MIMEBase('application', 'octet-stream')
+                            part.set_payload(f.read())
+                            encoders.encode_base64(part)
+                            
+                            filename = os.path.basename(file_path)
+                            part.add_header('Content-Disposition', f'attachment; filename= {filename}')
+                            msg.attach(part)
+                            logger.info(f"Attached file: {filename}")
+                    except Exception as e:
+                        logger.error(f"Failed to attach file {file_path}: {str(e)}")
+                else:
+                    logger.warning(f"Attachment file not found: {file_path}")
 
         # Connect and send using STARTTLS
         context = ssl.create_default_context()
@@ -86,12 +114,12 @@ def test_email_setup():
         logger.error(f"❌ Email setup test failed: {str(e)}")
         return False
 
-def send_async_email(app, recipient, subject, html_content):
+def send_async_email(app, recipient, subject, html_content, attachments=None):
     """Send email asynchronously"""
     try:
         with app.app_context():
             logger.info(f"Async email thread started for {recipient}")
-            result = send_email_smtp(recipient, subject, html_content)
+            result = send_email_smtp(recipient, subject, html_content, attachments)
             logger.info(f"Async email thread completed successfully for {recipient}")
             return result
     except Exception as e:
@@ -100,8 +128,16 @@ def send_async_email(app, recipient, subject, html_content):
         logger.error(f"Full traceback: {traceback.format_exc()}")
         raise
 
-def send_email(subject, recipient, template, **kwargs):
-    """Send an email using a template - now with improved reliability"""
+def send_email(subject, recipient, template, attachments=None, **kwargs):
+    """Send an email using a template - now with improved reliability
+    
+    Args:
+        subject: Email subject
+        recipient: Recipient email address
+        template: Email template string
+        attachments: Optional list of file paths to attach
+        **kwargs: Template variables
+    """
     try:
         logger.info(f"Preparing to send email to {recipient} with subject: {subject}")
         
@@ -129,7 +165,9 @@ def send_email(subject, recipient, template, **kwargs):
         # SYNCHRONOUS EMAIL SENDING for better reliability
         # This ensures emails are sent before the request completes
         logger.info(f"Sending email synchronously to {recipient}")
-        result = send_email_smtp(recipient, subject, html_content)
+        if attachments:
+            logger.info(f"Email will include {len(attachments)} attachment(s)")
+        result = send_email_smtp(recipient, subject, html_content, attachments)
         
         if result:
             logger.info(f"✅ Email sent successfully to {recipient}")

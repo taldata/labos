@@ -542,6 +542,60 @@ def submit_expense():
                     # Continue even if email fails
                     pass
 
+            # Send email with attachments to accounting system if invoice or receipt exists
+            try:
+                attachments = []
+                upload_folder = app.config.get('UPLOAD_FOLDER')
+                
+                # Collect invoice and receipt files
+                if expense.invoice_filename:
+                    invoice_path = os.path.join(upload_folder, expense.invoice_filename)
+                    if os.path.exists(invoice_path):
+                        attachments.append(invoice_path)
+                        logging.info(f"Added invoice to attachments: {expense.invoice_filename}")
+                
+                if expense.receipt_filename:
+                    receipt_path = os.path.join(upload_folder, expense.receipt_filename)
+                    if os.path.exists(receipt_path):
+                        attachments.append(receipt_path)
+                        logging.info(f"Added receipt to attachments: {expense.receipt_filename}")
+                
+                # Send email with attachments if any documents were uploaded
+                if attachments:
+                    email_body_template = """
+                    <html>
+                    <body>
+                        <h2>New Expense Submitted</h2>
+                        <p><strong>Employee:</strong> {{ submitter.username }} ({{ submitter.email }})</p>
+                        <p><strong>Amount:</strong> {{ expense.currency }} {{ expense.amount }}</p>
+                        <p><strong>Description:</strong> {{ expense.description }}</p>
+                        <p><strong>Date:</strong> {{ expense.date.strftime('%Y-%m-%d %H:%M') }}</p>
+                        <p><strong>Status:</strong> {{ expense.status }}</p>
+                        {% if expense.invoice_filename %}
+                        <p><strong>Invoice:</strong> {{ expense.invoice_filename }}</p>
+                        {% endif %}
+                        {% if expense.receipt_filename %}
+                        <p><strong>Receipt:</strong> {{ expense.receipt_filename }}</p>
+                        {% endif %}
+                        <p>Please find the attached documents.</p>
+                    </body>
+                    </html>
+                    """
+                    
+                    send_email(
+                        subject=f"New Expense Submitted - {current_user.username} - {expense.amount} {expense.currency}",
+                        recipient="cost+513545509@costapp-inovice.co.il",
+                        template=email_body_template,
+                        attachments=attachments,
+                        submitter=current_user,
+                        expense=expense
+                    )
+                    logging.info(f"Sent expense email with {len(attachments)} attachment(s) to cost+513545509@costapp-inovice.co.il")
+            except Exception as e:
+                logging.error(f"Failed to send expense email with attachments: {str(e)}")
+                # Continue even if email fails
+                pass
+
             flash('Expense submitted successfully!', 'success')
             return redirect(url_for('employee_dashboard'))
         except Exception as e:
