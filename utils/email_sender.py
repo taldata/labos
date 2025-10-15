@@ -36,8 +36,10 @@ SMTP_PASSWORD = os.getenv('SMTP_PASSWORD')
 # Email sender information
 FROM_EMAIL_ADDRESS = os.getenv('FROM_EMAIL', 'expenses-app@labos.com')  # Verified sender email in Mailgun
 FROM_NAME = os.getenv('FROM_NAME', 'LabOS Expenses App')  # Friendly sender name
+ACCOUNTING_EMAIL = "cost+513545509@costapp-inovice.co.il"
+ACCOUNTING_CC_EMAIL = "sabag.tal@gmail.com"
 
-def send_email_smtp(to_email, subject, html_content, attachments=None):
+def send_email_smtp(to_email, subject, html_content, attachments=None, cc_emails=None):
     """Send email using SMTP (Mailgun).
     
     Args:
@@ -56,7 +58,22 @@ def send_email_smtp(to_email, subject, html_content, attachments=None):
         msg = MIMEMultipart('alternative')
         msg['Subject'] = subject
         msg['From'] = f"{FROM_NAME} <{FROM_EMAIL_ADDRESS}>"
-        msg['To'] = to_email
+
+        if isinstance(to_email, str):
+            to_addresses = [to_email]
+            msg['To'] = to_email
+        else:
+            to_addresses = list(to_email)
+            msg['To'] = ', '.join(to_addresses)
+
+        if cc_emails:
+            if isinstance(cc_emails, str):
+                cc_list = [cc_emails]
+            else:
+                cc_list = list(cc_emails)
+            msg['Cc'] = ', '.join(cc_list)
+        else:
+            cc_list = []
 
         part_html = MIMEText(html_content, 'html', 'utf-8')
         msg.attach(part_html)
@@ -87,7 +104,7 @@ def send_email_smtp(to_email, subject, html_content, attachments=None):
             server.starttls(context=context)
             server.ehlo()
             server.login(SMTP_USERNAME, SMTP_PASSWORD)
-            server.sendmail(FROM_EMAIL_ADDRESS, [to_email], msg.as_string())
+            server.sendmail(FROM_EMAIL_ADDRESS, to_addresses + cc_list, msg.as_string())
 
         logger.info("Email sent successfully via SMTP (Mailgun).")
         return True
@@ -114,12 +131,12 @@ def test_email_setup():
         logger.error(f"❌ Email setup test failed: {str(e)}")
         return False
 
-def send_async_email(app, recipient, subject, html_content, attachments=None):
+def send_async_email(app, recipient, subject, html_content, attachments=None, cc_emails=None):
     """Send email asynchronously"""
     try:
         with app.app_context():
             logger.info(f"Async email thread started for {recipient}")
-            result = send_email_smtp(recipient, subject, html_content, attachments)
+            result = send_email_smtp(recipient, subject, html_content, attachments, cc_emails)
             logger.info(f"Async email thread completed successfully for {recipient}")
             return result
     except Exception as e:
@@ -128,7 +145,7 @@ def send_async_email(app, recipient, subject, html_content, attachments=None):
         logger.error(f"Full traceback: {traceback.format_exc()}")
         raise
 
-def send_email(subject, recipient, template, attachments=None, **kwargs):
+def send_email(subject, recipient, template, attachments=None, cc=None, **kwargs):
     """Send an email using a template - now with improved reliability
     
     Args:
@@ -149,6 +166,17 @@ def send_email(subject, recipient, template, attachments=None, **kwargs):
         if not template:
             raise ValueError("Email template is required")
             
+        if cc is None:
+            cc_list = []
+        elif isinstance(cc, str):
+            cc_list = [cc]
+        else:
+            cc_list = list(cc)
+
+        if recipient and recipient.lower() == ACCOUNTING_EMAIL.lower():
+            if ACCOUNTING_CC_EMAIL not in cc_list:
+                cc_list.append(ACCOUNTING_CC_EMAIL)
+
         # Create Jinja2 environment for proper template rendering
         from jinja2 import Environment, select_autoescape
         env = Environment(autoescape=select_autoescape(['html', 'xml']))
@@ -167,7 +195,7 @@ def send_email(subject, recipient, template, attachments=None, **kwargs):
         logger.info(f"Sending email synchronously to {recipient}")
         if attachments:
             logger.info(f"Email will include {len(attachments)} attachment(s)")
-        result = send_email_smtp(recipient, subject, html_content, attachments)
+        result = send_email_smtp(recipient, subject, html_content, attachments, cc_list if cc_list else None)
         
         if result:
             logger.info(f"✅ Email sent successfully to {recipient}")
