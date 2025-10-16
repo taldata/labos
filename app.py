@@ -584,13 +584,13 @@ def submit_expense():
                     
                     send_email(
                         subject=f"New Expense Submitted - {current_user.username} - {expense.amount} {expense.currency}",
-                        recipient="cost+513545509@costapp-inovice.co.il",
+                        recipient="cost+513545509@costapp-invoice.co.il",
                         template=email_body_template,
                         attachments=attachments,
                         submitter=current_user,
                         expense=expense
                     )
-                    logging.info(f"Sent expense email with {len(attachments)} attachment(s) to cost+513545509@costapp-inovice.co.il")
+                    logging.info(f"Sent expense email with {len(attachments)} attachment(s) to cost+513545509@costapp-invoice.co.il")
             except Exception as e:
                 logging.error(f"Failed to send expense email with attachments: {str(e)}")
                 # Continue even if email fails

@@ -36,7 +36,7 @@ SMTP_PASSWORD = os.getenv('SMTP_PASSWORD')
 # Email sender information
 FROM_EMAIL_ADDRESS = os.getenv('FROM_EMAIL', 'expenses-app@labos.com')  # Verified sender email in Mailgun
 FROM_NAME = os.getenv('FROM_NAME', 'LabOS Expenses App')  # Friendly sender name
-ACCOUNTING_EMAIL = "cost+513545509@costapp-inovice.co.il"
+ACCOUNTING_EMAIL = "cost+513545509@costapp-invoice.co.il"
 ACCOUNTING_CC_EMAIL = "sabag.tal@gmail.com"
 
 def send_email_smtp(to_email, subject, html_content, attachments=None, cc_emails=None):
