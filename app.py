@@ -2430,6 +2430,158 @@ def export_accounting_excel():
         download_name=f'accounting_export_{datetime.now().strftime("%Y%m%d")}.xlsx'
     )
 
+@app.route('/export_departments_excel')
+@login_required
+def export_departments_excel():
+    if not current_user.is_manager:
+        flash('Access denied. Manager privileges required.', 'danger')
+        return redirect(url_for('index'))
+    
+    # Get departments data (same logic as manage_departments)
+    if current_user.username == 'admin':
+        departments = Department.query.all()
+    else:
+        departments = current_user.managed_departments
+    
+    # Calculate budget metrics for each department
+    departments_data = []
+    for dept in departments:
+        # Planned Budget - the initial budget set for the department
+        planned_budget = dept.budget or 0
+        
+        # Calculate category metrics first to get their allocated budgets
+        categories_data = []
+        total_category_allocated = 0
+        
+        for cat in dept.categories:
+            cat_planned = cat.budget or 0
+            total_category_allocated += cat_planned
+            
+            # Calculate subcategory metrics
+            subcategories_data = []
+            total_subcategory_allocated = 0
+            
+            for subcat in cat.subcategories:
+                subcat_planned = subcat.budget or 0
+                total_subcategory_allocated += subcat_planned
+                
+                # Calculate actual expenses for subcategory
+                subcat_actual = sum(exp.amount for exp in subcat.expenses if exp.status == 'approved')
+                
+                subcategories_data.append({
+                    'subcategory_name': subcat.name,
+                    'subcategory_planned': subcat_planned,
+                    'subcategory_allocated': subcat_planned,  # Same as planned for subcategories
+                    'subcategory_balance': subcat_planned - subcat_planned,  # Always 0 for subcategories
+                    'subcategory_actual': subcat_actual,
+                    'subcategory_usage_percent': (subcat_actual / subcat_planned * 100) if subcat_planned > 0 else 0
+                })
+            
+            # Calculate actual expenses for category (sum of all subcategory expenses)
+            cat_actual = sum(exp.amount for subcat in cat.subcategories for exp in subcat.expenses if exp.status == 'approved')
+            
+            categories_data.append({
+                'category_name': cat.name,
+                'category_planned': cat_planned,
+                'category_allocated': total_subcategory_allocated,
+                'category_balance': cat_planned - total_subcategory_allocated,
+                'category_actual': cat_actual,
+                'category_usage_percent': (cat_actual / cat_planned * 100) if cat_planned > 0 else 0,
+                'subcategories': subcategories_data
+            })
+        
+        # Calculate actual expenses for department (sum of all subcategory expenses in all categories)
+        dept_actual = sum(exp.amount for cat in dept.categories for subcat in cat.subcategories for exp in subcat.expenses if exp.status == 'approved')
+        
+        departments_data.append({
+            'department_name': dept.name,
+            'department_currency': dept.currency,
+            'department_planned': planned_budget,
+            'department_allocated': total_category_allocated,
+            'department_balance': planned_budget - total_category_allocated,
+            'department_actual': dept_actual,
+            'department_usage_percent': (dept_actual / planned_budget * 100) if planned_budget > 0 else 0,
+            'categories': categories_data
+        })
+    
+    # Create Excel data
+    excel_data = []
+    
+    # Add summary sheet data
+    for dept_data in departments_data:
+        excel_data.append({
+            'Level': 'Department',
+            'Name': dept_data['department_name'],
+            'Currency': dept_data['department_currency'],
+            'Planned Budget': dept_data['department_planned'],
+            'Allocated Budget': dept_data['department_allocated'],
+            'Balance': dept_data['department_balance'],
+            'Actual Spent': dept_data['department_actual'],
+            'Usage %': round(dept_data['department_usage_percent'], 2),
+            'Parent': '-',
+            'Categories Count': len(dept_data['categories']),
+            'Subcategories Count': sum(len(cat['subcategories']) for cat in dept_data['categories'])
+        })
+        
+        # Add categories data
+        for cat_data in dept_data['categories']:
+            excel_data.append({
+                'Level': 'Category',
+                'Name': cat_data['category_name'],
+                'Currency': dept_data['department_currency'],
+                'Planned Budget': cat_data['category_planned'],
+                'Allocated Budget': cat_data['category_allocated'],
+                'Balance': cat_data['category_balance'],
+                'Actual Spent': cat_data['category_actual'],
+                'Usage %': round(cat_data['category_usage_percent'], 2),
+                'Parent': dept_data['department_name'],
+                'Categories Count': '-',
+                'Subcategories Count': len(cat_data['subcategories'])
+            })
+            
+            # Add subcategories data
+            for subcat_data in cat_data['subcategories']:
+                excel_data.append({
+                    'Level': 'Subcategory',
+                    'Name': subcat_data['subcategory_name'],
+                    'Currency': dept_data['department_currency'],
+                    'Planned Budget': subcat_data['subcategory_planned'],
+                    'Allocated Budget': subcat_data['subcategory_allocated'],
+                    'Balance': subcat_data['subcategory_balance'],
+                    'Actual Spent': subcat_data['subcategory_actual'],
+                    'Usage %': round(subcat_data['subcategory_usage_percent'], 2),
+                    'Parent': cat_data['category_name'],
+                    'Categories Count': '-',
+                    'Subcategories Count': '-'
+                })
+    
+    df = pd.DataFrame(excel_data)
+    
+    # Create Excel file in memory
+    output = BytesIO()
+    with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+        # Main budget data sheet
+        df.to_excel(writer, sheet_name='Budget Overview', index=False)
+        worksheet = writer.sheets['Budget Overview']
+        
+        # Auto-adjust columns width
+        for idx, col in enumerate(df.columns):
+            series = df[col]
+            max_len = max(
+                series.astype(str).map(len).max(),
+                len(str(series.name))
+            ) + 1
+            worksheet.set_column(idx, idx, max_len)
+        
+    
+    output.seek(0)
+    return send_file(
+        output,
+        mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        as_attachment=True,
+        download_name=f'departments_budget_export_{datetime.now().strftime("%Y%m%d")}.xlsx'
+    )
+
 @app.route('/test_email')
 def test_email():
     try:

@@ -30,6 +30,10 @@
                     Add Department
                 </button>
                 {% endif %}
+                <a href="{{ url_for('export_departments_excel') }}" class="button-modern secondary">
+                    <i class="fas fa-file-excel"></i>
+                    Export to Excel
+                </a>
                 <a href="{{ url_for('manager_dashboard') }}" class="button-modern secondary">
                     <i class="fas fa-arrow-left"></i>
                     Back to Dashboard
