@@ -10,7 +10,9 @@ from utils.email_sender import send_email, EXPENSE_SUBMITTED_TEMPLATE, EXPENSE_S
 import logging
 import pytz
 from routes.expense import expense_bp
+from routes.api_v1 import api_v1
 from flask_migrate import Migrate
+from flask_cors import CORS
 from config import Config
 from io import BytesIO
 import pandas as pd
@@ -35,12 +37,23 @@ Config.init_app(app)
 db.init_app(app)
 migrate = Migrate(app, db)
 
+# Initialize CORS for modern frontend
+CORS(app, resources={
+    r"/api/v1/*": {
+        "origins": ["http://localhost:3000", "https://localhost:3000"],
+        "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+        "allow_headers": ["Content-Type", "Authorization"],
+        "supports_credentials": True
+    }
+})
+
 # Initialize login manager
 login_manager = LoginManager(app)
 login_manager.login_view = 'login'
 
 # Register blueprints
 app.register_blueprint(expense_bp, url_prefix='/api/expense')
+app.register_blueprint(api_v1)
 
 ALLOWED_EXTENSIONS = {'pdf', 'png', 'jpg', 'jpeg', 'gif'}
 
@@ -94,9 +107,35 @@ def format_expense_type(value):
     }
     return types.get(value, value)
 
+# Version switching middleware
+@app.before_request
+def check_version_preference():
+    """Redirect users to their preferred version if accessing root paths"""
+    # Skip for API, static files, and auth routes
+    if request.path.startswith('/api/') or request.path.startswith('/static/') or \
+       request.path.startswith('/auth/') or request.path.startswith('/uploads/'):
+        return None
+
+    # If user is authenticated and prefers modern version
+    if current_user.is_authenticated and \
+       current_user.can_use_modern_version and \
+       current_user.preferred_version == 'modern':
+        # If accessing legacy routes (not /modern), inform them
+        if not request.path.startswith('/modern'):
+            # Allow explicit legacy access with ?legacy=true
+            if request.args.get('legacy') != 'true':
+                # Show message about modern version availability
+                flash('You have access to the modern version! Click "Switch to Modern" in settings.')
+
+    return None
+
 @app.route('/')
 def index():
     if current_user.is_authenticated:
+        # Check if user should use modern version
+        if current_user.can_use_modern_version and current_user.preferred_version == 'modern':
+            return redirect('http://localhost:3000/dashboard')
+
         if current_user.is_manager:
             return redirect(url_for('manager_dashboard'))
         return redirect(url_for('employee_dashboard'))
@@ -2186,10 +2225,44 @@ def delete_user(user_id):
         db.session.commit()
         
         return jsonify({'message': f'User {username} deleted successfully'}), 200
-        
+
     except Exception as e:
         db.session.rollback()
         return jsonify({'error': f'Error deleting user: {str(e)}'}), 500
+
+@app.route('/admin/users/<int:user_id>/toggle-modern-access', methods=['POST'])
+@login_required
+def toggle_modern_version_access(user_id):
+    """Toggle modern version access for a user (admin only)"""
+    if not current_user.is_admin:
+        return jsonify({'error': 'Access denied'}), 403
+
+    try:
+        user = User.query.get_or_404(user_id)
+
+        # Toggle the access
+        user.can_use_modern_version = not user.can_use_modern_version
+
+        # If revoking access and user prefers modern, reset to legacy
+        if not user.can_use_modern_version and user.preferred_version == 'modern':
+            user.preferred_version = 'legacy'
+
+        db.session.commit()
+
+        action = 'granted' if user.can_use_modern_version else 'revoked'
+        flash(f'Modern version access {action} for {user.username}!', 'success')
+        logging.info(f"Admin {current_user.username} {action} modern version access for {user.username}")
+
+        return jsonify({
+            'message': f'Modern version access {action}',
+            'can_use_modern_version': user.can_use_modern_version,
+            'preferred_version': user.preferred_version
+        }), 200
+
+    except Exception as e:
+        db.session.rollback()
+        logging.error(f"Error toggling modern version access: {str(e)}")
+        return jsonify({'error': f'Error updating user: {str(e)}'}), 500
 
 @app.route('/admin/expense/<int:expense_id>/edit', methods=['GET', 'POST'])
 @login_required

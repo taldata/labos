@@ -120,6 +120,12 @@
                                         </button>
                                         {% endif %}
                                         {% if user.id != current_user.id and not user.is_admin %}
+                                        <button onclick="toggleModernAccess({{ user.id }})"
+                                                class="action-btn {% if user.can_use_modern_version %}modern-enabled{% else %}modern-disabled{% endif %}"
+                                                id="modern-btn-{{ user.id }}"
+                                                title="{% if user.can_use_modern_version %}Revoke{% else %}Grant{% endif %} Modern UI Access">
+                                            <i class="fas fa-rocket"></i>
+                                        </button>
                                         <button onclick="deleteUser({{ user.id }})" class="action-btn delete" title="Delete User">
                                             <i class="fas fa-trash-alt"></i>
                                         </button>
@@ -502,6 +508,23 @@ th.actions-header {
     background: rgba(255, 193, 7, 0.1);
 }
 
+.action-btn.modern-enabled {
+    color: #10b981;
+    background: rgba(16, 185, 129, 0.1);
+}
+
+.action-btn.modern-enabled:hover {
+    background: rgba(16, 185, 129, 0.2);
+}
+
+.action-btn.modern-disabled {
+    color: #6c757d;
+}
+
+.action-btn.modern-disabled:hover {
+    background: rgba(108, 117, 125, 0.1);
+}
+
 #alertContainer {
     min-width: 250px;
     max-width: 400px;
@@ -666,6 +689,43 @@ function deleteUser(userId) {
     });
 }
 
+function toggleModernAccess(userId) {
+    const button = document.getElementById(`modern-btn-${userId}`);
+    const currentAccess = button.classList.contains('modern-enabled');
+    const action = currentAccess ? 'revoke' : 'grant';
+
+    if (!confirm(`Are you sure you want to ${action} modern UI access for this user?`)) {
+        return;
+    }
+
+    fetch(`/admin/users/${userId}/toggle-modern-access`, {
+        method: 'POST'
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            alert(data.error);
+        } else {
+            // Toggle button appearance
+            if (data.can_use_modern_version) {
+                button.classList.remove('modern-disabled');
+                button.classList.add('modern-enabled');
+                button.title = 'Revoke Modern UI Access';
+                showAlert('success', `Modern UI access granted!`);
+            } else {
+                button.classList.remove('modern-enabled');
+                button.classList.add('modern-disabled');
+                button.title = 'Grant Modern UI Access';
+                showAlert('info', `Modern UI access revoked.`);
+            }
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Failed to toggle modern access');
+    });
+}
+
 function showAlert(type, message) {
     const alertContainer = document.getElementById('alertContainer');
     const alertDiv = document.createElement('div');
@@ -675,7 +735,7 @@ function showAlert(type, message) {
         <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
     `;
     alertContainer.appendChild(alertDiv);
-    
+
     // Auto-dismiss after 3 seconds
     setTimeout(() => {
         alertDiv.remove();

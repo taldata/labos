@@ -47,6 +47,9 @@ class User(UserMixin, db.Model):
     is_admin = db.Column(db.Boolean, default=False)
     is_accounting = db.Column(db.Boolean, default=False)
     status = db.Column(db.String(20), default='active')  # active, inactive, pending
+    # Version preference for parallel frontend versions
+    can_use_modern_version = db.Column(db.Boolean, default=False)  # Admin grants access
+    preferred_version = db.Column(db.String(20), default='legacy')  # 'legacy' or 'modern'
     department_id = db.Column(db.Integer, db.ForeignKey('department.id'))
     home_department = db.relationship('Department', 
                                     foreign_keys=[department_id],
