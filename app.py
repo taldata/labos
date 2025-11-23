@@ -2,6 +2,7 @@ from flask import Flask, render_template, request, redirect, url_for, flash, sen
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.sql import func
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
+from flask_cors import CORS
 from datetime import datetime, timedelta
 import os
 from services.document_processor import DocumentProcessor
@@ -10,6 +11,7 @@ from utils.email_sender import send_email, EXPENSE_SUBMITTED_TEMPLATE, EXPENSE_S
 import logging
 import pytz
 from routes.expense import expense_bp
+from routes.api_v1 import api_v1_bp
 from flask_migrate import Migrate
 from config import Config
 from io import BytesIO
@@ -35,12 +37,23 @@ Config.init_app(app)
 db.init_app(app)
 migrate = Migrate(app, db)
 
+# Initialize CORS
+CORS(app, resources={
+    r"/api/v1/*": {
+        "origins": ["http://localhost:3000"],
+        "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+        "allow_headers": ["Content-Type", "Authorization"],
+        "supports_credentials": True
+    }
+})
+
 # Initialize login manager
 login_manager = LoginManager(app)
 login_manager.login_view = 'login'
 
 # Register blueprints
 app.register_blueprint(expense_bp, url_prefix='/api/expense')
+app.register_blueprint(api_v1_bp, url_prefix='/api/v1')
 
 ALLOWED_EXTENSIONS = {'pdf', 'png', 'jpg', 'jpeg', 'gif'}
 
@@ -65,8 +78,8 @@ with app.app_context():
 @login_manager.user_loader
 def load_user(user_id):
     user = User.query.get(int(user_id))
-    if user and user.status == 'inactive':
-        return None
+    # if user and user.status == 'inactive':
+    #     return None
     return user
 
 # Custom template filters
@@ -97,10 +110,24 @@ def format_expense_type(value):
 @app.route('/')
 def index():
     if current_user.is_authenticated:
+        if current_user.new_frontend:
+            return redirect('/app')
         if current_user.is_manager:
             return redirect(url_for('manager_dashboard'))
         return redirect(url_for('employee_dashboard'))
     return redirect(url_for('login'))
+
+# New React frontend route - serves the React app at /app
+@app.route('/app')
+@app.route('/app/<path:path>')
+def react_app(path=''):
+    """Serve the new React frontend"""
+    frontend_folder = os.path.join(app.root_path, 'frontend', 'dist')
+    if os.path.exists(frontend_folder):
+        if path and os.path.exists(os.path.join(frontend_folder, path)):
+            return send_file(os.path.join(frontend_folder, path))
+        return send_file(os.path.join(frontend_folder, 'index.html'))
+    return "New frontend not built yet. Run 'cd frontend && npm run build' first.", 404
 
 def _build_msal_app(cache=None):
     return msal.ConfidentialClientApplication(
@@ -153,10 +180,12 @@ def login():
         password = request.form.get('password')
         user = User.query.filter_by(username=username).first()
         if user and user.password == password:  # In production, use proper password hashing
-            if user.status == 'inactive':
-                flash('Your account is inactive. Please contact your administrator.')
-                return render_template('login.html')
+            # if user.status == 'inactive':
+            #     flash('Your account is inactive. Please contact your administrator.')
+            #     return render_template('login.html')
             login_user(user)
+            if user.new_frontend:
+                return redirect('/app')
             if user.is_accounting:
                 return redirect(url_for('accounting_dashboard'))
             return redirect(url_for('index'))
@@ -223,21 +252,24 @@ def auth_callback():
                 password=None,  # No password for SSO users
                 is_manager=False,
                 is_admin=False,
-                status='active'
+                # status='active'
             )
             db.session.add(user)
             db.session.commit()
             logging.info(f"New user created with ID: {user.id}")
 
-        if user.status == 'inactive':
-            logging.warning(f"Inactive user attempted login: {email}")
-            flash('Your account is inactive. Please contact your administrator.')
-            return redirect(url_for('login'))
+        # if user.status == 'inactive':
+        #     logging.warning(f"Inactive user attempted login: {email}")
+        #     flash('Your account is inactive. Please contact your administrator.')
+        #     return redirect(url_for('login'))
 
         login_user(user)
         session['token_cache'] = result.get('token_cache')
         logging.info(f"User {email} logged in successfully")
         
+        if user.new_frontend:
+            return redirect('/app')
+
         if user.is_accounting:
             return redirect(url_for('accounting_dashboard'))
         return redirect(url_for('index'))
