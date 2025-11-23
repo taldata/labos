@@ -117,6 +117,17 @@ def index():
         return redirect(url_for('employee_dashboard'))
     return redirect(url_for('login'))
 
+@app.route('/legacy')
+@login_required
+def legacy():
+    if current_user.is_admin:
+        return redirect(url_for('admin_dashboard'))
+    if current_user.is_accounting:
+        return redirect(url_for('accounting_dashboard'))
+    if current_user.is_manager:
+        return redirect(url_for('manager_dashboard'))
+    return redirect(url_for('employee_dashboard'))
+
 # New React frontend route - serves the React app at /app
 @app.route('/app')
 @app.route('/app/<path:path>')

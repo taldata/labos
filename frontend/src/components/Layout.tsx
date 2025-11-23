@@ -124,7 +124,7 @@ export default function Layout() {
           {/* Back to Old Version */}
           <div className="px-4 pb-2">
             <a
-              href="/"
+              href="/legacy"
               className="flex items-center gap-3 px-4 py-3 rounded-md text-sm font-medium text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
             >
               <History className="h-5 w-5" />
