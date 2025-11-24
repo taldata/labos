@@ -52,6 +52,9 @@ A complete **dual-version architecture** allowing both legacy (Flask + Jinja2) a
 
 **Admin Endpoints** (`/admin/*`):
 - `POST /users/<id>/toggle-modern-access` - Grant/revoke access
+- `GET /organization/structure` - Get full hierarchy
+- `POST/PUT/DELETE /organization/*` - Manage departments/categories
+
 
 ### 4. **Backend Enhancements**
 - **CORS Configuration**: Allows React frontend API calls
@@ -133,16 +136,17 @@ supports_credentials: True
 
 ## 📊 Migration Progress
 
-**Completed (35%)**:
+**Completed (50%)**:
 - ✅ Authentication & Security
 - ✅ Dashboard & Statistics
 - ✅ Budget Tracking
+- ✅ Expense Submission
+- ✅ Organization Management (Departments/Categories)
 
 **Planned**:
-- ⏳ Expense Submission Form
 - ⏳ Expense History & Filtering
 - ⏳ Manager Approval Workflow
-- ⏳ Admin Panel & Reporting
+- ⏳ Admin Panel (User Management) & Reporting
 
 ---
 
@@ -356,8 +360,8 @@ labos/
 ---
 
 **Status**: ✅ **Production Ready**
-**Migration Progress**: **35% Complete**
-**Next Milestone**: Expense Submission Form
+**Migration Progress**: **50% Complete**
+**Next Milestone**: Expense History & Filtering
 
 ---
 

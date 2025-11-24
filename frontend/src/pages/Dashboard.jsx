@@ -212,6 +212,18 @@ function Dashboard({ user, setUser }) {
                     </div>
                   </button>
                 )}
+
+                {user?.is_admin && (
+                  <button className="action-card card" onClick={() => navigate('/admin/departments')}>
+                    <div className="action-icon">
+                      <i className="fas fa-sitemap"></i>
+                    </div>
+                    <div className="action-content">
+                      <h4>Organization</h4>
+                      <p>Manage departments & categories</p>
+                    </div>
+                  </button>
+                )}
               </div>
             </div>
 
@@ -259,9 +271,9 @@ function Dashboard({ user, setUser }) {
             <h4>Migration Progress:</h4>
             <div className="progress-container">
               <div className="progress-bar">
-                <div className="progress-fill" style={{ width: '70%' }}></div>
+                <div className="progress-fill" style={{ width: '85%' }}></div>
               </div>
-              <span className="progress-label">70% Complete</span>
+              <span className="progress-label">85% Complete</span>
             </div>
 
             <div className="feature-list">
@@ -295,10 +307,10 @@ function Dashboard({ user, setUser }) {
                 <span className="feature-name">Manager Approval Workflow</span>
                 <span className="feature-badge">Live</span>
               </div>
-              <div className="feature-item pending">
-                <span className="feature-icon">⏳</span>
+              <div className="feature-item in-progress">
+                <span className="feature-icon">🚧</span>
                 <span className="feature-name">Admin Panel & Reporting</span>
-                <span className="feature-badge">Planned</span>
+                <span className="feature-badge">In Progress</span>
               </div>
             </div>
           </div>

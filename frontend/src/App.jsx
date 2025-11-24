@@ -5,6 +5,8 @@ import Dashboard from './pages/Dashboard'
 import SubmitExpense from './pages/SubmitExpense'
 import MyExpenses from './pages/MyExpenses'
 import Approvals from './pages/Approvals'
+import ExpenseDetails from './pages/ExpenseDetails'
+import DepartmentManager from './pages/DepartmentManager'
 import './App.css'
 
 function App() {
@@ -60,6 +62,14 @@ function App() {
         <Route
           path="/approvals"
           element={user ? <Approvals user={user} /> : <Navigate to="/login" />}
+        />
+        <Route
+          path="/expenses/:id"
+          element={user ? <ExpenseDetails user={user} /> : <Navigate to="/login" />}
+        />
+        <Route
+          path="/admin/departments"
+          element={user ? <DepartmentManager user={user} /> : <Navigate to="/login" />}
         />
         <Route path="/" element={<Navigate to={user ? "/dashboard" : "/login"} />} />
       </Routes>
