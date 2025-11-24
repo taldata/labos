@@ -3,6 +3,8 @@ import { useState, useEffect } from 'react'
 import Login from './pages/Login'
 import Dashboard from './pages/Dashboard'
 import SubmitExpense from './pages/SubmitExpense'
+import MyExpenses from './pages/MyExpenses'
+import Approvals from './pages/Approvals'
 import './App.css'
 
 function App() {
@@ -50,6 +52,14 @@ function App() {
         <Route
           path="/submit-expense"
           element={user ? <SubmitExpense user={user} /> : <Navigate to="/login" />}
+        />
+        <Route
+          path="/my-expenses"
+          element={user ? <MyExpenses user={user} /> : <Navigate to="/login" />}
+        />
+        <Route
+          path="/approvals"
+          element={user ? <Approvals user={user} /> : <Navigate to="/login" />}
         />
         <Route path="/" element={<Navigate to={user ? "/dashboard" : "/login"} />} />
       </Routes>

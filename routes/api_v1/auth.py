@@ -231,6 +231,27 @@ def logout():
         logging.error(f"Error during logout: {str(e)}")
         return jsonify({'error': 'Logout failed'}), 500
 
+@api_v1.route('/auth/switch-to-modern', methods=['GET'])
+@login_required
+def switch_to_modern():
+    """Redirect logged-in user to modern UI"""
+    try:
+        if not current_user.can_use_modern_version:
+            return redirect('/?error=modern_access_denied')
+
+        # Update preference
+        current_user.preferred_version = 'modern'
+        db.session.commit()
+
+        logging.info(f"User {current_user.username} switching to modern UI")
+
+        # Redirect to modern UI dashboard
+        return redirect('http://localhost:3000/dashboard')
+
+    except Exception as e:
+        logging.error(f"Error switching to modern UI: {str(e)}")
+        return redirect('/?error=switch_failed')
+
 @api_v1.route('/auth/set-version-preference', methods=['POST'])
 @login_required
 def set_version_preference():

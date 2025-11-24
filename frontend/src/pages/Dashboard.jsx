@@ -177,6 +177,44 @@ function Dashboard({ user, setUser }) {
               </div>
             </div>
 
+            {/* Quick Actions */}
+            <div className="quick-actions">
+              <h3>Quick Actions</h3>
+              <div className="actions-grid">
+                <button className="action-card card" onClick={() => navigate('/submit-expense')}>
+                  <div className="action-icon">
+                    <i className="fas fa-plus-circle"></i>
+                  </div>
+                  <div className="action-content">
+                    <h4>Submit Expense</h4>
+                    <p>Create a new expense report</p>
+                  </div>
+                </button>
+
+                <button className="action-card card" onClick={() => navigate('/my-expenses')}>
+                  <div className="action-icon">
+                    <i className="fas fa-list"></i>
+                  </div>
+                  <div className="action-content">
+                    <h4>My Expenses</h4>
+                    <p>View and manage all expenses</p>
+                  </div>
+                </button>
+
+                {(user?.is_manager || user?.is_admin) && (
+                  <button className="action-card card" onClick={() => navigate('/approvals')}>
+                    <div className="action-icon">
+                      <i className="fas fa-clipboard-check"></i>
+                    </div>
+                    <div className="action-content">
+                      <h4>Approvals</h4>
+                      <p>Review pending expenses</p>
+                    </div>
+                  </button>
+                )}
+              </div>
+            </div>
+
             {/* Recent Expenses */}
             {recentExpenses.length > 0 && (
               <div className="recent-expenses card">
@@ -221,9 +259,9 @@ function Dashboard({ user, setUser }) {
             <h4>Migration Progress:</h4>
             <div className="progress-container">
               <div className="progress-bar">
-                <div className="progress-fill" style={{ width: '50%' }}></div>
+                <div className="progress-fill" style={{ width: '70%' }}></div>
               </div>
-              <span className="progress-label">50% Complete</span>
+              <span className="progress-label">70% Complete</span>
             </div>
 
             <div className="feature-list">
@@ -247,15 +285,15 @@ function Dashboard({ user, setUser }) {
                 <span className="feature-name">Expense Submission</span>
                 <span className="feature-badge">Live</span>
               </div>
-              <div className="feature-item in-progress">
-                <span className="feature-icon">🔨</span>
+              <div className="feature-item completed">
+                <span className="feature-icon">✅</span>
                 <span className="feature-name">Expense History & Filtering</span>
-                <span className="feature-badge">Next</span>
+                <span className="feature-badge">Live</span>
               </div>
-              <div className="feature-item pending">
-                <span className="feature-icon">⏳</span>
+              <div className="feature-item completed">
+                <span className="feature-icon">✅</span>
                 <span className="feature-name">Manager Approval Workflow</span>
-                <span className="feature-badge">Planned</span>
+                <span className="feature-badge">Live</span>
               </div>
               <div className="feature-item pending">
                 <span className="feature-icon">⏳</span>
