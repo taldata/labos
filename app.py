@@ -307,14 +307,19 @@ def employee_dashboard():
 @login_required
 def submit_expense():
     if request.method == 'GET':
-        categories = Category.query.join(Department).filter(
-            Department.id == current_user.department_id
-        ).all()
-        
-        # Replace limited subcategory loading with all subcategories from the user's department
-        subcategories = Subcategory.query.join(Category).filter(
-            Category.department_id == current_user.department_id
-        ).all()
+        # Admins can see all categories and subcategories
+        if current_user.is_admin:
+            categories = Category.query.join(Department).all()
+            subcategories = Subcategory.query.join(Category).all()
+        else:
+            categories = Category.query.join(Department).filter(
+                Department.id == current_user.department_id
+            ).all()
+            
+            # Replace limited subcategory loading with all subcategories from the user's department
+            subcategories = Subcategory.query.join(Category).filter(
+                Category.department_id == current_user.department_id
+            ).all()
         
         suppliers = Supplier.query.filter_by(status='active').order_by(Supplier.name).all()
         credit_cards = CreditCard.query.filter_by(status='active').order_by(CreditCard.last_four_digits).all()

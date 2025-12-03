@@ -28,6 +28,9 @@
 
         <div class="action-buttons">
             {% if current_user.is_admin %}
+            <a href="{{ url_for('submit_expense') }}" class="btn primary">
+                <i class="fas fa-plus"></i> Submit Expense
+            </a>
             <a href="{{ url_for('manage_users') }}" class="btn primary">
                 <i class="fas fa-users"></i> Manage Users
             </a>
