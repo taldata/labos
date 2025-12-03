@@ -186,23 +186,10 @@ def login():
             flash('Error initiating login. Please try again.')
             return redirect(url_for('login'))
 
-    # Handle traditional login
+    # Disable traditional username/password login – SSO only
     if request.method == 'POST':
-        username = request.form.get('username')
-        password = request.form.get('password')
-        user = User.query.filter_by(username=username).first()
-        if user and user.password == password:  # In production, use proper password hashing
-            if user.status == 'inactive':
-                flash('Your account is inactive. Please contact your administrator.')
-                return render_template('login.html')
-            login_user(user)
-            if user.is_accounting:
-                return redirect(url_for('accounting_dashboard'))
-            # Admins (and managers) should land on the manager dashboard
-            if user.is_admin or user.is_manager:
-                return redirect(url_for('manager_dashboard'))
-            return redirect(url_for('index'))
-        flash('Invalid username or password')
+        flash('Password login is disabled. Please sign in with Microsoft.', 'error')
+        return render_template('login.html')
     
     return render_template('login.html')
 
