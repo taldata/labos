@@ -198,6 +198,9 @@ def login():
             login_user(user)
             if user.is_accounting:
                 return redirect(url_for('accounting_dashboard'))
+            # Admins (and managers) should land on the manager dashboard
+            if user.is_admin or user.is_manager:
+                return redirect(url_for('manager_dashboard'))
             return redirect(url_for('index'))
         flash('Invalid username or password')
     
@@ -279,6 +282,9 @@ def auth_callback():
         
         if user.is_accounting:
             return redirect(url_for('accounting_dashboard'))
+        # Admins (and managers) should land on the manager dashboard
+        if user.is_admin or user.is_manager:
+            return redirect(url_for('manager_dashboard'))
         return redirect(url_for('index'))
         
     except Exception as e:
