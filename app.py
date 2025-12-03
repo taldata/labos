@@ -136,7 +136,8 @@ def index():
         if current_user.can_use_modern_version and current_user.preferred_version == 'modern':
             return redirect('http://localhost:3000/dashboard')
 
-        if current_user.is_manager:
+        # Admins and managers go to the manager dashboard
+        if current_user.is_admin or current_user.is_manager:
             return redirect(url_for('manager_dashboard'))
         return redirect(url_for('employee_dashboard'))
     return redirect(url_for('login'))
