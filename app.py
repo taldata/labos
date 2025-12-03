@@ -714,7 +714,7 @@ def download_file(filename):
 @app.route('/manager/dashboard')
 @login_required
 def manager_dashboard():
-    if not current_user.is_manager:
+    if not (current_user.is_manager or current_user.is_admin):
         return redirect(url_for('employee_dashboard'))
     
     # Subquery to get total approved expenses for each level
@@ -755,7 +755,7 @@ def manager_dashboard():
     ).group_by(Subcategory.id).subquery()
 
     # Get all pending expenses if admin, otherwise only from their department
-    if current_user.username == 'admin':
+    if current_user.is_admin:
         pending_expenses = Expense.query.join(User, Expense.user_id == User.id)\
             .join(Subcategory, Expense.subcategory_id == Subcategory.id)\
             .join(Category, Subcategory.category_id == Category.id)\
@@ -800,7 +800,7 @@ def manager_dashboard():
             ).order_by(Expense.date.desc()).all()
     
     # Budget summaries for manager's departments and categories
-    if current_user.username == 'admin':
+    if current_user.is_admin:
         managed_depts = Department.query.all()
     else:
         managed_depts = current_user.managed_departments
