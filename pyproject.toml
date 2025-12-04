@@ -1,0 +1,34 @@
+[tool.poetry]
+name = "labos-expense-management"
+version = "1.0.0"
+description = "Labos Expense Management System"
+authors = ["Labos Team"]
+
+[tool.poetry.dependencies]
+python = "^3.11"
+flask = {extras = ["async"], version = "*"}
+flask-sqlalchemy = "*"
+flask-login = "*"
+flask-migrate = "*"
+flask-cors = "*"
+werkzeug = "*"
+gunicorn = "*"
+pytz = "*"
+azure-ai-formrecognizer = "*"
+python-dotenv = "*"
+pandas = "*"
+xlsxwriter = "*"
+psycopg2-binary = "*"
+dash = "*"
+dash-core-components = "*"
+dash-html-components = "*"
+dash-bootstrap-components = "*"
+plotly = "*"
+flask-wtf = "*"  # Also known as flask_wtf
+msal = "*"
+requests = "*"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
