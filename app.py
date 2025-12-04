@@ -1057,11 +1057,11 @@ def handle_expense(expense_id, action):
 @app.route('/manager/departments')
 @login_required
 def manage_departments():
-    if not current_user.is_manager:
+    if not (current_user.is_manager or current_user.is_admin):
         flash('Access denied. Manager privileges required.', 'danger')
         return redirect(url_for('index'))
     
-    if current_user.username == 'admin':
+    if current_user.is_admin:
         departments = Department.query.all()
     else:
         departments = current_user.managed_departments
@@ -1135,11 +1135,11 @@ def manage_departments():
 @app.route('/manager/categories/<int:dept_id>')
 @login_required
 def manage_categories(dept_id):
-    if not current_user.is_manager:
+    if not (current_user.is_manager or current_user.is_admin):
         flash('Access denied. Manager privileges required.', 'danger')
         return redirect(url_for('index'))
     
-    if not current_user.username == 'admin' and current_user.department_id != dept_id:
+    if not current_user.is_admin and current_user.department_id != dept_id:
         flash('Access denied. You can only manage your own department.', 'danger')
         return redirect(url_for('manage_departments'))
     
@@ -1149,12 +1149,12 @@ def manage_categories(dept_id):
 @app.route('/manager/subcategories/<int:cat_id>')
 @login_required
 def manage_subcategories(cat_id):
-    if not current_user.is_manager:
+    if not (current_user.is_manager or current_user.is_admin):
         flash('Access denied. Manager privileges required.', 'danger')
         return redirect(url_for('index'))
     
     category = Category.query.get_or_404(cat_id)
-    if not current_user.username == 'admin' and current_user.department_id != category.department_id:
+    if not current_user.is_admin and current_user.department_id != category.department_id:
         flash('Access denied. You can only manage your own department.', 'danger')
         return redirect(url_for('manage_departments'))
     
@@ -1164,7 +1164,7 @@ def manage_subcategories(cat_id):
 @login_required
 def update_department_budget(dept_id):
     # Check if user has permission to manage this department
-    if not (current_user.username == 'admin' or 
+    if not (current_user.is_admin or 
             (current_user.is_manager and current_user.department_id == dept_id)):
         return jsonify({'error': 'Unauthorized'}), 403
     
@@ -1211,21 +1211,21 @@ def update_subcategory_budget(subcat_id):
     return jsonify({'success': True})
 
 def is_admin():
-    return current_user.is_authenticated and current_user.username == 'admin'
+    return current_user.is_authenticated and current_user.is_admin
 
 def is_department_manager(dept_id):
     return current_user.is_manager and current_user.department_id == dept_id
 
 def can_manage_department(dept_id):
     """Check if current user can manage the specified department"""
-    if current_user.username == 'admin':
+    if current_user.is_admin:
         return True
     if not current_user.is_manager:
         return False
     return dept_id in [dept.id for dept in current_user.managed_departments]
 
 def can_view_department(dept_id):
-    if current_user.username == 'admin':
+    if current_user.is_admin:
         return True
     return current_user.department_id == dept_id or current_user.is_manager
 
@@ -1547,7 +1547,7 @@ def delete_subcategory(subcat_id):
 @app.route('/view_budget')
 @login_required
 def view_budget():
-    if not current_user.is_manager and not current_user.username == 'admin':
+    if not (current_user.is_manager or current_user.is_admin):
         flash('Access denied. Only managers can view budgets.', 'error')
         return redirect(url_for('employee_dashboard'))
     
@@ -2510,7 +2510,7 @@ def export_departments_excel():
         return redirect(url_for('index'))
     
     # Get departments data (same logic as manage_departments)
-    if current_user.username == 'admin':
+    if current_user.is_admin:
         departments = Department.query.all()
     else:
         departments = current_user.managed_departments
