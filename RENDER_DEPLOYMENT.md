@@ -15,24 +15,37 @@ This guide explains how to deploy the Labos Expense Management System to Render.
 In your Render service settings, set the **Build Command** to:
 
 ```bash
+poetry install && cd frontend && npm install && npm run build
+```
+
+This ensures:
+1. Poetry installs all Python dependencies (including gunicorn)
+2. npm installs frontend dependencies
+3. Frontend is built for production
+
+**Alternative** (if you prefer separate commands):
+
+```bash
 cd frontend && npm install && npm run build
 ```
 
-Or use the build script:
-
-```bash
-chmod +x build.sh && ./build.sh
-```
+Note: Render should automatically run `poetry install` when it detects `pyproject.toml`, but including it explicitly ensures dependencies are installed.
 
 ### 2. Configure Start Command
 
-**Recommended Start Command:**
+**Recommended Start Command (if using Poetry):**
+
+```bash
+poetry run gunicorn app:app
+```
+
+**Alternative (if using pip/requirements.txt):**
 
 ```bash
 python -m gunicorn app:app
 ```
 
-This works regardless of whether Render uses Poetry or pip.
+Since Render detects Poetry when `pyproject.toml` exists, use the Poetry command.
 
 **Alternative options** (if the above doesn't work):
 
