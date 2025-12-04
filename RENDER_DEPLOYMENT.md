@@ -26,11 +26,33 @@ chmod +x build.sh && ./build.sh
 
 ### 2. Configure Start Command
 
-Set the **Start Command** to:
+**Recommended Start Command:**
+
+```bash
+python -m gunicorn app:app
+```
+
+This works regardless of whether Render uses Poetry or pip.
+
+**Alternative options** (if the above doesn't work):
 
 ```bash
 gunicorn app:app
 ```
+
+Or if using Poetry:
+
+```bash
+poetry run gunicorn app:app
+```
+
+### 2a. Using requirements.txt (Recommended)
+
+This project uses `requirements.txt` for dependencies. To ensure Render uses pip instead of Poetry:
+
+1. **Make sure there's no `pyproject.toml` file** in the root directory
+2. Render will automatically detect `requirements.txt` and use `pip install -r requirements.txt`
+3. This is the simplest approach for this project
 
 ### 3. Environment Variables
 

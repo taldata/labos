@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: labos-expense-management
+    env: python
+    buildCommand: cd frontend && npm install && npm run build
+    startCommand: python -m gunicorn app:app
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.10
+      - key: NODE_VERSION
+        value: 18
+    # Uncomment if you want to disable Poetry detection
+    # plan: free
+
