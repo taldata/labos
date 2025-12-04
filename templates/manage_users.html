@@ -128,7 +128,7 @@
                                         </button>
                                         {% endif %}
                                         {% if user.id != current_user.id and not user.is_admin %}
-                                        <button onclick="toggleModernAccess({{ user.id }})"
+                                        <button onclick="toggleModernAccess({{ user.id }}, event)"
                                             class="action-btn {% if user.can_use_modern_version %}modern-enabled{% else %}modern-disabled{% endif %}"
                                             id="modern-btn-{{ user.id }}"
                                             title="{% if user.can_use_modern_version %}Revoke{% else %}Grant{% endif %} Modern UI Access">
@@ -720,7 +720,12 @@
             });
     }
 
-    function toggleModernAccess(userId) {
+    function toggleModernAccess(userId, event) {
+        // Prevent menu from closing when clicking this button
+        if (event) {
+            event.stopPropagation();
+        }
+
         const button = document.getElementById(`modern-btn-${userId}`);
         const currentAccess = button.classList.contains('modern-enabled');
         const action = currentAccess ? 'revoke' : 'grant';

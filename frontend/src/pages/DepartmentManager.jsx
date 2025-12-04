@@ -29,6 +29,9 @@ const DepartmentManager = () => {
     const [expandedDepts, setExpandedDepts] = useState({});
     const [expandedCats, setExpandedCats] = useState({});
 
+    // Search State
+    const [searchQuery, setSearchQuery] = useState('');
+
     useEffect(() => {
         fetchStructure();
     }, []);
@@ -146,8 +149,33 @@ const DepartmentManager = () => {
         }
     };
 
-    if (loading) return <div className="loading-container"><div className="spinner"></div></div>;
-    if (error) return <div className="error-message">{error}</div>;
+    // Filter structure based on search query
+    const filteredStructure = structure.filter(dept => {
+        if (!searchQuery) return true;
+        const query = searchQuery.toLowerCase();
+
+        // Check department name
+        if (dept.name.toLowerCase().includes(query)) return true;
+
+        // Check category names
+        if (dept.categories.some(cat => cat.name.toLowerCase().includes(query))) return true;
+
+        // Check subcategory names
+        if (dept.categories.some(cat =>
+            cat.subcategories.some(sub => sub.name.toLowerCase().includes(query))
+        )) return true;
+
+        return false;
+    });
+
+    // Calculate budget usage percentage
+    const getBudgetUsage = (spent, total) => {
+        if (!total || total === 0) return 0;
+        return Math.min((spent / total) * 100, 100);
+    };
+
+    if (loading) return <div className="loading-container"><div className="spinner"></div><p>Loading organization structure...</p></div>;
+    if (error) return <div className="error-message">❌ {error}</div>;
 
     return (
         <div className="department-manager">
@@ -158,14 +186,32 @@ const DepartmentManager = () => {
                 </button>
             </div>
 
+            {/* Search Bar */}
+            <div className="search-container">
+                <i className="fas fa-search search-icon"></i>
+                <input
+                    type="text"
+                    className="search-input"
+                    placeholder="Search departments, categories, or subcategories..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                />
+            </div>
+
             <div className="org-tree">
-                {structure.map(dept => (
+                {filteredStructure.length === 0 && (
+                    <div className="empty-state">
+                        {searchQuery ? `No results found for "${searchQuery}"` : 'No departments yet. Click "Add Department" to get started!'}
+                    </div>
+                )}
+                {filteredStructure.map(dept => (
                     <div key={dept.id} className="dept-card">
                         <div className="dept-header" onClick={() => toggleDept(dept.id)}>
                             <div className="dept-info">
                                 <i className={`fas fa-chevron-down expand-icon ${expandedDepts[dept.id] ? 'expanded' : ''}`}></i>
+                                <div className="dept-icon">🏢</div>
                                 <span className="dept-name">{dept.name}</span>
-                                <span className="dept-budget">{dept.currency} {dept.budget.toLocaleString()}</span>
+                                <span className="dept-budget">{dept.budget.toLocaleString()} {dept.currency}</span>
                             </div>
                             <div className="actions" onClick={e => e.stopPropagation()}>
                                 <button className="btn-icon" onClick={() => openModal('department', 'edit', dept)} title="Edit Department">
@@ -182,15 +228,30 @@ const DepartmentManager = () => {
 
                         {expandedDepts[dept.id] && (
                             <div className="dept-content">
+                                {/* Department Budget Progress */}
+                                <div className="budget-progress">
+                                    <div className="budget-progress-label">
+                                        <span>Budget Usage</span>
+                                        <span>{dept.spent?.toLocaleString() || 0} / {dept.budget.toLocaleString()} {dept.currency}</span>
+                                    </div>
+                                    <div className="budget-progress-bar">
+                                        <div
+                                            className="budget-progress-fill"
+                                            style={{ width: `${getBudgetUsage(dept.spent || 0, dept.budget)}%` }}
+                                        ></div>
+                                    </div>
+                                </div>
+
                                 <div className="category-list">
-                                    {dept.categories.length === 0 && <div className="empty-state">No categories yet</div>}
+                                    {dept.categories.length === 0 && <div className="empty-state">No categories yet. Click the + button above to add one!</div>}
                                     {dept.categories.map(cat => (
                                         <div key={cat.id} className="category-item">
                                             <div className="category-header" onClick={() => toggleCat(cat.id)}>
                                                 <div className="dept-info">
                                                     <i className={`fas fa-chevron-right expand-icon ${expandedCats[cat.id] ? 'expanded' : ''}`}></i>
+                                                    <div className="category-icon">📁</div>
                                                     <span className="category-name">{cat.name}</span>
-                                                    <span className="dept-budget">{dept.currency} {cat.budget.toLocaleString()}</span>
+                                                    <span className="dept-budget">{cat.budget.toLocaleString()} {dept.currency}</span>
                                                 </div>
                                                 <div className="actions" onClick={e => e.stopPropagation()}>
                                                     <button className="btn-icon" onClick={() => openModal('category', 'edit', cat)} title="Edit Category">
@@ -207,12 +268,13 @@ const DepartmentManager = () => {
 
                                             {expandedCats[cat.id] && (
                                                 <div className="subcategory-list">
-                                                    {cat.subcategories.length === 0 && <div className="empty-state">No subcategories yet</div>}
+                                                    {cat.subcategories.length === 0 && <div className="empty-state">No subcategories yet. Click the + button above to add one!</div>}
                                                     {cat.subcategories.map(sub => (
                                                         <div key={sub.id} className="subcategory-item">
                                                             <div className="dept-info">
+                                                                <div className="subcategory-icon">📄</div>
                                                                 <span className="subcategory-name">{sub.name}</span>
-                                                                <span className="dept-budget">{dept.currency} {sub.budget.toLocaleString()}</span>
+                                                                <span className="dept-budget">{sub.budget.toLocaleString()} {dept.currency}</span>
                                                             </div>
                                                             <div className="actions">
                                                                 <button className="btn-icon" onClick={() => openModal('subcategory', 'edit', sub)} title="Edit Subcategory">
@@ -244,7 +306,9 @@ const DepartmentManager = () => {
                         </div>
                         <form onSubmit={handleSubmit} className="modal-form">
                             <div className="form-group">
-                                <label>Name</label>
+                                <label>
+                                    <i className="fas fa-tag"></i> Name
+                                </label>
                                 <input
                                     type="text"
                                     name="name"
@@ -252,10 +316,13 @@ const DepartmentManager = () => {
                                     onChange={handleInputChange}
                                     required
                                     autoFocus
+                                    placeholder={`Enter ${modalType} name`}
                                 />
                             </div>
                             <div className="form-group">
-                                <label>Budget</label>
+                                <label>
+                                    <i className="fas fa-wallet"></i> Budget
+                                </label>
                                 <input
                                     type="number"
                                     name="budget"
@@ -263,15 +330,18 @@ const DepartmentManager = () => {
                                     onChange={handleInputChange}
                                     min="0"
                                     step="0.01"
+                                    placeholder="Enter budget amount"
                                 />
                             </div>
                             {modalType === 'department' && (
                                 <div className="form-group">
-                                    <label>Currency</label>
+                                    <label>
+                                        <i className="fas fa-dollar-sign"></i> Currency
+                                    </label>
                                     <select name="currency" value={formData.currency} onChange={handleInputChange}>
-                                        <option value="ILS">ILS</option>
-                                        <option value="USD">USD</option>
-                                        <option value="EUR">EUR</option>
+                                        <option value="ILS">₪ ILS (Israeli Shekel)</option>
+                                        <option value="USD">$ USD (US Dollar)</option>
+                                        <option value="EUR">€ EUR (Euro)</option>
                                     </select>
                                 </div>
                             )}
