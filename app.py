@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, flash, send_file, jsonify, session
+from flask import Flask, render_template, request, redirect, url_for, flash, send_file, jsonify, session, send_from_directory
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.sql import func
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
@@ -38,9 +38,15 @@ db.init_app(app)
 migrate = Migrate(app, db)
 
 # Initialize CORS for modern frontend
+# In production, allow same-origin (served from Flask); in dev, allow Vite dev server
+cors_origins = ["http://localhost:3000", "https://localhost:3000"]
+if os.getenv('RENDER') == 'true' or os.getenv('FLASK_ENV') != 'development':
+    # In production, allow requests from the same origin (Flask serves the React app)
+    cors_origins = ["*"]  # Or specify your production domain
+
 CORS(app, resources={
     r"/api/v1/*": {
-        "origins": ["http://localhost:3000", "https://localhost:3000"],
+        "origins": cors_origins,
         "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
         "allow_headers": ["Content-Type", "Authorization"],
         "supports_credentials": True
@@ -134,7 +140,11 @@ def index():
     if current_user.is_authenticated:
         # Check if user should use modern version
         if current_user.can_use_modern_version and current_user.preferred_version == 'modern':
-            return redirect('http://localhost:3000/dashboard')
+            # In production, serve from Flask route; in dev, redirect to Vite dev server
+            if os.getenv('FLASK_ENV') == 'development':
+                return redirect('http://localhost:3000/dashboard')
+            else:
+                return redirect('/modern/dashboard')
 
         # Admins and managers go to the manager dashboard
         if current_user.is_admin or current_user.is_manager:
@@ -3381,6 +3391,31 @@ def process_document():
             return jsonify({'error': str(e)}), 500
             
     return jsonify({'error': 'Invalid file type'}), 400
+
+# Routes to serve the modern React frontend
+@app.route('/modern/')
+@app.route('/modern/<path:path>')
+def modern_app(path=''):
+    """Serve the React app for modern UI routes"""
+    frontend_dist = os.path.join(app.config['BASE_DIR'], 'frontend', 'dist')
+    
+    # Check if dist folder exists (frontend has been built)
+    if not os.path.exists(frontend_dist):
+        logging.warning("Frontend dist folder not found. Please run 'npm run build' in the frontend directory.")
+        flash('Modern UI is not available. Please contact your administrator.', 'error')
+        return redirect(url_for('index'))
+    
+    # If path is empty or ends with /, serve index.html
+    if not path or path.endswith('/'):
+        return send_from_directory(frontend_dist, 'index.html')
+    
+    # Check if it's a file (has extension)
+    file_path = os.path.join(frontend_dist, path)
+    if os.path.isfile(file_path):
+        return send_from_directory(frontend_dist, path)
+    
+    # For React Router client-side routes, serve index.html
+    return send_from_directory(frontend_dist, 'index.html')
 
 if __name__ == '__main__':
     app.run(debug=True)

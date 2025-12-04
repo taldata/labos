@@ -4,8 +4,17 @@ from models import User, db
 import msal
 import logging
 import requests
+import os
 from . import api_v1
 from config import Config
+
+def get_modern_ui_url(path=''):
+    """Get the correct modern UI URL based on environment"""
+    if os.getenv('FLASK_ENV') == 'development':
+        return f'http://localhost:3000/{path}'
+    else:
+        # In production, serve from Flask route
+        return f'/modern/{path}'
 
 def _build_msal_app(cache=None):
     return msal.ConfidentialClientApplication(
@@ -125,7 +134,7 @@ def auth_callback():
     """Azure AD callback endpoint"""
     if not session.get("flow"):
         logging.error("No flow found in session")
-        return redirect('http://localhost:3000/login?error=no_flow')
+        return redirect(get_modern_ui_url('login?error=no_flow'))
 
     try:
         logging.info(f"API Auth callback received. Args: {request.args}")
@@ -140,7 +149,7 @@ def auth_callback():
         if "error" in result:
             error_msg = result.get('error_description', 'Unknown error')
             logging.error(f"Error during login: {error_msg}")
-            return redirect(f'http://localhost:3000/login?error={error_msg}')
+            return redirect(get_modern_ui_url(f'login?error={error_msg}'))
 
         # Get user info from Microsoft Graph
         graph_response = requests.get(
@@ -151,7 +160,7 @@ def auth_callback():
 
         if not graph_response.ok:
             logging.error(f"Graph API error: {graph_response.text}")
-            return redirect('http://localhost:3000/login?error=graph_api_failed')
+            return redirect(get_modern_ui_url('login?error=graph_api_failed'))
 
         graph_data = graph_response.json()
         logging.info("User info retrieved from Graph API")
@@ -164,7 +173,7 @@ def auth_callback():
 
         if not email:
             logging.error(f"No email found in graph data: {graph_data}")
-            return redirect('http://localhost:3000/login?error=no_email')
+            return redirect(get_modern_ui_url('login?error=no_email'))
 
         user = User.query.filter_by(email=email).first()
 
@@ -204,18 +213,18 @@ def auth_callback():
         # Check if user is active
         if user.status == 'inactive':
             logging.warning(f"User {user.email} is inactive")
-            return redirect('http://localhost:3000/login?error=account_inactive')
+            return redirect(get_modern_ui_url('login?error=account_inactive'))
 
         # Log the user in
         login_user(user)
         logging.info(f"User {user.username} logged in successfully")
 
         # Redirect to modern UI dashboard
-        return redirect('http://localhost:3000/dashboard')
+        return redirect(get_modern_ui_url('dashboard'))
 
     except Exception as e:
         logging.error(f"Error in auth callback: {str(e)}", exc_info=True)
-        return redirect(f'http://localhost:3000/login?error=callback_failed')
+        return redirect(get_modern_ui_url('login?error=callback_failed'))
 
 @api_v1.route('/auth/logout', methods=['POST'])
 @login_required
@@ -246,7 +255,7 @@ def switch_to_modern():
         logging.info(f"User {current_user.username} switching to modern UI")
 
         # Redirect to modern UI dashboard
-        return redirect('http://localhost:3000/dashboard')
+        return redirect(get_modern_ui_url('dashboard'))
 
     except Exception as e:
         logging.error(f"Error switching to modern UI: {str(e)}")
