@@ -7,6 +7,7 @@ import MyExpenses from './pages/MyExpenses'
 import Approvals from './pages/Approvals'
 import ExpenseDetails from './pages/ExpenseDetails'
 import DepartmentManager from './pages/DepartmentManager'
+import AdminDashboard from './pages/AdminDashboard'
 import './App.css'
 
 function App() {
@@ -44,7 +45,7 @@ function App() {
   }
 
   return (
-    <Router>
+    <Router basename="/modern">
       <Routes>
         <Route path="/login" element={<Login setUser={setUser} />} />
         <Route
@@ -70,6 +71,10 @@ function App() {
         <Route
           path="/admin/departments"
           element={user ? <DepartmentManager user={user} /> : <Navigate to="/login" />}
+        />
+        <Route
+          path="/admin"
+          element={user ? <AdminDashboard user={user} setUser={setUser} /> : <Navigate to="/login" />}
         />
         <Route path="/" element={<Navigate to={user ? "/dashboard" : "/login"} />} />
       </Routes>

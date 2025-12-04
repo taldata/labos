@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import './Login.css'
 
@@ -11,6 +11,28 @@ function Login({ setUser }) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const navigate = useNavigate()
+
+  // Check if user is already authenticated
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        const response = await fetch('/api/v1/auth/me', {
+          credentials: 'include'
+        })
+        if (response.ok) {
+          const data = await response.json()
+          if (data.user) {
+            setUser(data.user)
+            navigate('/dashboard')
+          }
+        }
+      } catch (error) {
+        // User not authenticated, stay on login page
+        console.error('Auth check failed:', error)
+      }
+    }
+    checkAuth()
+  }, [navigate, setUser])
 
   const handleInputChange = (e) => {
     const { name, value } = e.target

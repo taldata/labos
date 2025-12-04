@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
+import Header from '../components/Header'
 import './Dashboard.css'
 
 function Dashboard({ user, setUser }) {
@@ -42,69 +43,10 @@ function Dashboard({ user, setUser }) {
     }
   }
 
-  const handleLogout = async () => {
-    try {
-      await fetch('/api/v1/auth/logout', {
-        method: 'POST',
-        credentials: 'include'
-      })
-      setUser(null)
-      navigate('/login')
-    } catch (error) {
-      console.error('Logout failed:', error)
-    }
-  }
-
-  const switchToLegacy = async () => {
-    try {
-      // Save preference to database
-      await fetch('/api/v1/auth/set-version-preference', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        credentials: 'include',
-        body: JSON.stringify({ version: 'legacy' })
-      })
-
-      // Redirect to legacy version
-      window.location.href = '/'
-    } catch (error) {
-      console.error('Failed to switch version:', error)
-      // Still redirect even if preference save fails
-      window.location.href = '/'
-    }
-  }
 
   return (
     <div className="dashboard-container">
-      {/* Header */}
-      <header className="dashboard-header">
-        <div className="header-left">
-          <h1>Labos</h1>
-          <span className="version-badge">Modern UI</span>
-        </div>
-        <div className="header-right">
-          <div className="user-info">
-            <span className="user-name">{user?.first_name} {user?.last_name}</span>
-            <span className="user-role">
-              {user?.is_admin && '👑 Admin'}
-              {user?.is_manager && !user?.is_admin && '👔 Manager'}
-              {user?.is_accounting && !user?.is_admin && '📊 Accounting'}
-              {!user?.is_admin && !user?.is_manager && !user?.is_accounting && '👤 Employee'}
-            </span>
-          </div>
-          <button className="btn-primary" onClick={() => navigate('/submit-expense')}>
-            <i className="fas fa-plus"></i> Submit Expense
-          </button>
-          <button className="btn-secondary" onClick={switchToLegacy}>
-            Switch to Legacy
-          </button>
-          <button className="btn-danger" onClick={handleLogout}>
-            Logout
-          </button>
-        </div>
-      </header>
+      <Header user={user} setUser={setUser} currentPage="dashboard" />
 
       {/* Main Content */}
       <main className="dashboard-main">

@@ -117,9 +117,10 @@ def format_expense_type(value):
 @app.before_request
 def check_version_preference():
     """Redirect users to their preferred version if accessing root paths"""
-    # Skip for API, static files, and auth routes
+    # Skip for API, static files, auth routes, and modern UI routes
     if request.path.startswith('/api/') or request.path.startswith('/static/') or \
-       request.path.startswith('/auth/') or request.path.startswith('/uploads/'):
+       request.path.startswith('/auth/') or request.path.startswith('/uploads/') or \
+       request.path.startswith('/modern/'):
         return None
 
     # If user is authenticated and prefers modern version
@@ -3396,26 +3397,47 @@ def process_document():
 @app.route('/modern/')
 @app.route('/modern/<path:path>')
 def modern_app(path=''):
-    """Serve the React app for modern UI routes"""
+    """Serve the React app for modern UI routes - no auth required, React handles it"""
     frontend_dist = os.path.join(app.config['BASE_DIR'], 'frontend', 'dist')
     
     # Check if dist folder exists (frontend has been built)
     if not os.path.exists(frontend_dist):
         logging.warning("Frontend dist folder not found. Please run 'npm run build' in the frontend directory.")
-        flash('Modern UI is not available. Please contact your administrator.', 'error')
-        return redirect(url_for('index'))
+        # Return a simple error page instead of redirecting to avoid loops
+        return """
+        <html>
+            <head><title>Modern UI Not Available</title></head>
+            <body style="font-family: Arial; padding: 2rem; text-align: center;">
+                <h1>Modern UI Not Available</h1>
+                <p>The frontend has not been built yet. Please contact your administrator.</p>
+                <p><a href="/">Go to Legacy Version</a></p>
+            </body>
+        </html>
+        """, 503
     
     # If path is empty or ends with /, serve index.html
     if not path or path.endswith('/'):
-        return send_from_directory(frontend_dist, 'index.html')
+        try:
+            return send_from_directory(frontend_dist, 'index.html')
+        except Exception as e:
+            logging.error(f"Error serving index.html: {str(e)}")
+            return f"Error loading application: {str(e)}", 500
     
     # Check if it's a file (has extension)
     file_path = os.path.join(frontend_dist, path)
     if os.path.isfile(file_path):
-        return send_from_directory(frontend_dist, path)
+        try:
+            return send_from_directory(frontend_dist, path)
+        except Exception as e:
+            logging.error(f"Error serving file {path}: {str(e)}")
+            return f"Error loading file: {str(e)}", 500
     
     # For React Router client-side routes, serve index.html
-    return send_from_directory(frontend_dist, 'index.html')
+    try:
+        return send_from_directory(frontend_dist, 'index.html')
+    except Exception as e:
+        logging.error(f"Error serving index.html for route {path}: {str(e)}")
+        return f"Error loading application: {str(e)}", 500
 
 if __name__ == '__main__':
     app.run(debug=True)
