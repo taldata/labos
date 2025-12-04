@@ -1,0 +1,132 @@
+# Render.com Deployment Guide
+
+This guide explains how to deploy the Labos Expense Management System to Render.com with the modern React frontend.
+
+## Prerequisites
+
+- Render.com account
+- Git repository with your code
+- Node.js and npm (for building frontend)
+
+## Deployment Steps
+
+### 1. Configure Build Command
+
+In your Render service settings, set the **Build Command** to:
+
+```bash
+cd frontend && npm install && npm run build
+```
+
+Or use the build script:
+
+```bash
+chmod +x build.sh && ./build.sh
+```
+
+### 2. Configure Start Command
+
+Set the **Start Command** to:
+
+```bash
+gunicorn app:app
+```
+
+### 3. Environment Variables
+
+Make sure these are set in Render:
+
+- `FLASK_ENV=production` (or leave unset for production mode)
+- `DATABASE_URL` (PostgreSQL connection string)
+- `SECRET_KEY` (Flask secret key)
+- Azure AD credentials (if using SSO):
+  - `AZURE_AD_CLIENT_ID`
+  - `AZURE_AD_CLIENT_SECRET`
+  - `AZURE_AD_TENANT_ID`
+- `RENDER=true` (if using Render-specific paths)
+
+### 4. Important: Include frontend/dist in Deployment
+
+**Option A: Build during deployment (Recommended)**
+
+1. Set Build Command as shown above
+2. Render will build the frontend automatically
+3. The `dist` folder will be created during build
+
+**Option B: Commit dist folder to git**
+
+1. Build locally: `cd frontend && npm run build`
+2. Commit the `frontend/dist/` folder to git
+3. Deploy normally
+
+⚠️ **Note:** If you choose Option B, make sure `frontend/dist/` is NOT in `.gitignore`
+
+### 5. Verify Deployment
+
+After deployment, check:
+
+- Legacy UI: `https://your-app.onrender.com/`
+- Modern UI: `https://your-app.onrender.com/modern/dashboard`
+- API: `https://your-app.onrender.com/api/v1`
+
+## Troubleshooting
+
+### "Modern UI Not Available" Error
+
+This means `frontend/dist/` doesn't exist. Solutions:
+
+1. **Check Build Command**: Make sure it's set correctly in Render
+2. **Check Build Logs**: Look for errors in the build process
+3. **Manual Build**: SSH into your Render instance and run:
+   ```bash
+   cd frontend && npm install && npm run build
+   ```
+
+### Build Fails
+
+Common issues:
+
+1. **Node.js version**: Render might need a specific Node version
+   - Add `package.json` with `"engines": { "node": ">=18" }` in frontend folder
+   
+2. **Missing dependencies**: Ensure `package.json` is in `frontend/` folder
+
+3. **Build timeout**: Large builds might timeout
+   - Consider optimizing bundle size
+   - Use code splitting
+
+### Assets Not Loading
+
+1. Check that `vite.config.js` has `base: '/modern/'`
+2. Verify assets are in `frontend/dist/assets/`
+3. Check browser console for 404 errors
+
+## Build Optimization
+
+The current build creates a large bundle (~639 KB). To optimize:
+
+1. **Code Splitting**: Use dynamic imports in React
+2. **Tree Shaking**: Remove unused dependencies
+3. **Compression**: Enable gzip in Render settings
+
+## Quick Deploy Checklist
+
+- [ ] Build command set: `cd frontend && npm install && npm run build`
+- [ ] Start command set: `gunicorn app:app`
+- [ ] Environment variables configured
+- [ ] Database connected
+- [ ] Build completes successfully (check logs)
+- [ ] `frontend/dist/` folder exists after build
+- [ ] Modern UI accessible at `/modern/dashboard`
+
+## Post-Deployment
+
+1. **Test Login**: Verify Azure AD SSO works
+2. **Test Modern UI**: Access `/modern/dashboard` as a user with access
+3. **Check API**: Verify `/api/v1/auth/me` returns user data
+4. **Monitor Logs**: Watch for any errors in Render logs
+
+---
+
+**Need Help?** Check the main [PRODUCTION_DEPLOYMENT.md](PRODUCTION_DEPLOYMENT.md) guide for more details.
+

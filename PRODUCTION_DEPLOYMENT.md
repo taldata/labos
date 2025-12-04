@@ -14,23 +14,43 @@ The React app is built and served from Flask at the `/modern/` route. This allow
 
 ### 1. Build the React Frontend
 
-Before deploying, build the React frontend:
-
+**For Local Testing:**
 ```bash
 cd frontend
 npm install
 npm run build
 ```
 
-Or use the build script:
-
+**For Production Deployment (Recommended):**
 ```bash
-./build-frontend.sh
+./build.sh
 ```
 
 This creates a `frontend/dist/` directory with the production build.
 
 ### 2. Deploy to Production
+
+**Important:** The `frontend/dist/` folder must be included in your deployment!
+
+#### For Render.com:
+
+1. **Add Build Command** (in Render dashboard):
+   ```bash
+   ./build.sh
+   ```
+   Or manually:
+   ```bash
+   cd frontend && npm install && npm run build
+   ```
+
+2. **Ensure frontend/dist is included:**
+   - The `dist` folder should be committed to git OR
+   - Build it during Render's build process
+
+3. **Start Command:**
+   ```
+   gunicorn app:app
+   ```
 
 The Flask app will automatically serve the built React app from `/modern/*` routes.
 
