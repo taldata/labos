@@ -3,7 +3,7 @@
 {% block content %}
 <div class="container-fluid">
     <div id="alertContainer" style="position: fixed; top: 20px; right: 20px; z-index: 1050;"></div>
-    
+
     <div class="row">
         <!-- Right Column: Users List -->
         <div class="col-12">
@@ -37,13 +37,16 @@
                                 <!-- Add User Row (Initially Hidden) -->
                                 <tr id="addUserRow" style="display: none;" class="bg-light">
                                     <td>
-                                        <input type="text" class="form-control form-control-sm" id="newUsername" placeholder="Enter username" required>
+                                        <input type="text" class="form-control form-control-sm" id="newUsername"
+                                            placeholder="Enter username" required>
                                     </td>
                                     <td>
-                                        <input type="email" class="form-control form-control-sm" id="newEmail" placeholder="Enter email" required>
+                                        <input type="email" class="form-control form-control-sm" id="newEmail"
+                                            placeholder="Enter email" required>
                                     </td>
                                     <td>
-                                        <select class="form-select form-select-sm" id="newRole" onchange="toggleManagedDepartments()">
+                                        <select class="form-select form-select-sm" id="newRole"
+                                            onchange="toggleManagedDepartments()">
                                             <option value="user">Employee</option>
                                             <option value="manager">Manager</option>
                                             <option value="accounting">Accounting</option>
@@ -60,7 +63,8 @@
                                     </td>
                                     <td>
                                         <div id="managedDepartmentsGroup" style="display: none;">
-                                            <select class="form-select form-select-sm" id="managed_departments" multiple data-bs-toggle="tooltip" title="Hold Ctrl/Cmd to select multiple">
+                                            <select class="form-select form-select-sm" id="managed_departments" multiple
+                                                data-bs-toggle="tooltip" title="Hold Ctrl/Cmd to select multiple">
                                                 {% for dept in departments %}
                                                 <option value="{{ dept.id }}">{{ dept.name }}</option>
                                                 {% endfor %}
@@ -73,13 +77,15 @@
                                                 <option value="active">Active</option>
                                                 <option value="inactive">Inactive</option>
                                             </select>
-                                            <input type="password" class="form-control form-control-sm" id="newPassword" placeholder="Enter password" required>
+                                            <input type="password" class="form-control form-control-sm" id="newPassword"
+                                                placeholder="Enter password" required>
                                         </div>
                                     </td>
                                     <td>
                                         <div class="btn-group">
                                             <button class="btn btn-sm btn-primary" onclick="saveNewUser()">Save</button>
-                                            <button class="btn btn-sm btn-outline-secondary" onclick="toggleAddUserRow()">Cancel</button>
+                                            <button class="btn btn-sm btn-outline-secondary"
+                                                onclick="toggleAddUserRow()">Cancel</button>
                                         </div>
                                     </td>
                                 </tr>
@@ -109,27 +115,31 @@
                                         {% endif %}
                                     </td>
                                     <td>
-                                        <span class="badge bg-{{ 'success' if user.status == 'active' else 'secondary' }}">
+                                        <span
+                                            class="badge bg-{{ 'success' if user.status == 'active' else 'secondary' }}">
                                             {{ user.status }}
                                         </span>
                                     </td>
                                     <td class="actions-cell">
                                         {% if not user.is_admin %}
-                                        <button onclick="startEdit({{ user.id }})" class="action-btn edit" title="Edit User">
+                                        <button onclick="startEdit({{ user.id }})" class="action-btn edit"
+                                            title="Edit User">
                                             <i class="fas fa-edit"></i>
                                         </button>
                                         {% endif %}
                                         {% if user.id != current_user.id and not user.is_admin %}
                                         <button onclick="toggleModernAccess({{ user.id }})"
-                                                class="action-btn {% if user.can_use_modern_version %}modern-enabled{% else %}modern-disabled{% endif %}"
-                                                id="modern-btn-{{ user.id }}"
-                                                title="{% if user.can_use_modern_version %}Revoke{% else %}Grant{% endif %} Modern UI Access">
+                                            class="action-btn {% if user.can_use_modern_version %}modern-enabled{% else %}modern-disabled{% endif %}"
+                                            id="modern-btn-{{ user.id }}"
+                                            title="{% if user.can_use_modern_version %}Revoke{% else %}Grant{% endif %} Modern UI Access">
                                             <i class="fas fa-rocket"></i>
                                         </button>
-                                        <button onclick="deleteUser({{ user.id }})" class="action-btn delete" title="Delete User">
+                                        <button onclick="deleteUser({{ user.id }})" class="action-btn delete"
+                                            title="Delete User">
                                             <i class="fas fa-trash-alt"></i>
                                         </button>
-                                        <button onclick="resetPassword({{ user.id }})" class="action-btn reset" title="Reset Password" {% if user.username == 'admin' %}disabled{% endif %}>
+                                        <button onclick="resetPassword({{ user.id }})" class="action-btn reset"
+                                            title="Reset Password" {% if user.is_admin %}disabled{% endif %}>
                                             <i class="fas fa-key"></i>
                                         </button>
                                         {% endif %}
@@ -137,7 +147,8 @@
                                 </tr>
                                 <tr data-user-id="{{ user.id }}" class="edit-row" style="display: none;">
                                     <td>
-                                        <input type="text" class="form-control" name="username" value="{{ user.username }}">
+                                        <input type="text" class="form-control" name="username"
+                                            value="{{ user.username }}">
                                     </td>
                                     <td>
                                         <input type="email" class="form-control" name="email" value="{{ user.email }}">
@@ -145,17 +156,22 @@
                                     {% if not (user.is_admin and user.id == current_user.id) %}
                                     <td>
                                         <select class="form-control" name="role" onchange="toggleManagedDepts(this)">
-                                            <option value="user" {% if not user.is_admin and not user.is_manager and not user.is_accounting %}selected{% endif %}>Employee</option>
-                                            <option value="manager" {% if user.is_manager %}selected{% endif %}>Manager</option>
-                                            <option value="accounting" {% if user.is_accounting %}selected{% endif %}>Accounting</option>
-                                            <option value="admin" {% if user.is_admin %}selected{% endif %}>Admin</option>
+                                            <option value="user" {% if not user.is_admin and not user.is_manager and not
+                                                user.is_accounting %}selected{% endif %}>Employee</option>
+                                            <option value="manager" {% if user.is_manager %}selected{% endif %}>Manager
+                                            </option>
+                                            <option value="accounting" {% if user.is_accounting %}selected{% endif %}>
+                                                Accounting</option>
+                                            <option value="admin" {% if user.is_admin %}selected{% endif %}>Admin
+                                            </option>
                                         </select>
                                     </td>
                                     <td>
                                         <select class="form-control" name="department_id">
                                             <option value="">None</option>
                                             {% for dept in departments %}
-                                            <option value="{{ dept.id }}" {% if user.home_department and user.home_department.id == dept.id %}selected{% endif %}>
+                                            <option value="{{ dept.id }}" {% if user.home_department and
+                                                user.home_department.id==dept.id %}selected{% endif %}>
                                                 {{ dept.name }}
                                             </option>
                                             {% endfor %}
@@ -168,15 +184,17 @@
                                     </td>
                                     <td>
                                         <input type="hidden" name="department_id" value="{{ user.department_id }}">
-                                        <span class="form-control-plaintext">{{ user.home_department.name if user.home_department else 'None' }}</span>
+                                        <span class="form-control-plaintext">{{ user.home_department.name if
+                                            user.home_department else 'None' }}</span>
                                     </td>
                                     {% endif %}
                                     <td>
-                                        <div class="managed-depts-container" {% if not user.is_manager %}style="display: none;"{% endif %}>
+                                        <div class="managed-depts-container" {% if not user.is_manager
+                                            %}style="display: none;" {% endif %}>
                                             <select class="form-control" name="managed_departments" multiple>
                                                 {% for dept in departments %}
-                                                <option value="{{ dept.id }}" 
-                                                    {% if user.managed_departments and dept in user.managed_departments %}selected{% endif %}>
+                                                <option value="{{ dept.id }}" {% if user.managed_departments and dept in
+                                                    user.managed_departments %}selected{% endif %}>
                                                     {{ dept.name }}
                                                 </option>
                                                 {% endfor %}
@@ -186,12 +204,15 @@
                                     </td>
                                     <td>
                                         <select class="form-control" name="status">
-                                            <option value="active" {% if user.status == 'active' %}selected{% endif %}>Active</option>
-                                            <option value="inactive" {% if user.status == 'inactive' %}selected{% endif %}>Inactive</option>
+                                            <option value="active" {% if user.status=='active' %}selected{% endif %}>
+                                                Active</option>
+                                            <option value="inactive" {% if user.status=='inactive' %}selected{% endif
+                                                %}>Inactive</option>
                                         </select>
                                     </td>
                                     <td>
-                                        <button onclick="saveEdit({{ user.id }})" class="button small primary">Save</button>
+                                        <button onclick="saveEdit({{ user.id }})"
+                                            class="button small primary">Save</button>
                                         <button onclick="cancelEdit({{ user.id }})" class="button small">Cancel</button>
                                     </td>
                                 </tr>
@@ -206,584 +227,594 @@
 </div>
 
 <style>
-.avatar-circle {
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    background-color: #e9ecef;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: bold;
-    color: #495057;
-}
+    .avatar-circle {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background-color: #e9ecef;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        color: #495057;
+    }
 
-/* Action buttons styling */
-.action-buttons {
-    display: flex;
-    justify-content: flex-end;
-    gap: 8px;
-    align-items: center;
-}
+    /* Action buttons styling */
+    .action-buttons {
+        display: flex;
+        justify-content: flex-end;
+        gap: 8px;
+        align-items: center;
+    }
 
-/* Add consistent width and height for form controls in add user row */
-#addUserRow .form-control-sm,
-#addUserRow .form-select-sm {
-    width: 160px !important;
-    height: 35px !important;
-    padding: 0.25rem 0.5rem;
-    font-size: 0.875rem;
-    border-radius: 4px;
-    border: 1px solid #dee2e6;
-}
+    /* Add consistent width and height for form controls in add user row */
+    #addUserRow .form-control-sm,
+    #addUserRow .form-select-sm {
+        width: 160px !important;
+        height: 35px !important;
+        padding: 0.25rem 0.5rem;
+        font-size: 0.875rem;
+        border-radius: 4px;
+        border: 1px solid #dee2e6;
+    }
 
-#addUserRow td {
-    padding: 0.75rem;
-    vertical-align: middle;
-}
+    #addUserRow td {
+        padding: 0.75rem;
+        vertical-align: middle;
+    }
 
-#addUserRow .btn-group {
-    display: flex;
-    gap: 8px;
-}
+    #addUserRow .btn-group {
+        display: flex;
+        gap: 8px;
+    }
 
-#addUserRow .btn-sm {
-    height: 35px;
-    padding: 0 1rem;
-    font-size: 0.875rem;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    min-width: 80px;
-}
+    #addUserRow .btn-sm {
+        height: 35px;
+        padding: 0 1rem;
+        font-size: 0.875rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 80px;
+    }
 
-#addUserRow .btn-primary {
-    background-color: #0d6efd;
-    border-color: #0d6efd;
-    color: white;
-}
+    #addUserRow .btn-primary {
+        background-color: #0d6efd;
+        border-color: #0d6efd;
+        color: white;
+    }
 
-#addUserRow .btn-primary:hover {
-    background-color: #0b5ed7;
-    border-color: #0a58ca;
-}
+    #addUserRow .btn-primary:hover {
+        background-color: #0b5ed7;
+        border-color: #0a58ca;
+    }
 
-#addUserRow .btn-outline-secondary {
-    color: #6c757d;
-    border-color: #6c757d;
-    background-color: white;
-}
+    #addUserRow .btn-outline-secondary {
+        color: #6c757d;
+        border-color: #6c757d;
+        background-color: white;
+    }
 
-#addUserRow .btn-outline-secondary:hover {
-    color: #fff;
-    background-color: #6c757d;
-    border-color: #6c757d;
-}
+    #addUserRow .btn-outline-secondary:hover {
+        color: #fff;
+        background-color: #6c757d;
+        border-color: #6c757d;
+    }
 
-/* Action buttons styling */
-.action-btn {
-    padding: 0.4rem;
-    border-radius: 6px;
-    border: none;
-    background: none;
-    color: #6c757d;
-    transition: all 0.2s;
-    margin-left: 0.5rem;
-    cursor: pointer;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-}
+    /* Action buttons styling */
+    .action-btn {
+        padding: 0.4rem;
+        border-radius: 6px;
+        border: none;
+        background: none;
+        color: #6c757d;
+        transition: all 0.2s;
+        margin-left: 0.5rem;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
 
-.action-btn:hover {
-    transform: translateY(-1px);
-}
+    .action-btn:hover {
+        transform: translateY(-1px);
+    }
 
-.action-btn.edit {
-    color: #0d6efd;
-}
+    .action-btn.edit {
+        color: #0d6efd;
+    }
 
-.action-btn.edit:hover {
-    background: rgba(13, 110, 253, 0.1);
-}
+    .action-btn.edit:hover {
+        background: rgba(13, 110, 253, 0.1);
+    }
 
-.action-btn.delete {
-    color: #dc3545;
-}
+    .action-btn.delete {
+        color: #dc3545;
+    }
 
-.action-btn.delete:hover {
-    background: rgba(220, 53, 69, 0.1);
-}
+    .action-btn.delete:hover {
+        background: rgba(220, 53, 69, 0.1);
+    }
 
-.action-btn i {
-    font-size: 1.1rem;
-}
+    .action-btn i {
+        font-size: 1.1rem;
+    }
 
-.actions-cell {
-    white-space: nowrap;
-    text-align: right;
-    padding-right: 1.5rem !important;
-}
+    .actions-cell {
+        white-space: nowrap;
+        text-align: right;
+        padding-right: 1.5rem !important;
+    }
 
-th.actions-header {
-    text-align: right;
-    padding-right: 1.5rem !important;
-}
+    th.actions-header {
+        text-align: right;
+        padding-right: 1.5rem !important;
+    }
 
-/* Action buttons styling */
-.action-buttons {
-    display: flex;
-    justify-content: flex-end;
-    gap: 8px;
-}
+    /* Action buttons styling */
+    .action-buttons {
+        display: flex;
+        justify-content: flex-end;
+        gap: 8px;
+    }
 
-.action-buttons .btn-link {
-    padding: 4px 8px;
-    text-decoration: none;
-    color: #666;
-    background: #f5f5f5;
-    border-radius: 4px;
-    font-size: 0.875rem;
-    transition: all 0.2s ease;
-}
+    .action-buttons .btn-link {
+        padding: 4px 8px;
+        text-decoration: none;
+        color: #666;
+        background: #f5f5f5;
+        border-radius: 4px;
+        font-size: 0.875rem;
+        transition: all 0.2s ease;
+    }
 
-.action-buttons .btn-link:hover {
-    background: #e9e9e9;
-    color: #333;
-}
+    .action-buttons .btn-link:hover {
+        background: #e9e9e9;
+        color: #333;
+    }
 
-.action-buttons .btn-link.text-danger {
-    color: #dc3545;
-}
+    .action-buttons .btn-link.text-danger {
+        color: #dc3545;
+    }
 
-.action-buttons .btn-link.text-danger:hover {
-    background: #fee;
-}
+    .action-buttons .btn-link.text-danger:hover {
+        background: #fee;
+    }
 
-.table td {
-    padding: 12px 16px;
-    vertical-align: middle;
-}
+    .table td {
+        padding: 12px 16px;
+        vertical-align: middle;
+    }
 
-.table > :not(caption) > * > * {
-    background: none;
-    box-shadow: none;
-    border-bottom-color: #eee;
-}
+    .table> :not(caption)>*>* {
+        background: none;
+        box-shadow: none;
+        border-bottom-color: #eee;
+    }
 
-.table > tbody > tr:hover {
-    background-color: #f8f9fa;
-}
+    .table>tbody>tr:hover {
+        background-color: #f8f9fa;
+    }
 
-.managed-departments-list {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-}
+    .managed-departments-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
 
-.managed-departments-list li {
-    margin-bottom: 4px;
-}
+    .managed-departments-list li {
+        margin-bottom: 4px;
+    }
 
-.card {
-    border: none;
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
-}
+    .card {
+        border: none;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
 
-.card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-}
+    .card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
 
-.table th {
-    font-weight: 600;
-}
+    .table th {
+        font-weight: 600;
+    }
 
-.badge {
-    font-size: 0.875rem;
-    font-weight: 500;
-    padding: 6px 12px;
-    border-radius: 16px;
-    color: #000 !important;
-}
+    .badge {
+        font-size: 0.875rem;
+        font-weight: 500;
+        padding: 6px 12px;
+        border-radius: 16px;
+        color: #000 !important;
+    }
 
-.badge.bg-danger {  /* Admin */
-    background-color: #ffcdd2 !important;
-}
-.badge.bg-warning {  /* Manager */
-    background-color: #fff3cd !important;
-}
-.badge.bg-success {  /* Accounting */
-    background-color: #c8e6c9 !important;
-}
-.badge.bg-info {  /* Employee */
-    background-color: #e3f2fd !important;
-}
+    .badge.bg-danger {
+        /* Admin */
+        background-color: #ffcdd2 !important;
+    }
 
-.badge.bg-success {  /* Active */
-    background-color: #c8e6c9 !important;
-}
-.badge.bg-secondary {  /* Inactive */
-    background-color: #e0e0e0 !important;
-}
+    .badge.bg-warning {
+        /* Manager */
+        background-color: #fff3cd !important;
+    }
 
-.action-buttons {
-    display: flex;
-    justify-content: flex-end;
-    gap: 8px;
-}
+    .badge.bg-success {
+        /* Accounting */
+        background-color: #c8e6c9 !important;
+    }
 
-.action-buttons .btn-link {
-    padding: 4px 8px;
-    text-decoration: none;
-    color: #666;
-    background: #f5f5f5;
-    border-radius: 4px;
-    font-size: 0.875rem;
-    transition: all 0.2s ease;
-}
+    .badge.bg-info {
+        /* Employee */
+        background-color: #e3f2fd !important;
+    }
 
-.action-buttons .btn-link:hover {
-    background: #e9e9e9;
-    color: #333;
-}
+    .badge.bg-success {
+        /* Active */
+        background-color: #c8e6c9 !important;
+    }
 
-.action-buttons .btn-link.text-danger {
-    color: #dc3545;
-}
+    .badge.bg-secondary {
+        /* Inactive */
+        background-color: #e0e0e0 !important;
+    }
 
-.action-buttons .btn-link.text-danger:hover {
-    background: #fee;
-}
+    .action-buttons {
+        display: flex;
+        justify-content: flex-end;
+        gap: 8px;
+    }
 
-/* Edit mode styling */
-.edit-mode {
-    padding: 10px 0;
-}
+    .action-buttons .btn-link {
+        padding: 4px 8px;
+        text-decoration: none;
+        color: #666;
+        background: #f5f5f5;
+        border-radius: 4px;
+        font-size: 0.875rem;
+        transition: all 0.2s ease;
+    }
 
-.edit-mode .form-control,
-.edit-mode .form-select {
-    margin-bottom: 0;
-}
+    .action-buttons .btn-link:hover {
+        background: #e9e9e9;
+        color: #333;
+    }
 
-.edit-actions {
-    display: flex;
-    gap: 8px;
-    justify-content: flex-end;
-    align-items: center;
-}
+    .action-buttons .btn-link.text-danger {
+        color: #dc3545;
+    }
 
-.edit-actions .btn {
-    padding: 6px 12px;
-    font-size: 14px;
-}
+    .action-buttons .btn-link.text-danger:hover {
+        background: #fee;
+    }
 
-.btn-save {
-    background-color: #0d6efd;
-    color: white;
-    border: none;
-    border-radius: 4px;
-}
+    /* Edit mode styling */
+    .edit-mode {
+        padding: 10px 0;
+    }
 
-.btn-cancel {
-    background-color: #f8f9fa;
-    color: #6c757d;
-    border: 1px solid #dee2e6;
-    border-radius: 4px;
-}
+    .edit-mode .form-control,
+    .edit-mode .form-select {
+        margin-bottom: 0;
+    }
 
-.btn-save:hover {
-    background-color: #0b5ed7;
-}
+    .edit-actions {
+        display: flex;
+        gap: 8px;
+        justify-content: flex-end;
+        align-items: center;
+    }
 
-.btn-cancel:hover {
-    background-color: #e9ecef;
-}
+    .edit-actions .btn {
+        padding: 6px 12px;
+        font-size: 14px;
+    }
 
-.action-btn.reset {
-    color: #ffc107;
-}
+    .btn-save {
+        background-color: #0d6efd;
+        color: white;
+        border: none;
+        border-radius: 4px;
+    }
 
-.action-btn.reset:hover {
-    background: rgba(255, 193, 7, 0.1);
-}
+    .btn-cancel {
+        background-color: #f8f9fa;
+        color: #6c757d;
+        border: 1px solid #dee2e6;
+        border-radius: 4px;
+    }
 
-.action-btn.modern-enabled {
-    color: #10b981;
-    background: rgba(16, 185, 129, 0.1);
-}
+    .btn-save:hover {
+        background-color: #0b5ed7;
+    }
 
-.action-btn.modern-enabled:hover {
-    background: rgba(16, 185, 129, 0.2);
-}
+    .btn-cancel:hover {
+        background-color: #e9ecef;
+    }
 
-.action-btn.modern-disabled {
-    color: #6c757d;
-}
+    .action-btn.reset {
+        color: #ffc107;
+    }
 
-.action-btn.modern-disabled:hover {
-    background: rgba(108, 117, 125, 0.1);
-}
+    .action-btn.reset:hover {
+        background: rgba(255, 193, 7, 0.1);
+    }
 
-#alertContainer {
-    min-width: 250px;
-    max-width: 400px;
-}
+    .action-btn.modern-enabled {
+        color: #10b981;
+        background: rgba(16, 185, 129, 0.1);
+    }
 
-#alertContainer .alert {
-    margin-bottom: 10px;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-}
+    .action-btn.modern-enabled:hover {
+        background: rgba(16, 185, 129, 0.2);
+    }
+
+    .action-btn.modern-disabled {
+        color: #6c757d;
+    }
+
+    .action-btn.modern-disabled:hover {
+        background: rgba(108, 117, 125, 0.1);
+    }
+
+    #alertContainer {
+        min-width: 250px;
+        max-width: 400px;
+    }
+
+    #alertContainer .alert {
+        margin-bottom: 10px;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    }
 </style>
 
 <script>
-function toggleAddUserRow() {
-    const addUserRow = document.getElementById('addUserRow');
-    const managedDeptGroup = document.getElementById('managedDepartmentsGroup');
-    addUserRow.style.display = addUserRow.style.display === 'none' ? 'table-row' : 'none';
-    managedDeptGroup.style.display = 'none';
-    if (addUserRow.style.display === 'table-row') {
-        document.getElementById('newUsername').focus();
-    }
-}
-
-function toggleManagedDepartments() {
-    const roleSelect = document.getElementById('newRole');
-    const managedDeptGroup = document.getElementById('managedDepartmentsGroup');
-    
-    if (roleSelect.value === 'manager') {
-        managedDeptGroup.style.display = 'table-row';
-    } else {
+    function toggleAddUserRow() {
+        const addUserRow = document.getElementById('addUserRow');
+        const managedDeptGroup = document.getElementById('managedDepartmentsGroup');
+        addUserRow.style.display = addUserRow.style.display === 'none' ? 'table-row' : 'none';
         managedDeptGroup.style.display = 'none';
-    }
-}
-
-function saveNewUser() {
-    const username = document.getElementById('newUsername').value;
-    const email = document.getElementById('newEmail').value;
-    const password = document.getElementById('newPassword').value;
-    const department = document.getElementById('newDepartment').value;
-    const role = document.getElementById('newRole').value;
-    const status = document.getElementById('newStatus').value;
-    const managedDepartmentsSelect = document.getElementById('managed_departments');
-    const managedDepartments = role === 'manager' && managedDepartmentsSelect ? 
-        Array.from(managedDepartmentsSelect.selectedOptions).map(option => option.value) : [];
-
-    if (!username || !email || !password) {
-        alert('Username, email, and password are required');
-        return;
-    }
-
-    const formData = new FormData();
-    formData.append('username', username);
-    formData.append('email', email);
-    formData.append('password', password);
-    formData.append('department_id', department);
-    formData.append('role', role);
-    formData.append('status', status);
-    
-    if (managedDepartments.length > 0) {
-        managedDepartments.forEach(deptId => {
-            formData.append('managed_departments[]', deptId);
-        });
-    }
-
-    fetch('/admin/users/add', {
-        method: 'POST',
-        body: formData,
-        headers: {
-            'X-Requested-With': 'XMLHttpRequest'
+        if (addUserRow.style.display === 'table-row') {
+            document.getElementById('newUsername').focus();
         }
-    })
-    .then(response => {
-        if (!response.ok) {
-            return response.text().then(text => {
-                throw new Error(text || 'Failed to add user');
+    }
+
+    function toggleManagedDepartments() {
+        const roleSelect = document.getElementById('newRole');
+        const managedDeptGroup = document.getElementById('managedDepartmentsGroup');
+
+        if (roleSelect.value === 'manager') {
+            managedDeptGroup.style.display = 'table-row';
+        } else {
+            managedDeptGroup.style.display = 'none';
+        }
+    }
+
+    function saveNewUser() {
+        const username = document.getElementById('newUsername').value;
+        const email = document.getElementById('newEmail').value;
+        const password = document.getElementById('newPassword').value;
+        const department = document.getElementById('newDepartment').value;
+        const role = document.getElementById('newRole').value;
+        const status = document.getElementById('newStatus').value;
+        const managedDepartmentsSelect = document.getElementById('managed_departments');
+        const managedDepartments = role === 'manager' && managedDepartmentsSelect ?
+            Array.from(managedDepartmentsSelect.selectedOptions).map(option => option.value) : [];
+
+        if (!username || !email || !password) {
+            alert('Username, email, and password are required');
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append('username', username);
+        formData.append('email', email);
+        formData.append('password', password);
+        formData.append('department_id', department);
+        formData.append('role', role);
+        formData.append('status', status);
+
+        if (managedDepartments.length > 0) {
+            managedDepartments.forEach(deptId => {
+                formData.append('managed_departments[]', deptId);
             });
         }
-        window.location.reload();
-    })
-    .catch(error => {
-        console.error('Error adding user:', error);
-        alert('Error adding user: ' + error.message);
-    });
-}
 
-function startEdit(userId) {
-    // Hide view row and show edit row
-    document.querySelector(`tr.view-row[data-user-id="${userId}"]`).style.display = 'none';
-    document.querySelector(`tr.edit-row[data-user-id="${userId}"]`).style.display = 'table-row';
-}
-
-function cancelEdit(userId) {
-    // Hide edit row and show view row
-    document.querySelector(`tr.edit-row[data-user-id="${userId}"]`).style.display = 'none';
-    document.querySelector(`tr.view-row[data-user-id="${userId}"]`).style.display = 'table-row';
-}
-
-function toggleManagedDepts(select) {
-    const container = select.closest('tr').querySelector('.managed-depts-container');
-    container.style.display = select.value === 'manager' ? 'block' : 'none';
-}
-
-function saveEdit(userId) {
-    const row = document.querySelector(`tr.edit-row[data-user-id="${userId}"]`);
-    const formData = new FormData();
-    
-    // Gather form data
-    formData.append('username', row.querySelector('[name="username"]').value);
-    formData.append('email', row.querySelector('[name="email"]').value);
-    formData.append('role', row.querySelector('[name="role"]').value);
-    formData.append('department_id', row.querySelector('[name="department_id"]').value);
-    formData.append('status', row.querySelector('[name="status"]').value);
-    
-    // Add managed departments if role is manager
-    if (row.querySelector('[name="role"]').value === 'manager') {
-        const selectedDepts = Array.from(row.querySelector('[name="managed_departments"]').selectedOptions);
-        selectedDepts.forEach(opt => formData.append('managed_departments[]', opt.value));
-    }
-    
-    // Send update request
-    fetch(`/admin/users/${userId}/edit`, {
-        method: 'POST',
-        body: formData
-    })
-    .then(response => {
-        if (!response.ok) {
-            return response.json().then(data => {
-                throw new Error(data.error || 'Failed to update user');
-            });
-        }
-        return response.json();
-    })
-    .then(data => {
-        if (data.message) {
-            location.reload();
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        alert(error.message);
-    });
-}
-
-function deleteUser(userId) {
-    if (!confirm('Are you sure you want to delete this user?')) {
-        return;
-    }
-    
-    fetch(`/admin/users/${userId}/delete`, {
-        method: 'POST'
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.error) {
-            alert(data.error);
-        } else {
-            location.reload();
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        alert('Failed to delete user');
-    });
-}
-
-function toggleModernAccess(userId) {
-    const button = document.getElementById(`modern-btn-${userId}`);
-    const currentAccess = button.classList.contains('modern-enabled');
-    const action = currentAccess ? 'revoke' : 'grant';
-
-    if (!confirm(`Are you sure you want to ${action} modern UI access for this user?`)) {
-        return;
-    }
-
-    fetch(`/admin/users/${userId}/toggle-modern-access`, {
-        method: 'POST'
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.error) {
-            alert(data.error);
-        } else {
-            // Toggle button appearance
-            if (data.can_use_modern_version) {
-                button.classList.remove('modern-disabled');
-                button.classList.add('modern-enabled');
-                button.title = 'Revoke Modern UI Access';
-                showAlert('success', `Modern UI access granted!`);
-            } else {
-                button.classList.remove('modern-enabled');
-                button.classList.add('modern-disabled');
-                button.title = 'Grant Modern UI Access';
-                showAlert('info', `Modern UI access revoked.`);
+        fetch('/admin/users/add', {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
             }
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        alert('Failed to toggle modern access');
-    });
-}
+        })
+            .then(response => {
+                if (!response.ok) {
+                    return response.text().then(text => {
+                        throw new Error(text || 'Failed to add user');
+                    });
+                }
+                window.location.reload();
+            })
+            .catch(error => {
+                console.error('Error adding user:', error);
+                alert('Error adding user: ' + error.message);
+            });
+    }
 
-function showAlert(type, message) {
-    const alertContainer = document.getElementById('alertContainer');
-    const alertDiv = document.createElement('div');
-    alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
-    alertDiv.innerHTML = `
+    function startEdit(userId) {
+        // Hide view row and show edit row
+        document.querySelector(`tr.view-row[data-user-id="${userId}"]`).style.display = 'none';
+        document.querySelector(`tr.edit-row[data-user-id="${userId}"]`).style.display = 'table-row';
+    }
+
+    function cancelEdit(userId) {
+        // Hide edit row and show view row
+        document.querySelector(`tr.edit-row[data-user-id="${userId}"]`).style.display = 'none';
+        document.querySelector(`tr.view-row[data-user-id="${userId}"]`).style.display = 'table-row';
+    }
+
+    function toggleManagedDepts(select) {
+        const container = select.closest('tr').querySelector('.managed-depts-container');
+        container.style.display = select.value === 'manager' ? 'block' : 'none';
+    }
+
+    function saveEdit(userId) {
+        const row = document.querySelector(`tr.edit-row[data-user-id="${userId}"]`);
+        const formData = new FormData();
+
+        // Gather form data
+        formData.append('username', row.querySelector('[name="username"]').value);
+        formData.append('email', row.querySelector('[name="email"]').value);
+        formData.append('role', row.querySelector('[name="role"]').value);
+        formData.append('department_id', row.querySelector('[name="department_id"]').value);
+        formData.append('status', row.querySelector('[name="status"]').value);
+
+        // Add managed departments if role is manager
+        if (row.querySelector('[name="role"]').value === 'manager') {
+            const selectedDepts = Array.from(row.querySelector('[name="managed_departments"]').selectedOptions);
+            selectedDepts.forEach(opt => formData.append('managed_departments[]', opt.value));
+        }
+
+        // Send update request
+        fetch(`/admin/users/${userId}/edit`, {
+            method: 'POST',
+            body: formData
+        })
+            .then(response => {
+                if (!response.ok) {
+                    return response.json().then(data => {
+                        throw new Error(data.error || 'Failed to update user');
+                    });
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.message) {
+                    location.reload();
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert(error.message);
+            });
+    }
+
+    function deleteUser(userId) {
+        if (!confirm('Are you sure you want to delete this user?')) {
+            return;
+        }
+
+        fetch(`/admin/users/${userId}/delete`, {
+            method: 'POST'
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    alert(data.error);
+                } else {
+                    location.reload();
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Failed to delete user');
+            });
+    }
+
+    function toggleModernAccess(userId) {
+        const button = document.getElementById(`modern-btn-${userId}`);
+        const currentAccess = button.classList.contains('modern-enabled');
+        const action = currentAccess ? 'revoke' : 'grant';
+
+        if (!confirm(`Are you sure you want to ${action} modern UI access for this user?`)) {
+            return;
+        }
+
+        fetch(`/admin/users/${userId}/toggle-modern-access`, {
+            method: 'POST'
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    alert(data.error);
+                } else {
+                    // Toggle button appearance
+                    if (data.can_use_modern_version) {
+                        button.classList.remove('modern-disabled');
+                        button.classList.add('modern-enabled');
+                        button.title = 'Revoke Modern UI Access';
+                        showAlert('success', `Modern UI access granted!`);
+                    } else {
+                        button.classList.remove('modern-enabled');
+                        button.classList.add('modern-disabled');
+                        button.title = 'Grant Modern UI Access';
+                        showAlert('info', `Modern UI access revoked.`);
+                    }
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Failed to toggle modern access');
+            });
+    }
+
+    function showAlert(type, message) {
+        const alertContainer = document.getElementById('alertContainer');
+        const alertDiv = document.createElement('div');
+        alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+        alertDiv.innerHTML = `
         ${message}
         <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
     `;
-    alertContainer.appendChild(alertDiv);
+        alertContainer.appendChild(alertDiv);
 
-    // Auto-dismiss after 3 seconds
-    setTimeout(() => {
-        alertDiv.remove();
-    }, 3000);
-}
-
-function resetPassword(userId) {
-    if (confirm('Are you sure you want to reset this user\'s password to 123456?')) {
-        fetch(`/admin/users/${userId}/reset_password`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            }
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                showAlert('success', data.message);
-            } else {
-                showAlert('danger', data.error || 'Error resetting password');
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            showAlert('danger', 'Error resetting password');
-        });
+        // Auto-dismiss after 3 seconds
+        setTimeout(() => {
+            alertDiv.remove();
+        }, 3000);
     }
-}
 
-$(document).ready(function() {
-    // Reset Password functionality
-    $('.action-btn.reset').click(function() {
-        const userId = $(this).data('user-id');
+    function resetPassword(userId) {
         if (confirm('Are you sure you want to reset this user\'s password to 123456?')) {
-            $.ajax({
-                url: `/admin/users/${userId}/reset_password`,
-                type: 'POST',
-                contentType: 'application/json',
-                success: function(response) {
-                    showAlert('success', response.message);
-                },
-                error: function(xhr) {
-                    const error = xhr.responseJSON ? xhr.responseJSON.error : 'Error resetting password';
-                    showAlert('danger', error);
+            fetch(`/admin/users/${userId}/reset_password`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
                 }
-            });
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        showAlert('success', data.message);
+                    } else {
+                        showAlert('danger', data.error || 'Error resetting password');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    showAlert('danger', 'Error resetting password');
+                });
         }
+    }
+
+    $(document).ready(function () {
+        // Reset Password functionality
+        $('.action-btn.reset').click(function () {
+            const userId = $(this).data('user-id');
+            if (confirm('Are you sure you want to reset this user\'s password to 123456?')) {
+                $.ajax({
+                    url: `/admin/users/${userId}/reset_password`,
+                    type: 'POST',
+                    contentType: 'application/json',
+                    success: function (response) {
+                        showAlert('success', response.message);
+                    },
+                    error: function (xhr) {
+                        const error = xhr.responseJSON ? xhr.responseJSON.error : 'Error resetting password';
+                        showAlert('danger', error);
+                    }
+                });
+            }
+        });
     });
-});
 </script>
 {% endblock %}

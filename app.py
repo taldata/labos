@@ -2266,7 +2266,7 @@ def toggle_modern_version_access(user_id):
 @app.route('/admin/expense/<int:expense_id>/edit', methods=['GET', 'POST'])
 @login_required
 def admin_edit_expense(expense_id):
-    if current_user.username != 'admin':
+    if not current_user.is_admin:
         flash('Only admin can edit expenses', 'error')
         return redirect(url_for('manager_dashboard'))
     
@@ -2391,7 +2391,7 @@ def admin_edit_expense(expense_id):
 @app.route('/admin/expense/<int:expense_id>/delete', methods=['POST'])
 @login_required
 def admin_delete_expense(expense_id):
-    if current_user.username != 'admin':
+    if not current_user.is_admin:
         flash('Only admin can delete expenses', 'error')
         return redirect(url_for('manager_dashboard'))
     

@@ -24,8 +24,8 @@
                 <div id="filtersCollapse" class="collapse show">
                     <div class="search-box">
                         <i class="fas fa-search search-icon"></i>
-                        <input type="text" id="expenseSearch" class="form-control" 
-                               placeholder="Search expenses by description, supplier, or category...">
+                        <input type="text" id="expenseSearch" class="form-control"
+                            placeholder="Search expenses by description, supplier, or category...">
                     </div>
 
                     <form method="GET" class="filters-grid">
@@ -34,10 +34,14 @@
                                 <i class="fas fa-tag filter-icon"></i>Status
                             </label>
                             <select name="status" id="status" class="form-select" onchange="this.form.submit()">
-                                <option value="all" {% if selected_status == 'all' %}selected{% endif %}>All Statuses</option>
-                                <option value="pending" {% if selected_status == 'pending' %}selected{% endif %}>Pending</option>
-                                <option value="approved" {% if selected_status == 'approved' %}selected{% endif %}>Approved</option>
-                                <option value="rejected" {% if selected_status == 'rejected' %}selected{% endif %}>Rejected</option>
+                                <option value="all" {% if selected_status=='all' %}selected{% endif %}>All Statuses
+                                </option>
+                                <option value="pending" {% if selected_status=='pending' %}selected{% endif %}>Pending
+                                </option>
+                                <option value="approved" {% if selected_status=='approved' %}selected{% endif %}>
+                                    Approved</option>
+                                <option value="rejected" {% if selected_status=='rejected' %}selected{% endif %}>
+                                    Rejected</option>
                             </select>
                         </div>
 
@@ -46,9 +50,11 @@
                                 <i class="fas fa-building filter-icon"></i>Department
                             </label>
                             <select name="department" id="department" class="form-select" onchange="this.form.submit()">
-                                <option value="all" {% if selected_department == 'all' %}selected{% endif %}>All Departments</option>
+                                <option value="all" {% if selected_department=='all' %}selected{% endif %}>All
+                                    Departments</option>
                                 {% for dept in departments %}
-                                <option value="{{ dept.id }}" {% if selected_department|string == dept.id|string %}selected{% endif %}>
+                                <option value="{{ dept.id }}" {% if selected_department|string==dept.id|string
+                                    %}selected{% endif %}>
                                     {{ dept.name }}
                                 </option>
                                 {% endfor %}
@@ -60,9 +66,11 @@
                                 <i class="fas fa-user filter-icon"></i>Employee
                             </label>
                             <select name="employee" id="employee" class="form-select" onchange="this.form.submit()">
-                                <option value="all" {% if selected_employee == 'all' %}selected{% endif %}>All Employees</option>
+                                <option value="all" {% if selected_employee=='all' %}selected{% endif %}>All Employees
+                                </option>
                                 {% for emp in employees %}
-                                <option value="{{ emp.id }}" {% if selected_employee|string == emp.id|string %}selected{% endif %}>
+                                <option value="{{ emp.id }}" {% if selected_employee|string==emp.id|string %}selected{%
+                                    endif %}>
                                     {{ emp.username }}
                                 </option>
                                 {% endfor %}
@@ -74,9 +82,11 @@
                                 <i class="fas fa-folder filter-icon"></i>Category
                             </label>
                             <select name="category" id="category" class="form-select" onchange="this.form.submit()">
-                                <option value="all" {% if selected_category == 'all' %}selected{% endif %}>All Categories</option>
+                                <option value="all" {% if selected_category=='all' %}selected{% endif %}>All Categories
+                                </option>
                                 {% for cat in categories %}
-                                <option value="{{ cat.id }}" {% if selected_category|string == cat.id|string %}selected{% endif %}>
+                                <option value="{{ cat.id }}" {% if selected_category|string==cat.id|string %}selected{%
+                                    endif %}>
                                     {{ cat.name }}
                                 </option>
                                 {% endfor %}
@@ -87,26 +97,32 @@
                             <label for="subcategory">
                                 <i class="fas fa-folder-open filter-icon"></i>Subcategory
                             </label>
-                            <select name="subcategory" id="subcategory" class="form-select" onchange="this.form.submit()">
-                                <option value="all" {% if selected_subcategory == 'all' %}selected{% endif %}>All Subcategories</option>
+                            <select name="subcategory" id="subcategory" class="form-select"
+                                onchange="this.form.submit()">
+                                <option value="all" {% if selected_subcategory=='all' %}selected{% endif %}>All
+                                    Subcategories</option>
                                 {% for subcat in subcategories %}
-                                <option value="{{ subcat.id }}" {% if selected_subcategory|string == subcat.id|string %}selected{% endif %}>
+                                <option value="{{ subcat.id }}" {% if selected_subcategory|string==subcat.id|string
+                                    %}selected{% endif %}>
                                     {{ subcat.category.name }} - {{ subcat.name }}
                                 </option>
                                 {% endfor %}
                             </select>
                         </div>
-                        
+
                         {% if current_user.is_admin %}
                         <!-- New admin filters -->
                         <div class="filter-item">
                             <label for="adding_month">
                                 <i class="fas fa-calendar-plus filter-icon"></i>Month Added
                             </label>
-                            <select name="adding_month" id="adding_month" class="form-select" onchange="this.form.submit()">
-                                <option value="all" {% if selected_adding_month == 'all' %}selected{% endif %}>All Months</option>
+                            <select name="adding_month" id="adding_month" class="form-select"
+                                onchange="this.form.submit()">
+                                <option value="all" {% if selected_adding_month=='all' %}selected{% endif %}>All Months
+                                </option>
                                 {% for month_value, month_display in months %}
-                                <option value="{{ month_value }}" {% if selected_adding_month == month_value %}selected{% endif %}>
+                                <option value="{{ month_value }}" {% if selected_adding_month==month_value %}selected{%
+                                    endif %}>
                                     {{ month_display }}
                                 </option>
                                 {% endfor %}
@@ -117,10 +133,13 @@
                             <label for="purchase_month">
                                 <i class="fas fa-shopping-cart filter-icon"></i>Purchase Month
                             </label>
-                            <select name="purchase_month" id="purchase_month" class="form-select" onchange="this.form.submit()">
-                                <option value="all" {% if selected_purchase_month == 'all' %}selected{% endif %}>All Months</option>
+                            <select name="purchase_month" id="purchase_month" class="form-select"
+                                onchange="this.form.submit()">
+                                <option value="all" {% if selected_purchase_month=='all' %}selected{% endif %}>All
+                                    Months</option>
                                 {% for month_value, month_display in months %}
-                                <option value="{{ month_value }}" {% if selected_purchase_month == month_value %}selected{% endif %}>
+                                <option value="{{ month_value }}" {% if selected_purchase_month==month_value
+                                    %}selected{% endif %}>
                                     {{ month_display }}
                                 </option>
                                 {% endfor %}
@@ -132,9 +151,11 @@
                                 <i class="fas fa-store filter-icon"></i>Supplier Name
                             </label>
                             <select name="supplier" id="supplier" class="form-select" onchange="this.form.submit()">
-                                <option value="all" {% if selected_supplier == 'all' %}selected{% endif %}>All Suppliers</option>
+                                <option value="all" {% if selected_supplier=='all' %}selected{% endif %}>All Suppliers
+                                </option>
                                 {% for supplier in suppliers %}
-                                <option value="{{ supplier.id }}" {% if selected_supplier|string == supplier.id|string %}selected{% endif %}>
+                                <option value="{{ supplier.id }}" {% if selected_supplier|string==supplier.id|string
+                                    %}selected{% endif %}>
                                     {{ supplier.name }}
                                 </option>
                                 {% endfor %}
@@ -145,11 +166,16 @@
                             <label for="payment_method">
                                 <i class="fas fa-money-check-alt filter-icon"></i>Payment Type
                             </label>
-                            <select name="payment_method" id="payment_method" class="form-select" onchange="this.form.submit()">
-                                <option value="all" {% if selected_payment_method == 'all' %}selected{% endif %}>All Payment Types</option>
-                                <option value="credit" {% if selected_payment_method == 'credit' %}selected{% endif %}>Credit Card</option>
-                                <option value="transfer" {% if selected_payment_method == 'transfer' %}selected{% endif %}>Bank Transfer</option>
-                                <option value="standing_order" {% if selected_payment_method == 'standing_order' %}selected{% endif %}>Standing Order (הוראת קבע)</option>
+                            <select name="payment_method" id="payment_method" class="form-select"
+                                onchange="this.form.submit()">
+                                <option value="all" {% if selected_payment_method=='all' %}selected{% endif %}>All
+                                    Payment Types</option>
+                                <option value="credit" {% if selected_payment_method=='credit' %}selected{% endif %}>
+                                    Credit Card</option>
+                                <option value="transfer" {% if selected_payment_method=='transfer' %}selected{% endif
+                                    %}>Bank Transfer</option>
+                                <option value="standing_order" {% if selected_payment_method=='standing_order'
+                                    %}selected{% endif %}>Standing Order (הוראת קבע)</option>
                             </select>
                         </div>
                         {% endif %}
@@ -182,7 +208,7 @@
                             <th class="col-actions"><i class="fas fa-user-check text-primary"></i> Handled By</th>
                             <th class="col-actions"><i class="fas fa-clock text-primary"></i> Handled At</th>
                             <th><i class="fas fa-paperclip text-primary"></i> Files</th>
-                            {% if current_user.username == 'admin' %}
+                            {% if current_user.is_admin %}
                             <th class="col-actions"><i class="fas fa-cogs text-primary"></i> Actions</th>
                             {% endif %}
                         </tr>
@@ -192,11 +218,13 @@
                         <tr>
                             <td class="col-date small">{{ expense.date.strftime('%d/%m/%Y %H:%M') }}</td>
                             <td class="col-employee">{{ expense.submitter.username }}</td>
-                            <td class="col-department">{{ expense.submitter.home_department.name if expense.submitter.home_department else 'No Department' }}</td>
+                            <td class="col-department">{{ expense.submitter.home_department.name if
+                                expense.submitter.home_department else 'No Department' }}</td>
                             <td>{{ expense.description }}</td>
                             <td>{{ expense.reason }}</td>
                             <td>{{ expense.supplier.name if expense.supplier else '-' }}</td>
-                            <td class="col-date small">{{ expense.invoice_date.strftime('%d/%m/%Y') if expense.invoice_date else '-' }}</td>
+                            <td class="col-date small">{{ expense.invoice_date.strftime('%d/%m/%Y') if
+                                expense.invoice_date else '-' }}</td>
                             <td>{{ expense.subcategory.category.name if expense.subcategory else '-' }}</td>
                             <td>{{ expense.subcategory.name if expense.subcategory else '-' }}</td>
                             <td>{{ expense.type|format_expense_type }}</td>
@@ -204,74 +232,77 @@
                             <td class="col-amount">{{ expense.amount|format_currency(expense.currency) }}</td>
                             <td class="status-{{ expense.status }}">
                                 {% if expense.status == 'rejected' %}
-                                    <span class="badge danger">Rejected</span>
-                                    {% if expense.rejection_reason %}
-                                        <div class="rejection-reason">
-                                            <strong>Reason:</strong> {{ expense.rejection_reason }}
-                                        </div>
-                                    {% endif %}
+                                <span class="badge danger">Rejected</span>
+                                {% if expense.rejection_reason %}
+                                <div class="rejection-reason">
+                                    <strong>Reason:</strong> {{ expense.rejection_reason }}
+                                </div>
+                                {% endif %}
                                 {% elif expense.status == 'approved' %}
-                                    <span class="badge success">Approved</span>
+                                <span class="badge success">Approved</span>
                                 {% elif expense.status == 'pending' %}
-                                    <span class="badge warning">Pending</span>
+                                <span class="badge warning">Pending</span>
                                 {% endif %}
                             </td>
                             <td>
                                 {% if expense.payment_status == 'paid' %}
-                                    <span class="badge success">PAID</span>
-                                    {% if expense.paid_at %}
-                                        <div class="small text-muted">
-                                            {{ expense.paid_at.strftime('%d/%m/%Y') }}
-                                        </div>
-                                    {% endif %}
+                                <span class="badge success">PAID</span>
+                                {% if expense.paid_at %}
+                                <div class="small text-muted">
+                                    {{ expense.paid_at.strftime('%d/%m/%Y') }}
+                                </div>
+                                {% endif %}
                                 {% elif expense.payment_status == 'pending_payment' %}
-                                    <span class="badge warning">Payment Pending</span>
-                                {% elif expense.payment_status == 'pending_attention' and expense.status == 'approved' %}
-                                    <span class="badge warning">Processing</span>
+                                <span class="badge warning">Payment Pending</span>
+                                {% elif expense.payment_status == 'pending_attention' and expense.status == 'approved'
+                                %}
+                                <span class="badge warning">Processing</span>
                                 {% else %}
-                                    <span class="text-muted">-</span>
+                                <span class="text-muted">-</span>
                                 {% endif %}
                             </td>
-                            <td class="col-actions">{{ expense.handler.username if expense.handler and expense.status != 'pending' else '-' }}</td>
-                            <td class="col-actions small">{{ expense.handled_at.strftime('%d/%m/%Y %H:%M') if expense.handled_at else '-' }}</td>
+                            <td class="col-actions">{{ expense.handler.username if expense.handler and expense.status !=
+                                'pending' else '-' }}</td>
+                            <td class="col-actions small">{{ expense.handled_at.strftime('%d/%m/%Y %H:%M') if
+                                expense.handled_at else '-' }}</td>
                             <td>
                                 <div class="btn-group">
                                     {% if expense.quote_filename %}
-                                        <a href="{{ url_for('download_file', filename=expense.quote_filename) }}" 
-                                           class="btn btn-sm btn-outline-primary" title="Quote">
-                                           <i class="fas fa-file-invoice"></i>
-                                        </a>
+                                    <a href="{{ url_for('download_file', filename=expense.quote_filename) }}"
+                                        class="btn btn-sm btn-outline-primary" title="Quote">
+                                        <i class="fas fa-file-invoice"></i>
+                                    </a>
                                     {% endif %}
                                     {% if expense.invoice_filename %}
-                                        <a href="{{ url_for('download_file', filename=expense.invoice_filename) }}" 
-                                           class="btn btn-sm btn-outline-primary" title="Invoice">
-                                           <i class="fas fa-file-invoice-dollar"></i>
-                                        </a>
+                                    <a href="{{ url_for('download_file', filename=expense.invoice_filename) }}"
+                                        class="btn btn-sm btn-outline-primary" title="Invoice">
+                                        <i class="fas fa-file-invoice-dollar"></i>
+                                    </a>
                                     {% endif %}
                                     {% if expense.receipt_filename %}
-                                        <a href="{{ url_for('download_file', filename=expense.receipt_filename) }}" 
-                                           class="btn btn-sm btn-outline-primary" title="Receipt">
-                                           <i class="fas fa-receipt"></i>
-                                        </a>
+                                    <a href="{{ url_for('download_file', filename=expense.receipt_filename) }}"
+                                        class="btn btn-sm btn-outline-primary" title="Receipt">
+                                        <i class="fas fa-receipt"></i>
+                                    </a>
                                     {% endif %}
-                                    {% if not expense.quote_filename and not expense.invoice_filename and not expense.receipt_filename %}
-                                        <span class="text-muted">
-                                            <i class="fas fa-times"></i>
-                                        </span>
+                                    {% if not expense.quote_filename and not expense.invoice_filename and not
+                                    expense.receipt_filename %}
+                                    <span class="text-muted">
+                                        <i class="fas fa-times"></i>
+                                    </span>
                                     {% endif %}
                                 </div>
                             </td>
-                            {% if current_user.username == 'admin' %}
+                            {% if current_user.is_admin %}
                             <td class="col-actions">
                                 <div class="btn-group">
-                                    <a href="{{ url_for('admin_edit_expense', expense_id=expense.id) }}" 
-                                       class="btn btn-sm btn-outline-primary" title="Edit">
+                                    <a href="{{ url_for('admin_edit_expense', expense_id=expense.id) }}"
+                                        class="btn btn-sm btn-outline-primary" title="Edit">
                                         <i class="fas fa-edit"></i>
                                     </a>
-                                    <form action="{{ url_for('admin_delete_expense', expense_id=expense.id) }}" 
-                                          method="post" 
-                                          class="d-inline"
-                                          onsubmit="return confirm('Are you sure you want to delete this expense?');">
+                                    <form action="{{ url_for('admin_delete_expense', expense_id=expense.id) }}"
+                                        method="post" class="d-inline"
+                                        onsubmit="return confirm('Are you sure you want to delete this expense?');">
                                         <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete">
                                             <i class="fas fa-trash"></i>
                                         </button>
@@ -297,314 +328,331 @@
 </div>
 
 <style>
-.page-header {
-    padding: 1.5rem 0;
-}
-
-.card {
-    border: none;
-    border-radius: 0.5rem;
-}
-
-.form-select {
-    background-color: #fff;
-    border: 1px solid #dee2e6;
-}
-
-.form-select:focus {
-    border-color: #86b7fe;
-    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
-}
-
-.table th {
-    font-weight: 600;
-    font-size: 0.875rem;
-    padding: 0.75rem;
-    background-color: #f8f9fa;
-    border-bottom: 2px solid #dee2e6;
-}
-
-.table td {
-    padding: 0.75rem;
-    vertical-align: middle;
-    font-size: 0.875rem;
-}
-
-.table .btn-group {
-    display: flex;
-    gap: 0.25rem;
-}
-
-.table .btn-sm {
-    padding: 0.25rem 0.5rem;
-}
-
-.table .badge {
-    font-size: 0.75rem;
-    padding: 0.4em 0.6em;
-}
-
-.text-nowrap {
-    white-space: nowrap;
-}
-
-.small {
-    font-size: 0.875rem;
-}
-
-/* Table styles */
-.table-responsive {
-    overflow-x: auto;
-    margin: 0 -1rem;
-    padding: 0 1rem;
-    -webkit-overflow-scrolling: touch;
-}
-
-.table {
-    width: 100%;
-    margin-bottom: 0;
-    white-space: nowrap;
-}
-
-.table th,
-.table td {
-    padding: 0.75rem;
-    max-width: 200px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-/* Optimize column widths */
-.col-date { width: 100px; }
-.col-employee { width: 120px; }
-.col-department { width: 150px; }
-.col-amount { width: 100px; }
-.col-status { width: 100px; }
-.col-actions { width: 120px; }
-
-/* Add horizontal scroll indicator */
-.table-scroll-indicator {
-    display: none;
-    text-align: center;
-    padding: 0.5rem;
-    color: #666;
-    font-size: 0.9rem;
-}
-
-@media (max-width: 1024px) {
-    .table-scroll-indicator {
-        display: block;
+    .page-header {
+        padding: 1.5rem 0;
     }
-    
-    .filters-section .row {
-        margin-bottom: 1rem;
+
+    .card {
+        border: none;
+        border-radius: 0.5rem;
     }
-    
-    .search-box {
-        margin-top: 1rem;
+
+    .form-select {
+        background-color: #fff;
+        border: 1px solid #dee2e6;
     }
-}
 
-/* Tooltip styles for truncated content */
-[ data-bs-toggle="tooltip"] {
-    cursor: help;
-}
-
-/* Status badge styles */
-.badge {
-    display: inline-block;
-    padding: 0.4em 0.8em;
-    font-size: 0.75em;
-    font-weight: 600;
-    line-height: 1;
-    text-align: center;
-    white-space: nowrap;
-    vertical-align: baseline;
-    border-radius: 0.25rem;
-}
-
-.badge.success {
-    background-color: #28a745;
-    color: white;
-}
-
-.badge.danger {
-    background-color: #dc3545;
-    color: white;
-}
-
-.badge.warning {
-    background-color: #ffc107;
-    color: #212529;
-}
-
-.rejection-reason {
-    margin-top: 0.5rem;
-    font-size: 0.875em;
-    color: #dc3545;
-}
-
-.status-rejected {
-    color: #dc3545;
-}
-
-.status-approved {
-    color: #28a745;
-}
-
-.status-pending {
-    color: #ffc107;
-}
-
-@media (max-width: 768px) {
-    .table-responsive {
-        margin: 0 -1rem;
+    .form-select:focus {
+        border-color: #86b7fe;
+        box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
     }
-    
-    .table th, 
+
+    .table th {
+        font-weight: 600;
+        font-size: 0.875rem;
+        padding: 0.75rem;
+        background-color: #f8f9fa;
+        border-bottom: 2px solid #dee2e6;
+    }
+
     .table td {
-        padding: 0.5rem;
+        padding: 0.75rem;
+        vertical-align: middle;
+        font-size: 0.875rem;
     }
-    
+
     .table .btn-group {
-        flex-direction: column;
+        display: flex;
+        gap: 0.25rem;
     }
-}
 
-/* Filters section styles */
-.filters-section {
-    background: #f8f9fa;
-    border-radius: 8px;
-    padding: 1.5rem;
-    margin-bottom: 2rem;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-}
-
-.filters-header {
-    display: flex;
-    align-items: center;
-    margin-bottom: 1.5rem;
-    padding-bottom: 1rem;
-    border-bottom: 1px solid #e9ecef;
-}
-
-.filters-header h5 {
-    margin: 0;
-    color: #495057;
-    font-weight: 600;
-}
-
-.filters-header .toggle-filters {
-    margin-right: 1rem;
-    color: #6c757d;
-    cursor: pointer;
-    transition: color 0.2s;
-}
-
-.filters-header .toggle-filters:hover {
-    color: #495057;
-}
-
-.search-box {
-    position: relative;
-    margin-bottom: 1.5rem;
-}
-
-.search-box .form-control {
-    padding-left: 2.5rem;
-    height: 45px;
-    border-radius: 8px;
-    border: 1px solid #ced4da;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.02);
-    transition: all 0.2s;
-}
-
-.search-box .form-control:focus {
-    border-color: #80bdff;
-    box-shadow: 0 0 0 0.2rem rgba(0,123,255,0.15);
-}
-
-.search-box .search-icon {
-    position: absolute;
-    left: 1rem;
-    top: 50%;
-    transform: translateY(-50%);
-    color: #adb5bd;
-}
-
-.filters-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: 1rem;
-}
-
-.filter-item {
-    background: white;
-    padding: 1rem;
-    border-radius: 6px;
-    border: 1px solid #e9ecef;
-}
-
-.filter-item label {
-    display: block;
-    margin-bottom: 0.5rem;
-    color: #495057;
-    font-weight: 500;
-}
-
-.filter-item select {
-    width: 100%;
-    padding: 0.5rem;
-    border-radius: 6px;
-    border: 1px solid #ced4da;
-    background-color: white;
-    cursor: pointer;
-    transition: all 0.2s;
-}
-
-.filter-item select:hover {
-    border-color: #adb5bd;
-}
-
-.filter-item select:focus {
-    border-color: #80bdff;
-    box-shadow: 0 0 0 0.2rem rgba(0,123,255,0.15);
-    outline: none;
-}
-
-.filter-icon {
-    margin-right: 0.5rem;
-    color: #6c757d;
-    width: 16px;
-    text-align: center;
-}
-
-@media (max-width: 768px) {
-    .filters-grid {
-        grid-template-columns: 1fr;
+    .table .btn-sm {
+        padding: 0.25rem 0.5rem;
     }
-    
+
+    .table .badge {
+        font-size: 0.75rem;
+        padding: 0.4em 0.6em;
+    }
+
+    .text-nowrap {
+        white-space: nowrap;
+    }
+
+    .small {
+        font-size: 0.875rem;
+    }
+
+    /* Table styles */
+    .table-responsive {
+        overflow-x: auto;
+        margin: 0 -1rem;
+        padding: 0 1rem;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .table {
+        width: 100%;
+        margin-bottom: 0;
+        white-space: nowrap;
+    }
+
+    .table th,
+    .table td {
+        padding: 0.75rem;
+        max-width: 200px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    /* Optimize column widths */
+    .col-date {
+        width: 100px;
+    }
+
+    .col-employee {
+        width: 120px;
+    }
+
+    .col-department {
+        width: 150px;
+    }
+
+    .col-amount {
+        width: 100px;
+    }
+
+    .col-status {
+        width: 100px;
+    }
+
+    .col-actions {
+        width: 120px;
+    }
+
+    /* Add horizontal scroll indicator */
+    .table-scroll-indicator {
+        display: none;
+        text-align: center;
+        padding: 0.5rem;
+        color: #666;
+        font-size: 0.9rem;
+    }
+
+    @media (max-width: 1024px) {
+        .table-scroll-indicator {
+            display: block;
+        }
+
+        .filters-section .row {
+            margin-bottom: 1rem;
+        }
+
+        .search-box {
+            margin-top: 1rem;
+        }
+    }
+
+    /* Tooltip styles for truncated content */
+    [ data-bs-toggle="tooltip"] {
+        cursor: help;
+    }
+
+    /* Status badge styles */
+    .badge {
+        display: inline-block;
+        padding: 0.4em 0.8em;
+        font-size: 0.75em;
+        font-weight: 600;
+        line-height: 1;
+        text-align: center;
+        white-space: nowrap;
+        vertical-align: baseline;
+        border-radius: 0.25rem;
+    }
+
+    .badge.success {
+        background-color: #28a745;
+        color: white;
+    }
+
+    .badge.danger {
+        background-color: #dc3545;
+        color: white;
+    }
+
+    .badge.warning {
+        background-color: #ffc107;
+        color: #212529;
+    }
+
+    .rejection-reason {
+        margin-top: 0.5rem;
+        font-size: 0.875em;
+        color: #dc3545;
+    }
+
+    .status-rejected {
+        color: #dc3545;
+    }
+
+    .status-approved {
+        color: #28a745;
+    }
+
+    .status-pending {
+        color: #ffc107;
+    }
+
+    @media (max-width: 768px) {
+        .table-responsive {
+            margin: 0 -1rem;
+        }
+
+        .table th,
+        .table td {
+            padding: 0.5rem;
+        }
+
+        .table .btn-group {
+            flex-direction: column;
+        }
+    }
+
+    /* Filters section styles */
+    .filters-section {
+        background: #f8f9fa;
+        border-radius: 8px;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    }
+
+    .filters-header {
+        display: flex;
+        align-items: center;
+        margin-bottom: 1.5rem;
+        padding-bottom: 1rem;
+        border-bottom: 1px solid #e9ecef;
+    }
+
+    .filters-header h5 {
+        margin: 0;
+        color: #495057;
+        font-weight: 600;
+    }
+
+    .filters-header .toggle-filters {
+        margin-right: 1rem;
+        color: #6c757d;
+        cursor: pointer;
+        transition: color 0.2s;
+    }
+
+    .filters-header .toggle-filters:hover {
+        color: #495057;
+    }
+
     .search-box {
-        margin-bottom: 1rem;
+        position: relative;
+        margin-bottom: 1.5rem;
     }
-}
+
+    .search-box .form-control {
+        padding-left: 2.5rem;
+        height: 45px;
+        border-radius: 8px;
+        border: 1px solid #ced4da;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+        transition: all 0.2s;
+    }
+
+    .search-box .form-control:focus {
+        border-color: #80bdff;
+        box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.15);
+    }
+
+    .search-box .search-icon {
+        position: absolute;
+        left: 1rem;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #adb5bd;
+    }
+
+    .filters-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 1rem;
+    }
+
+    .filter-item {
+        background: white;
+        padding: 1rem;
+        border-radius: 6px;
+        border: 1px solid #e9ecef;
+    }
+
+    .filter-item label {
+        display: block;
+        margin-bottom: 0.5rem;
+        color: #495057;
+        font-weight: 500;
+    }
+
+    .filter-item select {
+        width: 100%;
+        padding: 0.5rem;
+        border-radius: 6px;
+        border: 1px solid #ced4da;
+        background-color: white;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .filter-item select:hover {
+        border-color: #adb5bd;
+    }
+
+    .filter-item select:focus {
+        border-color: #80bdff;
+        box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.15);
+        outline: none;
+    }
+
+    .filter-icon {
+        margin-right: 0.5rem;
+        color: #6c757d;
+        width: 16px;
+        text-align: center;
+    }
+
+    @media (max-width: 768px) {
+        .filters-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .search-box {
+            margin-bottom: 1rem;
+        }
+    }
 </style>
 
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    const searchInput = document.getElementById('expenseSearch');
-    const table = document.querySelector('.table');
-    
-    searchInput.addEventListener('input', function() {
-        const searchTerm = this.value.toLowerCase();
-        const rows = table.querySelectorAll('tbody tr');
-        
-        rows.forEach(row => {
-            const text = row.textContent.toLowerCase();
-            row.style.display = text.includes(searchTerm) ? '' : 'none';
+    document.addEventListener('DOMContentLoaded', function () {
+        const searchInput = document.getElementById('expenseSearch');
+        const table = document.querySelector('.table');
+
+        searchInput.addEventListener('input', function () {
+            const searchTerm = this.value.toLowerCase();
+            const rows = table.querySelectorAll('tbody tr');
+
+            rows.forEach(row => {
+                const text = row.textContent.toLowerCase();
+                row.style.display = text.includes(searchTerm) ? '' : 'none';
+            });
         });
     });
-});
 </script>
 {% endblock %}
