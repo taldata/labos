@@ -74,8 +74,8 @@ def login():
             logging.warning(f"Login attempt for inactive user: {username}")
             return jsonify({'error': 'Account is inactive. Please contact administrator.'}), 403
 
-        # Check if user has access to modern version
-        if not user.can_use_modern_version:
+        # Check if user has access to modern version (admins always have access)
+        if not user.can_use_modern_version and not user.is_admin:
             logging.warning(f"User {username} does not have access to modern version")
             return jsonify({'error': 'You do not have access to the modern UI. Please contact your administrator.'}), 403
 
@@ -203,8 +203,8 @@ def auth_callback():
             db.session.commit()
             logging.info(f"Existing user updated: {user.username}")
 
-        # Check if user has access to modern version
-        if not user.can_use_modern_version:
+        # Check if user has access to modern version (admins always have access)
+        if not user.can_use_modern_version and not user.is_admin:
             logging.warning(f"User {user.email} does not have access to modern version")
             # Redirect to legacy version with message
             login_user(user)
@@ -245,7 +245,8 @@ def logout():
 def switch_to_modern():
     """Redirect logged-in user to modern UI"""
     try:
-        if not current_user.can_use_modern_version:
+        # Admins always have access to modern UI
+        if not current_user.can_use_modern_version and not current_user.is_admin:
             return redirect('/?error=modern_access_denied')
 
         # Update preference
@@ -272,7 +273,8 @@ def set_version_preference():
         if version not in ['legacy', 'modern']:
             return jsonify({'error': 'Invalid version'}), 400
 
-        if version == 'modern' and not current_user.can_use_modern_version:
+        # Admins always have access to modern version
+        if version == 'modern' and not current_user.can_use_modern_version and not current_user.is_admin:
             return jsonify({'error': 'You do not have access to the modern version'}), 403
 
         current_user.preferred_version = version

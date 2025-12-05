@@ -123,9 +123,9 @@ def check_version_preference():
        request.path.startswith('/modern/'):
         return None
 
-    # If user is authenticated and prefers modern version
+    # If user is authenticated and prefers modern version (admins always have access)
     if current_user.is_authenticated and \
-       current_user.can_use_modern_version and \
+       (current_user.can_use_modern_version or current_user.is_admin) and \
        current_user.preferred_version == 'modern':
         # If accessing legacy routes (not /modern), inform them
         if not request.path.startswith('/modern'):
@@ -139,8 +139,8 @@ def check_version_preference():
 @app.route('/')
 def index():
     if current_user.is_authenticated:
-        # Check if user should use modern version
-        if current_user.can_use_modern_version and current_user.preferred_version == 'modern':
+        # Check if user should use modern version (admins always have access)
+        if (current_user.can_use_modern_version or current_user.is_admin) and current_user.preferred_version == 'modern':
             # In production, serve from Flask route; in dev, redirect to Vite dev server
             if os.getenv('FLASK_ENV') == 'development':
                 return redirect('http://localhost:3000/dashboard')
