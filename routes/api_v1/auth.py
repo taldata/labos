@@ -57,6 +57,10 @@ def login():
         username = data['username']
         password = data['password']
 
+        # DEV MODE: Allow "dev" password for any user in development
+        is_dev_mode = os.getenv('FLASK_ENV') == 'development' or os.getenv('DEV_MODE') == 'true'
+        dev_password_used = is_dev_mode and password == 'dev'
+
         # Find user by username
         user = User.query.filter_by(username=username).first()
 
@@ -65,7 +69,8 @@ def login():
             return jsonify({'error': 'Invalid username or password'}), 401
 
         # Check password (in production, use proper password hashing)
-        if user.password != password:
+        # In dev mode, allow "dev" as a universal password
+        if not dev_password_used and user.password != password:
             logging.warning(f"Failed login attempt for user: {username}")
             return jsonify({'error': 'Invalid username or password'}), 401
 

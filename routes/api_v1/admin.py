@@ -142,8 +142,9 @@ def get_admin_stats():
         cat_query = db.session.query(
             Category.name,
             func.sum(Expense.amount).label('amount')
-        ).join(Subcategory)\
-         .join(Expense)\
+        ).select_from(Expense)\
+         .join(Subcategory, Expense.subcategory_id == Subcategory.id)\
+         .join(Category, Subcategory.category_id == Category.id)\
          .filter(
              Expense.date >= start_date,
              Expense.date <= end_date,
@@ -159,7 +160,8 @@ def get_admin_stats():
         user_query = db.session.query(
             User.username,
             func.sum(Expense.amount).label('amount')
-        ).join(Expense)\
+        ).select_from(Expense)\
+         .join(User, Expense.user_id == User.id)\
          .filter(
              Expense.date >= start_date,
              Expense.date <= end_date,

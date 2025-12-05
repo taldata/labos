@@ -143,6 +143,22 @@
   font-size: 0.9rem;
 }
 
+.dev-hint {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  border: 1px solid #fbbf24;
+  border-radius: 0.5rem;
+  font-size: 0.85rem;
+  color: #92400e;
+}
+
+.dev-hint i {
+  color: #d97706;
+}
+
 .azure-login-btn {
   display: flex;
   align-items: center;

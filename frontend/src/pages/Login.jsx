@@ -135,6 +135,14 @@ function Login({ setUser }) {
                 Sign in with your username and password.
               </p>
 
+              {/* Dev Mode Hint */}
+              {import.meta.env.DEV && (
+                <div className="dev-hint">
+                  <i className="fas fa-code"></i>
+                  <span><strong>Dev Mode:</strong> Use password "dev" for any username</span>
+                </div>
+              )}
+
               <div className="form-group">
                 <label htmlFor="username">Username</label>
                 <input
