@@ -191,8 +191,8 @@
         </div>
     </nav>
 
-    <!-- Modern UI Banner for Eligible Users -->
-    {% if current_user.is_authenticated and current_user.can_use_modern_version %}
+    <!-- Modern UI Banner for Eligible Users (admins always have access) -->
+    {% if current_user.is_authenticated and (current_user.can_use_modern_version or current_user.is_admin) %}
     <div class="modern-ui-banner">
         <div class="modern-ui-banner-content">
             <div class="modern-ui-icon">🚀</div>
