@@ -1,0 +1,168 @@
+.input-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  width: 100%;
+}
+
+.input-wrapper-full-width {
+  width: 100%;
+}
+
+.input-label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #334155;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.input-required {
+  color: #ef4444;
+  font-weight: 600;
+}
+
+.input-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.input-field {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.5rem;
+  font-size: 1rem;
+  color: #0f172a;
+  background: white;
+  transition: all 0.2s ease;
+  font-family: inherit;
+}
+
+.input-field:hover {
+  border-color: #cbd5e1;
+}
+
+.input-field:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.input-field:disabled {
+  background: #f8fafc;
+  color: #94a3b8;
+  cursor: not-allowed;
+}
+
+.input-field::placeholder {
+  color: #94a3b8;
+}
+
+/* Input with icon */
+.input-with-icon-left {
+  padding-left: 2.75rem;
+}
+
+.input-with-icon-right {
+  padding-right: 2.75rem;
+}
+
+.input-icon {
+  position: absolute;
+  color: #64748b;
+  pointer-events: none;
+  font-size: 1rem;
+}
+
+.input-icon-left {
+  left: 1rem;
+}
+
+.input-icon-right {
+  right: 1rem;
+}
+
+/* Select field */
+.select-field {
+  appearance: none;
+  padding-right: 2.75rem;
+  cursor: pointer;
+  background-image: none;
+}
+
+.select-icon {
+  position: absolute;
+  right: 1rem;
+  color: #64748b;
+  pointer-events: none;
+  font-size: 0.75rem;
+}
+
+/* Textarea field */
+.textarea-field {
+  resize: vertical;
+  min-height: 100px;
+  line-height: 1.5;
+}
+
+/* Error state */
+.input-error {
+  border-color: #ef4444;
+}
+
+.input-error:focus {
+  border-color: #ef4444;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+}
+
+.input-error-message {
+  font-size: 0.875rem;
+  color: #ef4444;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.input-error-message::before {
+  content: '\f06a';
+  font-family: 'Font Awesome 6 Free';
+  font-weight: 900;
+}
+
+/* Helper text */
+.input-helper-text {
+  font-size: 0.875rem;
+  color: #64748b;
+}
+
+/* Full width */
+.input-full-width {
+  width: 100%;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .input-field {
+    padding: 0.625rem;
+    font-size: 0.9375rem;
+  }
+
+  .input-with-icon-left {
+    padding-left: 2.5rem;
+  }
+
+  .input-with-icon-right {
+    padding-right: 2.5rem;
+  }
+
+  .input-icon-left {
+    left: 0.875rem;
+  }
+
+  .input-icon-right {
+    right: 0.875rem;
+  }
+}

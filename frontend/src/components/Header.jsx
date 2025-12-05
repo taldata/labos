@@ -6,13 +6,21 @@ function Header({ user, setUser, currentPage = 'dashboard' }) {
   const navigate = useNavigate()
   const [pendingCount, setPendingCount] = useState(0)
   const [showUserMenu, setShowUserMenu] = useState(false)
+  const [showMobileMenu, setShowMobileMenu] = useState(false)
   const userMenuRef = useRef(null)
+  const mobileMenuRef = useRef(null)
 
   // Close menu when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (userMenuRef.current && !userMenuRef.current.contains(event.target)) {
         setShowUserMenu(false)
+      }
+      if (mobileMenuRef.current && !mobileMenuRef.current.contains(event.target)) {
+        const hamburgerButton = document.querySelector('.mobile-menu-toggle')
+        if (hamburgerButton && !hamburgerButton.contains(event.target)) {
+          setShowMobileMenu(false)
+        }
       }
     }
     document.addEventListener('mousedown', handleClickOutside)
@@ -76,9 +84,21 @@ function Header({ user, setUser, currentPage = 'dashboard' }) {
     return '👤 Employee'
   }
 
+  const handleNavigation = (path) => {
+    navigate(path)
+    setShowMobileMenu(false)
+  }
+
   return (
     <header className="app-header">
       <div className="header-left">
+        <button
+          className="mobile-menu-toggle"
+          onClick={() => setShowMobileMenu(!showMobileMenu)}
+          aria-label="Toggle menu"
+        >
+          <i className={`fas fa-${showMobileMenu ? 'times' : 'bars'}`}></i>
+        </button>
         <div className="logo-section">
           <h1 onClick={() => navigate('/dashboard')} className="logo-link">
             Labos
@@ -151,6 +171,80 @@ function Header({ user, setUser, currentPage = 'dashboard' }) {
           </nav>
         )}
       </div>
+
+      {/* Mobile Navigation Menu */}
+      {showMobileMenu && (
+        <nav className="mobile-nav" ref={mobileMenuRef}>
+          <button
+            className={`mobile-nav-link ${currentPage === 'dashboard' ? 'active' : ''}`}
+            onClick={() => handleNavigation('/dashboard')}
+          >
+            <i className="fas fa-home"></i> Dashboard
+          </button>
+          <button
+            className={`mobile-nav-link ${currentPage === 'my-expenses' ? 'active' : ''}`}
+            onClick={() => handleNavigation('/my-expenses')}
+          >
+            <i className="fas fa-list"></i> My Expenses
+          </button>
+          <button
+            className={`mobile-nav-link ${currentPage === 'reports' ? 'active' : ''}`}
+            onClick={() => handleNavigation('/reports')}
+          >
+            <i className="fas fa-chart-bar"></i> Reports
+          </button>
+          {(user?.is_manager || user?.is_admin) && (
+            <button
+              className={`mobile-nav-link ${currentPage === 'approvals' ? 'active' : ''}`}
+              onClick={() => handleNavigation('/approvals')}
+            >
+              <i className="fas fa-clipboard-check"></i> Approvals
+              {pendingCount > 0 && <span className="mobile-notification-badge">{pendingCount}</span>}
+            </button>
+          )}
+          {user?.is_admin && (
+            <>
+              <div className="mobile-nav-divider"></div>
+              <div className="mobile-nav-section-title">Admin</div>
+              <button
+                className={`mobile-nav-link ${currentPage === 'admin' ? 'active' : ''}`}
+                onClick={() => handleNavigation('/admin')}
+              >
+                <i className="fas fa-chart-line"></i> Analytics
+              </button>
+              <button
+                className={`mobile-nav-link ${currentPage === 'departments' ? 'active' : ''}`}
+                onClick={() => handleNavigation('/admin/departments')}
+              >
+                <i className="fas fa-sitemap"></i> Organization
+              </button>
+              <button
+                className={`mobile-nav-link ${currentPage === 'users' ? 'active' : ''}`}
+                onClick={() => handleNavigation('/admin/users')}
+              >
+                <i className="fas fa-users"></i> Users
+              </button>
+              <button
+                className={`mobile-nav-link ${currentPage === 'suppliers' ? 'active' : ''}`}
+                onClick={() => handleNavigation('/admin/suppliers')}
+              >
+                <i className="fas fa-building"></i> Suppliers
+              </button>
+              <button
+                className={`mobile-nav-link ${currentPage === 'credit-cards' ? 'active' : ''}`}
+                onClick={() => handleNavigation('/admin/credit-cards')}
+              >
+                <i className="fas fa-credit-card"></i> Cards
+              </button>
+            </>
+          )}
+          <div className="mobile-nav-divider"></div>
+          <button className="mobile-nav-link mobile-nav-cta" onClick={() => handleNavigation('/submit-expense')}>
+            <i className="fas fa-plus"></i> New Expense
+          </button>
+        </nav>
+      )}
+
       <div className="header-right">
         <button className="btn-primary" onClick={() => navigate('/submit-expense')}>
           <i className="fas fa-plus"></i> New Expense

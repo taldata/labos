@@ -1,0 +1,126 @@
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 3rem 2rem;
+  background: white;
+  border-radius: 0.75rem;
+}
+
+.empty-state-small {
+  padding: 2rem 1.5rem;
+}
+
+.empty-state-large {
+  padding: 4rem 2rem;
+}
+
+.empty-state-icon {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #f0f4ff 0%, #e0e7ff 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 1.5rem;
+}
+
+.empty-state-icon i {
+  font-size: 2.5rem;
+  color: #667eea;
+  opacity: 0.7;
+}
+
+.empty-state-small .empty-state-icon {
+  width: 60px;
+  height: 60px;
+}
+
+.empty-state-small .empty-state-icon i {
+  font-size: 2rem;
+}
+
+.empty-state-large .empty-state-icon {
+  width: 100px;
+  height: 100px;
+}
+
+.empty-state-large .empty-state-icon i {
+  font-size: 3rem;
+}
+
+.empty-state-illustration {
+  margin-bottom: 1.5rem;
+  max-width: 300px;
+}
+
+.empty-state-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #0f172a;
+  margin: 0 0 0.5rem 0;
+}
+
+.empty-state-small .empty-state-title {
+  font-size: 1.125rem;
+}
+
+.empty-state-large .empty-state-title {
+  font-size: 1.5rem;
+}
+
+.empty-state-description {
+  font-size: 0.9375rem;
+  color: #64748b;
+  margin: 0 0 1.5rem 0;
+  max-width: 500px;
+  line-height: 1.6;
+}
+
+.empty-state-small .empty-state-description {
+  font-size: 0.875rem;
+  margin-bottom: 1rem;
+}
+
+.empty-state-large .empty-state-description {
+  font-size: 1rem;
+  margin-bottom: 2rem;
+}
+
+.empty-state-actions {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .empty-state {
+    padding: 2rem 1rem;
+  }
+
+  .empty-state-large {
+    padding: 3rem 1.5rem;
+  }
+
+  .empty-state-icon {
+    width: 60px;
+    height: 60px;
+  }
+
+  .empty-state-icon i {
+    font-size: 2rem;
+  }
+
+  .empty-state-title {
+    font-size: 1.125rem;
+  }
+
+  .empty-state-description {
+    font-size: 0.875rem;
+  }
+}
