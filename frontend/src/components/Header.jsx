@@ -1,10 +1,23 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import './Header.css'
 
 function Header({ user, setUser, currentPage = 'dashboard' }) {
   const navigate = useNavigate()
   const [pendingCount, setPendingCount] = useState(0)
+  const [showUserMenu, setShowUserMenu] = useState(false)
+  const userMenuRef = useRef(null)
+
+  // Close menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (userMenuRef.current && !userMenuRef.current.contains(event.target)) {
+        setShowUserMenu(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
 
   useEffect(() => {
     if (user?.is_manager || user?.is_admin) {
@@ -139,22 +152,50 @@ function Header({ user, setUser, currentPage = 'dashboard' }) {
         )}
       </div>
       <div className="header-right">
-        <div className="user-info" onClick={() => navigate('/settings')} style={{ cursor: 'pointer' }}>
-          <span className="user-name">{user?.first_name} {user?.last_name}</span>
-          <span className="user-role">{getRoleBadge()}</span>
-        </div>
         <button className="btn-primary" onClick={() => navigate('/submit-expense')}>
-          <i className="fas fa-plus"></i> Submit Expense
+          <i className="fas fa-plus"></i> New Expense
         </button>
-        <button className="btn-icon-only" onClick={() => navigate('/settings')} title="Settings">
-          <i className="fas fa-cog"></i>
-        </button>
-        <button className="btn-secondary" onClick={switchToLegacy}>
-          <i className="fas fa-exchange-alt"></i> Legacy
-        </button>
-        <button className="btn-danger" onClick={handleLogout}>
-          <i className="fas fa-sign-out-alt"></i> Logout
-        </button>
+        
+        <div className="user-menu-container" ref={userMenuRef}>
+          <button 
+            className="user-menu-trigger"
+            onClick={() => setShowUserMenu(!showUserMenu)}
+          >
+            <div className="user-avatar">
+              {user?.first_name?.[0]}{user?.last_name?.[0]}
+            </div>
+            <div className="user-info-compact">
+              <span className="user-name">{user?.first_name} {user?.last_name}</span>
+              <span className="user-role">{getRoleBadge()}</span>
+            </div>
+            <i className={`fas fa-chevron-${showUserMenu ? 'up' : 'down'}`}></i>
+          </button>
+          
+          {showUserMenu && (
+            <div className="user-dropdown">
+              <div className="dropdown-header">
+                <div className="user-avatar large">
+                  {user?.first_name?.[0]}{user?.last_name?.[0]}
+                </div>
+                <div>
+                  <div className="dropdown-name">{user?.first_name} {user?.last_name}</div>
+                  <div className="dropdown-email">{user?.email}</div>
+                </div>
+              </div>
+              <div className="dropdown-divider"></div>
+              <button className="dropdown-item" onClick={() => { navigate('/settings'); setShowUserMenu(false); }}>
+                <i className="fas fa-user-cog"></i> Profile & Settings
+              </button>
+              <button className="dropdown-item" onClick={() => { switchToLegacy(); setShowUserMenu(false); }}>
+                <i className="fas fa-exchange-alt"></i> Switch to Legacy UI
+              </button>
+              <div className="dropdown-divider"></div>
+              <button className="dropdown-item danger" onClick={handleLogout}>
+                <i className="fas fa-sign-out-alt"></i> Logout
+              </button>
+            </div>
+          )}
+        </div>
       </div>
     </header>
   )

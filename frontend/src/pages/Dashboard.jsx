@@ -51,9 +51,9 @@ function Dashboard({ user, setUser }) {
       {/* Main Content */}
       <main className="dashboard-main">
         <div className="welcome-section">
-          <h2>Welcome to the Modern Expense Management System</h2>
+          <h2>👋 Welcome back, {user?.first_name || 'User'}!</h2>
           <p className="welcome-text">
-            This is the new modern interface powered by React. Features will be migrated gradually.
+            Here's your expense overview for this month
           </p>
         </div>
 
@@ -248,64 +248,29 @@ function Dashboard({ user, setUser }) {
           </>
         )}
 
-        {/* Feature Notice */}
-        <div className="feature-notice card">
-          <h3>🚧 Gradual Migration in Progress</h3>
-          <p>
-            We're building a modern, faster, and more intuitive interface. Features from the legacy
-            system will be migrated incrementally. For now, you can switch back to the legacy version
-            to access all features.
-          </p>
-
-          <div className="migration-status">
-            <h4>Migration Progress:</h4>
-            <div className="progress-container">
-              <div className="progress-bar">
-                <div className="progress-fill" style={{ width: '100%' }}></div>
+        {/* Tips Section */}
+        <div className="tips-section card">
+          <h3>💡 Quick Tips</h3>
+          <div className="tips-grid">
+            <div className="tip-item">
+              <i className="fas fa-keyboard"></i>
+              <div>
+                <strong>Keyboard Shortcuts</strong>
+                <p>Press <kbd>N</kbd> to quickly submit a new expense</p>
               </div>
-              <span className="progress-label">100% Complete</span>
             </div>
-
-            <div className="feature-list">
-              <div className="feature-item completed">
-                <span className="feature-icon">✅</span>
-                <span className="feature-name">Authentication & Security</span>
-                <span className="feature-badge">Live</span>
+            <div className="tip-item">
+              <i className="fas fa-camera"></i>
+              <div>
+                <strong>Receipt Upload</strong>
+                <p>Attach receipts to expenses for faster approval</p>
               </div>
-              <div className="feature-item completed">
-                <span className="feature-icon">✅</span>
-                <span className="feature-name">Dashboard & Statistics</span>
-                <span className="feature-badge">Live</span>
-              </div>
-              <div className="feature-item completed">
-                <span className="feature-icon">✅</span>
-                <span className="feature-name">Budget Tracking</span>
-                <span className="feature-badge">Live</span>
-              </div>
-              <div className="feature-item completed">
-                <span className="feature-icon">✅</span>
-                <span className="feature-name">Expense Submission</span>
-                <span className="feature-badge">Live</span>
-              </div>
-              <div className="feature-item completed">
-                <span className="feature-icon">✅</span>
-                <span className="feature-name">Expense History & Filtering</span>
-                <span className="feature-badge">Live</span>
-              </div>
-              <div className="feature-item completed">
-                <span className="feature-icon">✅</span>
-                <span className="feature-name">Manager Approval Workflow</span>
-                <span className="feature-badge">Live</span>
-              </div>
-              <div className="feature-item completed">
-                <span className="feature-icon">✅</span>
-                <span className="feature-name">Admin Panel & Reporting</span>
-                <span className="feature-badge">Live</span>
-              </div>
-              <div className="feature-item completed">
-                <span className="feature-icon">✅</span>
-                <span className="feature-name">User Management</span>
-                <span className="feature-badge">Live</span>
+            </div>
+            <div className="tip-item">
+              <i className="fas fa-bell"></i>
+              <div>
+                <strong>Stay Updated</strong>
+                <p>Check the Approvals tab for pending items</p>
               </div>
             </div>
           </div>

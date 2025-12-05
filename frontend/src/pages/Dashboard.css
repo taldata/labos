@@ -205,96 +205,66 @@
   margin: 0;
 }
 
-.feature-notice {
-  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
-  border: 1px solid #fbbf24;
+/* Tips Section */
+.tips-section {
+  background: linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%);
+  border: 1px solid #a5b4fc;
 }
 
-.feature-notice h3 {
-  margin-bottom: 1rem;
-  color: var(--text-primary);
+.tips-section h3 {
+  margin: 0 0 1rem 0;
+  color: #1e293b;
+  font-size: 1.1rem;
 }
 
-.feature-notice p {
-  margin-bottom: 1.5rem;
-  line-height: 1.6;
-}
-
-.migration-status h4 {
-  margin-bottom: 1rem;
-  color: var(--text-primary);
-}
-
-.progress-container {
-  margin-bottom: 2rem;
-}
-
-.progress-bar {
-  width: 100%;
-  height: 12px;
-  background: rgba(0, 0, 0, 0.1);
-  border-radius: 6px;
-  overflow: hidden;
-  margin-bottom: 0.5rem;
-}
-
-.progress-fill {
-  height: 100%;
-  background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
-  border-radius: 6px;
-  transition: width 0.5s ease;
-}
-
-.progress-label {
-  font-size: 0.9rem;
-  color: var(--text-secondary);
-  font-weight: 600;
-}
-
-.feature-list {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-}
-
-.feature-item {
-  display: flex;
-  align-items: center;
+.tips-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
   gap: 1rem;
-  padding: 0.75rem;
-  background: rgba(255, 255, 255, 0.5);
-  border-radius: 0.5rem;
-  border-left: 3px solid transparent;
+}
+
+.tip-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  padding: 1rem;
+  background: rgba(255, 255, 255, 0.6);
+  border-radius: 8px;
   transition: all 0.2s;
 }
 
-.feature-item:hover {
-  transform: translateX(4px);
-  background: rgba(255, 255, 255, 0.8);
+.tip-item:hover {
+  background: rgba(255, 255, 255, 0.9);
+  transform: translateY(-2px);
 }
 
-.feature-item.completed {
-  border-left-color: #10b981;
-}
-
-.feature-item.in-progress {
-  border-left-color: #f59e0b;
-}
-
-.feature-item.pending {
-  border-left-color: #9ca3af;
-  opacity: 0.7;
-}
-
-.feature-icon {
-  font-size: 1.25rem;
+.tip-item i {
+  font-size: 1.5rem;
+  color: #667eea;
   flex-shrink: 0;
+  margin-top: 2px;
 }
 
-.feature-name {
-  flex: 1;
-  font-weight: 500;
-  color: var(--text-primary);
+.tip-item strong {
+  display: block;
+  color: #1e293b;
+  margin-bottom: 0.25rem;
+}
+
+.tip-item p {
+  margin: 0;
+  font-size: 0.85rem;
+  color: #64748b;
+}
+
+.tip-item kbd {
+  display: inline-block;
+  padding: 0.15rem 0.4rem;
+  background: #1e293b;
+  color: white;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-family: monospace;
 }
 
 .feature-badge {

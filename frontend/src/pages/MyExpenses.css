@@ -1,62 +1,36 @@
 .my-expenses-container {
   min-height: 100vh;
-  background: var(--background);
+  background: #f5f7fa;
+}
+
+.page-content {
+  max-width: 1400px;
+  margin: 0 auto;
   padding: 2rem;
 }
 
-.page-header {
-  max-width: 1400px;
-  margin: 0 auto 2rem;
+.page-title-section {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 2rem;
+  margin-bottom: 1.5rem;
 }
 
-.page-header .header-left {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-}
-
-.page-header h1 {
-  font-size: 2rem;
-  color: var(--text-primary);
+.page-title-section h1 {
+  font-size: 1.75rem;
+  color: #1e293b;
   margin: 0;
 }
 
-.page-header .subtitle {
-  color: var(--text-secondary);
-  font-size: 0.95rem;
+.page-title-section .subtitle {
+  color: #64748b;
+  font-size: 0.9rem;
   margin: 0.25rem 0 0;
-}
-
-.back-button {
-  background: var(--surface);
-  color: var(--text-primary);
-  padding: 0.75rem;
-  border-radius: 0.5rem;
-  border: 1px solid var(--border-color);
-  font-size: 1.1rem;
-  width: 45px;
-  height: 45px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.2s;
-  cursor: pointer;
-}
-
-.back-button:hover {
-  background: var(--background);
-  border-color: var(--primary-color);
-  color: var(--primary-color);
 }
 
 /* Filters Section */
 .filters-section {
-  max-width: 1400px;
-  margin: 0 auto 2rem;
+  margin-bottom: 1.5rem;
 }
 
 .filters-header {

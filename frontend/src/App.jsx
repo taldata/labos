@@ -59,19 +59,19 @@ function App() {
         />
         <Route
           path="/submit-expense"
-          element={user ? <SubmitExpense user={user} /> : <Navigate to="/login" />}
+          element={user ? <SubmitExpense user={user} setUser={setUser} /> : <Navigate to="/login" />}
         />
         <Route
           path="/my-expenses"
-          element={user ? <MyExpenses user={user} /> : <Navigate to="/login" />}
+          element={user ? <MyExpenses user={user} setUser={setUser} /> : <Navigate to="/login" />}
         />
         <Route
           path="/approvals"
-          element={user ? <Approvals user={user} /> : <Navigate to="/login" />}
+          element={user ? <Approvals user={user} setUser={setUser} /> : <Navigate to="/login" />}
         />
         <Route
           path="/expenses/:id"
-          element={user ? <ExpenseDetails user={user} /> : <Navigate to="/login" />}
+          element={user ? <ExpenseDetails user={user} setUser={setUser} /> : <Navigate to="/login" />}
         />
         <Route
           path="/admin/departments"

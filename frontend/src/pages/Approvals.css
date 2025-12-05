@@ -1,7 +1,31 @@
 .approvals-container {
   min-height: 100vh;
-  background: var(--background);
+  background: #f5f7fa;
+}
+
+.approvals-content {
+  max-width: 1400px;
+  margin: 0 auto;
   padding: 2rem;
+}
+
+.page-title-section {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.page-title-section h1 {
+  font-size: 1.75rem;
+  color: #1e293b;
+  margin: 0;
+}
+
+.page-title-section .subtitle {
+  color: #64748b;
+  font-size: 0.9rem;
+  margin: 0.25rem 0 0;
 }
 
 .unauthorized-message {

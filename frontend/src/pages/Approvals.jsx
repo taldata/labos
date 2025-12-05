@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
+import Header from '../components/Header'
 import './Approvals.css'
 
-function Approvals({ user }) {
+function Approvals({ user, setUser }) {
   const navigate = useNavigate()
   const [expenses, setExpenses] = useState([])
   const [loading, setLoading] = useState(true)
@@ -145,18 +146,15 @@ function Approvals({ user }) {
 
   return (
     <div className="approvals-container">
-      {/* Header */}
-      <header className="page-header">
-        <div className="header-left">
-          <button className="back-button" onClick={() => navigate('/dashboard')}>
-            <i className="fas fa-arrow-left"></i>
-          </button>
+      <Header user={user} setUser={setUser} currentPage="approvals" />
+
+      <div className="approvals-content">
+        <div className="page-title-section">
           <div>
             <h1>Pending Approvals</h1>
             <p className="subtitle">{expenses.length} expenses awaiting approval</p>
           </div>
         </div>
-      </header>
 
       {/* Error Alert */}
       {error && (
@@ -346,6 +344,7 @@ function Approvals({ user }) {
           </div>
         </div>
       )}
+      </div>
     </div>
   )
 }

@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
+import Header from '../components/Header'
 import './MyExpenses.css'
 
-function MyExpenses({ user }) {
+function MyExpenses({ user, setUser }) {
   const navigate = useNavigate()
   const [expenses, setExpenses] = useState([])
   const [loading, setLoading] = useState(true)
@@ -131,23 +132,19 @@ function MyExpenses({ user }) {
 
   return (
     <div className="my-expenses-container">
-      {/* Header */}
-      <header className="page-header">
-        <div className="header-left">
-          <button className="back-button" onClick={() => navigate('/dashboard')}>
-            <i className="fas fa-arrow-left"></i>
-          </button>
+      <Header user={user} setUser={setUser} currentPage="my-expenses" />
+      
+      {/* Page Header */}
+      <div className="page-content">
+        <div className="page-title-section">
           <div>
             <h1>My Expenses</h1>
             <p className="subtitle">{totalExpenses} total expenses</p>
           </div>
-        </div>
-        <div className="header-right">
           <button className="btn-primary" onClick={() => navigate('/submit-expense')}>
             <i className="fas fa-plus"></i> New Expense
           </button>
         </div>
-      </header>
 
       {/* Filters */}
       <div className="filters-section card">
@@ -349,6 +346,7 @@ function MyExpenses({ user }) {
             )}
           </>
         )}
+        </div>
       </div>
     </div>
   )
