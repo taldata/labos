@@ -92,18 +92,27 @@ function Header({ user, setUser, currentPage = 'dashboard' }) {
                 >
                   <i className="fas fa-users"></i> Users
                 </button>
+                <button 
+                  className={`nav-link ${currentPage === 'suppliers' ? 'active' : ''}`}
+                  onClick={() => navigate('/admin/suppliers')}
+                >
+                  <i className="fas fa-building"></i> Suppliers
+                </button>
               </>
             )}
           </nav>
         )}
       </div>
       <div className="header-right">
-        <div className="user-info">
+        <div className="user-info" onClick={() => navigate('/settings')} style={{ cursor: 'pointer' }}>
           <span className="user-name">{user?.first_name} {user?.last_name}</span>
           <span className="user-role">{getRoleBadge()}</span>
         </div>
         <button className="btn-primary" onClick={() => navigate('/submit-expense')}>
           <i className="fas fa-plus"></i> Submit Expense
+        </button>
+        <button className="btn-icon-only" onClick={() => navigate('/settings')} title="Settings">
+          <i className="fas fa-cog"></i>
         </button>
         <button className="btn-secondary" onClick={switchToLegacy}>
           <i className="fas fa-exchange-alt"></i> Legacy

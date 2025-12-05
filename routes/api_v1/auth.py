@@ -286,3 +286,75 @@ def set_version_preference():
     except Exception as e:
         logging.error(f"Error setting version preference: {str(e)}")
         return jsonify({'error': 'Failed to update version preference'}), 500
+
+
+@api_v1.route('/auth/profile', methods=['PUT'])
+@login_required
+def update_profile():
+    """Update current user's profile"""
+    try:
+        data = request.get_json()
+        
+        if 'first_name' in data:
+            current_user.first_name = data['first_name']
+        if 'last_name' in data:
+            current_user.last_name = data['last_name']
+        if 'email' in data:
+            current_user.email = data['email']
+        
+        db.session.commit()
+        
+        logging.info(f"User {current_user.username} updated their profile")
+        return jsonify({
+            'message': 'Profile updated successfully',
+            'user': {
+                'id': current_user.id,
+                'username': current_user.username,
+                'email': current_user.email,
+                'first_name': current_user.first_name,
+                'last_name': current_user.last_name
+            }
+        }), 200
+        
+    except Exception as e:
+        db.session.rollback()
+        logging.error(f"Error updating profile: {str(e)}")
+        return jsonify({'error': 'Failed to update profile'}), 500
+
+
+@api_v1.route('/auth/change-password', methods=['POST'])
+@login_required
+def change_password():
+    """Change current user's password"""
+    try:
+        data = request.get_json()
+        current_password = data.get('current_password')
+        new_password = data.get('new_password')
+        confirm_password = data.get('confirm_password')
+        
+        if not all([current_password, new_password, confirm_password]):
+            return jsonify({'error': 'All password fields are required'}), 400
+        
+        # Verify current password
+        if current_user.password != current_password:
+            return jsonify({'error': 'Current password is incorrect'}), 400
+        
+        # Verify new password matches confirmation
+        if new_password != confirm_password:
+            return jsonify({'error': 'New passwords do not match'}), 400
+        
+        # Validate password length
+        if len(new_password) < 6:
+            return jsonify({'error': 'Password must be at least 6 characters'}), 400
+        
+        # Update password
+        current_user.password = new_password
+        db.session.commit()
+        
+        logging.info(f"User {current_user.username} changed their password")
+        return jsonify({'message': 'Password changed successfully'}), 200
+        
+    except Exception as e:
+        db.session.rollback()
+        logging.error(f"Error changing password: {str(e)}")
+        return jsonify({'error': 'Failed to change password'}), 500

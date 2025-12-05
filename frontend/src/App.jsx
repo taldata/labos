@@ -9,6 +9,8 @@ import ExpenseDetails from './pages/ExpenseDetails'
 import DepartmentManager from './pages/DepartmentManager'
 import AdminDashboard from './pages/AdminDashboard'
 import UserManagement from './pages/UserManagement'
+import Settings from './pages/Settings'
+import SupplierManagement from './pages/SupplierManagement'
 import './App.css'
 
 function App() {
@@ -80,6 +82,14 @@ function App() {
         <Route
           path="/admin"
           element={user ? <AdminDashboard user={user} setUser={setUser} /> : <Navigate to="/login" />}
+        />
+        <Route
+          path="/settings"
+          element={user ? <Settings user={user} setUser={setUser} /> : <Navigate to="/login" />}
+        />
+        <Route
+          path="/admin/suppliers"
+          element={user ? <SupplierManagement user={user} setUser={setUser} /> : <Navigate to="/login" />}
         />
         <Route path="/" element={<Navigate to={user ? "/dashboard" : "/login"} />} />
       </Routes>

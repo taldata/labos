@@ -142,6 +142,32 @@
   background: rgba(239, 68, 68, 0.3);
 }
 
+.btn-icon-only {
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  width: 38px;
+  height: 38px;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.btn-icon-only:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.btn-icon-only i {
+  font-size: 1rem;
+}
+
+.user-info:hover {
+  opacity: 0.85;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
   .app-header {

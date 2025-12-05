@@ -1,6 +1,6 @@
 from flask import jsonify, request
 from flask_login import login_required, current_user
-from models import Expense, Department, Category, Subcategory, User, db
+from models import Expense, Department, Category, Subcategory, User, Supplier, CreditCard, db
 from sqlalchemy import func, and_
 from datetime import datetime, timedelta
 from dateutil.relativedelta import relativedelta
@@ -445,4 +445,307 @@ def delete_user(user_id):
         db.session.rollback()
         logging.error(f"Error deleting user: {str(e)}", exc_info=True)
         return jsonify({'error': 'Failed to delete user'}), 500
+
+
+# ==================== SUPPLIER MANAGEMENT ====================
+
+@api_v1.route('/admin/suppliers', methods=['GET'])
+@login_required
+def get_all_suppliers():
+    """Get all suppliers"""
+    if not current_user.is_admin:
+        return jsonify({'error': 'Admin access required'}), 403
+    
+    try:
+        status = request.args.get('status', 'all')
+        search = request.args.get('search', '').lower()
+        
+        query = Supplier.query
+        
+        if status != 'all':
+            query = query.filter(Supplier.status == status)
+        
+        suppliers = query.order_by(Supplier.name).all()
+        
+        if search:
+            suppliers = [s for s in suppliers if 
+                        search in (s.name or '').lower() or
+                        search in (s.email or '').lower() or
+                        search in (s.tax_id or '').lower()]
+        
+        suppliers_data = [{
+            'id': s.id,
+            'name': s.name,
+            'email': s.email,
+            'phone': s.phone,
+            'address': s.address,
+            'tax_id': s.tax_id,
+            'bank_name': s.bank_name,
+            'bank_account_number': s.bank_account_number,
+            'bank_branch': s.bank_branch,
+            'bank_swift': s.bank_swift,
+            'notes': s.notes,
+            'status': s.status,
+            'expense_count': len(s.expenses)
+        } for s in suppliers]
+        
+        return jsonify({'suppliers': suppliers_data}), 200
+        
+    except Exception as e:
+        logging.error(f"Error getting suppliers: {str(e)}", exc_info=True)
+        return jsonify({'error': 'Failed to fetch suppliers'}), 500
+
+
+@api_v1.route('/admin/suppliers', methods=['POST'])
+@login_required
+def create_supplier():
+    """Create a new supplier"""
+    if not current_user.is_admin:
+        return jsonify({'error': 'Admin access required'}), 403
+    
+    try:
+        data = request.get_json()
+        
+        if not data.get('name'):
+            return jsonify({'error': 'Supplier name is required'}), 400
+        
+        supplier = Supplier(
+            name=data['name'],
+            email=data.get('email'),
+            phone=data.get('phone'),
+            address=data.get('address'),
+            tax_id=data.get('tax_id'),
+            bank_name=data.get('bank_name'),
+            bank_account_number=data.get('bank_account_number'),
+            bank_branch=data.get('bank_branch'),
+            bank_swift=data.get('bank_swift'),
+            notes=data.get('notes'),
+            status=data.get('status', 'active')
+        )
+        
+        db.session.add(supplier)
+        db.session.commit()
+        
+        logging.info(f"Supplier {supplier.name} created by {current_user.username}")
+        
+        return jsonify({
+            'message': 'Supplier created successfully',
+            'supplier': {'id': supplier.id, 'name': supplier.name}
+        }), 201
+        
+    except Exception as e:
+        db.session.rollback()
+        logging.error(f"Error creating supplier: {str(e)}", exc_info=True)
+        return jsonify({'error': 'Failed to create supplier'}), 500
+
+
+@api_v1.route('/admin/suppliers/<int:supplier_id>', methods=['PUT'])
+@login_required
+def update_supplier(supplier_id):
+    """Update a supplier"""
+    if not current_user.is_admin:
+        return jsonify({'error': 'Admin access required'}), 403
+    
+    try:
+        supplier = Supplier.query.get(supplier_id)
+        if not supplier:
+            return jsonify({'error': 'Supplier not found'}), 404
+        
+        data = request.get_json()
+        
+        if 'name' in data:
+            supplier.name = data['name']
+        if 'email' in data:
+            supplier.email = data['email']
+        if 'phone' in data:
+            supplier.phone = data['phone']
+        if 'address' in data:
+            supplier.address = data['address']
+        if 'tax_id' in data:
+            supplier.tax_id = data['tax_id']
+        if 'bank_name' in data:
+            supplier.bank_name = data['bank_name']
+        if 'bank_account_number' in data:
+            supplier.bank_account_number = data['bank_account_number']
+        if 'bank_branch' in data:
+            supplier.bank_branch = data['bank_branch']
+        if 'bank_swift' in data:
+            supplier.bank_swift = data['bank_swift']
+        if 'notes' in data:
+            supplier.notes = data['notes']
+        if 'status' in data:
+            supplier.status = data['status']
+        
+        db.session.commit()
+        
+        logging.info(f"Supplier {supplier.id} updated by {current_user.username}")
+        
+        return jsonify({'message': 'Supplier updated successfully'}), 200
+        
+    except Exception as e:
+        db.session.rollback()
+        logging.error(f"Error updating supplier: {str(e)}", exc_info=True)
+        return jsonify({'error': 'Failed to update supplier'}), 500
+
+
+@api_v1.route('/admin/suppliers/<int:supplier_id>', methods=['DELETE'])
+@login_required
+def delete_supplier(supplier_id):
+    """Delete a supplier"""
+    if not current_user.is_admin:
+        return jsonify({'error': 'Admin access required'}), 403
+    
+    try:
+        supplier = Supplier.query.get(supplier_id)
+        if not supplier:
+            return jsonify({'error': 'Supplier not found'}), 404
+        
+        if supplier.expenses:
+            supplier.status = 'inactive'
+            db.session.commit()
+            return jsonify({'message': 'Supplier deactivated (has associated expenses)'}), 200
+        
+        db.session.delete(supplier)
+        db.session.commit()
+        
+        logging.info(f"Supplier {supplier_id} deleted by {current_user.username}")
+        
+        return jsonify({'message': 'Supplier deleted successfully'}), 200
+        
+    except Exception as e:
+        db.session.rollback()
+        logging.error(f"Error deleting supplier: {str(e)}", exc_info=True)
+        return jsonify({'error': 'Failed to delete supplier'}), 500
+
+
+# ==================== CREDIT CARD MANAGEMENT ====================
+
+@api_v1.route('/admin/credit-cards', methods=['GET'])
+@login_required
+def get_all_credit_cards():
+    """Get all credit cards"""
+    if not current_user.is_admin:
+        return jsonify({'error': 'Admin access required'}), 403
+    
+    try:
+        status = request.args.get('status', 'all')
+        
+        query = CreditCard.query
+        
+        if status != 'all':
+            query = query.filter(CreditCard.status == status)
+        
+        cards = query.order_by(CreditCard.last_four_digits).all()
+        
+        cards_data = [{
+            'id': c.id,
+            'last_four_digits': c.last_four_digits,
+            'description': c.description,
+            'status': c.status,
+            'expense_count': len(c.expenses)
+        } for c in cards]
+        
+        return jsonify({'credit_cards': cards_data}), 200
+        
+    except Exception as e:
+        logging.error(f"Error getting credit cards: {str(e)}", exc_info=True)
+        return jsonify({'error': 'Failed to fetch credit cards'}), 500
+
+
+@api_v1.route('/admin/credit-cards', methods=['POST'])
+@login_required
+def create_credit_card():
+    """Create a new credit card"""
+    if not current_user.is_admin:
+        return jsonify({'error': 'Admin access required'}), 403
+    
+    try:
+        data = request.get_json()
+        
+        if not data.get('last_four_digits'):
+            return jsonify({'error': 'Last four digits are required'}), 400
+        
+        card = CreditCard(
+            last_four_digits=data['last_four_digits'],
+            description=data.get('description'),
+            status=data.get('status', 'active')
+        )
+        
+        db.session.add(card)
+        db.session.commit()
+        
+        logging.info(f"Credit card *{card.last_four_digits} created by {current_user.username}")
+        
+        return jsonify({
+            'message': 'Credit card created successfully',
+            'credit_card': {'id': card.id, 'last_four_digits': card.last_four_digits}
+        }), 201
+        
+    except Exception as e:
+        db.session.rollback()
+        logging.error(f"Error creating credit card: {str(e)}", exc_info=True)
+        return jsonify({'error': 'Failed to create credit card'}), 500
+
+
+@api_v1.route('/admin/credit-cards/<int:card_id>', methods=['PUT'])
+@login_required
+def update_credit_card(card_id):
+    """Update a credit card"""
+    if not current_user.is_admin:
+        return jsonify({'error': 'Admin access required'}), 403
+    
+    try:
+        card = CreditCard.query.get(card_id)
+        if not card:
+            return jsonify({'error': 'Credit card not found'}), 404
+        
+        data = request.get_json()
+        
+        if 'last_four_digits' in data:
+            card.last_four_digits = data['last_four_digits']
+        if 'description' in data:
+            card.description = data['description']
+        if 'status' in data:
+            card.status = data['status']
+        
+        db.session.commit()
+        
+        logging.info(f"Credit card {card.id} updated by {current_user.username}")
+        
+        return jsonify({'message': 'Credit card updated successfully'}), 200
+        
+    except Exception as e:
+        db.session.rollback()
+        logging.error(f"Error updating credit card: {str(e)}", exc_info=True)
+        return jsonify({'error': 'Failed to update credit card'}), 500
+
+
+@api_v1.route('/admin/credit-cards/<int:card_id>', methods=['DELETE'])
+@login_required
+def delete_credit_card(card_id):
+    """Delete a credit card"""
+    if not current_user.is_admin:
+        return jsonify({'error': 'Admin access required'}), 403
+    
+    try:
+        card = CreditCard.query.get(card_id)
+        if not card:
+            return jsonify({'error': 'Credit card not found'}), 404
+        
+        if card.expenses:
+            card.status = 'inactive'
+            db.session.commit()
+            return jsonify({'message': 'Credit card deactivated (has associated expenses)'}), 200
+        
+        db.session.delete(card)
+        db.session.commit()
+        
+        logging.info(f"Credit card {card_id} deleted by {current_user.username}")
+        
+        return jsonify({'message': 'Credit card deleted successfully'}), 200
+        
+    except Exception as e:
+        db.session.rollback()
+        logging.error(f"Error deleting credit card: {str(e)}", exc_info=True)
+        return jsonify({'error': 'Failed to delete credit card'}), 500
 
