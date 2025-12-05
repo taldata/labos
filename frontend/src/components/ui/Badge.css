@@ -1,0 +1,125 @@
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-weight: 500;
+  border-radius: 0.375rem;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+}
+
+/* Sizes */
+.badge-small {
+  padding: 0.125rem 0.5rem;
+  font-size: 0.75rem;
+}
+
+.badge-medium {
+  padding: 0.25rem 0.75rem;
+  font-size: 0.875rem;
+}
+
+.badge-large {
+  padding: 0.375rem 1rem;
+  font-size: 1rem;
+}
+
+/* Variants */
+.badge-default {
+  background: #f1f5f9;
+  color: #475569;
+}
+
+.badge-primary {
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+  color: #667eea;
+  border: 1px solid rgba(102, 126, 234, 0.2);
+}
+
+.badge-success {
+  background: rgba(16, 185, 129, 0.1);
+  color: #059669;
+  border: 1px solid rgba(16, 185, 129, 0.2);
+}
+
+.badge-warning {
+  background: rgba(245, 158, 11, 0.1);
+  color: #d97706;
+  border: 1px solid rgba(245, 158, 11, 0.2);
+}
+
+.badge-danger {
+  background: rgba(239, 68, 68, 0.1);
+  color: #dc2626;
+  border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+.badge-info {
+  background: rgba(37, 99, 235, 0.1);
+  color: #2563eb;
+  border: 1px solid rgba(37, 99, 235, 0.2);
+}
+
+/* Solid variants */
+.badge-primary-solid {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+}
+
+.badge-success-solid {
+  background: #10b981;
+  color: white;
+  border: none;
+}
+
+.badge-warning-solid {
+  background: #f59e0b;
+  color: white;
+  border: none;
+}
+
+.badge-danger-solid {
+  background: #ef4444;
+  color: white;
+  border: none;
+}
+
+.badge-info-solid {
+  background: #2563eb;
+  color: white;
+  border: none;
+}
+
+/* Rounded */
+.badge-rounded {
+  border-radius: 9999px;
+}
+
+/* Icon */
+.badge-icon {
+  font-size: 0.875em;
+}
+
+.badge-content {
+  line-height: 1;
+}
+
+/* Hover effect for clickable badges */
+.badge:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .badge-medium {
+    padding: 0.25rem 0.625rem;
+    font-size: 0.8125rem;
+  }
+
+  .badge-large {
+    padding: 0.375rem 0.875rem;
+    font-size: 0.9375rem;
+  }
+}
