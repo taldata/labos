@@ -143,6 +143,16 @@ function Dashboard({ user, setUser }) {
                   </div>
                 </button>
 
+                <button className="action-card card" onClick={() => navigate('/reports')}>
+                  <div className="action-icon">
+                    <i className="fas fa-chart-bar"></i>
+                  </div>
+                  <div className="action-content">
+                    <h4>Reports</h4>
+                    <p>Generate & export reports</p>
+                  </div>
+                </button>
+
                 {(user?.is_manager || user?.is_admin) && (
                   <button className="action-card card" onClick={() => navigate('/approvals')}>
                     <div className="action-icon">

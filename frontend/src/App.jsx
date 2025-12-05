@@ -12,6 +12,7 @@ import UserManagement from './pages/UserManagement'
 import Settings from './pages/Settings'
 import SupplierManagement from './pages/SupplierManagement'
 import CreditCardManagement from './pages/CreditCardManagement'
+import Reports from './pages/Reports'
 import './App.css'
 
 function App() {
@@ -95,6 +96,10 @@ function App() {
         <Route
           path="/admin/credit-cards"
           element={user ? <CreditCardManagement user={user} setUser={setUser} /> : <Navigate to="/login" />}
+        />
+        <Route
+          path="/reports"
+          element={user ? <Reports user={user} setUser={setUser} /> : <Navigate to="/login" />}
         />
         <Route path="/" element={<Navigate to={user ? "/dashboard" : "/login"} />} />
       </Routes>

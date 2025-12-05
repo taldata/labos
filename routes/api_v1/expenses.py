@@ -663,3 +663,170 @@ def submit_expense():
         db.session.rollback()
         logging.error(f"Error submitting expense: {str(e)}")
         return jsonify({'error': 'Failed to submit expense'}), 500
+
+
+@api_v1.route('/expenses/report', methods=['GET'])
+@login_required
+def get_expense_report():
+    """Get expense report with filters"""
+    try:
+        # Get filter parameters
+        start_date = request.args.get('start_date')
+        end_date = request.args.get('end_date')
+        status = request.args.get('status')
+        department_id = request.args.get('department_id')
+        category_id = request.args.get('category_id')
+        user_id = request.args.get('user_id')
+        
+        # Build query based on user role
+        if current_user.is_admin:
+            query = Expense.query
+        elif current_user.is_manager:
+            # Managers see their department's expenses
+            managed_dept_ids = [d.id for d in current_user.managed_departments]
+            if not managed_dept_ids:
+                managed_dept_ids = [current_user.department_id] if current_user.department_id else []
+            query = Expense.query.join(User, Expense.user_id == User.id)\
+                .filter(User.department_id.in_(managed_dept_ids))
+        else:
+            # Regular users see only their expenses
+            query = Expense.query.filter_by(user_id=current_user.id)
+        
+        # Apply filters
+        if start_date:
+            query = query.filter(Expense.date >= datetime.strptime(start_date, '%Y-%m-%d'))
+        if end_date:
+            query = query.filter(Expense.date <= datetime.strptime(end_date, '%Y-%m-%d'))
+        if status and status != 'all':
+            query = query.filter(Expense.status == status)
+        if department_id and current_user.is_admin:
+            query = query.join(User, Expense.user_id == User.id).filter(User.department_id == int(department_id))
+        if category_id:
+            query = query.join(Subcategory).filter(Subcategory.category_id == int(category_id))
+        if user_id and (current_user.is_admin or current_user.is_manager):
+            query = query.filter(Expense.user_id == int(user_id))
+        
+        expenses = query.order_by(Expense.date.desc()).all()
+        
+        # Build response
+        report_data = []
+        total_amount = 0
+        
+        for exp in expenses:
+            report_data.append({
+                'id': exp.id,
+                'date': exp.date.strftime('%Y-%m-%d') if exp.date else '',
+                'description': exp.description or '',
+                'amount': exp.amount,
+                'currency': exp.currency,
+                'status': exp.status,
+                'type': exp.type,
+                'category': exp.subcategory.category.name if exp.subcategory and exp.subcategory.category else '',
+                'subcategory': exp.subcategory.name if exp.subcategory else '',
+                'supplier': exp.supplier.name if exp.supplier else '',
+                'user': f"{exp.submitter.first_name} {exp.submitter.last_name}" if exp.submitter else '',
+                'department': exp.submitter.home_department.name if exp.submitter and exp.submitter.home_department else '',
+                'payment_method': exp.payment_method or '',
+                'reason': exp.reason or ''
+            })
+            if exp.status == 'approved':
+                total_amount += exp.amount
+        
+        return jsonify({
+            'expenses': report_data,
+            'total_count': len(report_data),
+            'total_approved_amount': round(total_amount, 2),
+            'filters_applied': {
+                'start_date': start_date,
+                'end_date': end_date,
+                'status': status,
+                'department_id': department_id,
+                'category_id': category_id
+            }
+        }), 200
+        
+    except Exception as e:
+        logging.error(f"Error generating expense report: {str(e)}", exc_info=True)
+        return jsonify({'error': 'Failed to generate report'}), 500
+
+
+@api_v1.route('/expenses/export', methods=['GET'])
+@login_required
+def export_expenses():
+    """Export expenses as CSV"""
+    from flask import Response
+    import csv
+    from io import StringIO
+    
+    try:
+        # Get filter parameters (same as report)
+        start_date = request.args.get('start_date')
+        end_date = request.args.get('end_date')
+        status = request.args.get('status')
+        department_id = request.args.get('department_id')
+        
+        # Build query based on user role
+        if current_user.is_admin:
+            query = Expense.query
+        elif current_user.is_manager:
+            managed_dept_ids = [d.id for d in current_user.managed_departments]
+            if not managed_dept_ids:
+                managed_dept_ids = [current_user.department_id] if current_user.department_id else []
+            query = Expense.query.join(User, Expense.user_id == User.id)\
+                .filter(User.department_id.in_(managed_dept_ids))
+        else:
+            query = Expense.query.filter_by(user_id=current_user.id)
+        
+        # Apply filters
+        if start_date:
+            query = query.filter(Expense.date >= datetime.strptime(start_date, '%Y-%m-%d'))
+        if end_date:
+            query = query.filter(Expense.date <= datetime.strptime(end_date, '%Y-%m-%d'))
+        if status and status != 'all':
+            query = query.filter(Expense.status == status)
+        if department_id and current_user.is_admin:
+            query = query.join(User, Expense.user_id == User.id).filter(User.department_id == int(department_id))
+        
+        expenses = query.order_by(Expense.date.desc()).all()
+        
+        # Create CSV
+        output = StringIO()
+        writer = csv.writer(output)
+        
+        # Header
+        writer.writerow([
+            'ID', 'Date', 'Description', 'Amount', 'Currency', 'Status', 'Type',
+            'Category', 'Subcategory', 'Supplier', 'User', 'Department', 
+            'Payment Method', 'Reason'
+        ])
+        
+        # Data rows
+        for exp in expenses:
+            writer.writerow([
+                exp.id,
+                exp.date.strftime('%Y-%m-%d') if exp.date else '',
+                exp.description or '',
+                exp.amount,
+                exp.currency,
+                exp.status,
+                exp.type,
+                exp.subcategory.category.name if exp.subcategory and exp.subcategory.category else '',
+                exp.subcategory.name if exp.subcategory else '',
+                exp.supplier.name if exp.supplier else '',
+                f"{exp.submitter.first_name} {exp.submitter.last_name}" if exp.submitter else '',
+                exp.submitter.home_department.name if exp.submitter and exp.submitter.home_department else '',
+                exp.payment_method or '',
+                exp.reason or ''
+            ])
+        
+        output.seek(0)
+        
+        return Response(
+            output.getvalue(),
+            mimetype='text/csv',
+            headers={'Content-Disposition': f'attachment; filename=expenses_{datetime.now().strftime("%Y%m%d")}.csv'}
+        )
+        
+    except Exception as e:
+        logging.error(f"Error exporting expenses: {str(e)}", exc_info=True)
+        return jsonify({'error': 'Failed to export expenses'}), 500
