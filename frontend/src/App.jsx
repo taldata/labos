@@ -8,6 +8,7 @@ import Approvals from './pages/Approvals'
 import ExpenseDetails from './pages/ExpenseDetails'
 import DepartmentManager from './pages/DepartmentManager'
 import AdminDashboard from './pages/AdminDashboard'
+import UserManagement from './pages/UserManagement'
 import './App.css'
 
 function App() {
@@ -70,7 +71,11 @@ function App() {
         />
         <Route
           path="/admin/departments"
-          element={user ? <DepartmentManager user={user} /> : <Navigate to="/login" />}
+          element={user ? <DepartmentManager user={user} setUser={setUser} /> : <Navigate to="/login" />}
+        />
+        <Route
+          path="/admin/users"
+          element={user ? <UserManagement user={user} setUser={setUser} /> : <Navigate to="/login" />}
         />
         <Route
           path="/admin"

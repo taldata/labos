@@ -73,12 +73,26 @@ function Header({ user, setUser, currentPage = 'dashboard' }) {
               </button>
             )}
             {user?.is_admin && (
-              <button 
-                className={`nav-link ${currentPage === 'admin' ? 'active' : ''}`}
-                onClick={() => navigate('/admin')}
-              >
-                <i className="fas fa-chart-line"></i> Analytics
-              </button>
+              <>
+                <button 
+                  className={`nav-link ${currentPage === 'admin' ? 'active' : ''}`}
+                  onClick={() => navigate('/admin')}
+                >
+                  <i className="fas fa-chart-line"></i> Analytics
+                </button>
+                <button 
+                  className={`nav-link ${currentPage === 'departments' ? 'active' : ''}`}
+                  onClick={() => navigate('/admin/departments')}
+                >
+                  <i className="fas fa-sitemap"></i> Organization
+                </button>
+                <button 
+                  className={`nav-link ${currentPage === 'users' ? 'active' : ''}`}
+                  onClick={() => navigate('/admin/users')}
+                >
+                  <i className="fas fa-users"></i> Users
+                </button>
+              </>
             )}
           </nav>
         )}

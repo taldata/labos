@@ -1,12 +1,15 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import Header from '../components/Header';
 import './DepartmentManager.css';
 
 const api = axios.create({
     withCredentials: true
 });
 
-const DepartmentManager = () => {
+const DepartmentManager = ({ user, setUser }) => {
+    const navigate = useNavigate();
     const [structure, setStructure] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -33,6 +36,10 @@ const DepartmentManager = () => {
     const [searchQuery, setSearchQuery] = useState('');
 
     useEffect(() => {
+        if (!user?.is_admin) {
+            navigate('/dashboard');
+            return;
+        }
         fetchStructure();
     }, []);
 
@@ -174,11 +181,20 @@ const DepartmentManager = () => {
         return Math.min((spent / total) * 100, 100);
     };
 
-    if (loading) return <div className="loading-container"><div className="spinner"></div><p>Loading organization structure...</p></div>;
-    if (error) return <div className="error-message">❌ {error}</div>;
+    if (!user?.is_admin) {
+        return null;
+    }
 
     return (
-        <div className="department-manager">
+        <div className="department-manager-container">
+            <Header user={user} setUser={setUser} currentPage="admin" />
+            
+            {loading ? (
+                <div className="loading-container"><div className="spinner"></div><p>Loading organization structure...</p></div>
+            ) : error ? (
+                <div className="error-message">❌ {error}</div>
+            ) : (
+            <main className="department-manager">
             <div className="manager-header">
                 <h1>Organization Structure</h1>
                 <button className="btn-primary" onClick={() => openModal('department', 'create')}>
@@ -352,6 +368,8 @@ const DepartmentManager = () => {
                         </form>
                     </div>
                 </div>
+            )}
+            </main>
             )}
         </div>
     );
