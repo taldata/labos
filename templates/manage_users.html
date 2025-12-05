@@ -127,7 +127,7 @@
                                             <i class="fas fa-edit"></i>
                                         </button>
                                         {% endif %}
-                                        {% if user.id != current_user.id and not user.is_admin %}
+                                        {% if user.id != current_user.id %}
                                         <button onclick="toggleModernAccess({{ user.id }}, event)"
                                             class="action-btn {% if user.can_use_modern_version %}modern-enabled{% else %}modern-disabled{% endif %}"
                                             id="modern-btn-{{ user.id }}"
