@@ -184,6 +184,24 @@ function Dashboard({ user, setUser }) {
                         <p>View expense reports</p>
                       </div>
                     </button>
+                    <button className="action-card card" onClick={() => navigate('/admin/suppliers')}>
+                      <div className="action-icon">
+                        <i className="fas fa-building"></i>
+                      </div>
+                      <div className="action-content">
+                        <h4>Suppliers</h4>
+                        <p>Manage vendors</p>
+                      </div>
+                    </button>
+                    <button className="action-card card" onClick={() => navigate('/admin/credit-cards')}>
+                      <div className="action-icon">
+                        <i className="fas fa-credit-card"></i>
+                      </div>
+                      <div className="action-content">
+                        <h4>Credit Cards</h4>
+                        <p>Manage company cards</p>
+                      </div>
+                    </button>
                   </>
                 )}
               </div>

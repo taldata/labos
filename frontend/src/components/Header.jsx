@@ -1,8 +1,30 @@
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import './Header.css'
 
 function Header({ user, setUser, currentPage = 'dashboard' }) {
   const navigate = useNavigate()
+  const [pendingCount, setPendingCount] = useState(0)
+
+  useEffect(() => {
+    if (user?.is_manager || user?.is_admin) {
+      fetchPendingCount()
+    }
+  }, [user])
+
+  const fetchPendingCount = async () => {
+    try {
+      const res = await fetch('/api/v1/expenses/pending-count', {
+        credentials: 'include'
+      })
+      if (res.ok) {
+        const data = await res.json()
+        setPendingCount(data.count || 0)
+      }
+    } catch (err) {
+      console.error('Failed to fetch pending count')
+    }
+  }
 
   const handleLogout = async () => {
     try {
@@ -70,6 +92,7 @@ function Header({ user, setUser, currentPage = 'dashboard' }) {
                 onClick={() => navigate('/approvals')}
               >
                 <i className="fas fa-clipboard-check"></i> Approvals
+                {pendingCount > 0 && <span className="notification-badge">{pendingCount}</span>}
               </button>
             )}
             {user?.is_admin && (
@@ -97,6 +120,12 @@ function Header({ user, setUser, currentPage = 'dashboard' }) {
                   onClick={() => navigate('/admin/suppliers')}
                 >
                   <i className="fas fa-building"></i> Suppliers
+                </button>
+                <button 
+                  className={`nav-link ${currentPage === 'credit-cards' ? 'active' : ''}`}
+                  onClick={() => navigate('/admin/credit-cards')}
+                >
+                  <i className="fas fa-credit-card"></i> Cards
                 </button>
               </>
             )}

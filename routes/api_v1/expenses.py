@@ -102,6 +102,41 @@ def get_recent_expenses():
         logging.error(f"Error getting recent expenses: {str(e)}")
         return jsonify({'error': 'Failed to fetch recent expenses'}), 500
 
+
+@api_v1.route('/expenses/pending-count', methods=['GET'])
+@login_required
+def get_pending_count():
+    """Get count of expenses pending approval (for managers)"""
+    try:
+        if not current_user.is_manager and not current_user.is_admin:
+            return jsonify({'count': 0}), 200
+
+        # Get expenses from managed departments
+        if current_user.is_admin:
+            # Admins see all pending expenses
+            count = Expense.query.filter_by(status='pending').count()
+        else:
+            # Managers see expenses from their managed departments
+            managed_dept_ids = [d.id for d in current_user.managed_departments]
+            if not managed_dept_ids:
+                managed_dept_ids = [current_user.department_id] if current_user.department_id else []
+
+            if managed_dept_ids:
+                count = Expense.query.join(User, Expense.user_id == User.id)\
+                    .filter(
+                        Expense.status == 'pending',
+                        User.department_id.in_(managed_dept_ids)
+                    ).count()
+            else:
+                count = 0
+
+        return jsonify({'count': count}), 200
+
+    except Exception as e:
+        logging.error(f"Error getting pending count: {str(e)}")
+        return jsonify({'count': 0}), 200
+
+
 @api_v1.route('/expenses/pending-approval', methods=['GET'])
 @login_required
 def get_pending_approvals():

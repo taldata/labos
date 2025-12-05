@@ -11,6 +11,7 @@ import AdminDashboard from './pages/AdminDashboard'
 import UserManagement from './pages/UserManagement'
 import Settings from './pages/Settings'
 import SupplierManagement from './pages/SupplierManagement'
+import CreditCardManagement from './pages/CreditCardManagement'
 import './App.css'
 
 function App() {
@@ -90,6 +91,10 @@ function App() {
         <Route
           path="/admin/suppliers"
           element={user ? <SupplierManagement user={user} setUser={setUser} /> : <Navigate to="/login" />}
+        />
+        <Route
+          path="/admin/credit-cards"
+          element={user ? <CreditCardManagement user={user} setUser={setUser} /> : <Navigate to="/login" />}
         />
         <Route path="/" element={<Navigate to={user ? "/dashboard" : "/login"} />} />
       </Routes>
