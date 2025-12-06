@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Header from '../components/Header'
+import { Card, Button, Input, Select, Badge, Skeleton } from '../components/ui'
 import './Reports.css'
 
 function Reports({ user, setUser }) {
@@ -130,14 +131,14 @@ function Reports({ user, setUser }) {
     setFilters(prev => ({ ...prev, [name]: value }))
   }
 
-  const getStatusBadge = (status) => {
-    const classes = {
-      pending: 'status-pending',
-      approved: 'status-approved',
-      rejected: 'status-rejected',
-      paid: 'status-paid'
+  const getStatusVariant = (status) => {
+    const variants = {
+      pending: 'warning',
+      approved: 'success',
+      rejected: 'danger',
+      paid: 'info'
     }
-    return <span className={`status-badge ${classes[status] || ''}`}>{status}</span>
+    return variants[status] || 'default'
   }
 
   return (
@@ -153,168 +154,209 @@ function Reports({ user, setUser }) {
         </div>
 
         {/* Filters Section */}
-        <div className="filters-card card">
-          <h3><i className="fas fa-filter"></i> Filters</h3>
-          
-          {/* Quick Date Presets */}
-          <div className="date-presets">
-            <span className="preset-label">Quick select:</span>
-            <button className="preset-btn" onClick={() => setDatePreset('this_month')}>This Month</button>
-            <button className="preset-btn" onClick={() => setDatePreset('last_month')}>Last Month</button>
-            <button className="preset-btn" onClick={() => setDatePreset('this_quarter')}>This Quarter</button>
-            <button className="preset-btn" onClick={() => setDatePreset('this_year')}>This Year</button>
-            <button className="preset-btn" onClick={() => setDatePreset('last_year')}>Last Year</button>
-          </div>
+        <Card className="filters-card">
+          <Card.Header>
+            <i className="fas fa-filter"></i> Filters
+          </Card.Header>
+          <Card.Body>
+            {/* Quick Date Presets */}
+            <div className="date-presets">
+              <span className="preset-label">Quick select:</span>
+              <Button variant="ghost" size="small" onClick={() => setDatePreset('this_month')}>
+                This Month
+              </Button>
+              <Button variant="ghost" size="small" onClick={() => setDatePreset('last_month')}>
+                Last Month
+              </Button>
+              <Button variant="ghost" size="small" onClick={() => setDatePreset('this_quarter')}>
+                This Quarter
+              </Button>
+              <Button variant="ghost" size="small" onClick={() => setDatePreset('this_year')}>
+                This Year
+              </Button>
+              <Button variant="ghost" size="small" onClick={() => setDatePreset('last_year')}>
+                Last Year
+              </Button>
+            </div>
 
-          <div className="filters-grid">
-            <div className="filter-group">
-              <label>Start Date</label>
-              <input
+            <div className="filters-grid">
+              <Input
                 type="date"
+                label="Start Date"
                 name="start_date"
                 value={filters.start_date}
                 onChange={handleFilterChange}
               />
-            </div>
-            <div className="filter-group">
-              <label>End Date</label>
-              <input
+              <Input
                 type="date"
+                label="End Date"
                 name="end_date"
                 value={filters.end_date}
                 onChange={handleFilterChange}
               />
-            </div>
-            <div className="filter-group">
-              <label>Status</label>
-              <select name="status" value={filters.status} onChange={handleFilterChange}>
+              <Select
+                label="Status"
+                name="status"
+                value={filters.status}
+                onChange={handleFilterChange}
+              >
                 <option value="all">All Status</option>
                 <option value="pending">Pending</option>
                 <option value="approved">Approved</option>
                 <option value="rejected">Rejected</option>
                 <option value="paid">Paid</option>
-              </select>
-            </div>
-            {user?.is_admin && (
-              <div className="filter-group">
-                <label>Department</label>
-                <select name="department_id" value={filters.department_id} onChange={handleFilterChange}>
+              </Select>
+              {user?.is_admin && (
+                <Select
+                  label="Department"
+                  name="department_id"
+                  value={filters.department_id}
+                  onChange={handleFilterChange}
+                >
                   <option value="">All Departments</option>
                   {departments.map(dept => (
                     <option key={dept.id} value={dept.id}>{dept.name}</option>
                   ))}
-                </select>
-              </div>
-            )}
-            <div className="filter-group">
-              <label>Category</label>
-              <select name="category_id" value={filters.category_id} onChange={handleFilterChange}>
+                </Select>
+              )}
+              <Select
+                label="Category"
+                name="category_id"
+                value={filters.category_id}
+                onChange={handleFilterChange}
+              >
                 <option value="">All Categories</option>
                 {categories.map(cat => (
                   <option key={cat.id} value={cat.id}>{cat.name}</option>
                 ))}
-              </select>
+              </Select>
             </div>
-          </div>
 
-          <div className="filter-actions">
-            <button className="btn-primary" onClick={fetchReport} disabled={loading}>
-              <i className="fas fa-search"></i> {loading ? 'Loading...' : 'Generate Report'}
-            </button>
-            <button className="btn-secondary" onClick={() => setFilters({
-              start_date: '', end_date: '', status: 'all', department_id: '', category_id: ''
-            })}>
-              <i className="fas fa-times"></i> Clear Filters
-            </button>
-          </div>
-        </div>
+            <div className="filter-actions">
+              <Button
+                variant="primary"
+                icon="fas fa-search"
+                onClick={fetchReport}
+                disabled={loading}
+                loading={loading}
+              >
+                Generate Report
+              </Button>
+              <Button
+                variant="secondary"
+                icon="fas fa-times"
+                onClick={() => setFilters({
+                  start_date: '', end_date: '', status: 'all', department_id: '', category_id: ''
+                })}
+              >
+                Clear Filters
+              </Button>
+            </div>
+          </Card.Body>
+        </Card>
 
         {/* Summary Cards */}
         {expenses.length > 0 && (
           <div className="summary-cards">
-            <div className="summary-card card">
-              <div className="summary-icon"><i className="fas fa-receipt"></i></div>
-              <div className="summary-content">
-                <span className="summary-value">{summary.total_count}</span>
-                <span className="summary-label">Total Expenses</span>
-              </div>
-            </div>
-            <div className="summary-card card">
-              <div className="summary-icon approved"><i className="fas fa-check-circle"></i></div>
-              <div className="summary-content">
-                <span className="summary-value">₪{summary.total_approved_amount.toLocaleString()}</span>
-                <span className="summary-label">Approved Amount</span>
-              </div>
-            </div>
-            <div className="summary-card card">
-              <div className="summary-icon export"><i className="fas fa-download"></i></div>
-              <div className="summary-content">
-                <button className="btn-export" onClick={handleExport}>
-                  Export to CSV
-                </button>
-                <span className="summary-label">Download Report</span>
-              </div>
-            </div>
+            <Card className="summary-card">
+              <Card.Body>
+                <div className="summary-icon"><i className="fas fa-receipt"></i></div>
+                <div className="summary-content">
+                  <span className="summary-value">{summary.total_count}</span>
+                  <span className="summary-label">Total Expenses</span>
+                </div>
+              </Card.Body>
+            </Card>
+            <Card className="summary-card">
+              <Card.Body>
+                <div className="summary-icon approved"><i className="fas fa-check-circle"></i></div>
+                <div className="summary-content">
+                  <span className="summary-value">₪{summary.total_approved_amount.toLocaleString()}</span>
+                  <span className="summary-label">Approved Amount</span>
+                </div>
+              </Card.Body>
+            </Card>
+            <Card className="summary-card">
+              <Card.Body>
+                <div className="summary-icon export"><i className="fas fa-download"></i></div>
+                <div className="summary-content">
+                  <Button variant="primary" size="small" icon="fas fa-download" onClick={handleExport}>
+                    Export to CSV
+                  </Button>
+                  <span className="summary-label">Download Report</span>
+                </div>
+              </Card.Body>
+            </Card>
           </div>
         )}
 
         {/* Results Table */}
         {loading ? (
-          <div className="loading-container">
-            <div className="spinner"></div>
-            <p>Generating report...</p>
-          </div>
+          <Card>
+            <Card.Body>
+              <div className="loading-container">
+                <Skeleton variant="title" width="40%" />
+                <Skeleton variant="text" count={8} />
+              </div>
+            </Card.Body>
+          </Card>
         ) : expenses.length > 0 ? (
-          <div className="results-card card">
-            <div className="results-header">
-              <h3>Results ({expenses.length} expenses)</h3>
-            </div>
-            <div className="table-wrapper">
-              <table className="report-table">
-                <thead>
-                  <tr>
-                    <th>Date</th>
-                    <th>Description</th>
-                    <th>Category</th>
-                    <th>User</th>
-                    <th>Amount</th>
-                    <th>Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {expenses.map(expense => (
-                    <tr key={expense.id} onClick={() => navigate(`/expenses/${expense.id}`)}>
-                      <td>{expense.date}</td>
-                      <td className="desc-cell">
-                        <span className="desc-text">{expense.description || '-'}</span>
-                        {expense.supplier && <span className="supplier-text">{expense.supplier}</span>}
-                      </td>
-                      <td>
-                        <span className="category-text">{expense.category}</span>
-                        {expense.subcategory && <span className="subcategory-text">{expense.subcategory}</span>}
-                      </td>
-                      <td>
-                        <span className="user-text">{expense.user}</span>
-                        {expense.department && <span className="dept-text">{expense.department}</span>}
-                      </td>
-                      <td className="amount-cell">
-                        <span className={expense.status === 'approved' ? 'amount-approved' : ''}>
-                          {expense.currency === 'USD' ? '$' : '₪'}{expense.amount.toLocaleString()}
-                        </span>
-                      </td>
-                      <td>{getStatusBadge(expense.status)}</td>
+          <Card className="results-card">
+            <Card.Header>
+              Results ({expenses.length} expenses)
+            </Card.Header>
+            <Card.Body>
+              <div className="table-wrapper">
+                <table className="report-table">
+                  <thead>
+                    <tr>
+                      <th>Date</th>
+                      <th>Description</th>
+                      <th>Category</th>
+                      <th>User</th>
+                      <th>Amount</th>
+                      <th>Status</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
+                  </thead>
+                  <tbody>
+                    {expenses.map(expense => (
+                      <tr key={expense.id} onClick={() => navigate(`/expenses/${expense.id}`)}>
+                        <td>{expense.date}</td>
+                        <td className="desc-cell">
+                          <span className="desc-text">{expense.description || '-'}</span>
+                          {expense.supplier && <span className="supplier-text">{expense.supplier}</span>}
+                        </td>
+                        <td>
+                          <span className="category-text">{expense.category}</span>
+                          {expense.subcategory && <span className="subcategory-text">{expense.subcategory}</span>}
+                        </td>
+                        <td>
+                          <span className="user-text">{expense.user}</span>
+                          {expense.department && <span className="dept-text">{expense.department}</span>}
+                        </td>
+                        <td className="amount-cell">
+                          <span className={expense.status === 'approved' ? 'amount-approved' : ''}>
+                            {expense.currency === 'USD' ? '$' : '₪'}{expense.amount.toLocaleString()}
+                          </span>
+                        </td>
+                        <td>
+                          <Badge variant={getStatusVariant(expense.status)}>{expense.status}</Badge>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </Card.Body>
+          </Card>
         ) : (
-          <div className="empty-state card">
-            <i className="fas fa-chart-bar"></i>
-            <h3>No data to display</h3>
-            <p>Select filters and click "Generate Report" to view expenses</p>
-          </div>
+          <Card className="empty-state">
+            <Card.Body>
+              <i className="fas fa-chart-bar"></i>
+              <h3>No data to display</h3>
+              <p>Select filters and click "Generate Report" to view expenses</p>
+            </Card.Body>
+          </Card>
         )}
       </main>
     </div>
