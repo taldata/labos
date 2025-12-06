@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Fragment } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Header from '../components/Header'
 import { Card, Button, Input, Select, Textarea, Modal, Badge, Skeleton, useToast } from '../components/ui'
@@ -208,113 +208,148 @@ function SupplierManagement({ user, setUser }) {
           </Card.Body>
         </Card>
 
-        {/* Suppliers List */}
+        {/* Suppliers Table */}
         {loading ? (
           <div className="loading-container">
             <Skeleton variant="title" width="40%" />
             <Skeleton variant="text" count={6} />
           </div>
         ) : (
-          <div className="suppliers-grid">
-            {suppliers.length === 0 ? (
-              <Card className="empty-state">
-                <Card.Body>
-                  <i className="fas fa-building"></i>
-                  <h3>No suppliers found</h3>
-                  <p>Add your first supplier to get started</p>
-                </Card.Body>
-              </Card>
-            ) : (
-              suppliers.map(supplier => (
-                <Card key={supplier.id} className={`supplier-card ${supplier.status === 'inactive' ? 'inactive' : ''}`}>
-                  <div className="supplier-header">
-                    <div className="supplier-avatar">
-                      {supplier.name[0].toUpperCase()}
-                    </div>
-                    <div className="supplier-title">
-                      <h3>{supplier.name}</h3>
-                      <Badge variant={supplier.status === 'active' ? 'success' : 'danger'} rounded>
-                        {supplier.status.charAt(0).toUpperCase() + supplier.status.slice(1)}
-                      </Badge>
-                    </div>
-                    <div className="supplier-actions">
-                      <Button variant="ghost" size="small" icon="fas fa-edit" onClick={() => openModal('edit', supplier)} title="Edit" />
-                      <Button variant="ghost" size="small" icon="fas fa-trash" onClick={() => handleDelete(supplier)} title="Delete" className="btn-delete" />
-                    </div>
-                  </div>
-
-                  <div className="supplier-info">
-                    {supplier.email && (
-                      <div className="info-row">
-                        <i className="fas fa-envelope"></i>
-                        <span>{supplier.email}</span>
-                      </div>
-                    )}
-                    {supplier.phone && (
-                      <div className="info-row">
-                        <i className="fas fa-phone"></i>
-                        <span>{supplier.phone}</span>
-                      </div>
-                    )}
-                    {supplier.tax_id && (
-                      <div className="info-row">
-                        <i className="fas fa-id-card"></i>
-                        <span>Tax ID: {supplier.tax_id}</span>
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="supplier-footer">
-                    <span className="expense-count">
-                      <i className="fas fa-receipt"></i> {supplier.expense_count} expenses
-                    </span>
-                    <Button
-                      variant="ghost"
-                      size="small"
-                      onClick={() => setExpandedId(expandedId === supplier.id ? null : supplier.id)}
-                    >
-                      {expandedId === supplier.id ? 'Less' : 'More'} <i className={`fas fa-chevron-${expandedId === supplier.id ? 'up' : 'down'}`}></i>
-                    </Button>
-                  </div>
-
-                  {expandedId === supplier.id && (
-                    <div className="supplier-details">
-                      {supplier.address && (
-                        <div className="detail-row">
-                          <label>Address</label>
-                          <span>{supplier.address}</span>
-                        </div>
+          <Card className="suppliers-table-container">
+            <table className="suppliers-table">
+              <thead>
+                <tr>
+                  <th>Supplier</th>
+                  <th>Contact</th>
+                  <th>Tax ID</th>
+                  <th>Bank</th>
+                  <th>Expenses</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {suppliers.length === 0 ? (
+                  <tr>
+                    <td colSpan="7" className="empty-state">
+                      <i className="fas fa-building"></i>
+                      <h3>No suppliers found</h3>
+                      <p>Add your first supplier to get started</p>
+                    </td>
+                  </tr>
+                ) : (
+                  suppliers.map(supplier => (
+                    <Fragment key={supplier.id}>
+                      <tr className={supplier.status === 'inactive' ? 'inactive-row' : ''}>
+                        <td className="supplier-cell">
+                          <div className="supplier-avatar">
+                            {supplier.name[0].toUpperCase()}
+                          </div>
+                          <span className="supplier-name">{supplier.name}</span>
+                        </td>
+                        <td className="contact-cell">
+                          {supplier.email ? (
+                            <span className="email"><i className="fas fa-envelope"></i> {supplier.email}</span>
+                          ) : null}
+                          {supplier.phone ? (
+                            <span className="phone"><i className="fas fa-phone"></i> {supplier.phone}</span>
+                          ) : null}
+                          {!supplier.email && !supplier.phone && <span className="no-data">—</span>}
+                        </td>
+                        <td>
+                          {supplier.tax_id || <span className="no-data">—</span>}
+                        </td>
+                        <td className="bank-cell">
+                          {supplier.bank_name ? (
+                            <div className="bank-info">
+                              <span className="bank-name-text">{supplier.bank_name}</span>
+                              {supplier.bank_account_number && (
+                                <span className="bank-account">Acc: {supplier.bank_account_number}</span>
+                              )}
+                            </div>
+                          ) : (
+                            <span className="no-data">—</span>
+                          )}
+                        </td>
+                        <td>
+                          <span className="expense-count">
+                            <i className="fas fa-receipt"></i> {supplier.expense_count || 0}
+                          </span>
+                        </td>
+                        <td>
+                          <Badge variant={supplier.status === 'active' ? 'success' : 'danger'}>
+                            {supplier.status}
+                          </Badge>
+                        </td>
+                        <td className="actions-cell">
+                          <Button
+                            variant="ghost"
+                            size="small"
+                            icon={`fas fa-chevron-${expandedId === supplier.id ? 'up' : 'down'}`}
+                            onClick={() => setExpandedId(expandedId === supplier.id ? null : supplier.id)}
+                            title={expandedId === supplier.id ? 'Collapse' : 'Expand'}
+                          />
+                          <Button
+                            variant="ghost"
+                            size="small"
+                            icon="fas fa-edit"
+                            onClick={() => openModal('edit', supplier)}
+                            title="Edit"
+                          />
+                          <Button
+                            variant="ghost"
+                            size="small"
+                            icon="fas fa-trash"
+                            onClick={() => handleDelete(supplier)}
+                            title="Delete"
+                            className="btn-delete"
+                          />
+                        </td>
+                      </tr>
+                      {expandedId === supplier.id && (
+                        <tr key={`${supplier.id}-expanded`} className="expanded-content">
+                          <td colSpan="7">
+                            <div className="expanded-details">
+                              {supplier.address && (
+                                <div className="detail-item">
+                                  <span className="label">Address</span>
+                                  <span className="value">{supplier.address}</span>
+                                </div>
+                              )}
+                              {supplier.bank_branch && (
+                                <div className="detail-item">
+                                  <span className="label">Bank Branch</span>
+                                  <span className="value">{supplier.bank_branch}</span>
+                                </div>
+                              )}
+                              {supplier.bank_swift && (
+                                <div className="detail-item">
+                                  <span className="label">SWIFT Code</span>
+                                  <span className="value">{supplier.bank_swift}</span>
+                                </div>
+                              )}
+                              {supplier.notes && (
+                                <div className="detail-item">
+                                  <span className="label">Notes</span>
+                                  <span className="value">{supplier.notes}</span>
+                                </div>
+                              )}
+                              {!supplier.address && !supplier.bank_branch && !supplier.bank_swift && !supplier.notes && (
+                                <span className="no-data">No additional details</span>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
                       )}
-                      {supplier.bank_name && (
-                        <div className="detail-row">
-                          <label>Bank</label>
-                          <span>{supplier.bank_name}</span>
-                        </div>
-                      )}
-                      {supplier.bank_account_number && (
-                        <div className="detail-row">
-                          <label>Account</label>
-                          <span>{supplier.bank_account_number}</span>
-                        </div>
-                      )}
-                      {supplier.bank_branch && (
-                        <div className="detail-row">
-                          <label>Branch</label>
-                          <span>{supplier.bank_branch}</span>
-                        </div>
-                      )}
-                      {supplier.notes && (
-                        <div className="detail-row">
-                          <label>Notes</label>
-                          <span>{supplier.notes}</span>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </Card>
-              ))
-            )}
-          </div>
+                    </Fragment>
+                  ))
+                )}
+              </tbody>
+            </table>
+            <div className="table-footer">
+              <span>{suppliers.length} supplier(s) found</span>
+            </div>
+          </Card>
         )}
       </main>
 
