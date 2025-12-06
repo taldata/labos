@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import Header from '../components/Header';
+import { Card, Button, Input, Select, Modal, Skeleton, useToast } from '../components/ui';
 import './DepartmentManager.css';
 
 const api = axios.create({
@@ -10,9 +11,9 @@ const api = axios.create({
 
 const DepartmentManager = ({ user, setUser }) => {
     const navigate = useNavigate();
+    const { success, error: showError } = useToast();
     const [structure, setStructure] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
 
     // Modal State
     const [modalOpen, setModalOpen] = useState(false);
@@ -50,7 +51,7 @@ const DepartmentManager = ({ user, setUser }) => {
             setStructure(response.data.structure);
             setLoading(false);
         } catch (err) {
-            setError('Failed to load organization structure');
+            showError('Failed to load organization structure');
             setLoading(false);
         }
     };
@@ -133,10 +134,11 @@ const DepartmentManager = ({ user, setUser }) => {
             }
 
             await api[method](url, data);
+            success(modalMode === 'create' ? `${modalType} created successfully` : `${modalType} updated successfully`);
             await fetchStructure();
             closeModal();
         } catch (err) {
-            alert(err.response?.data?.error || 'An error occurred');
+            showError(err.response?.data?.error || 'An error occurred');
         }
     };
 
@@ -150,9 +152,10 @@ const DepartmentManager = ({ user, setUser }) => {
             else if (type === 'subcategory') url = `/api/v1/organization/subcategories/${id}`;
 
             await api.delete(url);
+            success(`${type} deleted successfully`);
             fetchStructure();
         } catch (err) {
-            alert(err.response?.data?.error || 'Failed to delete item');
+            showError(err.response?.data?.error || 'Failed to delete item');
         }
     };
 
@@ -190,27 +193,27 @@ const DepartmentManager = ({ user, setUser }) => {
             <Header user={user} setUser={setUser} currentPage="admin" />
             
             {loading ? (
-                <div className="loading-container"><div className="spinner"></div><p>Loading organization structure...</p></div>
-            ) : error ? (
-                <div className="error-message">❌ {error}</div>
+                <div className="loading-container">
+                    <Skeleton variant="title" width="40%" />
+                    <Skeleton variant="text" count={5} />
+                </div>
             ) : (
             <main className="department-manager">
             <div className="manager-header">
                 <h1>Organization Structure</h1>
-                <button className="btn-primary" onClick={() => openModal('department', 'create')}>
-                    <i className="fas fa-plus"></i> Add Department
-                </button>
+                <Button variant="primary" icon="fas fa-plus" onClick={() => openModal('department', 'create')}>
+                    Add Department
+                </Button>
             </div>
 
             {/* Search Bar */}
             <div className="search-container">
-                <i className="fas fa-search search-icon"></i>
-                <input
+                <Input
                     type="text"
-                    className="search-input"
                     placeholder="Search departments, categories, or subcategories..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
+                    icon="fas fa-search"
                 />
             </div>
 
@@ -230,15 +233,9 @@ const DepartmentManager = ({ user, setUser }) => {
                                 <span className="dept-budget">{dept.budget.toLocaleString()} {dept.currency}</span>
                             </div>
                             <div className="actions" onClick={e => e.stopPropagation()}>
-                                <button className="btn-icon" onClick={() => openModal('department', 'edit', dept)} title="Edit Department">
-                                    <i className="fas fa-edit"></i>
-                                </button>
-                                <button className="btn-icon" onClick={() => openModal('category', 'create', null, dept.id)} title="Add Category">
-                                    <i className="fas fa-plus-circle"></i>
-                                </button>
-                                <button className="btn-icon delete" onClick={() => handleDelete('department', dept.id)} title="Delete Department">
-                                    <i className="fas fa-trash"></i>
-                                </button>
+                                <Button variant="ghost" size="small" icon="fas fa-edit" onClick={() => openModal('department', 'edit', dept)} title="Edit Department" />
+                                <Button variant="ghost" size="small" icon="fas fa-plus-circle" onClick={() => openModal('category', 'create', null, dept.id)} title="Add Category" />
+                                <Button variant="ghost" size="small" icon="fas fa-trash" onClick={() => handleDelete('department', dept.id)} title="Delete Department" className="btn-delete" />
                             </div>
                         </div>
 
@@ -270,15 +267,9 @@ const DepartmentManager = ({ user, setUser }) => {
                                                     <span className="dept-budget">{cat.budget.toLocaleString()} {dept.currency}</span>
                                                 </div>
                                                 <div className="actions" onClick={e => e.stopPropagation()}>
-                                                    <button className="btn-icon" onClick={() => openModal('category', 'edit', cat)} title="Edit Category">
-                                                        <i className="fas fa-edit"></i>
-                                                    </button>
-                                                    <button className="btn-icon" onClick={() => openModal('subcategory', 'create', null, cat.id)} title="Add Subcategory">
-                                                        <i className="fas fa-plus-circle"></i>
-                                                    </button>
-                                                    <button className="btn-icon delete" onClick={() => handleDelete('category', cat.id)} title="Delete Category">
-                                                        <i className="fas fa-trash"></i>
-                                                    </button>
+                                                    <Button variant="ghost" size="small" icon="fas fa-edit" onClick={() => openModal('category', 'edit', cat)} title="Edit Category" />
+                                                    <Button variant="ghost" size="small" icon="fas fa-plus-circle" onClick={() => openModal('subcategory', 'create', null, cat.id)} title="Add Subcategory" />
+                                                    <Button variant="ghost" size="small" icon="fas fa-trash" onClick={() => handleDelete('category', cat.id)} title="Delete Category" className="btn-delete" />
                                                 </div>
                                             </div>
 
@@ -293,12 +284,8 @@ const DepartmentManager = ({ user, setUser }) => {
                                                                 <span className="dept-budget">{sub.budget.toLocaleString()} {dept.currency}</span>
                                                             </div>
                                                             <div className="actions">
-                                                                <button className="btn-icon" onClick={() => openModal('subcategory', 'edit', sub)} title="Edit Subcategory">
-                                                                    <i className="fas fa-edit"></i>
-                                                                </button>
-                                                                <button className="btn-icon delete" onClick={() => handleDelete('subcategory', sub.id)} title="Delete Subcategory">
-                                                                    <i className="fas fa-trash"></i>
-                                                                </button>
+                                                                <Button variant="ghost" size="small" icon="fas fa-edit" onClick={() => openModal('subcategory', 'edit', sub)} title="Edit Subcategory" />
+                                                                <Button variant="ghost" size="small" icon="fas fa-trash" onClick={() => handleDelete('subcategory', sub.id)} title="Delete Subcategory" className="btn-delete" />
                                                             </div>
                                                         </div>
                                                     ))}
@@ -313,62 +300,57 @@ const DepartmentManager = ({ user, setUser }) => {
                 ))}
             </div>
 
-            {modalOpen && (
-                <div className="modal-overlay" onClick={closeModal}>
-                    <div className="modal" onClick={e => e.stopPropagation()}>
-                        <div className="modal-header">
-                            <h2>{modalMode === 'create' ? 'Add' : 'Edit'} {modalType.charAt(0).toUpperCase() + modalType.slice(1)}</h2>
-                            <button className="btn-icon" onClick={closeModal}><i className="fas fa-times"></i></button>
-                        </div>
-                        <form onSubmit={handleSubmit} className="modal-form">
-                            <div className="form-group">
-                                <label>
-                                    <i className="fas fa-tag"></i> Name
-                                </label>
-                                <input
-                                    type="text"
-                                    name="name"
-                                    value={formData.name}
-                                    onChange={handleInputChange}
-                                    required
-                                    autoFocus
-                                    placeholder={`Enter ${modalType} name`}
-                                />
-                            </div>
-                            <div className="form-group">
-                                <label>
-                                    <i className="fas fa-wallet"></i> Budget
-                                </label>
-                                <input
-                                    type="number"
-                                    name="budget"
-                                    value={formData.budget}
-                                    onChange={handleInputChange}
-                                    min="0"
-                                    step="0.01"
-                                    placeholder="Enter budget amount"
-                                />
-                            </div>
-                            {modalType === 'department' && (
-                                <div className="form-group">
-                                    <label>
-                                        <i className="fas fa-dollar-sign"></i> Currency
-                                    </label>
-                                    <select name="currency" value={formData.currency} onChange={handleInputChange}>
-                                        <option value="ILS">₪ ILS (Israeli Shekel)</option>
-                                        <option value="USD">$ USD (US Dollar)</option>
-                                        <option value="EUR">€ EUR (Euro)</option>
-                                    </select>
-                                </div>
-                            )}
-                            <div className="modal-actions">
-                                <button type="button" className="btn-secondary" onClick={closeModal}>Cancel</button>
-                                <button type="submit" className="btn-primary">Save</button>
-                            </div>
-                        </form>
+            <Modal
+                isOpen={modalOpen}
+                onClose={closeModal}
+                title={`${modalMode === 'create' ? 'Add' : 'Edit'} ${modalType.charAt(0).toUpperCase() + modalType.slice(1)}`}
+                size="medium"
+            >
+                <form onSubmit={handleSubmit} className="modal-form">
+                    <Input
+                        label="Name"
+                        icon="fas fa-tag"
+                        type="text"
+                        name="name"
+                        value={formData.name}
+                        onChange={handleInputChange}
+                        required
+                        autoFocus
+                        placeholder={`Enter ${modalType} name`}
+                    />
+
+                    <Input
+                        label="Budget"
+                        icon="fas fa-wallet"
+                        type="number"
+                        name="budget"
+                        value={formData.budget}
+                        onChange={handleInputChange}
+                        min="0"
+                        step="0.01"
+                        placeholder="Enter budget amount"
+                    />
+
+                    {modalType === 'department' && (
+                        <Select
+                            label="Currency"
+                            icon="fas fa-dollar-sign"
+                            name="currency"
+                            value={formData.currency}
+                            onChange={handleInputChange}
+                        >
+                            <option value="ILS">₪ ILS (Israeli Shekel)</option>
+                            <option value="USD">$ USD (US Dollar)</option>
+                            <option value="EUR">€ EUR (Euro)</option>
+                        </Select>
+                    )}
+
+                    <div className="modal-actions">
+                        <Button type="button" variant="secondary" onClick={closeModal}>Cancel</Button>
+                        <Button type="submit" variant="primary">Save</Button>
                     </div>
-                </div>
-            )}
+                </form>
+            </Modal>
             </main>
             )}
         </div>

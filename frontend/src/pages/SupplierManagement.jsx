@@ -1,13 +1,14 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Header from '../components/Header'
+import { Card, Button, Input, Select, Textarea, Modal, Badge, Skeleton, useToast } from '../components/ui'
 import './SupplierManagement.css'
 
 function SupplierManagement({ user, setUser }) {
   const navigate = useNavigate()
+  const { success, error: showError } = useToast()
   const [loading, setLoading] = useState(true)
   const [suppliers, setSuppliers] = useState([])
-  const [error, setError] = useState('')
 
   // Filters
   const [searchQuery, setSearchQuery] = useState('')
@@ -56,9 +57,11 @@ function SupplierManagement({ user, setUser }) {
       if (res.ok) {
         const data = await res.json()
         setSuppliers(data.suppliers)
+      } else {
+        showError('Failed to load suppliers')
       }
     } catch (err) {
-      setError('Failed to load suppliers')
+      showError('Failed to load suppliers')
     } finally {
       setLoading(false)
     }
@@ -133,6 +136,7 @@ function SupplierManagement({ user, setUser }) {
       })
 
       if (res.ok) {
+        success(modalMode === 'create' ? 'Supplier added successfully' : 'Supplier updated successfully')
         closeModal()
         fetchSuppliers()
       } else {
@@ -154,13 +158,14 @@ function SupplierManagement({ user, setUser }) {
       })
 
       if (res.ok) {
+        success('Supplier deleted successfully')
         fetchSuppliers()
       } else {
         const data = await res.json()
-        alert(data.error || 'Failed to delete')
+        showError(data.error || 'Failed to delete')
       }
     } catch (err) {
-      alert('An error occurred')
+      showError('An error occurred')
     }
   }
 
@@ -176,65 +181,65 @@ function SupplierManagement({ user, setUser }) {
             <h1>Supplier Management</h1>
             <p className="subtitle">Manage vendors and suppliers</p>
           </div>
-          <button className="btn-primary" onClick={() => openModal('create')}>
-            <i className="fas fa-plus"></i> Add Supplier
-          </button>
+          <Button variant="primary" icon="fas fa-plus" onClick={() => openModal('create')}>
+            Add Supplier
+          </Button>
         </div>
 
         {/* Filters */}
-        <div className="filters-section card">
-          <div className="search-box">
-            <i className="fas fa-search"></i>
-            <input
-              type="text"
-              placeholder="Search by name, email, or tax ID..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
-            />
-            <button className="btn-search" onClick={handleSearch}>Search</button>
-          </div>
-          <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
-            <option value="all">All Status</option>
-            <option value="active">Active</option>
-            <option value="inactive">Inactive</option>
-          </select>
-        </div>
+        <Card className="filters-section">
+          <Card.Body>
+            <div className="search-box">
+              <Input
+                type="text"
+                placeholder="Search by name, email, or tax ID..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+                icon="fas fa-search"
+              />
+              <Button variant="primary" onClick={handleSearch}>Search</Button>
+            </div>
+            <Select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
+              <option value="all">All Status</option>
+              <option value="active">Active</option>
+              <option value="inactive">Inactive</option>
+            </Select>
+          </Card.Body>
+        </Card>
 
         {/* Suppliers List */}
         {loading ? (
           <div className="loading-container">
-            <div className="spinner"></div>
-            <p>Loading suppliers...</p>
+            <Skeleton variant="title" width="40%" />
+            <Skeleton variant="text" count={6} />
           </div>
-        ) : error ? (
-          <div className="error-message card">{error}</div>
         ) : (
           <div className="suppliers-grid">
             {suppliers.length === 0 ? (
-              <div className="empty-state card">
-                <i className="fas fa-building"></i>
-                <h3>No suppliers found</h3>
-                <p>Add your first supplier to get started</p>
-              </div>
+              <Card className="empty-state">
+                <Card.Body>
+                  <i className="fas fa-building"></i>
+                  <h3>No suppliers found</h3>
+                  <p>Add your first supplier to get started</p>
+                </Card.Body>
+              </Card>
             ) : (
               suppliers.map(supplier => (
-                <div key={supplier.id} className={`supplier-card card ${supplier.status === 'inactive' ? 'inactive' : ''}`}>
+                <Card key={supplier.id} className={`supplier-card ${supplier.status === 'inactive' ? 'inactive' : ''}`}>
                   <div className="supplier-header">
                     <div className="supplier-avatar">
                       {supplier.name[0].toUpperCase()}
                     </div>
                     <div className="supplier-title">
                       <h3>{supplier.name}</h3>
-                      <span className={`status-badge ${supplier.status}`}>{supplier.status}</span>
+                      <Badge variant={supplier.status === 'active' ? 'success' : 'danger'}>
+                        {supplier.status}
+                      </Badge>
                     </div>
                     <div className="supplier-actions">
-                      <button className="btn-icon" onClick={() => openModal('edit', supplier)} title="Edit">
-                        <i className="fas fa-edit"></i>
-                      </button>
-                      <button className="btn-icon delete" onClick={() => handleDelete(supplier)} title="Delete">
-                        <i className="fas fa-trash"></i>
-                      </button>
+                      <Button variant="ghost" size="small" icon="fas fa-edit" onClick={() => openModal('edit', supplier)} title="Edit" />
+                      <Button variant="ghost" size="small" icon="fas fa-trash" onClick={() => handleDelete(supplier)} title="Delete" className="btn-delete" />
                     </div>
                   </div>
 
@@ -263,12 +268,13 @@ function SupplierManagement({ user, setUser }) {
                     <span className="expense-count">
                       <i className="fas fa-receipt"></i> {supplier.expense_count} expenses
                     </span>
-                    <button 
-                      className="btn-expand"
+                    <Button
+                      variant="ghost"
+                      size="small"
                       onClick={() => setExpandedId(expandedId === supplier.id ? null : supplier.id)}
                     >
                       {expandedId === supplier.id ? 'Less' : 'More'} <i className={`fas fa-chevron-${expandedId === supplier.id ? 'up' : 'down'}`}></i>
-                    </button>
+                    </Button>
                   </div>
 
                   {expandedId === supplier.id && (
@@ -305,7 +311,7 @@ function SupplierManagement({ user, setUser }) {
                       )}
                     </div>
                   )}
-                </div>
+                </Card>
               ))
             )}
           </div>
@@ -313,160 +319,136 @@ function SupplierManagement({ user, setUser }) {
       </main>
 
       {/* Modal */}
-      {modalOpen && (
-        <div className="modal-overlay" onClick={closeModal}>
-          <div className="modal supplier-modal" onClick={e => e.stopPropagation()}>
-            <div className="modal-header">
-              <h2>{modalMode === 'create' ? 'Add Supplier' : 'Edit Supplier'}</h2>
-              <button className="btn-icon" onClick={closeModal}>
-                <i className="fas fa-times"></i>
-              </button>
+      <Modal
+        isOpen={modalOpen}
+        onClose={closeModal}
+        title={modalMode === 'create' ? 'Add Supplier' : 'Edit Supplier'}
+        size="large"
+      >
+        {formError && <div className="form-error">{formError}</div>}
+
+        <form onSubmit={handleSubmit} className="supplier-form">
+          <div className="form-section">
+            <h4>Basic Information</h4>
+            <div className="form-row">
+              <Input
+                label="Supplier Name *"
+                type="text"
+                name="name"
+                value={formData.name}
+                onChange={handleInputChange}
+                required
+                placeholder="Company name"
+              />
+              <Input
+                label="Tax ID"
+                type="text"
+                name="tax_id"
+                value={formData.tax_id}
+                onChange={handleInputChange}
+                placeholder="Tax identification number"
+              />
             </div>
 
-            {formError && <div className="form-error">{formError}</div>}
+            <div className="form-row">
+              <Input
+                label="Email"
+                type="email"
+                name="email"
+                value={formData.email}
+                onChange={handleInputChange}
+                placeholder="contact@company.com"
+              />
+              <Input
+                label="Phone"
+                type="text"
+                name="phone"
+                value={formData.phone}
+                onChange={handleInputChange}
+                placeholder="+972-XX-XXX-XXXX"
+              />
+            </div>
 
-            <form onSubmit={handleSubmit} className="supplier-form">
-              <div className="form-section">
-                <h4>Basic Information</h4>
-                <div className="form-row">
-                  <div className="form-group">
-                    <label>Supplier Name *</label>
-                    <input
-                      type="text"
-                      name="name"
-                      value={formData.name}
-                      onChange={handleInputChange}
-                      required
-                      placeholder="Company name"
-                    />
-                  </div>
-                  <div className="form-group">
-                    <label>Tax ID</label>
-                    <input
-                      type="text"
-                      name="tax_id"
-                      value={formData.tax_id}
-                      onChange={handleInputChange}
-                      placeholder="Tax identification number"
-                    />
-                  </div>
-                </div>
-
-                <div className="form-row">
-                  <div className="form-group">
-                    <label>Email</label>
-                    <input
-                      type="email"
-                      name="email"
-                      value={formData.email}
-                      onChange={handleInputChange}
-                      placeholder="contact@company.com"
-                    />
-                  </div>
-                  <div className="form-group">
-                    <label>Phone</label>
-                    <input
-                      type="text"
-                      name="phone"
-                      value={formData.phone}
-                      onChange={handleInputChange}
-                      placeholder="+972-XX-XXX-XXXX"
-                    />
-                  </div>
-                </div>
-
-                <div className="form-group">
-                  <label>Address</label>
-                  <input
-                    type="text"
-                    name="address"
-                    value={formData.address}
-                    onChange={handleInputChange}
-                    placeholder="Full address"
-                  />
-                </div>
-              </div>
-
-              <div className="form-section">
-                <h4>Banking Details</h4>
-                <div className="form-row">
-                  <div className="form-group">
-                    <label>Bank Name</label>
-                    <input
-                      type="text"
-                      name="bank_name"
-                      value={formData.bank_name}
-                      onChange={handleInputChange}
-                      placeholder="Bank name"
-                    />
-                  </div>
-                  <div className="form-group">
-                    <label>Branch</label>
-                    <input
-                      type="text"
-                      name="bank_branch"
-                      value={formData.bank_branch}
-                      onChange={handleInputChange}
-                      placeholder="Branch number"
-                    />
-                  </div>
-                </div>
-
-                <div className="form-row">
-                  <div className="form-group">
-                    <label>Account Number</label>
-                    <input
-                      type="text"
-                      name="bank_account_number"
-                      value={formData.bank_account_number}
-                      onChange={handleInputChange}
-                      placeholder="Account number"
-                    />
-                  </div>
-                  <div className="form-group">
-                    <label>SWIFT Code</label>
-                    <input
-                      type="text"
-                      name="bank_swift"
-                      value={formData.bank_swift}
-                      onChange={handleInputChange}
-                      placeholder="SWIFT/BIC code"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <div className="form-section">
-                <h4>Additional</h4>
-                <div className="form-group">
-                  <label>Status</label>
-                  <select name="status" value={formData.status} onChange={handleInputChange}>
-                    <option value="active">Active</option>
-                    <option value="inactive">Inactive</option>
-                  </select>
-                </div>
-                <div className="form-group">
-                  <label>Notes</label>
-                  <textarea
-                    name="notes"
-                    value={formData.notes}
-                    onChange={handleInputChange}
-                    rows={3}
-                    placeholder="Additional notes..."
-                  />
-                </div>
-              </div>
-
-              <div className="modal-actions">
-                <button type="button" className="btn-secondary" onClick={closeModal}>Cancel</button>
-                <button type="submit" className="btn-primary">
-                  {modalMode === 'create' ? 'Add Supplier' : 'Save Changes'}
-                </button>
-              </div>
-            </form>
+            <Input
+              label="Address"
+              type="text"
+              name="address"
+              value={formData.address}
+              onChange={handleInputChange}
+              placeholder="Full address"
+            />
           </div>
-        </div>
-      )}
+
+          <div className="form-section">
+            <h4>Banking Details</h4>
+            <div className="form-row">
+              <Input
+                label="Bank Name"
+                type="text"
+                name="bank_name"
+                value={formData.bank_name}
+                onChange={handleInputChange}
+                placeholder="Bank name"
+              />
+              <Input
+                label="Branch"
+                type="text"
+                name="bank_branch"
+                value={formData.bank_branch}
+                onChange={handleInputChange}
+                placeholder="Branch number"
+              />
+            </div>
+
+            <div className="form-row">
+              <Input
+                label="Account Number"
+                type="text"
+                name="bank_account_number"
+                value={formData.bank_account_number}
+                onChange={handleInputChange}
+                placeholder="Account number"
+              />
+              <Input
+                label="SWIFT Code"
+                type="text"
+                name="bank_swift"
+                value={formData.bank_swift}
+                onChange={handleInputChange}
+                placeholder="SWIFT/BIC code"
+              />
+            </div>
+          </div>
+
+          <div className="form-section">
+            <h4>Additional</h4>
+            <Select
+              label="Status"
+              name="status"
+              value={formData.status}
+              onChange={handleInputChange}
+            >
+              <option value="active">Active</option>
+              <option value="inactive">Inactive</option>
+            </Select>
+            <Textarea
+              label="Notes"
+              name="notes"
+              value={formData.notes}
+              onChange={handleInputChange}
+              rows={3}
+              placeholder="Additional notes..."
+            />
+          </div>
+
+          <div className="modal-actions">
+            <Button type="button" variant="secondary" onClick={closeModal}>Cancel</Button>
+            <Button type="submit" variant="primary">
+              {modalMode === 'create' ? 'Add Supplier' : 'Save Changes'}
+            </Button>
+          </div>
+        </form>
+      </Modal>
     </div>
   )
 }

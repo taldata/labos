@@ -569,6 +569,11 @@ def get_expense_details(expense_id):
         if expense.user_id != current_user.id and not current_user.is_manager and not current_user.is_admin:
             return jsonify({'error': 'Not authorized'}), 403
 
+        # Calculate budget impact if expense is pending
+        budget_impact = None
+        if expense.status == 'pending':
+            budget_impact = _calculate_budget_impact(expense)
+
         expense_data = {
             'id': expense.id,
             'amount': expense.amount,
@@ -611,7 +616,8 @@ def get_expense_details(expense_id):
             'invoice_filename': expense.invoice_filename,
             'receipt_filename': expense.receipt_filename,
             'quote_filename': expense.quote_filename,
-            'accounting_notes': expense.accounting_notes
+            'accounting_notes': expense.accounting_notes,
+            'budget_impact': budget_impact
         }
 
         return jsonify({'expense': expense_data}), 200

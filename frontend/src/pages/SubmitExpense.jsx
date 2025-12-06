@@ -1,9 +1,12 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
+import Header from '../components/Header'
+import { Card, Button, Input, Select, Textarea, FileUpload, useToast } from '../components/ui'
 import './SubmitExpense.css'
 
-function SubmitExpense({ user }) {
+function SubmitExpense({ user, setUser }) {
   const navigate = useNavigate()
+  const { success: showSuccess, error: showError } = useToast()
 
   // Form data
   const [formData, setFormData] = useState({
@@ -35,8 +38,6 @@ function SubmitExpense({ user }) {
 
   // UI state
   const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
-  const [success, setSuccess] = useState(false)
 
   useEffect(() => {
     fetchFormData()
@@ -114,13 +115,12 @@ function SubmitExpense({ user }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    setError('')
     setLoading(true)
 
     try {
       // Validate required fields
       if (!formData.amount || !formData.subcategory_id || !formData.date) {
-        setError('Please fill in all required fields')
+        showError('Please fill in all required fields')
         setLoading(false)
         return
       }
@@ -149,342 +149,270 @@ function SubmitExpense({ user }) {
       const data = await response.json()
 
       if (response.ok) {
-        setSuccess(true)
+        showSuccess('Expense submitted successfully!')
         setTimeout(() => {
           navigate('/dashboard')
-        }, 2000)
+        }, 1500)
       } else {
-        setError(data.error || 'Failed to submit expense')
+        showError(data.error || 'Failed to submit expense')
       }
     } catch (err) {
-      setError('An error occurred while submitting the expense')
+      showError('An error occurred while submitting the expense')
       console.error('Submission error:', err)
     } finally {
       setLoading(false)
     }
   }
 
-  if (success) {
-    return (
-      <div className="submit-expense-container">
-        <div className="success-message card">
-          <div className="success-icon">✅</div>
-          <h2>Expense Submitted Successfully!</h2>
-          <p>Your expense has been submitted for approval.</p>
-          <p className="redirect-message">Redirecting to dashboard...</p>
-        </div>
-      </div>
-    )
-  }
-
   return (
     <div className="submit-expense-container">
-      <div className="submit-expense-header">
-        <button className="back-button" onClick={() => navigate('/dashboard')}>
-          <i className="fas fa-arrow-left"></i> Back to Dashboard
-        </button>
-        <h1>Submit New Expense</h1>
-      </div>
+      <Header user={user} setUser={setUser} />
 
-      <form onSubmit={handleSubmit} className="expense-form card">
-        {error && (
-          <div className="error-alert">
-            <i className="fas fa-exclamation-circle"></i>
-            {error}
-          </div>
-        )}
-
-        {/* Basic Information */}
-        <div className="form-section">
-          <h3>Basic Information</h3>
-
-          <div className="form-row">
-            <div className="form-group">
-              <label htmlFor="amount">Amount *</label>
-              <input
-                type="number"
-                id="amount"
-                name="amount"
-                step="0.01"
-                value={formData.amount}
-                onChange={handleInputChange}
-                required
-                placeholder="0.00"
-              />
-            </div>
-
-            <div className="form-group">
-              <label htmlFor="currency">Currency</label>
-              <select
-                id="currency"
-                name="currency"
-                value={formData.currency}
-                onChange={handleInputChange}
-              >
-                <option value="ILS">ILS (₪)</option>
-                <option value="USD">USD ($)</option>
-                <option value="EUR">EUR (€)</option>
-              </select>
-            </div>
-
-            <div className="form-group">
-              <label htmlFor="date">Date *</label>
-              <input
-                type="date"
-                id="date"
-                name="date"
-                value={formData.date}
-                onChange={handleInputChange}
-                required
-              />
-            </div>
-          </div>
-
-          <div className="form-group">
-            <label htmlFor="description">Description</label>
-            <input
-              type="text"
-              id="description"
-              name="description"
-              value={formData.description}
-              onChange={handleInputChange}
-              placeholder="Brief description of the expense"
-            />
-          </div>
-
-          <div className="form-group">
-            <label htmlFor="reason">Reason</label>
-            <textarea
-              id="reason"
-              name="reason"
-              value={formData.reason}
-              onChange={handleInputChange}
-              rows="3"
-              placeholder="Detailed reason for this expense"
-            ></textarea>
+      <div className="submit-expense-content">
+        {/* Page Title Section */}
+        <div className="page-title-section">
+          <div>
+            <Button variant="ghost" icon="fas fa-arrow-left" onClick={() => navigate('/dashboard')}>
+              Back
+            </Button>
+            <h1>Submit New Expense</h1>
+            <p className="subtitle">Fill in the details to submit an expense for approval</p>
           </div>
         </div>
 
-        {/* Category Selection */}
-        <div className="form-section">
-          <h3>Category</h3>
+        <form onSubmit={handleSubmit} className="expense-form">
+          {/* Basic Information */}
+          <Card className="form-section">
+            <Card.Header>
+              <i className="fas fa-info-circle"></i> Basic Information
+            </Card.Header>
+            <Card.Body>
+              <div className="form-row">
+                <Input
+                  type="number"
+                  label="Amount *"
+                  name="amount"
+                  step="0.01"
+                  value={formData.amount}
+                  onChange={handleInputChange}
+                  required
+                  placeholder="0.00"
+                />
 
-          <div className="form-row">
-            <div className="form-group">
-              <label htmlFor="category">Category *</label>
-              <select
-                id="category"
-                onChange={(e) => {
-                  const catId = e.target.value
-                  handleCategoryChange(catId)
-                  setFormData(prev => ({ ...prev, subcategory_id: '' }))
-                }}
-                required
-              >
-                <option value="">Select a category</option>
-                {categories.map(cat => (
-                  <option key={cat.id} value={cat.id}>
-                    {cat.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div className="form-group">
-              <label htmlFor="subcategory_id">Subcategory *</label>
-              <select
-                id="subcategory_id"
-                name="subcategory_id"
-                value={formData.subcategory_id}
-                onChange={handleInputChange}
-                required
-                disabled={subcategories.length === 0}
-              >
-                <option value="">Select a subcategory</option>
-                {subcategories.map(sub => (
-                  <option key={sub.id} value={sub.id}>
-                    {sub.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-        </div>
-
-        {/* Expense Type */}
-        <div className="form-section">
-          <h3>Expense Type</h3>
-
-          <div className="form-group">
-            <label htmlFor="expense_type">Type *</label>
-            <select
-              id="expense_type"
-              name="expense_type"
-              value={formData.expense_type}
-              onChange={handleInputChange}
-              required
-            >
-              <option value="needs_approval">Needs Approval</option>
-              <option value="future_approval">Future Approval</option>
-              <option value="auto_approved">Auto Approved</option>
-            </select>
-          </div>
-        </div>
-
-        {/* Payment Information */}
-        <div className="form-section">
-          <h3>Payment Information</h3>
-
-          <div className="form-row">
-            <div className="form-group">
-              <label htmlFor="supplier_id">Supplier</label>
-              <select
-                id="supplier_id"
-                name="supplier_id"
-                value={formData.supplier_id}
-                onChange={handleInputChange}
-              >
-                <option value="">Select a supplier</option>
-                {suppliers.map(sup => (
-                  <option key={sup.id} value={sup.id}>
-                    {sup.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div className="form-group">
-              <label htmlFor="payment_method">Payment Method</label>
-              <select
-                id="payment_method"
-                name="payment_method"
-                value={formData.payment_method}
-                onChange={handleInputChange}
-              >
-                <option value="credit">Credit Card</option>
-                <option value="bank_transfer">Bank Transfer</option>
-                <option value="cash">Cash</option>
-                <option value="check">Check</option>
-              </select>
-            </div>
-          </div>
-
-          {formData.payment_method === 'credit' && (
-            <div className="form-row">
-              <div className="form-group">
-                <label htmlFor="credit_card_id">Credit Card</label>
-                <select
-                  id="credit_card_id"
-                  name="credit_card_id"
-                  value={formData.credit_card_id}
+                <Select
+                  label="Currency"
+                  name="currency"
+                  value={formData.currency}
                   onChange={handleInputChange}
                 >
-                  <option value="">Select a credit card</option>
-                  {creditCards.map(card => (
-                    <option key={card.id} value={card.id}>
-                      **** {card.last_four_digits} - {card.description}
+                  <option value="ILS">ILS (₪)</option>
+                  <option value="USD">USD ($)</option>
+                  <option value="EUR">EUR (€)</option>
+                </Select>
+
+                <Input
+                  type="date"
+                  label="Date *"
+                  name="date"
+                  value={formData.date}
+                  onChange={handleInputChange}
+                  required
+                />
+              </div>
+
+              <Input
+                type="text"
+                label="Description"
+                name="description"
+                value={formData.description}
+                onChange={handleInputChange}
+                placeholder="Brief description of the expense"
+              />
+
+              <Textarea
+                label="Reason"
+                name="reason"
+                value={formData.reason}
+                onChange={handleInputChange}
+                rows={3}
+                placeholder="Detailed reason for this expense"
+              />
+            </Card.Body>
+          </Card>
+
+          {/* Category Selection */}
+          <Card className="form-section">
+            <Card.Header>
+              <i className="fas fa-tags"></i> Category
+            </Card.Header>
+            <Card.Body>
+              <div className="form-row">
+                <Select
+                  label="Category *"
+                  onChange={(e) => {
+                    const catId = e.target.value
+                    handleCategoryChange(catId)
+                    setFormData(prev => ({ ...prev, subcategory_id: '' }))
+                  }}
+                  required
+                >
+                  <option value="">Select a category</option>
+                  {categories.map(cat => (
+                    <option key={cat.id} value={cat.id}>
+                      {cat.name}
                     </option>
                   ))}
-                </select>
+                </Select>
+
+                <Select
+                  label="Subcategory *"
+                  name="subcategory_id"
+                  value={formData.subcategory_id}
+                  onChange={handleInputChange}
+                  required
+                  disabled={subcategories.length === 0}
+                >
+                  <option value="">Select a subcategory</option>
+                  {subcategories.map(sub => (
+                    <option key={sub.id} value={sub.id}>
+                      {sub.name}
+                    </option>
+                  ))}
+                </Select>
               </div>
 
-              <div className="form-group">
-                <label htmlFor="payment_due_date">Payment Due</label>
-                <select
-                  id="payment_due_date"
-                  name="payment_due_date"
-                  value={formData.payment_due_date}
+              <Select
+                label="Expense Type *"
+                name="expense_type"
+                value={formData.expense_type}
+                onChange={handleInputChange}
+                required
+              >
+                <option value="needs_approval">Needs Approval</option>
+                <option value="future_approval">Future Approval</option>
+                <option value="auto_approved">Auto Approved</option>
+              </Select>
+            </Card.Body>
+          </Card>
+
+          {/* Payment Information */}
+          <Card className="form-section">
+            <Card.Header>
+              <i className="fas fa-credit-card"></i> Payment Information
+            </Card.Header>
+            <Card.Body>
+              <div className="form-row">
+                <Select
+                  label="Supplier"
+                  name="supplier_id"
+                  value={formData.supplier_id}
                   onChange={handleInputChange}
                 >
-                  <option value="end_of_month">End of Month</option>
-                  <option value="start_of_month">Start of Month</option>
-                </select>
+                  <option value="">Select a supplier</option>
+                  {suppliers.map(sup => (
+                    <option key={sup.id} value={sup.id}>
+                      {sup.name}
+                    </option>
+                  ))}
+                </Select>
+
+                <Select
+                  label="Payment Method"
+                  name="payment_method"
+                  value={formData.payment_method}
+                  onChange={handleInputChange}
+                >
+                  <option value="credit">Credit Card</option>
+                  <option value="bank_transfer">Bank Transfer</option>
+                  <option value="cash">Cash</option>
+                  <option value="check">Check</option>
+                </Select>
               </div>
-            </div>
-          )}
-        </div>
 
-        {/* File Uploads */}
-        <div className="form-section">
-          <h3>Attachments</h3>
+              {formData.payment_method === 'credit' && (
+                <div className="form-row">
+                  <Select
+                    label="Credit Card"
+                    name="credit_card_id"
+                    value={formData.credit_card_id}
+                    onChange={handleInputChange}
+                  >
+                    <option value="">Select a credit card</option>
+                    {creditCards.map(card => (
+                      <option key={card.id} value={card.id}>
+                        **** {card.last_four_digits} - {card.description}
+                      </option>
+                    ))}
+                  </Select>
 
-          <div className="form-row">
-            <div className="form-group">
-              <label htmlFor="invoice">Invoice</label>
-              <input
-                type="file"
-                id="invoice"
-                name="invoice"
-                onChange={handleFileChange}
-                accept=".pdf,.jpg,.jpeg,.png"
-              />
-              {files.invoice && (
-                <div className="file-preview">
-                  <i className="fas fa-file"></i> {files.invoice.name}
+                  <Select
+                    label="Payment Due"
+                    name="payment_due_date"
+                    value={formData.payment_due_date}
+                    onChange={handleInputChange}
+                  >
+                    <option value="end_of_month">End of Month</option>
+                    <option value="start_of_month">Start of Month</option>
+                  </Select>
                 </div>
               )}
-            </div>
+            </Card.Body>
+          </Card>
 
-            <div className="form-group">
-              <label htmlFor="receipt">Receipt</label>
-              <input
-                type="file"
-                id="receipt"
-                name="receipt"
-                onChange={handleFileChange}
-                accept=".pdf,.jpg,.jpeg,.png"
-              />
-              {files.receipt && (
-                <div className="file-preview">
-                  <i className="fas fa-file"></i> {files.receipt.name}
-                </div>
-              )}
-            </div>
+          {/* File Uploads */}
+          <Card className="form-section">
+            <Card.Header>
+              <i className="fas fa-paperclip"></i> Attachments
+            </Card.Header>
+            <Card.Body>
+              <div className="form-row">
+                <FileUpload
+                  label="Invoice"
+                  name="invoice"
+                  onChange={handleFileChange}
+                  accept=".pdf,.jpg,.jpeg,.png"
+                  file={files.invoice}
+                />
 
-            <div className="form-group">
-              <label htmlFor="quote">Quote</label>
-              <input
-                type="file"
-                id="quote"
-                name="quote"
-                onChange={handleFileChange}
-                accept=".pdf,.jpg,.jpeg,.png"
-              />
-              {files.quote && (
-                <div className="file-preview">
-                  <i className="fas fa-file"></i> {files.quote.name}
-                </div>
-              )}
-            </div>
+                <FileUpload
+                  label="Receipt"
+                  name="receipt"
+                  onChange={handleFileChange}
+                  accept=".pdf,.jpg,.jpeg,.png"
+                  file={files.receipt}
+                />
+
+                <FileUpload
+                  label="Quote"
+                  name="quote"
+                  onChange={handleFileChange}
+                  accept=".pdf,.jpg,.jpeg,.png"
+                  file={files.quote}
+                />
+              </div>
+            </Card.Body>
+          </Card>
+
+          {/* Submit Buttons */}
+          <div className="form-actions">
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => navigate('/dashboard')}
+              disabled={loading}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              variant="primary"
+              loading={loading}
+            >
+              Submit Expense
+            </Button>
           </div>
-        </div>
-
-        {/* Submit Buttons */}
-        <div className="form-actions">
-          <button
-            type="button"
-            className="btn-secondary"
-            onClick={() => navigate('/dashboard')}
-            disabled={loading}
-          >
-            Cancel
-          </button>
-          <button
-            type="submit"
-            className="btn-primary"
-            disabled={loading}
-          >
-            {loading ? (
-              <>
-                <div className="spinner-small"></div>
-                Submitting...
-              </>
-            ) : (
-              'Submit Expense'
-            )}
-          </button>
-        </div>
-      </form>
+        </form>
+      </div>
     </div>
   )
 }
