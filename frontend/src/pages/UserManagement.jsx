@@ -1,14 +1,15 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Header from '../components/Header'
+import { Card, Button, Input, Select, Modal, Badge, Skeleton, useToast } from '../components/ui'
 import './UserManagement.css'
 
 function UserManagement({ user, setUser }) {
   const navigate = useNavigate()
+  const { success, error: showError } = useToast()
   const [loading, setLoading] = useState(true)
   const [users, setUsers] = useState([])
   const [departments, setDepartments] = useState([])
-  const [error, setError] = useState('')
 
   // Filters
   const [searchQuery, setSearchQuery] = useState('')
@@ -72,7 +73,7 @@ function UserManagement({ user, setUser }) {
         setDepartments(data.structure)
       }
     } catch (err) {
-      setError('Failed to load data')
+      showError('Failed to load data')
       console.error(err)
     } finally {
       setLoading(false)
@@ -161,6 +162,7 @@ function UserManagement({ user, setUser }) {
       })
 
       if (res.ok) {
+        success(modalMode === 'create' ? 'User created successfully' : 'User updated successfully')
         closeModal()
         fetchData()
       } else {
@@ -185,33 +187,31 @@ function UserManagement({ user, setUser }) {
       })
 
       if (res.ok) {
+        success('User deleted successfully')
         fetchData()
       } else {
         const data = await res.json()
-        alert(data.error || 'Failed to delete user')
+        showError(data.error || 'Failed to delete user')
       }
     } catch (err) {
-      alert('An error occurred')
+      showError('An error occurred')
       console.error(err)
     }
   }
 
   const getRoleBadges = (u) => {
     const badges = []
-    if (u.is_admin) badges.push(<span key="admin" className="role-badge admin">Admin</span>)
-    if (u.is_manager) badges.push(<span key="manager" className="role-badge manager">Manager</span>)
-    if (u.is_accounting) badges.push(<span key="accounting" className="role-badge accounting">Accounting</span>)
-    if (badges.length === 0) badges.push(<span key="employee" className="role-badge employee">Employee</span>)
+    if (u.is_admin) badges.push(<Badge key="admin" variant="warning">Admin</Badge>)
+    if (u.is_manager) badges.push(<Badge key="manager" variant="info">Manager</Badge>)
+    if (u.is_accounting) badges.push(<Badge key="accounting" variant="success">Accounting</Badge>)
+    if (badges.length === 0) badges.push(<Badge key="employee" variant="default">Employee</Badge>)
     return badges
   }
 
-  const getStatusBadge = (status) => {
-    const statusClasses = {
-      active: 'status-active',
-      inactive: 'status-inactive',
-      pending: 'status-pending'
-    }
-    return <span className={`status-badge ${statusClasses[status] || ''}`}>{status}</span>
+  const getStatusVariant = (status) => {
+    if (status === 'active') return 'success'
+    if (status === 'inactive') return 'danger'
+    return 'warning'
   }
 
   if (!user?.is_admin) {
@@ -228,57 +228,57 @@ function UserManagement({ user, setUser }) {
             <h1>User Management</h1>
             <p className="subtitle">Manage user accounts and permissions</p>
           </div>
-          <button className="btn-primary" onClick={() => openModal('create')}>
-            <i className="fas fa-user-plus"></i> Add User
-          </button>
+          <Button variant="primary" icon="fas fa-user-plus" onClick={() => openModal('create')}>
+            Add User
+          </Button>
         </div>
 
         {/* Filters */}
-        <div className="filters-section card">
-          <div className="search-box">
-            <i className="fas fa-search"></i>
-            <input
-              type="text"
-              placeholder="Search by name, username, or email..."
-              value={searchQuery}
-              onChange={handleSearch}
-              onKeyPress={(e) => e.key === 'Enter' && doSearch()}
-            />
-            <button className="btn-search" onClick={doSearch}>Search</button>
-          </div>
-          <div className="filter-group">
-            <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
-              <option value="all">All Status</option>
-              <option value="active">Active</option>
-              <option value="inactive">Inactive</option>
-              <option value="pending">Pending</option>
-            </select>
-            <select value={roleFilter} onChange={(e) => setRoleFilter(e.target.value)}>
-              <option value="all">All Roles</option>
-              <option value="admin">Admins</option>
-              <option value="manager">Managers</option>
-              <option value="accounting">Accounting</option>
-              <option value="employee">Employees Only</option>
-            </select>
-            <select value={departmentFilter} onChange={(e) => setDepartmentFilter(e.target.value)}>
-              <option value="all">All Departments</option>
-              {departments.map(dept => (
-                <option key={dept.id} value={dept.id}>{dept.name}</option>
-              ))}
-            </select>
-          </div>
-        </div>
+        <Card className="filters-section">
+          <Card.Body>
+            <div className="search-box">
+              <Input
+                type="text"
+                placeholder="Search by name, username, or email..."
+                value={searchQuery}
+                onChange={handleSearch}
+                onKeyPress={(e) => e.key === 'Enter' && doSearch()}
+                icon="fas fa-search"
+              />
+              <Button variant="primary" onClick={doSearch}>Search</Button>
+            </div>
+            <div className="filter-group">
+              <Select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
+                <option value="all">All Status</option>
+                <option value="active">Active</option>
+                <option value="inactive">Inactive</option>
+                <option value="pending">Pending</option>
+              </Select>
+              <Select value={roleFilter} onChange={(e) => setRoleFilter(e.target.value)}>
+                <option value="all">All Roles</option>
+                <option value="admin">Admins</option>
+                <option value="manager">Managers</option>
+                <option value="accounting">Accounting</option>
+                <option value="employee">Employees Only</option>
+              </Select>
+              <Select value={departmentFilter} onChange={(e) => setDepartmentFilter(e.target.value)}>
+                <option value="all">All Departments</option>
+                {departments.map(dept => (
+                  <option key={dept.id} value={dept.id}>{dept.name}</option>
+                ))}
+              </Select>
+            </div>
+          </Card.Body>
+        </Card>
 
         {/* Users Table */}
         {loading ? (
           <div className="loading-container">
-            <div className="spinner"></div>
-            <p>Loading users...</p>
+            <Skeleton variant="title" width="40%" />
+            <Skeleton variant="text" count={8} />
           </div>
-        ) : error ? (
-          <div className="error-message card">{error}</div>
         ) : (
-          <div className="users-table-container card">
+          <Card className="users-table-container">
             <table className="users-table">
               <thead>
                 <tr>
@@ -311,7 +311,7 @@ function UserManagement({ user, setUser }) {
                       <td>{u.email}</td>
                       <td>{u.department_name || <span className="no-dept">No department</span>}</td>
                       <td className="roles-cell">{getRoleBadges(u)}</td>
-                      <td>{getStatusBadge(u.status)}</td>
+                      <td><Badge variant={getStatusVariant(u.status)}>{u.status}</Badge></td>
                       <td>
                         {u.can_use_modern_version ? (
                           <span className="modern-enabled"><i className="fas fa-check-circle"></i></span>
@@ -320,21 +320,22 @@ function UserManagement({ user, setUser }) {
                         )}
                       </td>
                       <td className="actions-cell">
-                        <button 
-                          className="btn-icon" 
+                        <Button
+                          variant="ghost"
+                          size="small"
+                          icon="fas fa-edit"
                           onClick={() => openModal('edit', u)}
                           title="Edit user"
-                        >
-                          <i className="fas fa-edit"></i>
-                        </button>
+                        />
                         {u.id !== user.id && (
-                          <button 
-                            className="btn-icon delete" 
+                          <Button
+                            variant="ghost"
+                            size="small"
+                            icon="fas fa-trash"
                             onClick={() => handleDelete(u)}
                             title="Delete user"
-                          >
-                            <i className="fas fa-trash"></i>
-                          </button>
+                            className="btn-delete"
+                          />
                         )}
                       </td>
                     </tr>
@@ -345,166 +346,153 @@ function UserManagement({ user, setUser }) {
             <div className="table-footer">
               <span>{users.length} user(s) found</span>
             </div>
-          </div>
+          </Card>
         )}
       </main>
 
       {/* User Modal */}
-      {modalOpen && (
-        <div className="modal-overlay" onClick={closeModal}>
-          <div className="modal user-modal" onClick={e => e.stopPropagation()}>
-            <div className="modal-header">
-              <h2>{modalMode === 'create' ? 'Add New User' : 'Edit User'}</h2>
-              <button className="btn-icon" onClick={closeModal}>
-                <i className="fas fa-times"></i>
-              </button>
-            </div>
-            
-            {formError && <div className="form-error">{formError}</div>}
-            
-            <form onSubmit={handleSubmit} className="user-form">
-              <div className="form-row">
-                <div className="form-group">
-                  <label><i className="fas fa-user"></i> Username</label>
-                  <input
-                    type="text"
-                    name="username"
-                    value={formData.username}
-                    onChange={handleInputChange}
-                    required
-                    disabled={modalMode === 'edit'}
-                    placeholder="Enter username"
-                  />
-                </div>
-                <div className="form-group">
-                  <label><i className="fas fa-envelope"></i> Email</label>
-                  <input
-                    type="email"
-                    name="email"
-                    value={formData.email}
-                    onChange={handleInputChange}
-                    required
-                    placeholder="Enter email"
-                  />
-                </div>
-              </div>
+      <Modal
+        isOpen={modalOpen}
+        onClose={closeModal}
+        title={modalMode === 'create' ? 'Add New User' : 'Edit User'}
+        size="large"
+      >
+        {formError && <div className="form-error">{formError}</div>}
 
-              <div className="form-row">
-                <div className="form-group">
-                  <label><i className="fas fa-id-card"></i> First Name</label>
-                  <input
-                    type="text"
-                    name="first_name"
-                    value={formData.first_name}
-                    onChange={handleInputChange}
-                    placeholder="Enter first name"
-                  />
-                </div>
-                <div className="form-group">
-                  <label><i className="fas fa-id-card"></i> Last Name</label>
-                  <input
-                    type="text"
-                    name="last_name"
-                    value={formData.last_name}
-                    onChange={handleInputChange}
-                    placeholder="Enter last name"
-                  />
-                </div>
-              </div>
-
-              <div className="form-row">
-                <div className="form-group">
-                  <label><i className="fas fa-lock"></i> Password {modalMode === 'edit' && '(leave blank to keep)'}</label>
-                  <input
-                    type="password"
-                    name="password"
-                    value={formData.password}
-                    onChange={handleInputChange}
-                    placeholder={modalMode === 'create' ? 'Enter password' : 'Leave blank to keep current'}
-                  />
-                </div>
-                <div className="form-group">
-                  <label><i className="fas fa-building"></i> Department</label>
-                  <select
-                    name="department_id"
-                    value={formData.department_id}
-                    onChange={handleInputChange}
-                  >
-                    <option value="">No Department</option>
-                    {departments.map(dept => (
-                      <option key={dept.id} value={dept.id}>{dept.name}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
-              <div className="form-group">
-                <label><i className="fas fa-toggle-on"></i> Status</label>
-                <select
-                  name="status"
-                  value={formData.status}
-                  onChange={handleInputChange}
-                >
-                  <option value="active">Active</option>
-                  <option value="inactive">Inactive</option>
-                  <option value="pending">Pending</option>
-                </select>
-              </div>
-
-              <div className="form-group checkbox-group">
-                <label className="section-label"><i className="fas fa-shield-alt"></i> Permissions</label>
-                <div className="checkbox-row">
-                  <label className="checkbox-label">
-                    <input
-                      type="checkbox"
-                      name="is_admin"
-                      checked={formData.is_admin}
-                      onChange={handleInputChange}
-                    />
-                    <span>Administrator</span>
-                  </label>
-                  <label className="checkbox-label">
-                    <input
-                      type="checkbox"
-                      name="is_manager"
-                      checked={formData.is_manager}
-                      onChange={handleInputChange}
-                    />
-                    <span>Manager</span>
-                  </label>
-                  <label className="checkbox-label">
-                    <input
-                      type="checkbox"
-                      name="is_accounting"
-                      checked={formData.is_accounting}
-                      onChange={handleInputChange}
-                    />
-                    <span>Accounting</span>
-                  </label>
-                  <label className="checkbox-label">
-                    <input
-                      type="checkbox"
-                      name="can_use_modern_version"
-                      checked={formData.can_use_modern_version}
-                      onChange={handleInputChange}
-                    />
-                    <span>Modern UI Access</span>
-                  </label>
-                </div>
-              </div>
-
-              <div className="modal-actions">
-                <button type="button" className="btn-secondary" onClick={closeModal}>
-                  Cancel
-                </button>
-                <button type="submit" className="btn-primary">
-                  {modalMode === 'create' ? 'Create User' : 'Save Changes'}
-                </button>
-              </div>
-            </form>
+        <form onSubmit={handleSubmit} className="user-form">
+          <div className="form-row">
+            <Input
+              label="Username"
+              icon="fas fa-user"
+              type="text"
+              name="username"
+              value={formData.username}
+              onChange={handleInputChange}
+              required
+              disabled={modalMode === 'edit'}
+              placeholder="Enter username"
+            />
+            <Input
+              label="Email"
+              icon="fas fa-envelope"
+              type="email"
+              name="email"
+              value={formData.email}
+              onChange={handleInputChange}
+              required
+              placeholder="Enter email"
+            />
           </div>
-        </div>
-      )}
+
+          <div className="form-row">
+            <Input
+              label="First Name"
+              icon="fas fa-id-card"
+              type="text"
+              name="first_name"
+              value={formData.first_name}
+              onChange={handleInputChange}
+              placeholder="Enter first name"
+            />
+            <Input
+              label="Last Name"
+              icon="fas fa-id-card"
+              type="text"
+              name="last_name"
+              value={formData.last_name}
+              onChange={handleInputChange}
+              placeholder="Enter last name"
+            />
+          </div>
+
+          <div className="form-row">
+            <Input
+              label={`Password ${modalMode === 'edit' ? '(leave blank to keep)' : ''}`}
+              icon="fas fa-lock"
+              type="password"
+              name="password"
+              value={formData.password}
+              onChange={handleInputChange}
+              placeholder={modalMode === 'create' ? 'Enter password' : 'Leave blank to keep current'}
+            />
+            <Select
+              label="Department"
+              icon="fas fa-building"
+              name="department_id"
+              value={formData.department_id}
+              onChange={handleInputChange}
+            >
+              <option value="">No Department</option>
+              {departments.map(dept => (
+                <option key={dept.id} value={dept.id}>{dept.name}</option>
+              ))}
+            </Select>
+          </div>
+
+          <Select
+            label="Status"
+            icon="fas fa-toggle-on"
+            name="status"
+            value={formData.status}
+            onChange={handleInputChange}
+          >
+            <option value="active">Active</option>
+            <option value="inactive">Inactive</option>
+            <option value="pending">Pending</option>
+          </Select>
+
+          <div className="form-group checkbox-group">
+            <label className="section-label"><i className="fas fa-shield-alt"></i> Permissions</label>
+            <div className="checkbox-row">
+              <label className="checkbox-label">
+                <input
+                  type="checkbox"
+                  name="is_admin"
+                  checked={formData.is_admin}
+                  onChange={handleInputChange}
+                />
+                <span>Administrator</span>
+              </label>
+              <label className="checkbox-label">
+                <input
+                  type="checkbox"
+                  name="is_manager"
+                  checked={formData.is_manager}
+                  onChange={handleInputChange}
+                />
+                <span>Manager</span>
+              </label>
+              <label className="checkbox-label">
+                <input
+                  type="checkbox"
+                  name="is_accounting"
+                  checked={formData.is_accounting}
+                  onChange={handleInputChange}
+                />
+                <span>Accounting</span>
+              </label>
+              <label className="checkbox-label">
+                <input
+                  type="checkbox"
+                  name="can_use_modern_version"
+                  checked={formData.can_use_modern_version}
+                  onChange={handleInputChange}
+                />
+                <span>Modern UI Access</span>
+              </label>
+            </div>
+          </div>
+
+          <div className="modal-actions">
+            <Button type="button" variant="secondary" onClick={closeModal}>
+              Cancel
+            </Button>
+            <Button type="submit" variant="primary">
+              {modalMode === 'create' ? 'Create User' : 'Save Changes'}
+            </Button>
+          </div>
+        </form>
+      </Modal>
     </div>
   )
 }
