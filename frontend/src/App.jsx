@@ -1,5 +1,6 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import { useState, useEffect } from 'react'
+import { ToastProvider } from './components/ui'
 import Login from './pages/Login'
 import Dashboard from './pages/Dashboard'
 import SubmitExpense from './pages/SubmitExpense'
@@ -50,8 +51,9 @@ function App() {
   }
 
   return (
-    <Router basename="/modern">
-      <Routes>
+    <ToastProvider>
+      <Router basename="/modern">
+        <Routes>
         <Route path="/login" element={<Login setUser={setUser} />} />
         <Route
           path="/dashboard"
@@ -102,8 +104,9 @@ function App() {
           element={user ? <Reports user={user} setUser={setUser} /> : <Navigate to="/login" />}
         />
         <Route path="/" element={<Navigate to={user ? "/dashboard" : "/login"} />} />
-      </Routes>
-    </Router>
+        </Routes>
+      </Router>
+    </ToastProvider>
   )
 }
 

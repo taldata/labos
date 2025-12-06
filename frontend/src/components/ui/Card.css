@@ -1,0 +1,131 @@
+.card {
+  background: white;
+  border-radius: 0.75rem;
+  transition: all 0.2s ease;
+}
+
+/* Variants */
+.card-default {
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  border: 1px solid #f1f5f9;
+}
+
+.card-elevated {
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  border: none;
+}
+
+.card-outlined {
+  box-shadow: none;
+  border: 1px solid #e2e8f0;
+}
+
+.card-flat {
+  box-shadow: none;
+  border: none;
+  background: #f8fafc;
+}
+
+/* Padding */
+.card-padding-none {
+  padding: 0;
+}
+
+.card-padding-small {
+  padding: 0.75rem;
+}
+
+.card-padding-default {
+  padding: 1.5rem;
+}
+
+.card-padding-large {
+  padding: 2rem;
+}
+
+/* Hoverable */
+.card-hoverable:hover {
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  transform: translateY(-2px);
+}
+
+/* Clickable */
+.card-clickable {
+  cursor: pointer;
+}
+
+.card-clickable:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.3);
+}
+
+/* Compound components */
+.card-header {
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid #f1f5f9;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.card-header h1,
+.card-header h2,
+.card-header h3,
+.card-header h4 {
+  margin: 0;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.card-body {
+  padding: 1.5rem;
+}
+
+.card-footer {
+  padding: 1rem 1.5rem;
+  border-top: 1px solid #f1f5f9;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.75rem;
+}
+
+/* Card with compound components - reset padding */
+.card-padding-none .card-header,
+.card-padding-none .card-body,
+.card-padding-none .card-footer {
+  padding: 0;
+  border: none;
+}
+
+.card:has(.card-header),
+.card:has(.card-body),
+.card:has(.card-footer) {
+  padding: 0;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .card-padding-default {
+    padding: 1rem;
+  }
+
+  .card-padding-large {
+    padding: 1.5rem;
+  }
+
+  .card-header {
+    padding: 0.875rem 1rem;
+    flex-wrap: wrap;
+  }
+
+  .card-body {
+    padding: 1rem;
+  }
+
+  .card-footer {
+    padding: 0.875rem 1rem;
+    flex-wrap: wrap;
+  }
+}

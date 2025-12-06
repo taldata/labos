@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { Card, Button, Input, useToast } from '../components/ui'
 import './Login.css'
 
 function Login({ setUser }) {
-  const [loginMethod, setLoginMethod] = useState('username') // 'username' or 'azure'
+  const [loginMethod, setLoginMethod] = useState('username')
   const [formData, setFormData] = useState({
     username: '',
     password: ''
@@ -11,8 +12,8 @@ function Login({ setUser }) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const navigate = useNavigate()
+  const { error: showError } = useToast()
 
-  // Check if user is already authenticated
   useEffect(() => {
     const checkAuth = async () => {
       try {
@@ -27,7 +28,6 @@ function Login({ setUser }) {
           }
         }
       } catch (error) {
-        // User not authenticated, stay on login page
         console.error('Auth check failed:', error)
       }
     }
@@ -40,6 +40,7 @@ function Login({ setUser }) {
       ...prev,
       [name]: value
     }))
+    setError('')
   }
 
   const handleUsernameLogin = async (e) => {
@@ -78,23 +79,25 @@ function Login({ setUser }) {
     setError('')
 
     try {
-      // Redirect to Azure AD login
       window.location.href = '/api/v1/auth/login/azure'
     } catch (err) {
-      setError('Failed to initiate Azure login')
+      showError('Failed to initiate Azure login')
       setLoading(false)
     }
   }
 
   return (
     <div className="login-container">
-      <div className="login-card card">
-        <div className="login-header">
-          <h1>Labos Expense Management</h1>
-          <p>Modern Version - Beta</p>
-        </div>
+      <Card className="login-card">
+        <Card.Body>
+          <div className="login-header">
+            <div className="logo-icon">
+              <i className="fas fa-receipt"></i>
+            </div>
+            <h1>Labos</h1>
+            <p className="tagline">Expense Management System</p>
+          </div>
 
-        <div className="login-body">
           {/* Login Method Toggle */}
           <div className="login-method-toggle">
             <button
@@ -106,7 +109,7 @@ function Login({ setUser }) {
               type="button"
             >
               <i className="fas fa-user"></i>
-              Username & Password
+              <span>Username</span>
             </button>
             <button
               className={`toggle-btn ${loginMethod === 'azure' ? 'active' : ''}`}
@@ -117,7 +120,7 @@ function Login({ setUser }) {
               type="button"
             >
               <i className="fab fa-microsoft"></i>
-              Microsoft Azure AD
+              <span>Microsoft</span>
             </button>
           </div>
 
@@ -130,63 +133,46 @@ function Login({ setUser }) {
 
           {/* Username/Password Login */}
           {loginMethod === 'username' && (
-            <form onSubmit={handleUsernameLogin} className="username-login-form">
-              <p className="login-description">
-                Sign in with your username and password.
-              </p>
-
+            <form onSubmit={handleUsernameLogin} className="login-form">
               {/* Dev Mode Hint */}
               {import.meta.env.DEV && (
                 <div className="dev-hint">
-                  <i className="fas fa-code"></i>
-                  <span><strong>Dev Mode:</strong> Use password "dev" for any username</span>
+                  <i className="fas fa-flask"></i>
+                  <span>Dev Mode: Use password "dev" for any user</span>
                 </div>
               )}
 
-              <div className="form-group">
-                <label htmlFor="username">Username</label>
-                <input
-                  type="text"
-                  id="username"
-                  name="username"
-                  value={formData.username}
-                  onChange={handleInputChange}
-                  placeholder="Enter your username"
-                  required
-                  autoFocus
-                />
-              </div>
+              <Input
+                label="Username"
+                name="username"
+                value={formData.username}
+                onChange={handleInputChange}
+                placeholder="Enter your username"
+                required
+                autoFocus
+                icon="fas fa-user"
+              />
 
-              <div className="form-group">
-                <label htmlFor="password">Password</label>
-                <input
-                  type="password"
-                  id="password"
-                  name="password"
-                  value={formData.password}
-                  onChange={handleInputChange}
-                  placeholder="Enter your password"
-                  required
-                />
-              </div>
+              <Input
+                type="password"
+                label="Password"
+                name="password"
+                value={formData.password}
+                onChange={handleInputChange}
+                placeholder="Enter your password"
+                required
+                icon="fas fa-lock"
+              />
 
-              <button
+              <Button
                 type="submit"
-                className="btn-primary login-submit-btn"
-                disabled={loading}
+                variant="primary"
+                fullWidth
+                loading={loading}
+                icon={loading ? null : "fas fa-sign-in-alt"}
               >
-                {loading ? (
-                  <>
-                    <div className="spinner-small"></div>
-                    Signing in...
-                  </>
-                ) : (
-                  <>
-                    <i className="fas fa-sign-in-alt"></i>
-                    Sign In
-                  </>
-                )}
-              </button>
+                {loading ? 'Signing in...' : 'Sign In'}
+              </Button>
             </form>
           )}
 
@@ -194,20 +180,18 @@ function Login({ setUser }) {
           {loginMethod === 'azure' && (
             <div className="azure-login-section">
               <p className="login-description">
-                Sign in with your Microsoft account to access the modern expense management system.
+                Sign in with your Microsoft account to access the expense management system.
               </p>
 
-              <button
-                className="btn-primary azure-login-btn"
+              <Button
+                variant="primary"
+                fullWidth
                 onClick={handleAzureLogin}
-                disabled={loading}
-                type="button"
+                loading={loading}
+                className="azure-btn"
               >
                 {loading ? (
-                  <>
-                    <div className="spinner-small"></div>
-                    Signing in...
-                  </>
+                  'Signing in...'
                 ) : (
                   <>
                     <svg className="microsoft-icon" viewBox="0 0 21 21" xmlns="http://www.w3.org/2000/svg">
@@ -219,17 +203,20 @@ function Login({ setUser }) {
                     Sign in with Microsoft
                   </>
                 )}
-              </button>
+              </Button>
             </div>
           )}
 
           <div className="login-footer">
             <a href="/" className="back-link">
-              <i className="fas fa-arrow-left"></i> Back to legacy version
+              <i className="fas fa-arrow-left"></i>
+              <span>Back to legacy version</span>
             </a>
           </div>
-        </div>
-      </div>
+        </Card.Body>
+      </Card>
+
+      <p className="copyright">Modern UI Version</p>
     </div>
   )
 }

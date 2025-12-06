@@ -31,38 +31,44 @@
 }
 
 .settings-section {
+  padding: 0;
+}
+
+.settings-section .card-header {
+  padding: 1.25rem 1.5rem;
+}
+
+.settings-section .card-body {
   padding: 1.5rem;
 }
 
-.section-header {
+.section-header-content {
   display: flex;
   align-items: flex-start;
   gap: 1rem;
-  margin-bottom: 1.5rem;
-  padding-bottom: 1rem;
-  border-bottom: 1px solid #e2e8f0;
 }
 
 .section-icon {
-  width: 48px;
-  height: 48px;
-  border-radius: 12px;
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.25rem;
+  font-size: 1.1rem;
+  flex-shrink: 0;
 }
 
-.section-header h2 {
-  font-size: 1.1rem;
+.section-header-content h2 {
+  font-size: 1.05rem;
   color: #1e293b;
   margin: 0;
 }
 
-.section-header p {
-  font-size: 0.875rem;
+.section-header-content p {
+  font-size: 0.85rem;
   color: #64748b;
   margin: 0.25rem 0 0 0;
 }

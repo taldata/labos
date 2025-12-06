@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Header from '../components/Header'
+import { Card, Badge, Skeleton, Button } from '../components/ui'
 import './Dashboard.css'
 
 function Dashboard({ user, setUser }) {
@@ -43,15 +44,23 @@ function Dashboard({ user, setUser }) {
     }
   }
 
+  const getStatusVariant = (status) => {
+    const variants = {
+      pending: 'warning',
+      approved: 'success',
+      rejected: 'danger',
+      paid: 'info'
+    }
+    return variants[status] || 'default'
+  }
 
   return (
     <div className="dashboard-container">
       <Header user={user} setUser={setUser} currentPage="dashboard" />
 
-      {/* Main Content */}
       <main className="dashboard-main">
         <div className="welcome-section">
-          <h2>👋 Welcome back, {user?.first_name || 'User'}!</h2>
+          <h2>Welcome back, {user?.first_name || 'User'}!</h2>
           <p className="welcome-text">
             Here's your expense overview for this month
           </p>
@@ -59,159 +68,197 @@ function Dashboard({ user, setUser }) {
 
         {/* Quick Stats */}
         {loading ? (
-          <div className="loading-container">
-            <div className="spinner"></div>
-            <p>Loading dashboard data...</p>
+          <div className="stats-grid">
+            {[1, 2, 3, 4].map(i => (
+              <Card key={i} className="stat-card">
+                <Card.Body>
+                  <div className="stat-card-loading">
+                    <Skeleton variant="avatar" width="48px" height="48px" borderRadius="0.75rem" />
+                    <div style={{ flex: 1 }}>
+                      <Skeleton variant="text" width="60%" height="0.875rem" />
+                      <Skeleton variant="title" width="40%" height="1.75rem" />
+                      <Skeleton variant="text" width="80%" height="0.75rem" />
+                    </div>
+                  </div>
+                </Card.Body>
+              </Card>
+            ))}
           </div>
         ) : (
           <>
             <div className="stats-grid">
-              <div className="stat-card card">
-                <div className="stat-icon" style={{ background: '#dbeafe' }}>
-                  📝
-                </div>
-                <div className="stat-content">
-                  <h3>Pending Expenses</h3>
-                  <p className="stat-value">{summary?.pending || 0}</p>
-                  <p className="stat-label">Awaiting approval</p>
-                </div>
-              </div>
+              <Card className="stat-card">
+                <Card.Body>
+                  <div className="stat-icon stat-icon-pending">
+                    <i className="fas fa-clock"></i>
+                  </div>
+                  <div className="stat-content">
+                    <h3>Pending Expenses</h3>
+                    <p className="stat-value">{summary?.pending || 0}</p>
+                    <p className="stat-label">Awaiting approval</p>
+                  </div>
+                </Card.Body>
+              </Card>
 
-              <div className="stat-card card">
-                <div className="stat-icon" style={{ background: '#dcfce7' }}>
-                  ✅
-                </div>
-                <div className="stat-content">
-                  <h3>Approved</h3>
-                  <p className="stat-value">{summary?.approved || 0}</p>
-                  <p className="stat-label">Total approved</p>
-                </div>
-              </div>
+              <Card className="stat-card">
+                <Card.Body>
+                  <div className="stat-icon stat-icon-approved">
+                    <i className="fas fa-check-circle"></i>
+                  </div>
+                  <div className="stat-content">
+                    <h3>Approved</h3>
+                    <p className="stat-value">{summary?.approved || 0}</p>
+                    <p className="stat-label">Total approved</p>
+                  </div>
+                </Card.Body>
+              </Card>
 
-              <div className="stat-card card">
-                <div className="stat-icon" style={{ background: '#fef3c7' }}>
-                  💰
-                </div>
-                <div className="stat-content">
-                  <h3>Total Amount</h3>
-                  <p className="stat-value">
-                    {summary?.currency === 'USD' ? '$' : '₪'}
-                    {summary?.total_amount?.toLocaleString() || '0'}
-                  </p>
-                  <p className="stat-label">This month</p>
-                </div>
-              </div>
+              <Card className="stat-card">
+                <Card.Body>
+                  <div className="stat-icon stat-icon-amount">
+                    <i className="fas fa-shekel-sign"></i>
+                  </div>
+                  <div className="stat-content">
+                    <h3>Total Amount</h3>
+                    <p className="stat-value">
+                      {summary?.currency === 'USD' ? '$' : '₪'}
+                      {summary?.total_amount?.toLocaleString() || '0'}
+                    </p>
+                    <p className="stat-label">This month</p>
+                  </div>
+                </Card.Body>
+              </Card>
 
-              <div className="stat-card card">
-                <div className="stat-icon" style={{ background: '#e0e7ff' }}>
-                  📊
-                </div>
-                <div className="stat-content">
-                  <h3>Budget Usage</h3>
-                  <p className="stat-value">{budget?.usage_percent?.toFixed(1) || '0'}%</p>
-                  <p className="stat-label">
-                    {budget?.currency === 'USD' ? '$' : '₪'}
-                    {budget?.spent?.toLocaleString() || '0'} of{' '}
-                    {budget?.currency === 'USD' ? '$' : '₪'}
-                    {budget?.total?.toLocaleString() || '0'}
-                  </p>
-                </div>
-              </div>
+              <Card className="stat-card">
+                <Card.Body>
+                  <div className="stat-icon stat-icon-budget">
+                    <i className="fas fa-chart-pie"></i>
+                  </div>
+                  <div className="stat-content">
+                    <h3>Budget Usage</h3>
+                    <p className="stat-value">{budget?.usage_percent?.toFixed(1) || '0'}%</p>
+                    <p className="stat-label">
+                      {budget?.currency === 'USD' ? '$' : '₪'}
+                      {budget?.spent?.toLocaleString() || '0'} of{' '}
+                      {budget?.currency === 'USD' ? '$' : '₪'}
+                      {budget?.total?.toLocaleString() || '0'}
+                    </p>
+                  </div>
+                </Card.Body>
+              </Card>
             </div>
 
             {/* Quick Actions */}
             <div className="quick-actions">
               <h3>Quick Actions</h3>
               <div className="actions-grid">
-                <button className="action-card card" onClick={() => navigate('/submit-expense')}>
-                  <div className="action-icon">
-                    <i className="fas fa-plus-circle"></i>
-                  </div>
-                  <div className="action-content">
-                    <h4>Submit Expense</h4>
-                    <p>Create a new expense report</p>
-                  </div>
-                </button>
-
-                <button className="action-card card" onClick={() => navigate('/my-expenses')}>
-                  <div className="action-icon">
-                    <i className="fas fa-list"></i>
-                  </div>
-                  <div className="action-content">
-                    <h4>My Expenses</h4>
-                    <p>View and manage all expenses</p>
-                  </div>
-                </button>
-
-                <button className="action-card card" onClick={() => navigate('/reports')}>
-                  <div className="action-icon">
-                    <i className="fas fa-chart-bar"></i>
-                  </div>
-                  <div className="action-content">
-                    <h4>Reports</h4>
-                    <p>Generate & export reports</p>
-                  </div>
-                </button>
-
-                {(user?.is_manager || user?.is_admin) && (
-                  <button className="action-card card" onClick={() => navigate('/approvals')}>
-                    <div className="action-icon">
-                      <i className="fas fa-clipboard-check"></i>
+                <Card hoverable clickable onClick={() => navigate('/submit-expense')} className="action-card">
+                  <Card.Body>
+                    <div className="action-icon action-icon-submit">
+                      <i className="fas fa-plus-circle"></i>
                     </div>
                     <div className="action-content">
-                      <h4>Approvals</h4>
-                      <p>Review pending expenses</p>
+                      <h4>Submit Expense</h4>
+                      <p>Create a new expense report</p>
                     </div>
-                  </button>
+                  </Card.Body>
+                </Card>
+
+                <Card hoverable clickable onClick={() => navigate('/my-expenses')} className="action-card">
+                  <Card.Body>
+                    <div className="action-icon action-icon-list">
+                      <i className="fas fa-list"></i>
+                    </div>
+                    <div className="action-content">
+                      <h4>My Expenses</h4>
+                      <p>View and manage all expenses</p>
+                    </div>
+                  </Card.Body>
+                </Card>
+
+                <Card hoverable clickable onClick={() => navigate('/reports')} className="action-card">
+                  <Card.Body>
+                    <div className="action-icon action-icon-reports">
+                      <i className="fas fa-chart-bar"></i>
+                    </div>
+                    <div className="action-content">
+                      <h4>Reports</h4>
+                      <p>Generate & export reports</p>
+                    </div>
+                  </Card.Body>
+                </Card>
+
+                {(user?.is_manager || user?.is_admin) && (
+                  <Card hoverable clickable onClick={() => navigate('/approvals')} className="action-card">
+                    <Card.Body>
+                      <div className="action-icon action-icon-approvals">
+                        <i className="fas fa-clipboard-check"></i>
+                      </div>
+                      <div className="action-content">
+                        <h4>Approvals</h4>
+                        <p>Review pending expenses</p>
+                      </div>
+                    </Card.Body>
+                  </Card>
                 )}
 
                 {user?.is_admin && (
                   <>
-                    <button className="action-card card" onClick={() => navigate('/admin/departments')}>
-                      <div className="action-icon">
-                        <i className="fas fa-sitemap"></i>
-                      </div>
-                      <div className="action-content">
-                        <h4>Organization</h4>
-                        <p>Manage departments & categories</p>
-                      </div>
-                    </button>
-                    <button className="action-card card" onClick={() => navigate('/admin/users')}>
-                      <div className="action-icon">
-                        <i className="fas fa-users"></i>
-                      </div>
-                      <div className="action-content">
-                        <h4>Users</h4>
-                        <p>Manage user accounts</p>
-                      </div>
-                    </button>
-                    <button className="action-card card" onClick={() => navigate('/admin')}>
-                      <div className="action-icon">
-                        <i className="fas fa-chart-line"></i>
-                      </div>
-                      <div className="action-content">
-                        <h4>Analytics</h4>
-                        <p>View expense reports</p>
-                      </div>
-                    </button>
-                    <button className="action-card card" onClick={() => navigate('/admin/suppliers')}>
-                      <div className="action-icon">
-                        <i className="fas fa-building"></i>
-                      </div>
-                      <div className="action-content">
-                        <h4>Suppliers</h4>
-                        <p>Manage vendors</p>
-                      </div>
-                    </button>
-                    <button className="action-card card" onClick={() => navigate('/admin/credit-cards')}>
-                      <div className="action-icon">
-                        <i className="fas fa-credit-card"></i>
-                      </div>
-                      <div className="action-content">
-                        <h4>Credit Cards</h4>
-                        <p>Manage company cards</p>
-                      </div>
-                    </button>
+                    <Card hoverable clickable onClick={() => navigate('/admin/departments')} className="action-card">
+                      <Card.Body>
+                        <div className="action-icon action-icon-org">
+                          <i className="fas fa-sitemap"></i>
+                        </div>
+                        <div className="action-content">
+                          <h4>Organization</h4>
+                          <p>Manage departments & categories</p>
+                        </div>
+                      </Card.Body>
+                    </Card>
+                    <Card hoverable clickable onClick={() => navigate('/admin/users')} className="action-card">
+                      <Card.Body>
+                        <div className="action-icon action-icon-users">
+                          <i className="fas fa-users"></i>
+                        </div>
+                        <div className="action-content">
+                          <h4>Users</h4>
+                          <p>Manage user accounts</p>
+                        </div>
+                      </Card.Body>
+                    </Card>
+                    <Card hoverable clickable onClick={() => navigate('/admin')} className="action-card">
+                      <Card.Body>
+                        <div className="action-icon action-icon-analytics">
+                          <i className="fas fa-chart-line"></i>
+                        </div>
+                        <div className="action-content">
+                          <h4>Analytics</h4>
+                          <p>View expense reports</p>
+                        </div>
+                      </Card.Body>
+                    </Card>
+                    <Card hoverable clickable onClick={() => navigate('/admin/suppliers')} className="action-card">
+                      <Card.Body>
+                        <div className="action-icon action-icon-suppliers">
+                          <i className="fas fa-building"></i>
+                        </div>
+                        <div className="action-content">
+                          <h4>Suppliers</h4>
+                          <p>Manage vendors</p>
+                        </div>
+                      </Card.Body>
+                    </Card>
+                    <Card hoverable clickable onClick={() => navigate('/admin/credit-cards')} className="action-card">
+                      <Card.Body>
+                        <div className="action-icon action-icon-cards">
+                          <i className="fas fa-credit-card"></i>
+                        </div>
+                        <div className="action-content">
+                          <h4>Credit Cards</h4>
+                          <p>Manage company cards</p>
+                        </div>
+                      </Card.Body>
+                    </Card>
                   </>
                 )}
               </div>
@@ -219,11 +266,20 @@ function Dashboard({ user, setUser }) {
 
             {/* Recent Expenses */}
             {recentExpenses.length > 0 && (
-              <div className="recent-expenses card">
-                <h3>📋 Recent Expenses</h3>
-                <div className="expenses-list">
+              <Card className="recent-expenses">
+                <Card.Header>
+                  <h3><i className="fas fa-receipt"></i> Recent Expenses</h3>
+                  <Button variant="ghost" size="small" onClick={() => navigate('/my-expenses')}>
+                    View All <i className="fas fa-arrow-right"></i>
+                  </Button>
+                </Card.Header>
+                <Card.Body className="expenses-list-body">
                   {recentExpenses.map(expense => (
-                    <div key={expense.id} className="expense-item">
+                    <div
+                      key={expense.id}
+                      className="expense-item"
+                      onClick={() => navigate(`/expenses/${expense.id}`)}
+                    >
                       <div className="expense-info">
                         <div className="expense-desc">{expense.description || 'No description'}</div>
                         <div className="expense-meta">
@@ -236,45 +292,53 @@ function Dashboard({ user, setUser }) {
                           {expense.currency === 'USD' ? '$' : '₪'}
                           {expense.amount.toLocaleString()}
                         </div>
-                        <span className={`expense-status status-${expense.status}`}>
+                        <Badge variant={getStatusVariant(expense.status)} size="small">
                           {expense.status}
-                        </span>
+                        </Badge>
                       </div>
                     </div>
                   ))}
-                </div>
-              </div>
+                </Card.Body>
+              </Card>
             )}
           </>
         )}
 
         {/* Tips Section */}
-        <div className="tips-section card">
-          <h3>💡 Quick Tips</h3>
-          <div className="tips-grid">
-            <div className="tip-item">
-              <i className="fas fa-keyboard"></i>
-              <div>
-                <strong>Keyboard Shortcuts</strong>
-                <p>Press <kbd>N</kbd> to quickly submit a new expense</p>
+        <Card className="tips-section">
+          <Card.Body>
+            <h3><i className="fas fa-lightbulb"></i> Quick Tips</h3>
+            <div className="tips-grid">
+              <div className="tip-item">
+                <div className="tip-icon">
+                  <i className="fas fa-keyboard"></i>
+                </div>
+                <div>
+                  <strong>Keyboard Shortcuts</strong>
+                  <p>Press <kbd>N</kbd> to quickly submit a new expense</p>
+                </div>
+              </div>
+              <div className="tip-item">
+                <div className="tip-icon">
+                  <i className="fas fa-camera"></i>
+                </div>
+                <div>
+                  <strong>Receipt Upload</strong>
+                  <p>Attach receipts to expenses for faster approval</p>
+                </div>
+              </div>
+              <div className="tip-item">
+                <div className="tip-icon">
+                  <i className="fas fa-bell"></i>
+                </div>
+                <div>
+                  <strong>Stay Updated</strong>
+                  <p>Check the Approvals tab for pending items</p>
+                </div>
               </div>
             </div>
-            <div className="tip-item">
-              <i className="fas fa-camera"></i>
-              <div>
-                <strong>Receipt Upload</strong>
-                <p>Attach receipts to expenses for faster approval</p>
-              </div>
-            </div>
-            <div className="tip-item">
-              <i className="fas fa-bell"></i>
-              <div>
-                <strong>Stay Updated</strong>
-                <p>Check the Approvals tab for pending items</p>
-              </div>
-            </div>
-          </div>
-        </div>
+          </Card.Body>
+        </Card>
       </main>
     </div>
   )

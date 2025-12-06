@@ -1,11 +1,13 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Header from '../components/Header'
+import { Card, Button, Input, Badge, useToast } from '../components/ui'
 import './Settings.css'
 
 function Settings({ user, setUser }) {
   const navigate = useNavigate()
-  
+  const { success, error: showError } = useToast()
+
   // Profile form
   const [profileData, setProfileData] = useState({
     first_name: user?.first_name || '',
@@ -13,8 +15,6 @@ function Settings({ user, setUser }) {
     email: user?.email || ''
   })
   const [profileLoading, setProfileLoading] = useState(false)
-  const [profileSuccess, setProfileSuccess] = useState('')
-  const [profileError, setProfileError] = useState('')
 
   // Password form
   const [passwordData, setPasswordData] = useState({
@@ -23,8 +23,6 @@ function Settings({ user, setUser }) {
     confirm_password: ''
   })
   const [passwordLoading, setPasswordLoading] = useState(false)
-  const [passwordSuccess, setPasswordSuccess] = useState('')
-  const [passwordError, setPasswordError] = useState('')
 
   // Version preference
   const [versionLoading, setVersionLoading] = useState(false)
@@ -32,22 +30,16 @@ function Settings({ user, setUser }) {
   const handleProfileChange = (e) => {
     const { name, value } = e.target
     setProfileData(prev => ({ ...prev, [name]: value }))
-    setProfileSuccess('')
-    setProfileError('')
   }
 
   const handlePasswordChange = (e) => {
     const { name, value } = e.target
     setPasswordData(prev => ({ ...prev, [name]: value }))
-    setPasswordSuccess('')
-    setPasswordError('')
   }
 
   const handleProfileSubmit = async (e) => {
     e.preventDefault()
     setProfileLoading(true)
-    setProfileError('')
-    setProfileSuccess('')
 
     try {
       const res = await fetch('/api/v1/auth/profile', {
@@ -60,13 +52,13 @@ function Settings({ user, setUser }) {
       if (res.ok) {
         const data = await res.json()
         setUser(prev => ({ ...prev, ...data.user }))
-        setProfileSuccess('Profile updated successfully!')
+        success('Profile updated successfully!')
       } else {
         const data = await res.json()
-        setProfileError(data.error || 'Failed to update profile')
+        showError(data.error || 'Failed to update profile')
       }
     } catch (err) {
-      setProfileError('An error occurred')
+      showError('An error occurred while updating profile')
     } finally {
       setProfileLoading(false)
     }
@@ -74,9 +66,13 @@ function Settings({ user, setUser }) {
 
   const handlePasswordSubmit = async (e) => {
     e.preventDefault()
+
+    if (passwordData.new_password !== passwordData.confirm_password) {
+      showError('New passwords do not match')
+      return
+    }
+
     setPasswordLoading(true)
-    setPasswordError('')
-    setPasswordSuccess('')
 
     try {
       const res = await fetch('/api/v1/auth/change-password', {
@@ -87,7 +83,7 @@ function Settings({ user, setUser }) {
       })
 
       if (res.ok) {
-        setPasswordSuccess('Password changed successfully!')
+        success('Password changed successfully!')
         setPasswordData({
           current_password: '',
           new_password: '',
@@ -95,10 +91,10 @@ function Settings({ user, setUser }) {
         })
       } else {
         const data = await res.json()
-        setPasswordError(data.error || 'Failed to change password')
+        showError(data.error || 'Failed to change password')
       }
     } catch (err) {
-      setPasswordError('An error occurred')
+      showError('An error occurred while changing password')
     } finally {
       setPasswordLoading(false)
     }
@@ -115,7 +111,7 @@ function Settings({ user, setUser }) {
       })
       window.location.href = '/'
     } catch (err) {
-      console.error('Failed to switch version')
+      showError('Failed to switch version')
     } finally {
       setVersionLoading(false)
     }
@@ -123,10 +119,10 @@ function Settings({ user, setUser }) {
 
   const getRoleBadges = () => {
     const badges = []
-    if (user?.is_admin) badges.push(<span key="admin" className="role-badge admin">Administrator</span>)
-    if (user?.is_manager) badges.push(<span key="manager" className="role-badge manager">Manager</span>)
-    if (user?.is_accounting) badges.push(<span key="accounting" className="role-badge accounting">Accounting</span>)
-    if (badges.length === 0) badges.push(<span key="employee" className="role-badge employee">Employee</span>)
+    if (user?.is_admin) badges.push(<Badge key="admin" variant="danger" size="small">Administrator</Badge>)
+    if (user?.is_manager) badges.push(<Badge key="manager" variant="warning" size="small">Manager</Badge>)
+    if (user?.is_accounting) badges.push(<Badge key="accounting" variant="info" size="small">Accounting</Badge>)
+    if (badges.length === 0) badges.push(<Badge key="employee" variant="default" size="small">Employee</Badge>)
     return badges
   }
 
@@ -142,212 +138,202 @@ function Settings({ user, setUser }) {
 
         <div className="settings-grid">
           {/* Profile Section */}
-          <section className="settings-section card">
-            <div className="section-header">
-              <div className="section-icon"><i className="fas fa-user"></i></div>
-              <div>
-                <h2>Profile Information</h2>
-                <p>Update your personal details</p>
+          <Card className="settings-section">
+            <Card.Header>
+              <div className="section-header-content">
+                <div className="section-icon"><i className="fas fa-user"></i></div>
+                <div>
+                  <h2>Profile Information</h2>
+                  <p>Update your personal details</p>
+                </div>
               </div>
-            </div>
+            </Card.Header>
+            <Card.Body>
+              <div className="profile-overview">
+                <div className="avatar-large">
+                  {(user?.first_name?.[0] || user?.username?.[0] || '?').toUpperCase()}
+                </div>
+                <div className="profile-details">
+                  <h3>{user?.first_name} {user?.last_name}</h3>
+                  <p className="username">@{user?.username}</p>
+                  <div className="roles">{getRoleBadges()}</div>
+                </div>
+              </div>
 
-            <div className="profile-overview">
-              <div className="avatar-large">
-                {(user?.first_name?.[0] || user?.username?.[0] || '?').toUpperCase()}
-              </div>
-              <div className="profile-details">
-                <h3>{user?.first_name} {user?.last_name}</h3>
-                <p className="username">@{user?.username}</p>
-                <div className="roles">{getRoleBadges()}</div>
-              </div>
-            </div>
-
-            <form onSubmit={handleProfileSubmit} className="settings-form">
-              {profileSuccess && <div className="alert success">{profileSuccess}</div>}
-              {profileError && <div className="alert error">{profileError}</div>}
-              
-              <div className="form-row">
-                <div className="form-group">
-                  <label>First Name</label>
-                  <input
-                    type="text"
+              <form onSubmit={handleProfileSubmit} className="settings-form">
+                <div className="form-row">
+                  <Input
+                    label="First Name"
                     name="first_name"
                     value={profileData.first_name}
                     onChange={handleProfileChange}
                     placeholder="Enter first name"
                   />
-                </div>
-                <div className="form-group">
-                  <label>Last Name</label>
-                  <input
-                    type="text"
+                  <Input
+                    label="Last Name"
                     name="last_name"
                     value={profileData.last_name}
                     onChange={handleProfileChange}
                     placeholder="Enter last name"
                   />
                 </div>
-              </div>
 
-              <div className="form-group">
-                <label>Email Address</label>
-                <input
+                <Input
+                  label="Email Address"
                   type="email"
                   name="email"
                   value={profileData.email}
                   onChange={handleProfileChange}
                   placeholder="Enter email"
+                  icon="fas fa-envelope"
                 />
-              </div>
 
-              <div className="form-group">
-                <label>Username</label>
-                <input
-                  type="text"
+                <Input
+                  label="Username"
                   value={user?.username || ''}
                   disabled
-                  className="disabled"
+                  helperText="Username cannot be changed"
+                  icon="fas fa-at"
                 />
-                <span className="helper-text">Username cannot be changed</span>
-              </div>
 
-              <button type="submit" className="btn-primary" disabled={profileLoading}>
-                {profileLoading ? 'Saving...' : 'Save Changes'}
-              </button>
-            </form>
-          </section>
+                <Button type="submit" variant="primary" loading={profileLoading}>
+                  Save Changes
+                </Button>
+              </form>
+            </Card.Body>
+          </Card>
 
           {/* Password Section */}
-          <section className="settings-section card">
-            <div className="section-header">
-              <div className="section-icon"><i className="fas fa-lock"></i></div>
-              <div>
-                <h2>Change Password</h2>
-                <p>Update your account password</p>
+          <Card className="settings-section">
+            <Card.Header>
+              <div className="section-header-content">
+                <div className="section-icon"><i className="fas fa-lock"></i></div>
+                <div>
+                  <h2>Change Password</h2>
+                  <p>Update your account password</p>
+                </div>
               </div>
-            </div>
-
-            <form onSubmit={handlePasswordSubmit} className="settings-form">
-              {passwordSuccess && <div className="alert success">{passwordSuccess}</div>}
-              {passwordError && <div className="alert error">{passwordError}</div>}
-
-              <div className="form-group">
-                <label>Current Password</label>
-                <input
+            </Card.Header>
+            <Card.Body>
+              <form onSubmit={handlePasswordSubmit} className="settings-form">
+                <Input
                   type="password"
+                  label="Current Password"
                   name="current_password"
                   value={passwordData.current_password}
                   onChange={handlePasswordChange}
                   placeholder="Enter current password"
                   required
+                  icon="fas fa-key"
                 />
-              </div>
 
-              <div className="form-group">
-                <label>New Password</label>
-                <input
+                <Input
                   type="password"
+                  label="New Password"
                   name="new_password"
                   value={passwordData.new_password}
                   onChange={handlePasswordChange}
                   placeholder="Enter new password"
-                  minLength={6}
                   required
+                  helperText="Minimum 6 characters"
                 />
-              </div>
 
-              <div className="form-group">
-                <label>Confirm New Password</label>
-                <input
+                <Input
                   type="password"
+                  label="Confirm New Password"
                   name="confirm_password"
                   value={passwordData.confirm_password}
                   onChange={handlePasswordChange}
                   placeholder="Confirm new password"
-                  minLength={6}
                   required
                 />
-              </div>
 
-              <button type="submit" className="btn-primary" disabled={passwordLoading}>
-                {passwordLoading ? 'Changing...' : 'Change Password'}
-              </button>
-            </form>
-          </section>
+                <Button type="submit" variant="primary" loading={passwordLoading}>
+                  Change Password
+                </Button>
+              </form>
+            </Card.Body>
+          </Card>
 
           {/* Preferences Section */}
-          <section className="settings-section card">
-            <div className="section-header">
-              <div className="section-icon"><i className="fas fa-cog"></i></div>
-              <div>
-                <h2>Preferences</h2>
-                <p>Customize your experience</p>
+          <Card className="settings-section">
+            <Card.Header>
+              <div className="section-header-content">
+                <div className="section-icon"><i className="fas fa-cog"></i></div>
+                <div>
+                  <h2>Preferences</h2>
+                  <p>Customize your experience</p>
+                </div>
               </div>
-            </div>
+            </Card.Header>
+            <Card.Body>
+              <div className="preference-item">
+                <div className="preference-info">
+                  <h4>User Interface Version</h4>
+                  <p>You are currently using the <strong>Modern UI</strong></p>
+                </div>
+                <Button
+                  variant="secondary"
+                  icon="fas fa-exchange-alt"
+                  onClick={switchToLegacy}
+                  loading={versionLoading}
+                >
+                  Switch to Legacy
+                </Button>
+              </div>
 
-            <div className="preference-item">
-              <div className="preference-info">
-                <h4>User Interface Version</h4>
-                <p>You are currently using the <strong>Modern UI</strong></p>
+              <div className="preference-item">
+                <div className="preference-info">
+                  <h4>Department</h4>
+                  <p>{user?.department_name || 'No department assigned'}</p>
+                </div>
               </div>
-              <button 
-                className="btn-secondary"
-                onClick={switchToLegacy}
-                disabled={versionLoading}
-              >
-                <i className="fas fa-exchange-alt"></i>
-                {versionLoading ? 'Switching...' : 'Switch to Legacy'}
-              </button>
-            </div>
 
-            <div className="preference-item">
-              <div className="preference-info">
-                <h4>Department</h4>
-                <p>{user?.department_name || 'No department assigned'}</p>
+              <div className="preference-item">
+                <div className="preference-info">
+                  <h4>Account Status</h4>
+                  <Badge variant="success" size="small">Active</Badge>
+                </div>
               </div>
-            </div>
-
-            <div className="preference-item">
-              <div className="preference-info">
-                <h4>Account Status</h4>
-                <span className="status-badge active">Active</span>
-              </div>
-            </div>
-          </section>
+            </Card.Body>
+          </Card>
 
           {/* Quick Links */}
-          <section className="settings-section card">
-            <div className="section-header">
-              <div className="section-icon"><i className="fas fa-link"></i></div>
-              <div>
-                <h2>Quick Links</h2>
-                <p>Shortcuts to common actions</p>
+          <Card className="settings-section">
+            <Card.Header>
+              <div className="section-header-content">
+                <div className="section-icon"><i className="fas fa-link"></i></div>
+                <div>
+                  <h2>Quick Links</h2>
+                  <p>Shortcuts to common actions</p>
+                </div>
               </div>
-            </div>
-
-            <div className="quick-links">
-              <button className="quick-link" onClick={() => navigate('/submit-expense')}>
-                <i className="fas fa-plus-circle"></i>
-                <span>Submit Expense</span>
-              </button>
-              <button className="quick-link" onClick={() => navigate('/my-expenses')}>
-                <i className="fas fa-list"></i>
-                <span>View My Expenses</span>
-              </button>
-              {(user?.is_manager || user?.is_admin) && (
-                <button className="quick-link" onClick={() => navigate('/approvals')}>
-                  <i className="fas fa-clipboard-check"></i>
-                  <span>Pending Approvals</span>
+            </Card.Header>
+            <Card.Body>
+              <div className="quick-links">
+                <button className="quick-link" onClick={() => navigate('/submit-expense')}>
+                  <i className="fas fa-plus-circle"></i>
+                  <span>Submit Expense</span>
                 </button>
-              )}
-              {user?.is_admin && (
-                <button className="quick-link" onClick={() => navigate('/admin')}>
-                  <i className="fas fa-chart-line"></i>
-                  <span>Admin Dashboard</span>
+                <button className="quick-link" onClick={() => navigate('/my-expenses')}>
+                  <i className="fas fa-list"></i>
+                  <span>View My Expenses</span>
                 </button>
-              )}
-            </div>
-          </section>
+                {(user?.is_manager || user?.is_admin) && (
+                  <button className="quick-link" onClick={() => navigate('/approvals')}>
+                    <i className="fas fa-clipboard-check"></i>
+                    <span>Pending Approvals</span>
+                  </button>
+                )}
+                {user?.is_admin && (
+                  <button className="quick-link" onClick={() => navigate('/admin')}>
+                    <i className="fas fa-chart-line"></i>
+                    <span>Admin Dashboard</span>
+                  </button>
+                )}
+              </div>
+            </Card.Body>
+          </Card>
         </div>
       </main>
     </div>

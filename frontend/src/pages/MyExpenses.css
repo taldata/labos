@@ -31,6 +31,7 @@
 /* Filters Section */
 .filters-section {
   margin-bottom: 1.5rem;
+  padding: 0;
 }
 
 .filters-header {
@@ -38,8 +39,7 @@
   align-items: center;
   justify-content: space-between;
   cursor: pointer;
-  padding: 1.25rem;
-  border-bottom: 1px solid var(--border-color);
+  padding: 1rem 1.25rem;
 }
 
 .filters-title {
@@ -118,7 +118,29 @@
   justify-content: flex-end;
   gap: 1rem;
   padding-top: 1rem;
-  border-top: 1px solid var(--border-color);
+  border-top: 1px solid #f1f5f9;
+  margin-top: 0.5rem;
+}
+
+/* Expenses List Card */
+.expenses-list-card {
+  padding: 0;
+}
+
+.expenses-list-card .loading-state {
+  padding: 1.5rem;
+}
+
+.error-alert {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem;
+  margin: 1rem;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 0.5rem;
+  color: #dc2626;
 }
 
 /* Expenses List */
@@ -242,11 +264,16 @@
   display: flex;
   gap: 0.5rem;
   align-items: center;
-  color: var(--text-secondary);
+  color: #64748b;
 }
 
 .attachments-cell i {
   font-size: 1.1rem;
+  color: #667eea;
+}
+
+.no-attachments {
+  color: #94a3b8;
 }
 
 /* Pagination */
