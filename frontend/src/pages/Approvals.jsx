@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Header from '../components/Header'
 import { Card, Button, Badge, Modal, Skeleton, EmptyState, Textarea, useToast } from '../components/ui'
+import BudgetImpactWidget from '../components/BudgetImpactWidget'
 import './Approvals.css'
 
 function Approvals({ user, setUser }) {
@@ -226,7 +227,21 @@ function Approvals({ user, setUser }) {
                           )}
                         </div>
                       )}
+                      {expense.reason && (
+                        <p className="expense-reason">
+                          <strong>Reason:</strong> {expense.reason}
+                        </p>
+                      )}
                     </div>
+
+                    {/* Budget Impact Widget */}
+                    {expense.budget_impact && (
+                      <BudgetImpactWidget
+                        budgetData={expense.budget_impact}
+                        expenseAmount={expense.amount}
+                        compact={true}
+                      />
+                    )}
 
                     <div className="expense-card-actions">
                       <Button
@@ -297,6 +312,18 @@ function Approvals({ user, setUser }) {
                   )}
                 </div>
               </div>
+
+              {/* Budget Impact in Modal */}
+              {selectedExpense.budget_impact && modalAction === 'approve' && (
+                <div className="modal-budget-section">
+                  <h4 className="budget-section-title">Budget Impact Analysis</h4>
+                  <BudgetImpactWidget
+                    budgetData={selectedExpense.budget_impact}
+                    expenseAmount={selectedExpense.amount}
+                    compact={false}
+                  />
+                </div>
+              )}
 
               {modalAction === 'reject' && (
                 <Textarea

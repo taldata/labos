@@ -140,7 +140,7 @@ def get_pending_count():
 @api_v1.route('/expenses/pending-approval', methods=['GET'])
 @login_required
 def get_pending_approvals():
-    """Get expenses pending approval (for managers)"""
+    """Get expenses pending approval (for managers) with budget impact analysis"""
     try:
         if not current_user.is_manager and not current_user.is_admin:
             return jsonify({'error': 'Not authorized'}), 403
@@ -164,20 +164,32 @@ def get_pending_approvals():
 
         expense_list = []
         for expense in expenses:
+            # Calculate budget impact for this expense
+            budget_impact = _calculate_budget_impact(expense)
+            
             expense_list.append({
                 'id': expense.id,
                 'amount': expense.amount,
                 'currency': expense.currency,
                 'description': expense.description,
+                'reason': expense.reason,
                 'date': expense.date.isoformat() if expense.date else None,
                 'status': expense.status,
+                'type': expense.type,
+                'payment_method': expense.payment_method,
                 'user': {
                     'id': expense.submitter.id,
                     'username': expense.submitter.username,
-                    'name': f"{expense.submitter.first_name} {expense.submitter.last_name}"
+                    'name': f"{expense.submitter.first_name} {expense.submitter.last_name}",
+                    'department': expense.submitter.home_department.name if expense.submitter.home_department else None
                 },
                 'subcategory': expense.subcategory.name if expense.subcategory else None,
-                'category': expense.subcategory.category.name if expense.subcategory and expense.subcategory.category else None
+                'category': expense.subcategory.category.name if expense.subcategory and expense.subcategory.category else None,
+                'supplier': {
+                    'id': expense.supplier.id,
+                    'name': expense.supplier.name
+                } if expense.supplier else None,
+                'budget_impact': budget_impact
             })
 
         return jsonify({
@@ -188,6 +200,106 @@ def get_pending_approvals():
     except Exception as e:
         logging.error(f"Error getting pending approvals: {str(e)}")
         return jsonify({'error': 'Failed to fetch pending approvals'}), 500
+
+
+def _calculate_budget_impact(expense):
+    """Calculate budget impact for an expense across department, category, and subcategory"""
+    try:
+        budget_impact = {}
+        
+        # Get expense amount in ILS (or convert if needed)
+        expense_amount = expense.amount
+        
+        # Calculate Department Budget Impact
+        if expense.submitter and expense.submitter.home_department:
+            department = expense.submitter.home_department
+            
+            # Calculate used budget (approved expenses in current period)
+            dept_used = db.session.query(func.sum(Expense.amount)).join(User)\
+                .filter(
+                    User.department_id == department.id,
+                    Expense.status == 'approved'
+                ).scalar() or 0.0
+            
+            dept_remaining_before = department.budget - dept_used
+            dept_remaining_after = dept_remaining_before - expense_amount
+            dept_usage_before = (dept_used / department.budget * 100) if department.budget > 0 else 0
+            dept_usage_after = ((dept_used + expense_amount) / department.budget * 100) if department.budget > 0 else 0
+            
+            budget_impact['department'] = {
+                'id': department.id,
+                'name': department.name,
+                'budget': round(department.budget, 2),
+                'used': round(dept_used, 2),
+                'remaining_before': round(dept_remaining_before, 2),
+                'remaining_after': round(dept_remaining_after, 2),
+                'usage_percent_before': round(dept_usage_before, 1),
+                'usage_percent_after': round(dept_usage_after, 1),
+                'will_exceed': dept_remaining_after < 0
+            }
+        
+        # Calculate Category Budget Impact
+        if expense.subcategory and expense.subcategory.category:
+            category = expense.subcategory.category
+            
+            # Calculate used budget (approved expenses in this category)
+            cat_used = db.session.query(func.sum(Expense.amount))\
+                .join(Subcategory)\
+                .filter(
+                    Subcategory.category_id == category.id,
+                    Expense.status == 'approved'
+                ).scalar() or 0.0
+            
+            cat_remaining_before = category.budget - cat_used
+            cat_remaining_after = cat_remaining_before - expense_amount
+            cat_usage_before = (cat_used / category.budget * 100) if category.budget > 0 else 0
+            cat_usage_after = ((cat_used + expense_amount) / category.budget * 100) if category.budget > 0 else 0
+            
+            budget_impact['category'] = {
+                'id': category.id,
+                'name': category.name,
+                'budget': round(category.budget, 2),
+                'used': round(cat_used, 2),
+                'remaining_before': round(cat_remaining_before, 2),
+                'remaining_after': round(cat_remaining_after, 2),
+                'usage_percent_before': round(cat_usage_before, 1),
+                'usage_percent_after': round(cat_usage_after, 1),
+                'will_exceed': cat_remaining_after < 0
+            }
+        
+        # Calculate Subcategory Budget Impact
+        if expense.subcategory:
+            subcategory = expense.subcategory
+            
+            # Calculate used budget (approved expenses in this subcategory)
+            subcat_used = db.session.query(func.sum(Expense.amount))\
+                .filter(
+                    Expense.subcategory_id == subcategory.id,
+                    Expense.status == 'approved'
+                ).scalar() or 0.0
+            
+            subcat_remaining_before = subcategory.budget - subcat_used
+            subcat_remaining_after = subcat_remaining_before - expense_amount
+            subcat_usage_before = (subcat_used / subcategory.budget * 100) if subcategory.budget > 0 else 0
+            subcat_usage_after = ((subcat_used + expense_amount) / subcategory.budget * 100) if subcategory.budget > 0 else 0
+            
+            budget_impact['subcategory'] = {
+                'id': subcategory.id,
+                'name': subcategory.name,
+                'budget': round(subcategory.budget, 2),
+                'used': round(subcat_used, 2),
+                'remaining_before': round(subcat_remaining_before, 2),
+                'remaining_after': round(subcat_remaining_after, 2),
+                'usage_percent_before': round(subcat_usage_before, 1),
+                'usage_percent_after': round(subcat_usage_after, 1),
+                'will_exceed': subcat_remaining_after < 0
+            }
+        
+        return budget_impact
+        
+    except Exception as e:
+        logging.error(f"Error calculating budget impact: {str(e)}")
+        return {}
 
 @api_v1.route('/expenses/stats', methods=['GET'])
 @login_required

@@ -1,0 +1,291 @@
+.budget-impact-widget {
+  width: 100%;
+  margin: 1rem 0;
+}
+
+.budget-impact-widget.compact {
+  margin: 0.5rem 0;
+}
+
+.widget-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #64748b;
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.widget-header i {
+  font-size: 0.875rem;
+}
+
+/* Budget Tiers */
+.budget-tiers {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.budget-tier {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.5rem;
+  padding: 0.75rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.budget-tier:hover {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+}
+
+.budget-tier.exceeds {
+  background: #fef2f2;
+  border-color: #fecaca;
+}
+
+.budget-tier.exceeds:hover {
+  background: #fee2e2;
+  border-color: #fca5a5;
+}
+
+.budget-tier.expanded {
+  background: #ffffff;
+}
+
+/* Tier Preview */
+.budget-tier-preview {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.tier-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  justify-content: space-between;
+}
+
+.tier-name {
+  font-weight: 600;
+  color: #1e293b;
+  font-size: 0.9rem;
+  flex: 1;
+}
+
+.warning-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.25rem 0.5rem;
+  background: #fef3c7;
+  color: #92400e;
+  border-radius: 0.25rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.warning-badge i {
+  font-size: 0.7rem;
+}
+
+.toggle-icon {
+  color: #94a3b8;
+  font-size: 0.75rem;
+  transition: transform 0.2s ease;
+}
+
+/* Budget Bar */
+.budget-bar {
+  height: 8px;
+  background: #e2e8f0;
+  border-radius: 4px;
+  overflow: hidden;
+  position: relative;
+}
+
+.budget-progress {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding-right: 0.25rem;
+  position: relative;
+}
+
+.budget-progress.success {
+  background: linear-gradient(90deg, #10b981 0%, #059669 100%);
+}
+
+.budget-progress.warning {
+  background: linear-gradient(90deg, #f59e0b 0%, #d97706 100%);
+}
+
+.budget-progress.danger {
+  background: linear-gradient(90deg, #ef4444 0%, #dc2626 100%);
+}
+
+.progress-label {
+  font-size: 0.65rem;
+  color: white;
+  font-weight: 600;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+.budget-summary {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.remaining-amount {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #475569;
+}
+
+/* Tier Details (Expanded) */
+.budget-tier-details {
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid #e2e8f0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  animation: slideDown 0.2s ease;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.detail-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.875rem;
+}
+
+.detail-row.highlight {
+  padding: 0.5rem;
+  background: #f8fafc;
+  border-radius: 0.25rem;
+  margin-top: 0.25rem;
+}
+
+.detail-label {
+  color: #64748b;
+  font-weight: 500;
+}
+
+.detail-value {
+  color: #1e293b;
+  font-weight: 600;
+  text-align: right;
+}
+
+.detail-value.danger-text {
+  color: #dc2626;
+}
+
+/* Budget Warning */
+.budget-warning {
+  margin-top: 0.75rem;
+  padding: 0.75rem;
+  background: #fef3c7;
+  border: 1px solid #fde047;
+  border-radius: 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  color: #92400e;
+  font-weight: 500;
+}
+
+.budget-warning i {
+  font-size: 1rem;
+  color: #f59e0b;
+}
+
+/* Compact Mode */
+.budget-impact-widget.compact .budget-tier {
+  padding: 0.5rem;
+}
+
+.budget-impact-widget.compact .tier-name {
+  font-size: 0.85rem;
+}
+
+.budget-impact-widget.compact .budget-bar {
+  height: 6px;
+}
+
+.budget-impact-widget.compact .remaining-amount {
+  font-size: 0.8rem;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .budget-tier-details {
+    font-size: 0.8rem;
+  }
+
+  .warning-badge {
+    font-size: 0.7rem;
+    padding: 0.2rem 0.4rem;
+  }
+
+  .tier-name {
+    font-size: 0.85rem;
+  }
+}
+
+/* Dark Mode Support (Optional) */
+@media (prefers-color-scheme: dark) {
+  .budget-tier {
+    background: #1e293b;
+    border-color: #334155;
+  }
+
+  .budget-tier:hover {
+    background: #334155;
+  }
+
+  .budget-tier.expanded {
+    background: #0f172a;
+  }
+
+  .tier-name,
+  .detail-value {
+    color: #f1f5f9;
+  }
+
+  .detail-label,
+  .widget-header {
+    color: #cbd5e1;
+  }
+
+  .budget-bar {
+    background: #334155;
+  }
+
+  .detail-row.highlight {
+    background: #1e293b;
+  }
+}

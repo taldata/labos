@@ -159,6 +159,17 @@
   font-size: 0.85rem;
 }
 
+.expense-reason {
+  color: #475569;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  margin: 0.5rem 0 0;
+}
+
+.expense-reason strong {
+  color: #1e293b;
+}
+
 .expense-card-actions {
   display: flex;
   gap: 0.5rem;
@@ -223,6 +234,28 @@
   color: #1e293b;
   font-weight: 500;
   text-align: right;
+}
+
+.modal-budget-section {
+  padding: 1rem;
+  background: #f8fafc;
+  border-radius: 0.5rem;
+  border: 1px solid #e2e8f0;
+}
+
+.budget-section-title {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #1e293b;
+  margin: 0 0 0.75rem 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.budget-section-title::before {
+  content: "💰";
+  font-size: 1.1rem;
 }
 
 .confirmation-message {
