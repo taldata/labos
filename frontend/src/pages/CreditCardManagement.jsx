@@ -1,13 +1,14 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Header from '../components/Header'
+import { Card, Button, Input, Select, Modal, Badge, Skeleton, useToast } from '../components/ui'
 import './CreditCardManagement.css'
 
 function CreditCardManagement({ user, setUser }) {
   const navigate = useNavigate()
+  const { success, error: showError } = useToast()
   const [loading, setLoading] = useState(true)
   const [cards, setCards] = useState([])
-  const [error, setError] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
 
   // Modal state
@@ -41,9 +42,11 @@ function CreditCardManagement({ user, setUser }) {
       if (res.ok) {
         const data = await res.json()
         setCards(data.credit_cards)
+      } else {
+        showError('Failed to load credit cards')
       }
     } catch (err) {
-      setError('Failed to load credit cards')
+      showError('Failed to load credit cards')
     } finally {
       setLoading(false)
     }
@@ -109,6 +112,7 @@ function CreditCardManagement({ user, setUser }) {
       })
 
       if (res.ok) {
+        success(modalMode === 'create' ? 'Credit card added successfully' : 'Credit card updated successfully')
         closeModal()
         fetchCards()
       } else {
@@ -130,13 +134,14 @@ function CreditCardManagement({ user, setUser }) {
       })
 
       if (res.ok) {
+        success('Credit card deleted successfully')
         fetchCards()
       } else {
         const data = await res.json()
-        alert(data.error || 'Failed to delete')
+        showError(data.error || 'Failed to delete')
       }
     } catch (err) {
-      alert('An error occurred')
+      showError('An error occurred')
     }
   }
 
@@ -152,57 +157,63 @@ function CreditCardManagement({ user, setUser }) {
             <h1>Credit Card Management</h1>
             <p className="subtitle">Manage company credit cards</p>
           </div>
-          <button className="btn-primary" onClick={() => openModal('create')}>
-            <i className="fas fa-plus"></i> Add Card
-          </button>
+          <Button variant="primary" icon="fas fa-plus" onClick={() => openModal('create')}>
+            Add Card
+          </Button>
         </div>
 
         {/* Filters */}
-        <div className="filters-section card">
-          <div className="filter-label">
-            <i className="fas fa-filter"></i> Filter by status:
-          </div>
-          <div className="filter-buttons">
-            <button 
-              className={`filter-btn ${statusFilter === 'all' ? 'active' : ''}`}
-              onClick={() => setStatusFilter('all')}
-            >
-              All
-            </button>
-            <button 
-              className={`filter-btn ${statusFilter === 'active' ? 'active' : ''}`}
-              onClick={() => setStatusFilter('active')}
-            >
-              Active
-            </button>
-            <button 
-              className={`filter-btn ${statusFilter === 'inactive' ? 'active' : ''}`}
-              onClick={() => setStatusFilter('inactive')}
-            >
-              Inactive
-            </button>
-          </div>
-        </div>
+        <Card className="filters-section">
+          <Card.Body>
+            <div className="filter-label">
+              <i className="fas fa-filter"></i> Filter by status:
+            </div>
+            <div className="filter-buttons">
+              <Button
+                variant={statusFilter === 'all' ? 'primary' : 'ghost'}
+                size="small"
+                onClick={() => setStatusFilter('all')}
+              >
+                All
+              </Button>
+              <Button
+                variant={statusFilter === 'active' ? 'primary' : 'ghost'}
+                size="small"
+                onClick={() => setStatusFilter('active')}
+              >
+                Active
+              </Button>
+              <Button
+                variant={statusFilter === 'inactive' ? 'primary' : 'ghost'}
+                size="small"
+                onClick={() => setStatusFilter('inactive')}
+              >
+                Inactive
+              </Button>
+            </div>
+          </Card.Body>
+        </Card>
 
         {/* Cards Grid */}
         {loading ? (
-          <div className="loading-container">
-            <div className="spinner"></div>
-            <p>Loading credit cards...</p>
+          <div className="cards-grid">
+            <Card><Card.Body><Skeleton variant="text" count={5} /></Card.Body></Card>
+            <Card><Card.Body><Skeleton variant="text" count={5} /></Card.Body></Card>
+            <Card><Card.Body><Skeleton variant="text" count={5} /></Card.Body></Card>
           </div>
-        ) : error ? (
-          <div className="error-message card">{error}</div>
         ) : (
           <div className="cards-grid">
             {cards.length === 0 ? (
-              <div className="empty-state card">
-                <i className="fas fa-credit-card"></i>
-                <h3>No credit cards found</h3>
-                <p>Add your first credit card to get started</p>
-              </div>
+              <Card className="empty-state">
+                <Card.Body>
+                  <i className="fas fa-credit-card"></i>
+                  <h3>No credit cards found</h3>
+                  <p>Add your first credit card to get started</p>
+                </Card.Body>
+              </Card>
             ) : (
               cards.map(card => (
-                <div key={card.id} className={`credit-card-item card ${card.status === 'inactive' ? 'inactive' : ''}`}>
+                <Card key={card.id} className={`credit-card-item ${card.status === 'inactive' ? 'inactive' : ''}`}>
                   <div className="card-visual">
                     <div className="card-chip"></div>
                     <div className="card-number">
@@ -215,7 +226,7 @@ function CreditCardManagement({ user, setUser }) {
                       <i className="fab fa-cc-visa"></i>
                     </div>
                   </div>
-                  
+
                   <div className="card-details">
                     <div className="card-info">
                       <span className="card-label">Card ending in</span>
@@ -225,7 +236,9 @@ function CreditCardManagement({ user, setUser }) {
                       <div className="card-description">{card.description}</div>
                     )}
                     <div className="card-meta">
-                      <span className={`status-badge ${card.status}`}>{card.status}</span>
+                      <Badge variant={card.status === 'active' ? 'success' : 'danger'}>
+                        {card.status}
+                      </Badge>
                       <span className="expense-count">
                         <i className="fas fa-receipt"></i> {card.expense_count} expenses
                       </span>
@@ -233,14 +246,10 @@ function CreditCardManagement({ user, setUser }) {
                   </div>
 
                   <div className="card-actions">
-                    <button className="btn-icon" onClick={() => openModal('edit', card)} title="Edit">
-                      <i className="fas fa-edit"></i>
-                    </button>
-                    <button className="btn-icon delete" onClick={() => handleDelete(card)} title="Delete">
-                      <i className="fas fa-trash"></i>
-                    </button>
+                    <Button variant="ghost" size="small" icon="fas fa-edit" onClick={() => openModal('edit', card)} title="Edit" />
+                    <Button variant="ghost" size="small" icon="fas fa-trash" onClick={() => handleDelete(card)} title="Delete" className="btn-delete" />
                   </div>
-                </div>
+                </Card>
               ))
             )}
           </div>
@@ -248,64 +257,59 @@ function CreditCardManagement({ user, setUser }) {
       </main>
 
       {/* Modal */}
-      {modalOpen && (
-        <div className="modal-overlay" onClick={closeModal}>
-          <div className="modal credit-card-modal" onClick={e => e.stopPropagation()}>
-            <div className="modal-header">
-              <h2>{modalMode === 'create' ? 'Add Credit Card' : 'Edit Credit Card'}</h2>
-              <button className="btn-icon" onClick={closeModal}>
-                <i className="fas fa-times"></i>
-              </button>
+      <Modal
+        isOpen={modalOpen}
+        onClose={closeModal}
+        title={modalMode === 'create' ? 'Add Credit Card' : 'Edit Credit Card'}
+        size="small"
+      >
+        {formError && <div className="form-error">{formError}</div>}
+
+        <form onSubmit={handleSubmit} className="credit-card-form">
+          <div className="form-group">
+            <label>Last 4 Digits *</label>
+            <div className="digits-input">
+              <span className="prefix">**** **** ****</span>
+              <input
+                type="text"
+                name="last_four_digits"
+                value={formData.last_four_digits}
+                onChange={handleInputChange}
+                placeholder="0000"
+                maxLength={4}
+                required
+              />
             </div>
-
-            {formError && <div className="form-error">{formError}</div>}
-
-            <form onSubmit={handleSubmit} className="credit-card-form">
-              <div className="form-group">
-                <label>Last 4 Digits *</label>
-                <div className="digits-input">
-                  <span className="prefix">**** **** ****</span>
-                  <input
-                    type="text"
-                    name="last_four_digits"
-                    value={formData.last_four_digits}
-                    onChange={handleInputChange}
-                    placeholder="0000"
-                    maxLength={4}
-                    required
-                  />
-                </div>
-              </div>
-
-              <div className="form-group">
-                <label>Description</label>
-                <input
-                  type="text"
-                  name="description"
-                  value={formData.description}
-                  onChange={handleInputChange}
-                  placeholder="e.g., Company Visa, Marketing Card"
-                />
-              </div>
-
-              <div className="form-group">
-                <label>Status</label>
-                <select name="status" value={formData.status} onChange={handleInputChange}>
-                  <option value="active">Active</option>
-                  <option value="inactive">Inactive</option>
-                </select>
-              </div>
-
-              <div className="modal-actions">
-                <button type="button" className="btn-secondary" onClick={closeModal}>Cancel</button>
-                <button type="submit" className="btn-primary">
-                  {modalMode === 'create' ? 'Add Card' : 'Save Changes'}
-                </button>
-              </div>
-            </form>
           </div>
-        </div>
-      )}
+
+          <Input
+            label="Description"
+            name="description"
+            value={formData.description}
+            onChange={handleInputChange}
+            placeholder="e.g., Company Visa, Marketing Card"
+          />
+
+          <Select
+            label="Status"
+            name="status"
+            value={formData.status}
+            onChange={handleInputChange}
+          >
+            <option value="active">Active</option>
+            <option value="inactive">Inactive</option>
+          </Select>
+
+          <div className="modal-actions">
+            <Button type="button" variant="secondary" onClick={closeModal}>
+              Cancel
+            </Button>
+            <Button type="submit" variant="primary">
+              {modalMode === 'create' ? 'Add Card' : 'Save Changes'}
+            </Button>
+          </div>
+        </form>
+      </Modal>
     </div>
   )
 }
