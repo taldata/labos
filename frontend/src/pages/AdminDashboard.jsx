@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { 
+import {
   LineChart, Line, BarChart, Bar, PieChart, Pie, Cell,
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
 } from 'recharts'
 import Header from '../components/Header'
+import { Card, Select, Skeleton } from '../components/ui'
 import './AdminDashboard.css'
 
 const COLORS = ['#667eea', '#764ba2', '#f093fb', '#4facfe', '#00f2fe', '#43e97b', '#fa709a']
@@ -57,232 +58,262 @@ function AdminDashboard({ user, setUser }) {
             <p className="subtitle">Comprehensive insights into expense management</p>
           </div>
           <div className="period-selector">
-            <label>Time Period:</label>
-            <select value={timePeriod} onChange={(e) => setTimePeriod(e.target.value)}>
+            <Select
+              label="Time Period:"
+              value={timePeriod}
+              onChange={(e) => setTimePeriod(e.target.value)}
+            >
               <option value="this_month">This Month</option>
               <option value="last_month">Last Month</option>
               <option value="this_quarter">This Quarter</option>
               <option value="this_year">This Year</option>
               <option value="last_6_months">Last 6 Months</option>
-            </select>
+            </Select>
           </div>
         </div>
 
         {loading ? (
-          <div className="loading-state card">
-            <div className="spinner"></div>
-            <p>Loading analytics...</p>
+          <div className="loading-state">
+            <Skeleton variant="title" width="50%" />
+            <div className="stats-grid">
+              <Card><Card.Body><Skeleton variant="text" count={3} /></Card.Body></Card>
+              <Card><Card.Body><Skeleton variant="text" count={3} /></Card.Body></Card>
+              <Card><Card.Body><Skeleton variant="text" count={3} /></Card.Body></Card>
+              <Card><Card.Body><Skeleton variant="text" count={3} /></Card.Body></Card>
+            </div>
           </div>
         ) : stats ? (
           <>
             {/* Summary Cards */}
             <div className="stats-grid">
-              <div className="stat-card card">
-                <div className="stat-icon" style={{ background: '#dbeafe' }}>
-                  💰
-                </div>
-                <div className="stat-content">
-                  <h3>Total Expenses</h3>
-                  <p className="stat-value">
-                    {stats.currency === 'USD' ? '$' : '₪'}
-                    {stats.total_expenses?.toLocaleString() || '0'}
-                  </p>
-                  <p className="stat-label">{stats.total_count || 0} expenses</p>
-                </div>
-              </div>
+              <Card className="stat-card">
+                <Card.Body>
+                  <div className="stat-icon" style={{ background: '#dbeafe' }}>
+                    💰
+                  </div>
+                  <div className="stat-content">
+                    <h3>Total Expenses</h3>
+                    <p className="stat-value">
+                      {stats.currency === 'USD' ? '$' : '₪'}
+                      {stats.total_expenses?.toLocaleString() || '0'}
+                    </p>
+                    <p className="stat-label">{stats.total_count || 0} expenses</p>
+                  </div>
+                </Card.Body>
+              </Card>
 
-              <div className="stat-card card">
-                <div className="stat-icon" style={{ background: '#dcfce7' }}>
-                  ✅
-                </div>
-                <div className="stat-content">
-                  <h3>Approved</h3>
-                  <p className="stat-value">
-                    {stats.currency === 'USD' ? '$' : '₪'}
-                    {stats.approved_amount?.toLocaleString() || '0'}
-                  </p>
-                  <p className="stat-label">{stats.approved_count || 0} expenses</p>
-                </div>
-              </div>
+              <Card className="stat-card">
+                <Card.Body>
+                  <div className="stat-icon" style={{ background: '#dcfce7' }}>
+                    ✅
+                  </div>
+                  <div className="stat-content">
+                    <h3>Approved</h3>
+                    <p className="stat-value">
+                      {stats.currency === 'USD' ? '$' : '₪'}
+                      {stats.approved_amount?.toLocaleString() || '0'}
+                    </p>
+                    <p className="stat-label">{stats.approved_count || 0} expenses</p>
+                  </div>
+                </Card.Body>
+              </Card>
 
-              <div className="stat-card card">
-                <div className="stat-icon" style={{ background: '#fef3c7' }}>
-                  ⏳
-                </div>
-                <div className="stat-content">
-                  <h3>Pending</h3>
-                  <p className="stat-value">
-                    {stats.currency === 'USD' ? '$' : '₪'}
-                    {stats.pending_amount?.toLocaleString() || '0'}
-                  </p>
-                  <p className="stat-label">{stats.pending_count || 0} expenses</p>
-                </div>
-              </div>
+              <Card className="stat-card">
+                <Card.Body>
+                  <div className="stat-icon" style={{ background: '#fef3c7' }}>
+                    ⏳
+                  </div>
+                  <div className="stat-content">
+                    <h3>Pending</h3>
+                    <p className="stat-value">
+                      {stats.currency === 'USD' ? '$' : '₪'}
+                      {stats.pending_amount?.toLocaleString() || '0'}
+                    </p>
+                    <p className="stat-label">{stats.pending_count || 0} expenses</p>
+                  </div>
+                </Card.Body>
+              </Card>
 
-              <div className="stat-card card">
-                <div className="stat-icon" style={{ background: '#fee2e2' }}>
-                  ❌
-                </div>
-                <div className="stat-content">
-                  <h3>Rejected</h3>
-                  <p className="stat-value">
-                    {stats.currency === 'USD' ? '$' : '₪'}
-                    {stats.rejected_amount?.toLocaleString() || '0'}
-                  </p>
-                  <p className="stat-label">{stats.rejected_count || 0} expenses</p>
-                </div>
-              </div>
+              <Card className="stat-card">
+                <Card.Body>
+                  <div className="stat-icon" style={{ background: '#fee2e2' }}>
+                    ❌
+                  </div>
+                  <div className="stat-content">
+                    <h3>Rejected</h3>
+                    <p className="stat-value">
+                      {stats.currency === 'USD' ? '$' : '₪'}
+                      {stats.rejected_amount?.toLocaleString() || '0'}
+                    </p>
+                    <p className="stat-label">{stats.rejected_count || 0} expenses</p>
+                  </div>
+                </Card.Body>
+              </Card>
             </div>
 
             {/* Charts Grid */}
             <div className="charts-grid">
               {/* Expense Trend Over Time */}
               {stats.expense_trend && stats.expense_trend.length > 0 && (
-                <div className="chart-card card">
-                  <h3>Expense Trend Over Time</h3>
-                  <ResponsiveContainer width="100%" height={300}>
-                    <LineChart data={stats.expense_trend}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="period" />
-                      <YAxis />
-                      <Tooltip 
-                        formatter={(value) => `${stats.currency === 'USD' ? '$' : '₪'}${value.toLocaleString()}`}
-                      />
-                      <Legend />
-                      <Line 
-                        type="monotone" 
-                        dataKey="amount" 
-                        stroke="#667eea" 
-                        strokeWidth={2}
-                        name="Expenses"
-                      />
-                    </LineChart>
-                  </ResponsiveContainer>
-                </div>
+                <Card className="chart-card">
+                  <Card.Header>Expense Trend Over Time</Card.Header>
+                  <Card.Body>
+                    <ResponsiveContainer width="100%" height={300}>
+                      <LineChart data={stats.expense_trend}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="period" />
+                        <YAxis />
+                        <Tooltip
+                          formatter={(value) => `${stats.currency === 'USD' ? '$' : '₪'}${value.toLocaleString()}`}
+                        />
+                        <Legend />
+                        <Line
+                          type="monotone"
+                          dataKey="amount"
+                          stroke="#667eea"
+                          strokeWidth={2}
+                          name="Expenses"
+                        />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </Card.Body>
+                </Card>
               )}
 
               {/* Department Spending */}
               {stats.department_spending && stats.department_spending.length > 0 && (
-                <div className="chart-card card">
-                  <h3>Spending by Department</h3>
-                  <ResponsiveContainer width="100%" height={300}>
-                    <BarChart data={stats.department_spending}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="name" />
-                      <YAxis />
-                      <Tooltip 
-                        formatter={(value) => `${stats.currency === 'USD' ? '$' : '₪'}${value.toLocaleString()}`}
-                      />
-                      <Legend />
-                      <Bar dataKey="amount" fill="#764ba2" name="Amount" />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
+                <Card className="chart-card">
+                  <Card.Header>Spending by Department</Card.Header>
+                  <Card.Body>
+                    <ResponsiveContainer width="100%" height={300}>
+                      <BarChart data={stats.department_spending}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="name" />
+                        <YAxis />
+                        <Tooltip
+                          formatter={(value) => `${stats.currency === 'USD' ? '$' : '₪'}${value.toLocaleString()}`}
+                        />
+                        <Legend />
+                        <Bar dataKey="amount" fill="#764ba2" name="Amount" />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </Card.Body>
+                </Card>
               )}
 
               {/* Category Distribution */}
               {stats.category_distribution && stats.category_distribution.length > 0 && (
-                <div className="chart-card card">
-                  <h3>Expenses by Category</h3>
-                  <ResponsiveContainer width="100%" height={300}>
-                    <PieChart>
-                      <Pie
-                        data={stats.category_distribution}
-                        cx="50%"
-                        cy="50%"
-                        labelLine={false}
-                        label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                        outerRadius={80}
-                        fill="#8884d8"
-                        dataKey="amount"
-                      >
-                        {stats.category_distribution.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                        ))}
-                      </Pie>
-                      <Tooltip 
-                        formatter={(value) => `${stats.currency === 'USD' ? '$' : '₪'}${value.toLocaleString()}`}
-                      />
-                    </PieChart>
-                  </ResponsiveContainer>
-                </div>
+                <Card className="chart-card">
+                  <Card.Header>Expenses by Category</Card.Header>
+                  <Card.Body>
+                    <ResponsiveContainer width="100%" height={300}>
+                      <PieChart>
+                        <Pie
+                          data={stats.category_distribution}
+                          cx="50%"
+                          cy="50%"
+                          labelLine={false}
+                          label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                          outerRadius={80}
+                          fill="#8884d8"
+                          dataKey="amount"
+                        >
+                          {stats.category_distribution.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                          ))}
+                        </Pie>
+                        <Tooltip
+                          formatter={(value) => `${stats.currency === 'USD' ? '$' : '₪'}${value.toLocaleString()}`}
+                        />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </Card.Body>
+                </Card>
               )}
 
               {/* Status Distribution */}
               {stats.status_distribution && stats.status_distribution.length > 0 && (
-                <div className="chart-card card">
-                  <h3>Expense Status Distribution</h3>
-                  <ResponsiveContainer width="100%" height={300}>
-                    <PieChart>
-                      <Pie
-                        data={stats.status_distribution}
-                        cx="50%"
-                        cy="50%"
-                        labelLine={false}
-                        label={({ name, value }) => `${name}: ${value}`}
-                        outerRadius={80}
-                        fill="#8884d8"
-                        dataKey="count"
-                      >
-                        {stats.status_distribution.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                        ))}
-                      </Pie>
-                      <Tooltip />
-                    </PieChart>
-                  </ResponsiveContainer>
-                </div>
+                <Card className="chart-card">
+                  <Card.Header>Expense Status Distribution</Card.Header>
+                  <Card.Body>
+                    <ResponsiveContainer width="100%" height={300}>
+                      <PieChart>
+                        <Pie
+                          data={stats.status_distribution}
+                          cx="50%"
+                          cy="50%"
+                          labelLine={false}
+                          label={({ name, value }) => `${name}: ${value}`}
+                          outerRadius={80}
+                          fill="#8884d8"
+                          dataKey="count"
+                        >
+                          {stats.status_distribution.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                          ))}
+                        </Pie>
+                        <Tooltip />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </Card.Body>
+                </Card>
               )}
 
               {/* Top Users */}
               {stats.top_users && stats.top_users.length > 0 && (
-                <div className="chart-card card">
-                  <h3>Top Spenders</h3>
-                  <ResponsiveContainer width="100%" height={300}>
-                    <BarChart data={stats.top_users} layout="vertical">
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis type="number" />
-                      <YAxis dataKey="name" type="category" width={100} />
-                      <Tooltip 
-                        formatter={(value) => `${stats.currency === 'USD' ? '$' : '₪'}${value.toLocaleString()}`}
-                      />
-                      <Legend />
-                      <Bar dataKey="amount" fill="#43e97b" name="Amount" />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
+                <Card className="chart-card">
+                  <Card.Header>Top Spenders</Card.Header>
+                  <Card.Body>
+                    <ResponsiveContainer width="100%" height={300}>
+                      <BarChart data={stats.top_users} layout="vertical">
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis type="number" />
+                        <YAxis dataKey="name" type="category" width={100} />
+                        <Tooltip
+                          formatter={(value) => `${stats.currency === 'USD' ? '$' : '₪'}${value.toLocaleString()}`}
+                        />
+                        <Legend />
+                        <Bar dataKey="amount" fill="#43e97b" name="Amount" />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </Card.Body>
+                </Card>
               )}
 
               {/* Budget Usage */}
               {stats.budget_usage && stats.budget_usage.length > 0 && (
-                <div className="chart-card card">
-                  <h3>Department Budget Usage</h3>
-                  <ResponsiveContainer width="100%" height={300}>
-                    <BarChart data={stats.budget_usage}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="name" />
-                      <YAxis />
-                      <Tooltip 
-                        formatter={(value, name) => {
-                          if (name === 'usage_percent') return `${value.toFixed(1)}%`
-                          return `${stats.currency === 'USD' ? '$' : '₪'}${value.toLocaleString()}`
-                        }}
-                      />
-                      <Legend />
-                      <Bar dataKey="spent" fill="#fa709a" name="Spent" />
-                      <Bar dataKey="budget" fill="#4facfe" name="Budget" />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
+                <Card className="chart-card">
+                  <Card.Header>Department Budget Usage</Card.Header>
+                  <Card.Body>
+                    <ResponsiveContainer width="100%" height={300}>
+                      <BarChart data={stats.budget_usage}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="name" />
+                        <YAxis />
+                        <Tooltip
+                          formatter={(value, name) => {
+                            if (name === 'usage_percent') return `${value.toFixed(1)}%`
+                            return `${stats.currency === 'USD' ? '$' : '₪'}${value.toLocaleString()}`
+                          }}
+                        />
+                        <Legend />
+                        <Bar dataKey="spent" fill="#fa709a" name="Spent" />
+                        <Bar dataKey="budget" fill="#4facfe" name="Budget" />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </Card.Body>
+                </Card>
               )}
             </div>
           </>
         ) : (
-          <div className="error-state card">
-            <i className="fas fa-exclamation-triangle"></i>
-            <h3>Failed to load analytics</h3>
-            <p>Please try refreshing the page</p>
-          </div>
+          <Card className="error-state">
+            <Card.Body>
+              <i className="fas fa-exclamation-triangle"></i>
+              <h3>Failed to load analytics</h3>
+              <p>Please try refreshing the page</p>
+            </Card.Body>
+          </Card>
         )}
       </main>
     </div>

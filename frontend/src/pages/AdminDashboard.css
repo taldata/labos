@@ -1,6 +1,6 @@
 .admin-dashboard-container {
   min-height: 100vh;
-  background: #f8fafc;
+  background: #f5f7fa;
 }
 
 .admin-dashboard-main {
@@ -33,21 +33,6 @@
   gap: 0.75rem;
 }
 
-.period-selector label {
-  font-weight: 500;
-  color: #475569;
-}
-
-.period-selector select {
-  padding: 0.5rem 1rem;
-  border: 1px solid #cbd5e1;
-  border-radius: 8px;
-  background: white;
-  color: #1e293b;
-  font-size: 0.95rem;
-  cursor: pointer;
-}
-
 .stats-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
@@ -55,11 +40,10 @@
   margin-bottom: 2rem;
 }
 
-.stat-card {
+.stat-card .card-body {
   display: flex;
   align-items: center;
   gap: 1rem;
-  padding: 1.5rem;
 }
 
 .stat-icon {
@@ -70,6 +54,7 @@
   align-items: center;
   justify-content: center;
   font-size: 1.5rem;
+  flex-shrink: 0;
 }
 
 .stat-content h3 {
@@ -98,42 +83,23 @@
   gap: 1.5rem;
 }
 
-.chart-card {
-  padding: 1.5rem;
-}
-
-.chart-card h3 {
+.chart-card .card-header {
   font-size: 1.1rem;
-  color: #1e293b;
-  margin: 0 0 1rem 0;
   font-weight: 600;
+  color: #1e293b;
 }
 
-.card {
-  background: white;
-  border-radius: 12px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  padding: 1.5rem;
+.chart-card .card-body {
+  padding: 1rem 0.5rem;
 }
 
-.loading-state,
-.error-state {
+.loading-state {
+  margin-bottom: 2rem;
+}
+
+.error-state .card-body {
   text-align: center;
   padding: 3rem;
-}
-
-.loading-state .spinner {
-  width: 40px;
-  height: 40px;
-  border: 4px solid #e2e8f0;
-  border-top-color: #667eea;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-  margin: 0 auto 1rem;
-}
-
-@keyframes spin {
-  to { transform: rotate(360deg); }
 }
 
 .error-state i {
@@ -172,4 +138,3 @@
     grid-template-columns: 1fr;
   }
 }
-
