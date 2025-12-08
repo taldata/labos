@@ -407,7 +407,6 @@ function ExpenseHistory({ user, setUser }) {
                   <option value="date">Date</option>
                   <option value="amount">Amount</option>
                   <option value="status">Status</option>
-                  <option value="created_at">Created At</option>
                 </Select>
 
                 <Select

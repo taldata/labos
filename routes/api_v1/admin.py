@@ -821,8 +821,6 @@ def admin_list_expenses():
             query = query.order_by(Expense.amount.desc() if sort_order == 'desc' else Expense.amount.asc())
         elif sort_by == 'status':
             query = query.order_by(Expense.status.desc() if sort_order == 'desc' else Expense.status.asc())
-        elif sort_by == 'created_at':
-            query = query.order_by(Expense.created_at.desc() if sort_order == 'desc' else Expense.created_at.asc())
         else:
             query = query.order_by(Expense.date.desc())
 
@@ -838,7 +836,6 @@ def admin_list_expenses():
                 'description': expense.description,
                 'reason': expense.reason,
                 'date': expense.date.isoformat() if expense.date else None,
-                'created_at': expense.created_at.isoformat() if expense.created_at else None,
                 'status': expense.status,
                 'type': expense.type,
                 'payment_method': expense.payment_method,
