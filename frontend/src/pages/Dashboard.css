@@ -204,6 +204,7 @@
 .action-icon-analytics { background: linear-gradient(135deg, #ec4899 0%, #db2777 100%); }
 .action-icon-suppliers { background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%); }
 .action-icon-cards { background: linear-gradient(135deg, #14b8a6 0%, #0d9488 100%); }
+.action-icon-history { background: linear-gradient(135deg, #f97316 0%, #ea580c 100%); }
 
 .action-content {
   flex: 1;

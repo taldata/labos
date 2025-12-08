@@ -259,6 +259,17 @@ function Dashboard({ user, setUser }) {
                         </div>
                       </Card.Body>
                     </Card>
+                    <Card hoverable clickable onClick={() => navigate('/admin/expense-history')} className="action-card">
+                      <Card.Body>
+                        <div className="action-icon action-icon-history">
+                          <i className="fas fa-history"></i>
+                        </div>
+                        <div className="action-content">
+                          <h4>Expense History</h4>
+                          <p>View all expenses</p>
+                        </div>
+                      </Card.Body>
+                    </Card>
                   </>
                 )}
               </div>
