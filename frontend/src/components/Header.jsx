@@ -160,11 +160,17 @@ function Header({ user, setUser, currentPage = 'dashboard' }) {
                 >
                   <i className="fas fa-building"></i> Suppliers
                 </button>
-                <button 
+                <button
                   className={`nav-link ${currentPage === 'credit-cards' ? 'active' : ''}`}
                   onClick={() => navigate('/admin/credit-cards')}
                 >
                   <i className="fas fa-credit-card"></i> Cards
+                </button>
+                <button
+                  className={`nav-link ${currentPage === 'expense-history' ? 'active' : ''}`}
+                  onClick={() => navigate('/admin/expense-history')}
+                >
+                  <i className="fas fa-history"></i> History
                 </button>
               </>
             )}
@@ -235,6 +241,12 @@ function Header({ user, setUser, currentPage = 'dashboard' }) {
                 onClick={() => handleNavigation('/admin/credit-cards')}
               >
                 <i className="fas fa-credit-card"></i> Cards
+              </button>
+              <button
+                className={`mobile-nav-link ${currentPage === 'expense-history' ? 'active' : ''}`}
+                onClick={() => handleNavigation('/admin/expense-history')}
+              >
+                <i className="fas fa-history"></i> Expense History
               </button>
             </>
           )}

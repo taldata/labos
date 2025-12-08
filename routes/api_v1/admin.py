@@ -745,9 +745,219 @@ def delete_credit_card(card_id):
         logging.info(f"Credit card {card_id} deleted by {current_user.username}")
         
         return jsonify({'message': 'Credit card deleted successfully'}), 200
-        
+
     except Exception as e:
         db.session.rollback()
         logging.error(f"Error deleting credit card: {str(e)}", exc_info=True)
         return jsonify({'error': 'Failed to delete credit card'}), 500
+
+
+@api_v1.route('/admin/expenses', methods=['GET'])
+@login_required
+def admin_list_expenses():
+    """List all expenses for admin with filtering and pagination"""
+    if not current_user.is_admin:
+        return jsonify({'error': 'Admin access required'}), 403
+
+    try:
+        # Get query parameters
+        page = request.args.get('page', 1, type=int)
+        per_page = request.args.get('per_page', 20, type=int)
+        status = request.args.get('status', None, type=str)
+        department_id = request.args.get('department_id', None, type=int)
+        user_id = request.args.get('user_id', None, type=int)
+        category_id = request.args.get('category_id', None, type=int)
+        subcategory_id = request.args.get('subcategory_id', None, type=int)
+        supplier_id = request.args.get('supplier_id', None, type=int)
+        payment_method = request.args.get('payment_method', None, type=str)
+        start_date = request.args.get('start_date', None, type=str)
+        end_date = request.args.get('end_date', None, type=str)
+        search = request.args.get('search', None, type=str)
+        sort_by = request.args.get('sort_by', 'date', type=str)
+        sort_order = request.args.get('sort_order', 'desc', type=str)
+
+        # Build query - admin sees all expenses
+        query = Expense.query.join(User, Expense.user_id == User.id)
+
+        # Apply filters
+        if status:
+            query = query.filter(Expense.status == status)
+
+        if department_id:
+            query = query.filter(User.department_id == department_id)
+
+        if user_id:
+            query = query.filter(Expense.user_id == user_id)
+
+        if subcategory_id:
+            query = query.filter(Expense.subcategory_id == subcategory_id)
+        elif category_id:
+            query = query.join(Subcategory, Expense.subcategory_id == Subcategory.id).filter(Subcategory.category_id == category_id)
+
+        if supplier_id:
+            query = query.filter(Expense.supplier_id == supplier_id)
+
+        if payment_method:
+            query = query.filter(Expense.payment_method == payment_method)
+
+        if start_date:
+            query = query.filter(Expense.date >= datetime.fromisoformat(start_date))
+
+        if end_date:
+            query = query.filter(Expense.date <= datetime.fromisoformat(end_date))
+
+        if search:
+            query = query.filter(
+                (Expense.description.ilike(f'%{search}%')) |
+                (Expense.reason.ilike(f'%{search}%')) |
+                (User.first_name.ilike(f'%{search}%')) |
+                (User.last_name.ilike(f'%{search}%'))
+            )
+
+        # Apply sorting
+        if sort_by == 'date':
+            query = query.order_by(Expense.date.desc() if sort_order == 'desc' else Expense.date.asc())
+        elif sort_by == 'amount':
+            query = query.order_by(Expense.amount.desc() if sort_order == 'desc' else Expense.amount.asc())
+        elif sort_by == 'status':
+            query = query.order_by(Expense.status.desc() if sort_order == 'desc' else Expense.status.asc())
+        elif sort_by == 'created_at':
+            query = query.order_by(Expense.created_at.desc() if sort_order == 'desc' else Expense.created_at.asc())
+        else:
+            query = query.order_by(Expense.date.desc())
+
+        # Paginate
+        pagination = query.paginate(page=page, per_page=per_page, error_out=False)
+
+        expense_list = []
+        for expense in pagination.items:
+            expense_list.append({
+                'id': expense.id,
+                'amount': expense.amount,
+                'currency': expense.currency,
+                'description': expense.description,
+                'reason': expense.reason,
+                'date': expense.date.isoformat() if expense.date else None,
+                'created_at': expense.created_at.isoformat() if expense.created_at else None,
+                'status': expense.status,
+                'type': expense.type,
+                'payment_method': expense.payment_method,
+                'payment_status': expense.payment_status,
+                'user': {
+                    'id': expense.submitter.id,
+                    'username': expense.submitter.username,
+                    'name': f"{expense.submitter.first_name} {expense.submitter.last_name}".strip(),
+                    'department': expense.submitter.home_department.name if expense.submitter.home_department else None,
+                    'department_id': expense.submitter.department_id
+                },
+                'subcategory': {
+                    'id': expense.subcategory.id,
+                    'name': expense.subcategory.name
+                } if expense.subcategory else None,
+                'category': {
+                    'id': expense.subcategory.category.id,
+                    'name': expense.subcategory.category.name
+                } if expense.subcategory and expense.subcategory.category else None,
+                'supplier': {
+                    'id': expense.supplier.id,
+                    'name': expense.supplier.name
+                } if expense.supplier else None,
+                'handler': {
+                    'id': expense.handler.id,
+                    'name': f"{expense.handler.first_name} {expense.handler.last_name}".strip()
+                } if expense.handler else None,
+                'handled_at': expense.handled_at.isoformat() if expense.handled_at else None,
+                'has_invoice': bool(expense.invoice_filename),
+                'has_receipt': bool(expense.receipt_filename),
+                'has_quote': bool(expense.quote_filename)
+            })
+
+        return jsonify({
+            'expenses': expense_list,
+            'pagination': {
+                'page': pagination.page,
+                'per_page': pagination.per_page,
+                'total': pagination.total,
+                'pages': pagination.pages,
+                'has_next': pagination.has_next,
+                'has_prev': pagination.has_prev
+            }
+        }), 200
+
+    except Exception as e:
+        logging.error(f"Error listing admin expenses: {str(e)}", exc_info=True)
+        return jsonify({'error': 'Failed to fetch expenses'}), 500
+
+
+@api_v1.route('/admin/expenses/<int:expense_id>', methods=['PUT'])
+@login_required
+def admin_update_expense(expense_id):
+    """Update an expense (admin only)"""
+    if not current_user.is_admin:
+        return jsonify({'error': 'Admin access required'}), 403
+
+    try:
+        expense = Expense.query.get(expense_id)
+        if not expense:
+            return jsonify({'error': 'Expense not found'}), 404
+
+        data = request.get_json()
+
+        # Update allowed fields
+        if 'status' in data:
+            expense.status = data['status']
+            if data['status'] in ['approved', 'rejected']:
+                expense.handler_id = current_user.id
+                expense.handled_at = datetime.now()
+
+        if 'payment_status' in data:
+            expense.payment_status = data['payment_status']
+
+        if 'amount' in data:
+            expense.amount = data['amount']
+
+        if 'description' in data:
+            expense.description = data['description']
+
+        if 'reason' in data:
+            expense.reason = data['reason']
+
+        if 'accounting_notes' in data:
+            expense.accounting_notes = data['accounting_notes']
+
+        db.session.commit()
+
+        logging.info(f"Expense {expense_id} updated by admin {current_user.username}")
+
+        return jsonify({'message': 'Expense updated successfully'}), 200
+
+    except Exception as e:
+        db.session.rollback()
+        logging.error(f"Error updating expense: {str(e)}", exc_info=True)
+        return jsonify({'error': 'Failed to update expense'}), 500
+
+
+@api_v1.route('/admin/expenses/<int:expense_id>', methods=['DELETE'])
+@login_required
+def admin_delete_expense(expense_id):
+    """Delete an expense (admin only)"""
+    if not current_user.is_admin:
+        return jsonify({'error': 'Admin access required'}), 403
+
+    try:
+        expense = Expense.query.get(expense_id)
+        if not expense:
+            return jsonify({'error': 'Expense not found'}), 404
+
+        db.session.delete(expense)
+        db.session.commit()
+
+        logging.info(f"Expense {expense_id} deleted by admin {current_user.username}")
+
+        return jsonify({'message': 'Expense deleted successfully'}), 200
+
+    except Exception as e:
+        db.session.rollback()
+        logging.error(f"Error deleting expense: {str(e)}", exc_info=True)
+        return jsonify({'error': 'Failed to delete expense'}), 500
 
