@@ -315,41 +315,6 @@ function Dashboard({ user, setUser }) {
           </>
         )}
 
-        {/* Tips Section */}
-        <Card className="tips-section">
-          <Card.Body>
-            <h3><i className="fas fa-lightbulb"></i> Quick Tips</h3>
-            <div className="tips-grid">
-              <div className="tip-item">
-                <div className="tip-icon">
-                  <i className="fas fa-keyboard"></i>
-                </div>
-                <div>
-                  <strong>Keyboard Shortcuts</strong>
-                  <p>Press <kbd>N</kbd> to quickly submit a new expense</p>
-                </div>
-              </div>
-              <div className="tip-item">
-                <div className="tip-icon">
-                  <i className="fas fa-camera"></i>
-                </div>
-                <div>
-                  <strong>Receipt Upload</strong>
-                  <p>Attach receipts to expenses for faster approval</p>
-                </div>
-              </div>
-              <div className="tip-item">
-                <div className="tip-icon">
-                  <i className="fas fa-bell"></i>
-                </div>
-                <div>
-                  <strong>Stay Updated</strong>
-                  <p>Check the Approvals tab for pending items</p>
-                </div>
-              </div>
-            </div>
-          </Card.Body>
-        </Card>
       </main>
     </div>
   )
