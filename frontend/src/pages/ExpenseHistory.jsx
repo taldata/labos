@@ -525,7 +525,7 @@ function ExpenseHistory({ user, setUser }) {
                         </td>
                         <td>
                           <Badge variant={getStatusVariant(expense.status)} size="small" rounded>
-                            {expense.status.charAt(0).toUpperCase() + expense.status.slice(1)}
+                            {expense.status ? expense.status.charAt(0).toUpperCase() + expense.status.slice(1) : '-'}
                           </Badge>
                         </td>
                         <td>
