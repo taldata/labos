@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Header from '../components/Header'
-import { Card, Button, Input, Select, Textarea, FileUpload, useToast } from '../components/ui'
+import { Card, Button, Input, Select, SearchableSelect, Textarea, FileUpload, useToast } from '../components/ui'
 import './SubmitExpense.css'
 
 function SubmitExpense({ user, setUser }) {
@@ -302,19 +302,17 @@ function SubmitExpense({ user, setUser }) {
             </Card.Header>
             <Card.Body>
               <div className="form-row">
-                <Select
+                <SearchableSelect
                   label="Supplier"
                   name="supplier_id"
                   value={formData.supplier_id}
                   onChange={handleInputChange}
-                >
-                  <option value="">Select a supplier</option>
-                  {suppliers.map(sup => (
-                    <option key={sup.id} value={sup.id}>
-                      {sup.name}
-                    </option>
-                  ))}
-                </Select>
+                  options={suppliers}
+                  placeholder="Select a supplier"
+                  searchPlaceholder="Search suppliers..."
+                  displayKey="name"
+                  valueKey="id"
+                />
 
                 <Select
                   label="Payment Method"
