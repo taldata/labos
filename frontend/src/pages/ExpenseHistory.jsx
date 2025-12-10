@@ -57,6 +57,22 @@ function ExpenseHistory({ user, setUser }) {
       return
     }
     fetchFilterOptions()
+
+    // Check for URL parameters and set filters accordingly
+    const urlParams = new URLSearchParams(window.location.search)
+    const newFilters = { ...filters }
+
+    if (urlParams.get('department_id')) {
+      newFilters.department_id = urlParams.get('department_id')
+    }
+    if (urlParams.get('category_id')) {
+      newFilters.category_id = urlParams.get('category_id')
+    }
+    if (urlParams.get('user_id')) {
+      newFilters.user_id = urlParams.get('user_id')
+    }
+
+    setFilters(newFilters)
   }, [])
 
   useEffect(() => {

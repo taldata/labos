@@ -1,6 +1,6 @@
 from flask import jsonify, request
 from flask_login import login_required, current_user
-from models import db, Department, Category, Subcategory
+from models import db, Department, Category, Subcategory, Expense
 from . import api_v1
 import logging
 
@@ -14,39 +14,63 @@ def get_organization_structure():
             return jsonify({'error': 'Not authorized'}), 403
 
         departments = Department.query.order_by(Department.name).all()
-        
+
         structure = []
         for dept in departments:
+            # Calculate actual expenses for the department (approved expenses only)
+            dept_spent = db.session.query(db.func.sum(Expense.amount))\
+                .join(Subcategory, Expense.subcategory_id == Subcategory.id)\
+                .join(Category, Subcategory.category_id == Category.id)\
+                .filter(Category.department_id == dept.id)\
+                .filter(Expense.status == 'approved')\
+                .scalar() or 0.0
+
             dept_data = {
                 'id': dept.id,
                 'name': dept.name,
                 'budget': dept.budget,
+                'spent': dept_spent,
                 'currency': dept.currency,
                 'categories': []
             }
-            
+
             categories = Category.query.filter_by(department_id=dept.id).order_by(Category.name).all()
             for cat in categories:
+                # Calculate actual expenses for the category
+                cat_spent = db.session.query(db.func.sum(Expense.amount))\
+                    .join(Subcategory, Expense.subcategory_id == Subcategory.id)\
+                    .filter(Subcategory.category_id == cat.id)\
+                    .filter(Expense.status == 'approved')\
+                    .scalar() or 0.0
+
                 cat_data = {
                     'id': cat.id,
                     'name': cat.name,
                     'budget': cat.budget,
+                    'spent': cat_spent,
                     'department_id': cat.department_id,
                     'subcategories': []
                 }
-                
+
                 subcategories = Subcategory.query.filter_by(category_id=cat.id).order_by(Subcategory.name).all()
                 for sub in subcategories:
+                    # Calculate actual expenses for the subcategory
+                    sub_spent = db.session.query(db.func.sum(Expense.amount))\
+                        .filter(Expense.subcategory_id == sub.id)\
+                        .filter(Expense.status == 'approved')\
+                        .scalar() or 0.0
+
                     sub_data = {
                         'id': sub.id,
                         'name': sub.name,
                         'budget': sub.budget,
+                        'spent': sub_spent,
                         'category_id': sub.category_id
                     }
                     cat_data['subcategories'].append(sub_data)
-                
+
                 dept_data['categories'].append(cat_data)
-            
+
             structure.append(dept_data)
 
         return jsonify({'structure': structure}), 200

@@ -124,12 +124,19 @@
   margin-right: auto;
 }
 
+.budget-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-right: 1rem;
+}
+
 .dept-budget {
-  font-size: 0.95rem;
+  font-size: 0.9rem;
   font-weight: 600;
   color: #64748b;
   background: linear-gradient(135deg, #e0e7ff 0%, #ddd6fe 100%);
-  padding: 0.5rem 1.25rem;
+  padding: 0.4rem 1rem;
   border-radius: 2rem;
   display: flex;
   align-items: center;
@@ -137,9 +144,28 @@
   box-shadow: 0 2px 8px rgba(102, 126, 234, 0.15);
 }
 
-.dept-budget::before {
-  content: '💰';
-  font-size: 1.1rem;
+.dept-spent {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #475569;
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  padding: 0.4rem 1rem;
+  border-radius: 2rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  box-shadow: 0 2px 8px rgba(251, 191, 36, 0.15);
+  transition: all 0.3s ease;
+}
+
+.dept-spent.clickable {
+  cursor: pointer;
+}
+
+.dept-spent.clickable:hover {
+  background: linear-gradient(135deg, #fde047 0%, #facc15 100%);
+  box-shadow: 0 4px 12px rgba(251, 191, 36, 0.25);
+  transform: translateY(-2px);
 }
 
 .budget-progress {
