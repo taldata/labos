@@ -20,6 +20,10 @@
 
         <form method="POST" enctype="multipart/form-data">
             {% if expense.status == 'approved' %}
+            <div class="alert info">
+                <strong>Note:</strong> For approved expenses, you can only edit the supplier and attachments.
+            </div>
+
             <div class="form-group">
                 <label for="supplier_id">Supplier:</label>
                 <select id="supplier_id" name="supplier_id" class="form-control">
@@ -30,7 +34,49 @@
                     </option>
                     {% endfor %}
                 </select>
-                <p class="form-text text-muted">You can only edit the supplier for approved expenses that haven't been paid yet.</p>
+            </div>
+
+            <div class="attachments-section">
+                <h3>Supporting Documents</h3>
+
+                <div class="form-group">
+                    <label for="quote">Quote:</label>
+                    {% if expense.quote_filename %}
+                        <p class="current-file">Current quote:
+                            <a href="{{ url_for('download_file', filename=expense.quote_filename) }}">
+                                {{ expense.quote_filename }}
+                            </a>
+                        </p>
+                    {% endif %}
+                    <input type="file" id="quote" name="quote" class="file-input" accept=".pdf,.png,.jpg,.jpeg">
+                    <span class="file-help">Leave empty to keep the current quote. Supported formats: PDF, PNG, JPG, JPEG</span>
+                </div>
+
+                <div class="form-group">
+                    <label for="invoice">Invoice:</label>
+                    {% if expense.invoice_filename %}
+                        <p class="current-file">Current invoice:
+                            <a href="{{ url_for('download_file', filename=expense.invoice_filename) }}">
+                                {{ expense.invoice_filename }}
+                            </a>
+                        </p>
+                    {% endif %}
+                    <input type="file" id="invoice" name="invoice" class="file-input" accept=".pdf,.png,.jpg,.jpeg">
+                    <span class="file-help">Leave empty to keep the current invoice. Supported formats: PDF, PNG, JPG, JPEG</span>
+                </div>
+
+                <div class="form-group">
+                    <label for="receipt">Receipt:</label>
+                    {% if expense.receipt_filename %}
+                        <p class="current-file">Current receipt:
+                            <a href="{{ url_for('download_file', filename=expense.receipt_filename) }}">
+                                {{ expense.receipt_filename }}
+                            </a>
+                        </p>
+                    {% endif %}
+                    <input type="file" id="receipt" name="receipt" class="file-input" accept=".pdf,.png,.jpg,.jpeg">
+                    <span class="file-help">Leave empty to keep the current receipt. Supported formats: PDF, PNG, JPG, JPEG</span>
+                </div>
             </div>
             {% else %}
             <div class="form-group">
@@ -177,6 +223,15 @@
 </div>
 
 <style>
+.alert.info {
+    background-color: #d1ecf1;
+    color: #0c5460;
+    border: 1px solid #bee5eb;
+    padding: 1rem;
+    border-radius: 4px;
+    margin-bottom: 1.5rem;
+}
+
 .attachments-section {
     background: #f8f9fa;
     padding: 1.5rem;

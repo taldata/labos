@@ -76,7 +76,7 @@
                                 {% for emp in employees %}
                                 <option value="{{ emp.id }}" {% if selected_employee|string==emp.id|string %}selected{%
                                     endif %}>
-                                    {{ emp.username }}
+                                    {{ emp.first_name }} {{ emp.last_name }}
                                 </option>
                                 {% endfor %}
                             </select>
@@ -222,7 +222,7 @@
                         {% for expense in expenses %}
                         <tr>
                             <td class="col-date small">{{ expense.date.strftime('%d/%m/%Y %H:%M') }}</td>
-                            <td class="col-employee">{{ expense.submitter.username }}</td>
+                            <td class="col-employee">{{ expense.submitter.first_name }} {{ expense.submitter.last_name }}</td>
                             <td class="col-department">{{ expense.submitter.home_department.name if
                                 expense.submitter.home_department else 'No Department' }}</td>
                             <td>{{ expense.description }}</td>
@@ -266,7 +266,7 @@
                                 <span class="text-muted">-</span>
                                 {% endif %}
                             </td>
-                            <td class="col-actions">{{ expense.handler.username if expense.handler and expense.status !=
+                            <td class="col-actions">{{ (expense.handler.first_name ~ ' ' ~ expense.handler.last_name) if expense.handler and expense.status !=
                                 'pending' else '-' }}</td>
                             <td class="col-actions small">{{ expense.handled_at.strftime('%d/%m/%Y %H:%M') if
                                 expense.handled_at else '-' }}</td>

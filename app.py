@@ -1599,15 +1599,34 @@ def edit_expense(expense_id):
     
     if request.method == 'POST':
         try:
-            # For approved expenses, only allow editing supplier details
+            # For approved expenses, only allow editing supplier details and attachments
             if expense.status == 'approved':
                 supplier_id = request.form.get('supplier_id')
                 if supplier_id:
                     expense.supplier_id = int(supplier_id)
                 else:
                     expense.supplier_id = None
+
+                # Handle file uploads for approved expenses
+                for doc_type in ['quote', 'invoice', 'receipt']:
+                    if doc_type in request.files:
+                        file = request.files[doc_type]
+                        if file and file.filename != '' and allowed_file(file.filename):
+                            # Delete old file if it exists
+                            old_filename = getattr(expense, f"{doc_type}_filename")
+                            if old_filename:
+                                old_file_path = os.path.join(app.config['UPLOAD_FOLDER'], old_filename)
+                                if os.path.exists(old_file_path):
+                                    os.remove(old_file_path)
+
+                            # Save new file
+                            filename = secure_filename(f"{datetime.now().strftime('%Y%m%d_%H%M%S')}_{file.filename}")
+                            file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+                            file.save(file_path)
+                            setattr(expense, f"{doc_type}_filename", filename)
+
                 db.session.commit()
-                flash('Supplier details updated successfully')
+                flash('Expense updated successfully')
                 return redirect(url_for('employee_dashboard'))
             
             # For pending expenses, allow full editing
