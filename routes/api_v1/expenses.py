@@ -871,80 +871,183 @@ def get_expense_report():
 @api_v1.route('/expenses/export', methods=['GET'])
 @login_required
 def export_expenses():
-    """Export expenses as CSV"""
-    from flask import Response
-    import csv
-    from io import StringIO
-    
+    """Export expenses as XLSX"""
+    from flask import send_file
+    import xlsxwriter
+    from io import BytesIO
+
     try:
-        # Get filter parameters (same as report)
-        start_date = request.args.get('start_date')
-        end_date = request.args.get('end_date')
-        status = request.args.get('status')
-        department_id = request.args.get('department_id')
-        
+        # Get filter parameters from expense history page
+        status = request.args.get('status', 'all')
+        employee_id = request.args.get('employee', 'all')
+        department_id = request.args.get('department', 'all')
+        category_id = request.args.get('category', 'all')
+        subcategory_id = request.args.get('subcategory', 'all')
+        adding_month = request.args.get('adding_month', 'all')
+        purchase_month = request.args.get('purchase_month', 'all')
+        supplier_id = request.args.get('supplier', 'all')
+        payment_method = request.args.get('payment_method', 'all')
+
         # Build query based on user role
         if current_user.is_admin:
-            query = Expense.query
+            expenses = Expense.query.order_by(Expense.date.desc()).all()
         elif current_user.is_manager:
-            managed_dept_ids = [d.id for d in current_user.managed_departments]
-            if not managed_dept_ids:
-                managed_dept_ids = [current_user.department_id] if current_user.department_id else []
-            query = Expense.query.join(User, Expense.user_id == User.id)\
-                .filter(User.department_id.in_(managed_dept_ids))
+            managed_dept_ids = [dept.id for dept in current_user.managed_departments]
+            if current_user.department_id:
+                managed_dept_ids.append(current_user.department_id)
+            expenses = db.session.query(Expense).join(User, Expense.user_id == User.id)\
+                .filter(User.department_id.in_(managed_dept_ids))\
+                .order_by(Expense.date.desc()).all()
         else:
-            query = Expense.query.filter_by(user_id=current_user.id)
-        
+            expenses = Expense.query.filter_by(user_id=current_user.id)\
+                .order_by(Expense.date.desc()).all()
+
         # Apply filters
-        if start_date:
-            query = query.filter(Expense.date >= datetime.strptime(start_date, '%Y-%m-%d'))
-        if end_date:
-            query = query.filter(Expense.date <= datetime.strptime(end_date, '%Y-%m-%d'))
-        if status and status != 'all':
-            query = query.filter(Expense.status == status)
-        if department_id and current_user.is_admin:
-            query = query.join(User, Expense.user_id == User.id).filter(User.department_id == int(department_id))
-        
-        expenses = query.order_by(Expense.date.desc()).all()
-        
-        # Create CSV
-        output = StringIO()
-        writer = csv.writer(output)
-        
-        # Header
-        writer.writerow([
-            'ID', 'Date', 'Description', 'Amount', 'Currency', 'Status', 'Type',
-            'Category', 'Subcategory', 'Supplier', 'User', 'Department', 
-            'Payment Method', 'Reason'
-        ])
-        
-        # Data rows
-        for exp in expenses:
-            writer.writerow([
-                exp.id,
-                exp.date.strftime('%Y-%m-%d') if exp.date else '',
-                exp.description or '',
-                exp.amount,
-                exp.currency,
-                exp.status,
-                exp.type,
-                exp.subcategory.category.name if exp.subcategory and exp.subcategory.category else '',
-                exp.subcategory.name if exp.subcategory else '',
-                exp.supplier.name if exp.supplier else '',
-                f"{exp.submitter.first_name} {exp.submitter.last_name}" if exp.submitter else '',
-                exp.submitter.home_department.name if exp.submitter and exp.submitter.home_department else '',
-                exp.payment_method or '',
-                exp.reason or ''
-            ])
-        
+        if status != 'all':
+            expenses = [exp for exp in expenses if exp.status == status]
+        if employee_id != 'all':
+            expenses = [exp for exp in expenses if exp.user_id == int(employee_id)]
+        if department_id != 'all':
+            expenses = [exp for exp in expenses if exp.submitter.department_id == int(department_id)]
+        if category_id != 'all':
+            expenses = [exp for exp in expenses if exp.subcategory and exp.subcategory.category_id == int(category_id)]
+        if subcategory_id != 'all':
+            expenses = [exp for exp in expenses if exp.subcategory_id == int(subcategory_id)]
+
+        # Apply admin-only filters
+        if current_user.is_admin:
+            if adding_month != 'all':
+                year, month = adding_month.split('-')
+                expenses = [exp for exp in expenses if
+                           exp.date.year == int(year) and exp.date.month == int(month)]
+
+            if purchase_month != 'all':
+                year, month = purchase_month.split('-')
+                expenses = [exp for exp in expenses if
+                           exp.invoice_date and exp.invoice_date.year == int(year) and
+                           exp.invoice_date.month == int(month)]
+
+            if supplier_id != 'all':
+                expenses = [exp for exp in expenses if
+                           exp.supplier_id and exp.supplier_id == int(supplier_id)]
+
+            if payment_method != 'all':
+                expenses = [exp for exp in expenses if exp.payment_method == payment_method]
+
+        # Create XLSX file in memory
+        output = BytesIO()
+        workbook = xlsxwriter.Workbook(output, {'in_memory': True})
+        worksheet = workbook.add_worksheet('Expenses')
+
+        # Define formats
+        header_format = workbook.add_format({
+            'bold': True,
+            'bg_color': '#4472C4',
+            'font_color': 'white',
+            'border': 1,
+            'align': 'center',
+            'valign': 'vcenter'
+        })
+
+        currency_format = workbook.add_format({'num_format': '#,##0.00'})
+        date_format = workbook.add_format({'num_format': 'dd/mm/yyyy hh:mm'})
+        date_only_format = workbook.add_format({'num_format': 'dd/mm/yyyy'})
+
+        status_formats = {
+            'approved': workbook.add_format({'bg_color': '#C6EFCE', 'font_color': '#006100'}),
+            'rejected': workbook.add_format({'bg_color': '#FFC7CE', 'font_color': '#9C0006'}),
+            'pending': workbook.add_format({'bg_color': '#FFEB9C', 'font_color': '#9C6500'})
+        }
+
+        # Write headers
+        headers = [
+            'Date', 'Employee', 'Department', 'Description', 'Reason', 'Supplier',
+            'Invoice Date', 'Category', 'Subcategory', 'Type', 'Payment Method',
+            'Amount', 'Currency', 'Status', 'Payment Status', 'Handled By', 'Handled At'
+        ]
+
+        for col, header in enumerate(headers):
+            worksheet.write(0, col, header, header_format)
+
+        # Set column widths
+        worksheet.set_column(0, 0, 18)  # Date
+        worksheet.set_column(1, 1, 15)  # Employee
+        worksheet.set_column(2, 2, 15)  # Department
+        worksheet.set_column(3, 3, 30)  # Description
+        worksheet.set_column(4, 4, 30)  # Reason
+        worksheet.set_column(5, 5, 20)  # Supplier
+        worksheet.set_column(6, 6, 12)  # Invoice Date
+        worksheet.set_column(7, 7, 15)  # Category
+        worksheet.set_column(8, 8, 15)  # Subcategory
+        worksheet.set_column(9, 9, 12)  # Type
+        worksheet.set_column(10, 10, 15) # Payment Method
+        worksheet.set_column(11, 11, 12) # Amount
+        worksheet.set_column(12, 12, 8)  # Currency
+        worksheet.set_column(13, 13, 12) # Status
+        worksheet.set_column(14, 14, 15) # Payment Status
+        worksheet.set_column(15, 15, 15) # Handled By
+        worksheet.set_column(16, 16, 18) # Handled At
+
+        # Write data rows
+        for row, exp in enumerate(expenses, start=1):
+            worksheet.write_datetime(row, 0, exp.date, date_format)
+            worksheet.write(row, 1, exp.submitter.username if exp.submitter else '')
+            worksheet.write(row, 2, exp.submitter.home_department.name if exp.submitter and exp.submitter.home_department else '')
+            worksheet.write(row, 3, exp.description or '')
+            worksheet.write(row, 4, exp.reason or '')
+            worksheet.write(row, 5, exp.supplier.name if exp.supplier else '')
+
+            if exp.invoice_date:
+                worksheet.write_datetime(row, 6, exp.invoice_date, date_only_format)
+            else:
+                worksheet.write(row, 6, '')
+
+            worksheet.write(row, 7, exp.subcategory.category.name if exp.subcategory and exp.subcategory.category else '')
+            worksheet.write(row, 8, exp.subcategory.name if exp.subcategory else '')
+            worksheet.write(row, 9, exp.type or '')
+            worksheet.write(row, 10, exp.payment_method or '')
+            worksheet.write(row, 11, exp.amount, currency_format)
+            worksheet.write(row, 12, exp.currency)
+
+            # Write status with conditional formatting
+            status_format = status_formats.get(exp.status)
+            worksheet.write(row, 13, exp.status, status_format)
+
+            # Payment status
+            payment_status = ''
+            if exp.payment_status == 'paid':
+                payment_status = 'PAID'
+            elif exp.payment_status == 'pending_payment':
+                payment_status = 'Payment Pending'
+            elif exp.payment_status == 'pending_attention' and exp.status == 'approved':
+                payment_status = 'Processing'
+            worksheet.write(row, 14, payment_status)
+
+            worksheet.write(row, 15, exp.handler.username if exp.handler and exp.status != 'pending' else '')
+
+            if exp.handled_at:
+                worksheet.write_datetime(row, 16, exp.handled_at, date_format)
+            else:
+                worksheet.write(row, 16, '')
+
+        # Add autofilter
+        worksheet.autofilter(0, 0, len(expenses), len(headers) - 1)
+
+        # Freeze header row
+        worksheet.freeze_panes(1, 0)
+
+        workbook.close()
         output.seek(0)
-        
-        return Response(
-            output.getvalue(),
-            mimetype='text/csv',
-            headers={'Content-Disposition': f'attachment; filename=expenses_{datetime.now().strftime("%Y%m%d")}.csv'}
+
+        filename = f'expenses_{datetime.now().strftime("%Y%m%d_%H%M%S")}.xlsx'
+
+        return send_file(
+            output,
+            mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            as_attachment=True,
+            download_name=filename
         )
-        
+
     except Exception as e:
         logging.error(f"Error exporting expenses: {str(e)}", exc_info=True)
         return jsonify({'error': 'Failed to export expenses'}), 500
