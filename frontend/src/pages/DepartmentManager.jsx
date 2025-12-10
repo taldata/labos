@@ -230,7 +230,19 @@ const DepartmentManager = ({ user, setUser }) => {
                                 <i className={`fas fa-chevron-down expand-icon ${expandedDepts[dept.id] ? 'expanded' : ''}`}></i>
                                 <div className="dept-icon">🏢</div>
                                 <span className="dept-name">{dept.name}</span>
-                                <span className="dept-budget">{dept.budget.toLocaleString()} {dept.currency}</span>
+                                <div className="budget-info">
+                                    <span className="dept-budget">תקציב: {dept.budget.toLocaleString()} {dept.currency}</span>
+                                    <span
+                                        className="dept-spent clickable"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            navigate(`/admin/expense-history?department_id=${dept.id}`);
+                                        }}
+                                        title="לחץ לצפייה בפירוט ההוצאות"
+                                    >
+                                        הוצאות בפועל: {(dept.spent || 0).toLocaleString()} {dept.currency}
+                                    </span>
+                                </div>
                             </div>
                             <div className="actions" onClick={e => e.stopPropagation()}>
                                 <Button variant="ghost" size="small" icon="fas fa-edit" onClick={() => openModal('department', 'edit', dept)} title="Edit Department" />
@@ -264,7 +276,19 @@ const DepartmentManager = ({ user, setUser }) => {
                                                     <i className={`fas fa-chevron-right expand-icon ${expandedCats[cat.id] ? 'expanded' : ''}`}></i>
                                                     <div className="category-icon">📁</div>
                                                     <span className="category-name">{cat.name}</span>
-                                                    <span className="dept-budget">{cat.budget.toLocaleString()} {dept.currency}</span>
+                                                    <div className="budget-info">
+                                                        <span className="dept-budget">תקציב: {cat.budget.toLocaleString()} {dept.currency}</span>
+                                                        <span
+                                                            className="dept-spent clickable"
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                navigate(`/admin/expense-history?category_id=${cat.id}`);
+                                                            }}
+                                                            title="לחץ לצפייה בפירוט ההוצאות"
+                                                        >
+                                                            הוצאות: {(cat.spent || 0).toLocaleString()} {dept.currency}
+                                                        </span>
+                                                    </div>
                                                 </div>
                                                 <div className="actions" onClick={e => e.stopPropagation()}>
                                                     <Button variant="ghost" size="small" icon="fas fa-edit" onClick={() => openModal('category', 'edit', cat)} title="Edit Category" />
@@ -281,7 +305,19 @@ const DepartmentManager = ({ user, setUser }) => {
                                                             <div className="dept-info">
                                                                 <div className="subcategory-icon">📄</div>
                                                                 <span className="subcategory-name">{sub.name}</span>
-                                                                <span className="dept-budget">{sub.budget.toLocaleString()} {dept.currency}</span>
+                                                                <div className="budget-info">
+                                                                    <span className="dept-budget">תקציב: {sub.budget.toLocaleString()} {dept.currency}</span>
+                                                                    <span
+                                                                        className="dept-spent clickable"
+                                                                        onClick={(e) => {
+                                                                            e.stopPropagation();
+                                                                            navigate(`/admin/expense-history?category_id=${cat.id}`);
+                                                                        }}
+                                                                        title="לחץ לצפייה בפירוט ההוצאות"
+                                                                    >
+                                                                        הוצאות: {(sub.spent || 0).toLocaleString()} {dept.currency}
+                                                                    </span>
+                                                                </div>
                                                             </div>
                                                             <div className="actions">
                                                                 <Button variant="ghost" size="small" icon="fas fa-edit" onClick={() => openModal('subcategory', 'edit', sub)} title="Edit Subcategory" />
