@@ -299,7 +299,7 @@ function ExpenseHistory({ user, setUser }) {
                   name="search"
                   value={filters.search}
                   onChange={handleFilterChange}
-                  placeholder="Search description, reason, or employee..."
+                  placeholder="Search description, reason, employee, supplier, or amount..."
                   icon="fas fa-search"
                 />
 
