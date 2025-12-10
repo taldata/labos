@@ -66,18 +66,16 @@ function Dashboard({ user, setUser }) {
           </p>
         </div>
 
-        {/* Quick Stats */}
         {loading ? (
-          <div className="stats-grid">
+          <div className="actions-grid">
             {[1, 2, 3, 4].map(i => (
-              <Card key={i} className="stat-card">
+              <Card key={i} className="action-card">
                 <Card.Body>
                   <div className="stat-card-loading">
                     <Skeleton variant="avatar" width="48px" height="48px" borderRadius="0.75rem" />
                     <div style={{ flex: 1 }}>
                       <Skeleton variant="text" width="60%" height="0.875rem" />
                       <Skeleton variant="title" width="40%" height="1.75rem" />
-                      <Skeleton variant="text" width="80%" height="0.75rem" />
                     </div>
                   </div>
                 </Card.Body>
@@ -86,68 +84,6 @@ function Dashboard({ user, setUser }) {
           </div>
         ) : (
           <>
-            <div className="stats-grid">
-              <Card className="stat-card">
-                <Card.Body>
-                  <div className="stat-icon stat-icon-pending">
-                    <i className="fas fa-clock"></i>
-                  </div>
-                  <div className="stat-content">
-                    <h3>Pending Expenses</h3>
-                    <p className="stat-value">{summary?.pending || 0}</p>
-                    <p className="stat-label">Awaiting approval</p>
-                  </div>
-                </Card.Body>
-              </Card>
-
-              <Card className="stat-card">
-                <Card.Body>
-                  <div className="stat-icon stat-icon-approved">
-                    <i className="fas fa-check-circle"></i>
-                  </div>
-                  <div className="stat-content">
-                    <h3>Approved</h3>
-                    <p className="stat-value">{summary?.approved || 0}</p>
-                    <p className="stat-label">Total approved</p>
-                  </div>
-                </Card.Body>
-              </Card>
-
-              <Card className="stat-card">
-                <Card.Body>
-                  <div className="stat-icon stat-icon-amount">
-                    <i className="fas fa-shekel-sign"></i>
-                  </div>
-                  <div className="stat-content">
-                    <h3>Total Amount</h3>
-                    <p className="stat-value">
-                      {summary?.currency === 'USD' ? '$' : '₪'}
-                      {summary?.total_amount?.toLocaleString() || '0'}
-                    </p>
-                    <p className="stat-label">This month</p>
-                  </div>
-                </Card.Body>
-              </Card>
-
-              <Card className="stat-card">
-                <Card.Body>
-                  <div className="stat-icon stat-icon-budget">
-                    <i className="fas fa-chart-pie"></i>
-                  </div>
-                  <div className="stat-content">
-                    <h3>Budget Usage</h3>
-                    <p className="stat-value">{budget?.usage_percent?.toFixed(1) || '0'}%</p>
-                    <p className="stat-label">
-                      {budget?.currency === 'USD' ? '$' : '₪'}
-                      {budget?.spent?.toLocaleString() || '0'} of{' '}
-                      {budget?.currency === 'USD' ? '$' : '₪'}
-                      {budget?.total?.toLocaleString() || '0'}
-                    </p>
-                  </div>
-                </Card.Body>
-              </Card>
-            </div>
-
             {/* Quick Actions */}
             <div className="quick-actions">
               <h3>Quick Actions</h3>
@@ -164,114 +100,41 @@ function Dashboard({ user, setUser }) {
                   </Card.Body>
                 </Card>
 
-                <Card hoverable clickable onClick={() => navigate('/my-expenses')} className="action-card">
+                <Card hoverable clickable onClick={() => navigate('/admin/departments')} className="action-card">
                   <Card.Body>
-                    <div className="action-icon action-icon-list">
-                      <i className="fas fa-list"></i>
+                    <div className="action-icon action-icon-org">
+                      <i className="fas fa-sitemap"></i>
                     </div>
                     <div className="action-content">
-                      <h4>My Expenses</h4>
-                      <p>View and manage all expenses</p>
+                      <h4>Organization</h4>
+                      <p>Manage departments & categories</p>
                     </div>
                   </Card.Body>
                 </Card>
 
-                <Card hoverable clickable onClick={() => navigate('/reports')} className="action-card">
+                <Card hoverable clickable onClick={() => navigate('/admin/suppliers')} className="action-card">
                   <Card.Body>
-                    <div className="action-icon action-icon-reports">
-                      <i className="fas fa-chart-bar"></i>
+                    <div className="action-icon action-icon-suppliers">
+                      <i className="fas fa-building"></i>
                     </div>
                     <div className="action-content">
-                      <h4>Reports</h4>
-                      <p>Generate & export reports</p>
+                      <h4>Suppliers</h4>
+                      <p>Manage vendors</p>
                     </div>
                   </Card.Body>
                 </Card>
 
-                {(user?.is_manager || user?.is_admin) && (
-                  <Card hoverable clickable onClick={() => navigate('/approvals')} className="action-card">
-                    <Card.Body>
-                      <div className="action-icon action-icon-approvals">
-                        <i className="fas fa-clipboard-check"></i>
-                      </div>
-                      <div className="action-content">
-                        <h4>Approvals</h4>
-                        <p>Review pending expenses</p>
-                      </div>
-                    </Card.Body>
-                  </Card>
-                )}
-
-                {user?.is_admin && (
-                  <>
-                    <Card hoverable clickable onClick={() => navigate('/admin/departments')} className="action-card">
-                      <Card.Body>
-                        <div className="action-icon action-icon-org">
-                          <i className="fas fa-sitemap"></i>
-                        </div>
-                        <div className="action-content">
-                          <h4>Organization</h4>
-                          <p>Manage departments & categories</p>
-                        </div>
-                      </Card.Body>
-                    </Card>
-                    <Card hoverable clickable onClick={() => navigate('/admin/users')} className="action-card">
-                      <Card.Body>
-                        <div className="action-icon action-icon-users">
-                          <i className="fas fa-users"></i>
-                        </div>
-                        <div className="action-content">
-                          <h4>Users</h4>
-                          <p>Manage user accounts</p>
-                        </div>
-                      </Card.Body>
-                    </Card>
-                    <Card hoverable clickable onClick={() => navigate('/admin')} className="action-card">
-                      <Card.Body>
-                        <div className="action-icon action-icon-analytics">
-                          <i className="fas fa-chart-line"></i>
-                        </div>
-                        <div className="action-content">
-                          <h4>Analytics</h4>
-                          <p>View expense reports</p>
-                        </div>
-                      </Card.Body>
-                    </Card>
-                    <Card hoverable clickable onClick={() => navigate('/admin/suppliers')} className="action-card">
-                      <Card.Body>
-                        <div className="action-icon action-icon-suppliers">
-                          <i className="fas fa-building"></i>
-                        </div>
-                        <div className="action-content">
-                          <h4>Suppliers</h4>
-                          <p>Manage vendors</p>
-                        </div>
-                      </Card.Body>
-                    </Card>
-                    <Card hoverable clickable onClick={() => navigate('/admin/credit-cards')} className="action-card">
-                      <Card.Body>
-                        <div className="action-icon action-icon-cards">
-                          <i className="fas fa-credit-card"></i>
-                        </div>
-                        <div className="action-content">
-                          <h4>Credit Cards</h4>
-                          <p>Manage company cards</p>
-                        </div>
-                      </Card.Body>
-                    </Card>
-                    <Card hoverable clickable onClick={() => navigate('/admin/expense-history')} className="action-card">
-                      <Card.Body>
-                        <div className="action-icon action-icon-history">
-                          <i className="fas fa-history"></i>
-                        </div>
-                        <div className="action-content">
-                          <h4>Expense History</h4>
-                          <p>View all expenses</p>
-                        </div>
-                      </Card.Body>
-                    </Card>
-                  </>
-                )}
+                <Card hoverable clickable onClick={() => navigate('/admin/expense-history')} className="action-card">
+                  <Card.Body>
+                    <div className="action-icon action-icon-history">
+                      <i className="fas fa-history"></i>
+                    </div>
+                    <div className="action-content">
+                      <h4>Expense History</h4>
+                      <p>View all expenses</p>
+                    </div>
+                  </Card.Body>
+                </Card>
               </div>
             </div>
 
@@ -280,7 +143,7 @@ function Dashboard({ user, setUser }) {
               <Card className="recent-expenses">
                 <Card.Header>
                   <h3><i className="fas fa-receipt"></i> Recent Expenses</h3>
-                  <Button variant="ghost" size="small" onClick={() => navigate('/my-expenses')}>
+                  <Button variant="ghost" size="small" onClick={() => navigate('/admin/expense-history')}>
                     View All <i className="fas fa-arrow-right"></i>
                   </Button>
                 </Card.Header>
@@ -292,7 +155,7 @@ function Dashboard({ user, setUser }) {
                       onClick={() => navigate(`/expenses/${expense.id}`)}
                     >
                       <div className="expense-info">
-                        <div className="expense-desc">{expense.description || 'No description'}</div>
+                        <div className="expense-desc">{expense.submitter || 'Unknown'}</div>
                         <div className="expense-meta">
                           {expense.category} • {expense.subcategory} •{' '}
                           {new Date(expense.date).toLocaleDateString()}
