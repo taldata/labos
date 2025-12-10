@@ -779,6 +779,9 @@ def admin_list_expenses():
         # Build query - admin sees all expenses
         query = Expense.query.join(User, Expense.user_id == User.id)
 
+        # Left join Supplier for search functionality
+        query = query.outerjoin(Supplier, Expense.supplier_id == Supplier.id)
+
         # Apply filters
         if status:
             query = query.filter(Expense.status == status)
@@ -807,11 +810,14 @@ def admin_list_expenses():
             query = query.filter(Expense.date <= datetime.fromisoformat(end_date))
 
         if search:
+            # Search in description, reason, employee name, supplier name, and amount
             query = query.filter(
                 (Expense.description.ilike(f'%{search}%')) |
                 (Expense.reason.ilike(f'%{search}%')) |
                 (User.first_name.ilike(f'%{search}%')) |
-                (User.last_name.ilike(f'%{search}%'))
+                (User.last_name.ilike(f'%{search}%')) |
+                (Supplier.name.ilike(f'%{search}%')) |
+                (func.cast(Expense.amount, db.String).ilike(f'%{search}%'))
             )
 
         # Apply sorting
