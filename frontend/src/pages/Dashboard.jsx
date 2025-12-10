@@ -88,6 +88,7 @@ function Dashboard({ user, setUser }) {
             <div className="quick-actions">
               <h3>Quick Actions</h3>
               <div className="actions-grid">
+                {/* Primary actions - always first row */}
                 <Card hoverable clickable onClick={() => navigate('/submit-expense')} className="action-card">
                   <Card.Body>
                     <div className="action-icon action-icon-submit">
@@ -135,6 +136,83 @@ function Dashboard({ user, setUser }) {
                     </div>
                   </Card.Body>
                 </Card>
+
+                {/* Additional actions */}
+                <Card hoverable clickable onClick={() => navigate('/my-expenses')} className="action-card">
+                  <Card.Body>
+                    <div className="action-icon action-icon-list">
+                      <i className="fas fa-list"></i>
+                    </div>
+                    <div className="action-content">
+                      <h4>My Expenses</h4>
+                      <p>View and manage all expenses</p>
+                    </div>
+                  </Card.Body>
+                </Card>
+
+                <Card hoverable clickable onClick={() => navigate('/reports')} className="action-card">
+                  <Card.Body>
+                    <div className="action-icon action-icon-reports">
+                      <i className="fas fa-chart-bar"></i>
+                    </div>
+                    <div className="action-content">
+                      <h4>Reports</h4>
+                      <p>Generate & export reports</p>
+                    </div>
+                  </Card.Body>
+                </Card>
+
+                {(user?.is_manager || user?.is_admin) && (
+                  <Card hoverable clickable onClick={() => navigate('/approvals')} className="action-card">
+                    <Card.Body>
+                      <div className="action-icon action-icon-approvals">
+                        <i className="fas fa-clipboard-check"></i>
+                      </div>
+                      <div className="action-content">
+                        <h4>Approvals</h4>
+                        <p>Review pending expenses</p>
+                      </div>
+                    </Card.Body>
+                  </Card>
+                )}
+
+                {user?.is_admin && (
+                  <>
+                    <Card hoverable clickable onClick={() => navigate('/admin/users')} className="action-card">
+                      <Card.Body>
+                        <div className="action-icon action-icon-users">
+                          <i className="fas fa-users"></i>
+                        </div>
+                        <div className="action-content">
+                          <h4>Users</h4>
+                          <p>Manage user accounts</p>
+                        </div>
+                      </Card.Body>
+                    </Card>
+                    <Card hoverable clickable onClick={() => navigate('/admin')} className="action-card">
+                      <Card.Body>
+                        <div className="action-icon action-icon-analytics">
+                          <i className="fas fa-chart-line"></i>
+                        </div>
+                        <div className="action-content">
+                          <h4>Analytics</h4>
+                          <p>View expense reports</p>
+                        </div>
+                      </Card.Body>
+                    </Card>
+                    <Card hoverable clickable onClick={() => navigate('/admin/credit-cards')} className="action-card">
+                      <Card.Body>
+                        <div className="action-icon action-icon-cards">
+                          <i className="fas fa-credit-card"></i>
+                        </div>
+                        <div className="action-content">
+                          <h4>Credit Cards</h4>
+                          <p>Manage company cards</p>
+                        </div>
+                      </Card.Body>
+                    </Card>
+                  </>
+                )}
               </div>
             </div>
 
@@ -155,7 +233,7 @@ function Dashboard({ user, setUser }) {
                       onClick={() => navigate(`/expenses/${expense.id}`)}
                     >
                       <div className="expense-info">
-                        <div className="expense-desc">{expense.submitter || 'Unknown'}</div>
+                        <div className="expense-desc">{expense.description || 'No description'}</div>
                         <div className="expense-meta">
                           {expense.category} • {expense.subcategory} •{' '}
                           {new Date(expense.date).toLocaleDateString()}
