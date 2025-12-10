@@ -5,9 +5,14 @@
     <div class="page-header mb-4">
         <div class="d-flex justify-content-between align-items-center">
             <h1 class="h3 text-primary"><i class="fas fa-history"></i> Expense History</h1>
-            <a href="{{ url_for('manager_dashboard') }}" class="btn btn-outline-primary">
-                <i class="fas fa-arrow-left"></i> Back to Dashboard
-            </a>
+            <div class="d-flex gap-2">
+                <button onclick="exportToExcel()" class="btn btn-success">
+                    <i class="fas fa-file-excel"></i> Export to Excel
+                </button>
+                <a href="{{ url_for('manager_dashboard') }}" class="btn btn-outline-primary">
+                    <i class="fas fa-arrow-left"></i> Back to Dashboard
+                </a>
+            </div>
         </div>
     </div>
 
@@ -654,5 +659,16 @@
             });
         });
     });
+
+    function exportToExcel() {
+        // Get current filter parameters from URL
+        const urlParams = new URLSearchParams(window.location.search);
+
+        // Build export URL with current filters
+        const exportUrl = '/api/v1/expenses/export?' + urlParams.toString();
+
+        // Trigger download
+        window.location.href = exportUrl;
+    }
 </script>
 {% endblock %}
