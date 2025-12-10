@@ -303,7 +303,7 @@ const DepartmentManager = ({ user, setUser }) => {
             <Modal
                 isOpen={modalOpen}
                 onClose={closeModal}
-                title={`${modalMode === 'create' ? 'Add' : 'Edit'} ${modalType.charAt(0).toUpperCase() + modalType.slice(1)}`}
+                title={`${modalMode === 'create' ? 'Add' : 'Edit'} ${modalType ? modalType.charAt(0).toUpperCase() + modalType.slice(1) : ''}`}
                 size="medium"
             >
                 <form onSubmit={handleSubmit} className="modal-form">

@@ -234,7 +234,7 @@ function SupplierManagement({ user, setUser }) {
                     <div className="supplier-title">
                       <h3>{supplier.name}</h3>
                       <Badge variant={supplier.status === 'active' ? 'success' : 'danger'} rounded>
-                        {supplier.status.charAt(0).toUpperCase() + supplier.status.slice(1)}
+                        {supplier.status ? supplier.status.charAt(0).toUpperCase() + supplier.status.slice(1) : '-'}
                       </Badge>
                     </div>
                     <div className="supplier-actions">
