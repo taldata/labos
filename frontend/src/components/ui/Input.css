@@ -143,6 +143,99 @@
   width: 100%;
 }
 
+/* Searchable Select */
+.searchable-select-container {
+  position: relative;
+  width: 100%;
+}
+
+.searchable-select-field {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.searchable-select-placeholder {
+  color: #94a3b8;
+}
+
+.searchable-select-dropdown {
+  position: absolute;
+  top: calc(100% + 0.25rem);
+  left: 0;
+  right: 0;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.5rem;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  z-index: 1000;
+  max-height: 300px;
+  display: flex;
+  flex-direction: column;
+}
+
+.searchable-select-search {
+  padding: 0.75rem;
+  border-bottom: 1px solid #e2e8f0;
+  position: relative;
+}
+
+.searchable-select-search-icon {
+  position: absolute;
+  left: 1.5rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #64748b;
+  font-size: 0.875rem;
+  pointer-events: none;
+}
+
+.searchable-select-search-input {
+  width: 100%;
+  padding: 0.5rem 0.75rem 0.5rem 2rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  color: #0f172a;
+  transition: all 0.2s ease;
+}
+
+.searchable-select-search-input:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.searchable-select-options {
+  overflow-y: auto;
+  max-height: 240px;
+}
+
+.searchable-select-option {
+  padding: 0.75rem;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+  font-size: 1rem;
+  color: #0f172a;
+}
+
+.searchable-select-option:hover {
+  background-color: #f8fafc;
+}
+
+.searchable-select-option.selected {
+  background-color: #ede9fe;
+  color: #667eea;
+  font-weight: 500;
+}
+
+.searchable-select-no-results {
+  padding: 1.5rem;
+  text-align: center;
+  color: #94a3b8;
+  font-size: 0.875rem;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
   .input-field {
@@ -164,5 +257,13 @@
 
   .input-icon-right {
     right: 0.875rem;
+  }
+
+  .searchable-select-dropdown {
+    max-height: 250px;
+  }
+
+  .searchable-select-options {
+    max-height: 190px;
   }
 }
