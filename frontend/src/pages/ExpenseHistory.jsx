@@ -36,6 +36,7 @@ function ExpenseHistory({ user, setUser }) {
   const [users, setUsers] = useState([])
   const [categories, setCategories] = useState([])
   const [suppliers, setSuppliers] = useState([])
+  const [supplierSearch, setSupplierSearch] = useState('')
   const [showFilters, setShowFilters] = useState(true)
 
   // Edit modal
@@ -148,6 +149,7 @@ function ExpenseHistory({ user, setUser }) {
       sort_by: 'date',
       sort_order: 'desc'
     })
+    setSupplierSearch('')
     setCurrentPage(1)
   }
 
@@ -247,6 +249,11 @@ function ExpenseHistory({ user, setUser }) {
 
   const hasActiveFilters = Object.entries(filters).some(([key, val]) =>
     val !== '' && !['sort_by', 'sort_order'].includes(key)
+  )
+
+  // Filter suppliers based on search
+  const filteredSuppliers = suppliers.filter(supplier =>
+    supplier.name.toLowerCase().includes(supplierSearch.toLowerCase())
   )
 
   if (!user?.is_admin) return null
@@ -355,6 +362,15 @@ function ExpenseHistory({ user, setUser }) {
                   ))}
                 </Select>
 
+                <Input
+                  label="Search Supplier"
+                  name="supplier_search"
+                  value={supplierSearch}
+                  onChange={(e) => setSupplierSearch(e.target.value)}
+                  placeholder="Type to search suppliers..."
+                  icon="fas fa-search"
+                />
+
                 <Select
                   label="Supplier"
                   name="supplier_id"
@@ -362,7 +378,7 @@ function ExpenseHistory({ user, setUser }) {
                   onChange={handleFilterChange}
                 >
                   <option value="">All Suppliers</option>
-                  {suppliers.map(sup => (
+                  {filteredSuppliers.map(sup => (
                     <option key={sup.id} value={sup.id}>{sup.name}</option>
                   ))}
                 </Select>
