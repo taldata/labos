@@ -60,7 +60,7 @@ function Dashboard({ user, setUser }) {
 
       <main className="dashboard-main">
         <div className="welcome-section">
-          <h2>Welcome back, {user?.first_name || 'User'}!</h2>
+          <h2>Welcome back, {user?.first_name || user?.username || user?.email?.split('@')[0] || 'User'}!</h2>
           <p className="welcome-text">
             Here's your expense overview for this month
           </p>
