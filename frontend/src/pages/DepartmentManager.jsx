@@ -190,7 +190,7 @@ const DepartmentManager = ({ user, setUser }) => {
 
     return (
         <div className="department-manager-container">
-            <Header user={user} setUser={setUser} currentPage="admin" />
+            <Header user={user} setUser={setUser} currentPage="departments" />
             
             {loading ? (
                 <div className="loading-container">
