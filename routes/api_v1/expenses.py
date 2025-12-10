@@ -74,14 +74,22 @@ def get_expense_summary():
 @api_v1.route('/expenses/recent', methods=['GET'])
 @login_required
 def get_recent_expenses():
-    """Get recent expenses for current user"""
+    """Get recent expenses - all users for admin, own expenses for others"""
     try:
         limit = request.args.get('limit', 10, type=int)
 
-        expenses = Expense.query.filter_by(user_id=current_user.id)\
-            .order_by(Expense.date.desc())\
-            .limit(limit)\
-            .all()
+        if current_user.is_admin:
+            # Admin sees all expenses
+            expenses = Expense.query\
+                .order_by(Expense.date.desc())\
+                .limit(limit)\
+                .all()
+        else:
+            # Regular users see only their own expenses
+            expenses = Expense.query.filter_by(user_id=current_user.id)\
+                .order_by(Expense.date.desc())\
+                .limit(limit)\
+                .all()
 
         expense_list = []
         for expense in expenses:
@@ -93,7 +101,8 @@ def get_recent_expenses():
                 'date': expense.date.isoformat() if expense.date else None,
                 'status': expense.status,
                 'subcategory': expense.subcategory.name if expense.subcategory else None,
-                'category': expense.subcategory.category.name if expense.subcategory and expense.subcategory.category else None
+                'category': expense.subcategory.category.name if expense.subcategory and expense.subcategory.category else None,
+                'submitter': f"{expense.submitter.first_name} {expense.submitter.last_name}" if expense.submitter else None
             })
 
         return jsonify({'expenses': expense_list}), 200
