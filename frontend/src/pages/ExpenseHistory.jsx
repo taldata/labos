@@ -51,8 +51,7 @@ function ExpenseHistory({ user, setUser }) {
     payment_status: '',
     amount: '',
     description: '',
-    reason: '',
-    accounting_notes: ''
+    reason: ''
   })
 
   // Delete confirmation
@@ -243,8 +242,7 @@ function ExpenseHistory({ user, setUser }) {
       payment_status: expense.payment_status || '',
       amount: expense.amount || '',
       description: expense.description || '',
-      reason: expense.reason || '',
-      accounting_notes: expense.accounting_notes || ''
+      reason: expense.reason || ''
     })
     setEditModalOpen(true)
   }
@@ -770,13 +768,6 @@ function ExpenseHistory({ user, setUser }) {
             name="reason"
             value={editFormData.reason}
             onChange={(e) => setEditFormData(prev => ({ ...prev, reason: e.target.value }))}
-          />
-
-          <Input
-            label="Accounting Notes"
-            name="accounting_notes"
-            value={editFormData.accounting_notes}
-            onChange={(e) => setEditFormData(prev => ({ ...prev, accounting_notes: e.target.value }))}
           />
 
           <div className="modal-actions">

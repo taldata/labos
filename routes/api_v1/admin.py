@@ -875,8 +875,7 @@ def admin_list_expenses():
                 'has_quote': bool(expense.quote_filename),
                 'invoice_filename': expense.invoice_filename,
                 'receipt_filename': expense.receipt_filename,
-                'quote_filename': expense.quote_filename,
-                'accounting_notes': expense.accounting_notes
+                'quote_filename': expense.quote_filename
             })
 
         return jsonify({
@@ -928,9 +927,6 @@ def admin_update_expense(expense_id):
 
         if 'reason' in data:
             expense.reason = data['reason']
-
-        if 'accounting_notes' in data:
-            expense.accounting_notes = data['accounting_notes']
 
         db.session.commit()
 
