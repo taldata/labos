@@ -153,6 +153,7 @@ export const SearchableSelect = forwardRef(({
   name,
   displayKey = 'name',
   valueKey = 'id',
+  allowClear = true,
   ...props
 }, ref) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -210,7 +211,21 @@ export const SearchableSelect = forwardRef(({
       const syntheticEvent = {
         target: {
           name: name,
-          value: option[valueKey]
+          value: option ? option[valueKey] : ''
+        }
+      };
+      onChange(syntheticEvent);
+    }
+    setIsOpen(false);
+    setSearchTerm('');
+  };
+
+  const handleClear = () => {
+    if (onChange) {
+      const syntheticEvent = {
+        target: {
+          name: name,
+          value: ''
         }
       };
       onChange(syntheticEvent);
@@ -266,13 +281,21 @@ export const SearchableSelect = forwardRef(({
               />
             </div>
             <div className="searchable-select-options">
+              {allowClear && !searchTerm && (
+                <div
+                  className={`searchable-select-option searchable-select-clear-option ${!value ? 'selected' : ''}`}
+                  onClick={handleClear}
+                >
+                  {placeholder}
+                </div>
+              )}
               {filteredOptions.length > 0 ? (
                 filteredOptions.map((option) => (
                   <div
                     key={option[valueKey]}
                     className={`searchable-select-option ${
                       option[valueKey] === value ? 'selected' : ''
-                    }`}
+                    } ${option.isHeader ? 'searchable-select-option-header' : ''}`}
                     onClick={() => handleSelect(option)}
                   >
                     {option[displayKey]}

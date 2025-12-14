@@ -22,6 +22,7 @@ function ExpenseHistory({ user, setUser }) {
     department_id: '',
     user_id: '',
     category_id: '',
+    subcategory_id: '',
     supplier_id: '',
     payment_method: '',
     search: '',
@@ -31,10 +32,14 @@ function ExpenseHistory({ user, setUser }) {
     sort_order: 'desc'
   })
 
+  // Selected category option for display in SearchableSelect
+  const [selectedCategoryOption, setSelectedCategoryOption] = useState('')
+
   // Filter options
   const [departments, setDepartments] = useState([])
   const [users, setUsers] = useState([])
   const [categories, setCategories] = useState([])
+  const [categoryOptions, setCategoryOptions] = useState([]) // Flattened list for SearchableSelect
   const [suppliers, setSuppliers] = useState([])
   const [showFilters, setShowFilters] = useState(true)
 
@@ -86,7 +91,7 @@ function ExpenseHistory({ user, setUser }) {
       const [deptRes, userRes, catRes, suppRes] = await Promise.all([
         fetch('/api/v1/form-data/departments', { credentials: 'include' }),
         fetch('/api/v1/admin/users', { credentials: 'include' }),
-        fetch('/api/v1/form-data/categories', { credentials: 'include' }),
+        fetch('/api/v1/form-data/categories?all=true&include_subcategories=true', { credentials: 'include' }),
         fetch('/api/v1/form-data/suppliers', { credentials: 'include' })
       ])
 
@@ -100,7 +105,36 @@ function ExpenseHistory({ user, setUser }) {
       }
       if (catRes.ok) {
         const data = await catRes.json()
-        setCategories(data.categories || [])
+        const categoriesData = data.categories || []
+        setCategories(categoriesData)
+
+        // Create flattened list with categories and subcategories for SearchableSelect
+        const flattenedOptions = []
+        categoriesData.forEach(cat => {
+          // Add category as a header/group item
+          flattenedOptions.push({
+            id: `cat_${cat.id}`,
+            name: cat.department_name ? `${cat.department_name} > ${cat.name}` : cat.name,
+            type: 'category',
+            category_id: cat.id,
+            isHeader: true
+          })
+          // Add subcategories under the category
+          if (cat.subcategories && cat.subcategories.length > 0) {
+            cat.subcategories.forEach(sub => {
+              flattenedOptions.push({
+                id: `sub_${sub.id}`,
+                name: cat.department_name
+                  ? `${cat.department_name} > ${cat.name} > ${sub.name}`
+                  : `${cat.name} > ${sub.name}`,
+                type: 'subcategory',
+                category_id: cat.id,
+                subcategory_id: sub.id
+              })
+            })
+          }
+        })
+        setCategoryOptions(flattenedOptions)
       }
       if (suppRes.ok) {
         const data = await suppRes.json()
@@ -156,6 +190,7 @@ function ExpenseHistory({ user, setUser }) {
       department_id: '',
       user_id: '',
       category_id: '',
+      subcategory_id: '',
       supplier_id: '',
       payment_method: '',
       search: '',
@@ -164,7 +199,38 @@ function ExpenseHistory({ user, setUser }) {
       sort_by: 'date',
       sort_order: 'desc'
     })
+    setSelectedCategoryOption('')
     setCurrentPage(1)
+  }
+
+  // Handle category/subcategory selection from SearchableSelect
+  const handleCategorySelect = (e) => {
+    const selectedId = e.target.value
+    setSelectedCategoryOption(selectedId)
+
+    if (!selectedId) {
+      setFilters(prev => ({ ...prev, category_id: '', subcategory_id: '' }))
+      setCurrentPage(1)
+      return
+    }
+
+    const selectedOption = categoryOptions.find(opt => opt.id === selectedId)
+    if (selectedOption) {
+      if (selectedOption.type === 'category') {
+        setFilters(prev => ({
+          ...prev,
+          category_id: selectedOption.category_id,
+          subcategory_id: ''
+        }))
+      } else {
+        setFilters(prev => ({
+          ...prev,
+          category_id: selectedOption.category_id,
+          subcategory_id: selectedOption.subcategory_id
+        }))
+      }
+      setCurrentPage(1)
+    }
   }
 
   const openEditModal = (expense) => {
@@ -359,17 +425,17 @@ function ExpenseHistory({ user, setUser }) {
               </div>
 
               <div className="filter-row">
-                <Select
+                <SearchableSelect
                   label="Category"
                   name="category_id"
-                  value={filters.category_id}
-                  onChange={handleFilterChange}
-                >
-                  <option value="">All Categories</option>
-                  {categories.map(cat => (
-                    <option key={cat.id} value={cat.id}>{cat.name}</option>
-                  ))}
-                </Select>
+                  value={selectedCategoryOption}
+                  onChange={handleCategorySelect}
+                  options={categoryOptions}
+                  placeholder="All Categories"
+                  searchPlaceholder="Search categories..."
+                  displayKey="name"
+                  valueKey="id"
+                />
 
                 <SearchableSelect
                   label="Supplier"

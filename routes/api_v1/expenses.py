@@ -386,23 +386,39 @@ def get_departments():
 @api_v1.route('/form-data/categories', methods=['GET'])
 @login_required
 def get_categories():
-    """Get categories for current user's department"""
+    """Get categories for current user's department or all categories for admin"""
     try:
         department_id = request.args.get('department_id', type=int)
+        include_subcategories = request.args.get('include_subcategories', 'false').lower() == 'true'
+        all_categories = request.args.get('all', 'false').lower() == 'true'
 
-        if department_id:
-            categories = Category.query.filter_by(department_id=department_id).all()
+        # Admin users can see all categories if 'all' param is true
+        if all_categories and current_user.is_admin:
+            categories = Category.query.join(Department).order_by(Department.name, Category.name).all()
+        elif department_id:
+            categories = Category.query.filter_by(department_id=department_id).order_by(Category.name).all()
         elif current_user.department_id:
-            categories = Category.query.filter_by(department_id=current_user.department_id).all()
+            categories = Category.query.filter_by(department_id=current_user.department_id).order_by(Category.name).all()
         else:
-            categories = Category.query.all()
+            categories = Category.query.join(Department).order_by(Department.name, Category.name).all()
 
-        cat_list = [{
-            'id': cat.id,
-            'name': cat.name,
-            'budget': cat.budget,
-            'department_id': cat.department_id
-        } for cat in categories]
+        cat_list = []
+        for cat in categories:
+            cat_data = {
+                'id': cat.id,
+                'name': cat.name,
+                'budget': cat.budget,
+                'department_id': cat.department_id,
+                'department_name': cat.department.name if cat.department else None
+            }
+            if include_subcategories:
+                cat_data['subcategories'] = [{
+                    'id': sub.id,
+                    'name': sub.name,
+                    'budget': sub.budget,
+                    'category_id': sub.category_id
+                } for sub in cat.subcategories]
+            cat_list.append(cat_data)
 
         return jsonify({'categories': cat_list}), 200
     except Exception as e:

@@ -236,6 +236,24 @@
   font-size: 0.875rem;
 }
 
+.searchable-select-clear-option {
+  color: #64748b;
+  font-style: italic;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.searchable-select-option-header {
+  background-color: #f8fafc;
+  font-weight: 600;
+  color: #475569;
+  font-size: 0.875rem;
+  padding: 0.5rem 0.75rem;
+}
+
+.searchable-select-option-header:hover {
+  background-color: #f1f5f9;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
   .input-field {
