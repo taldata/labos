@@ -238,6 +238,20 @@
   white-space: nowrap;
 }
 
+/* Files Cell */
+.files-cell {
+  white-space: nowrap;
+}
+
+.file-icons {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.file-icons .btn {
+  color: #667eea;
+}
+
 /* Actions Cell */
 .actions-cell {
   display: flex;

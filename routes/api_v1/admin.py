@@ -872,7 +872,11 @@ def admin_list_expenses():
                 'handled_at': expense.handled_at.isoformat() if expense.handled_at else None,
                 'has_invoice': bool(expense.invoice_filename),
                 'has_receipt': bool(expense.receipt_filename),
-                'has_quote': bool(expense.quote_filename)
+                'has_quote': bool(expense.quote_filename),
+                'invoice_filename': expense.invoice_filename,
+                'receipt_filename': expense.receipt_filename,
+                'quote_filename': expense.quote_filename,
+                'accounting_notes': expense.accounting_notes
             })
 
         return jsonify({

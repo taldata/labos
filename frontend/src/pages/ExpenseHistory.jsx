@@ -49,6 +49,9 @@ function ExpenseHistory({ user, setUser }) {
   const [editFormData, setEditFormData] = useState({
     status: '',
     payment_status: '',
+    amount: '',
+    description: '',
+    reason: '',
     accounting_notes: ''
   })
 
@@ -238,6 +241,9 @@ function ExpenseHistory({ user, setUser }) {
     setEditFormData({
       status: expense.status,
       payment_status: expense.payment_status || '',
+      amount: expense.amount || '',
+      description: expense.description || '',
+      reason: expense.reason || '',
       accounting_notes: expense.accounting_notes || ''
     })
     setEditModalOpen(true)
@@ -522,7 +528,7 @@ function ExpenseHistory({ user, setUser }) {
 
           {loading ? (
             <div className="loading-state">
-              <Skeleton.Table rows={8} columns={8} />
+              <Skeleton.Table rows={8} columns={11} />
             </div>
           ) : expenses.length === 0 ? (
             <EmptyState
@@ -547,6 +553,7 @@ function ExpenseHistory({ user, setUser }) {
                       <th>Amount</th>
                       <th>Status</th>
                       <th>Payment</th>
+                      <th>Files</th>
                       <th>Actions</th>
                     </tr>
                   </thead>
@@ -599,6 +606,41 @@ function ExpenseHistory({ user, setUser }) {
                             <Badge variant={getPaymentStatusVariant(expense.payment_status)} size="small">
                               {expense.payment_status}
                             </Badge>
+                          ) : (
+                            <span className="text-muted">-</span>
+                          )}
+                        </td>
+                        <td className="files-cell">
+                          {(expense.has_invoice || expense.has_receipt || expense.has_quote) ? (
+                            <div className="file-icons">
+                              {expense.invoice_filename && (
+                                <Button
+                                  variant="ghost"
+                                  size="small"
+                                  icon="fas fa-file-invoice"
+                                  onClick={() => window.open(`/download/${expense.invoice_filename}`, '_blank')}
+                                  title="Download Invoice"
+                                />
+                              )}
+                              {expense.receipt_filename && (
+                                <Button
+                                  variant="ghost"
+                                  size="small"
+                                  icon="fas fa-receipt"
+                                  onClick={() => window.open(`/download/${expense.receipt_filename}`, '_blank')}
+                                  title="Download Receipt"
+                                />
+                              )}
+                              {expense.quote_filename && (
+                                <Button
+                                  variant="ghost"
+                                  size="small"
+                                  icon="fas fa-file-alt"
+                                  onClick={() => window.open(`/download/${expense.quote_filename}`, '_blank')}
+                                  title="Download Quote"
+                                />
+                              )}
+                            </div>
                           ) : (
                             <span className="text-muted">-</span>
                           )}
@@ -705,6 +747,37 @@ function ExpenseHistory({ user, setUser }) {
             <option value="paid">Paid</option>
             <option value="cancelled">Cancelled</option>
           </Select>
+
+          <Input
+            type="number"
+            label="Amount"
+            name="amount"
+            value={editFormData.amount}
+            onChange={(e) => setEditFormData(prev => ({ ...prev, amount: e.target.value }))}
+            step="0.01"
+            min="0"
+          />
+
+          <Input
+            label="Description"
+            name="description"
+            value={editFormData.description}
+            onChange={(e) => setEditFormData(prev => ({ ...prev, description: e.target.value }))}
+          />
+
+          <Input
+            label="Business Reason"
+            name="reason"
+            value={editFormData.reason}
+            onChange={(e) => setEditFormData(prev => ({ ...prev, reason: e.target.value }))}
+          />
+
+          <Input
+            label="Accounting Notes"
+            name="accounting_notes"
+            value={editFormData.accounting_notes}
+            onChange={(e) => setEditFormData(prev => ({ ...prev, accounting_notes: e.target.value }))}
+          />
 
           <div className="modal-actions">
             <Button type="button" variant="secondary" onClick={() => setEditModalOpen(false)}>

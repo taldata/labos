@@ -350,7 +350,7 @@ function ExpenseDetails({ user, setUser }) {
                       variant="secondary"
                       size="small"
                       icon="fas fa-download"
-                      onClick={() => window.open(`/uploads/${expense.invoice_filename}`, '_blank')}
+                      onClick={() => window.open(`/download/${expense.invoice_filename}`, '_blank')}
                     >
                       View
                     </Button>
@@ -367,7 +367,7 @@ function ExpenseDetails({ user, setUser }) {
                       variant="secondary"
                       size="small"
                       icon="fas fa-download"
-                      onClick={() => window.open(`/uploads/${expense.receipt_filename}`, '_blank')}
+                      onClick={() => window.open(`/download/${expense.receipt_filename}`, '_blank')}
                     >
                       View
                     </Button>
@@ -384,7 +384,7 @@ function ExpenseDetails({ user, setUser }) {
                       variant="secondary"
                       size="small"
                       icon="fas fa-download"
-                      onClick={() => window.open(`/uploads/${expense.quote_filename}`, '_blank')}
+                      onClick={() => window.open(`/download/${expense.quote_filename}`, '_blank')}
                     >
                       View
                     </Button>
