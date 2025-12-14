@@ -22,6 +22,7 @@ function ExpenseHistory({ user, setUser }) {
     department_id: '',
     user_id: '',
     category_id: '',
+    subcategory_id: '',
     supplier_id: '',
     payment_method: '',
     search: '',
@@ -31,10 +32,14 @@ function ExpenseHistory({ user, setUser }) {
     sort_order: 'desc'
   })
 
+  // Selected category option for display in SearchableSelect
+  const [selectedCategoryOption, setSelectedCategoryOption] = useState('')
+
   // Filter options
   const [departments, setDepartments] = useState([])
   const [users, setUsers] = useState([])
   const [categories, setCategories] = useState([])
+  const [categoryOptions, setCategoryOptions] = useState([]) // Flattened list for SearchableSelect
   const [suppliers, setSuppliers] = useState([])
   const [showFilters, setShowFilters] = useState(true)
 
@@ -44,6 +49,9 @@ function ExpenseHistory({ user, setUser }) {
   const [editFormData, setEditFormData] = useState({
     status: '',
     payment_status: '',
+    amount: '',
+    description: '',
+    reason: '',
     accounting_notes: ''
   })
 
@@ -86,7 +94,7 @@ function ExpenseHistory({ user, setUser }) {
       const [deptRes, userRes, catRes, suppRes] = await Promise.all([
         fetch('/api/v1/form-data/departments', { credentials: 'include' }),
         fetch('/api/v1/admin/users', { credentials: 'include' }),
-        fetch('/api/v1/form-data/categories', { credentials: 'include' }),
+        fetch('/api/v1/form-data/categories?all=true&include_subcategories=true', { credentials: 'include' }),
         fetch('/api/v1/form-data/suppliers', { credentials: 'include' })
       ])
 
@@ -100,7 +108,36 @@ function ExpenseHistory({ user, setUser }) {
       }
       if (catRes.ok) {
         const data = await catRes.json()
-        setCategories(data.categories || [])
+        const categoriesData = data.categories || []
+        setCategories(categoriesData)
+
+        // Create flattened list with categories and subcategories for SearchableSelect
+        const flattenedOptions = []
+        categoriesData.forEach(cat => {
+          // Add category as a header/group item
+          flattenedOptions.push({
+            id: `cat_${cat.id}`,
+            name: cat.department_name ? `${cat.department_name} > ${cat.name}` : cat.name,
+            type: 'category',
+            category_id: cat.id,
+            isHeader: true
+          })
+          // Add subcategories under the category
+          if (cat.subcategories && cat.subcategories.length > 0) {
+            cat.subcategories.forEach(sub => {
+              flattenedOptions.push({
+                id: `sub_${sub.id}`,
+                name: cat.department_name
+                  ? `${cat.department_name} > ${cat.name} > ${sub.name}`
+                  : `${cat.name} > ${sub.name}`,
+                type: 'subcategory',
+                category_id: cat.id,
+                subcategory_id: sub.id
+              })
+            })
+          }
+        })
+        setCategoryOptions(flattenedOptions)
       }
       if (suppRes.ok) {
         const data = await suppRes.json()
@@ -156,6 +193,7 @@ function ExpenseHistory({ user, setUser }) {
       department_id: '',
       user_id: '',
       category_id: '',
+      subcategory_id: '',
       supplier_id: '',
       payment_method: '',
       search: '',
@@ -164,7 +202,38 @@ function ExpenseHistory({ user, setUser }) {
       sort_by: 'date',
       sort_order: 'desc'
     })
+    setSelectedCategoryOption('')
     setCurrentPage(1)
+  }
+
+  // Handle category/subcategory selection from SearchableSelect
+  const handleCategorySelect = (e) => {
+    const selectedId = e.target.value
+    setSelectedCategoryOption(selectedId)
+
+    if (!selectedId) {
+      setFilters(prev => ({ ...prev, category_id: '', subcategory_id: '' }))
+      setCurrentPage(1)
+      return
+    }
+
+    const selectedOption = categoryOptions.find(opt => opt.id === selectedId)
+    if (selectedOption) {
+      if (selectedOption.type === 'category') {
+        setFilters(prev => ({
+          ...prev,
+          category_id: selectedOption.category_id,
+          subcategory_id: ''
+        }))
+      } else {
+        setFilters(prev => ({
+          ...prev,
+          category_id: selectedOption.category_id,
+          subcategory_id: selectedOption.subcategory_id
+        }))
+      }
+      setCurrentPage(1)
+    }
   }
 
   const openEditModal = (expense) => {
@@ -172,6 +241,9 @@ function ExpenseHistory({ user, setUser }) {
     setEditFormData({
       status: expense.status,
       payment_status: expense.payment_status || '',
+      amount: expense.amount || '',
+      description: expense.description || '',
+      reason: expense.reason || '',
       accounting_notes: expense.accounting_notes || ''
     })
     setEditModalOpen(true)
@@ -359,17 +431,17 @@ function ExpenseHistory({ user, setUser }) {
               </div>
 
               <div className="filter-row">
-                <Select
+                <SearchableSelect
                   label="Category"
                   name="category_id"
-                  value={filters.category_id}
-                  onChange={handleFilterChange}
-                >
-                  <option value="">All Categories</option>
-                  {categories.map(cat => (
-                    <option key={cat.id} value={cat.id}>{cat.name}</option>
-                  ))}
-                </Select>
+                  value={selectedCategoryOption}
+                  onChange={handleCategorySelect}
+                  options={categoryOptions}
+                  placeholder="All Categories"
+                  searchPlaceholder="Search categories..."
+                  displayKey="name"
+                  valueKey="id"
+                />
 
                 <SearchableSelect
                   label="Supplier"
@@ -456,7 +528,7 @@ function ExpenseHistory({ user, setUser }) {
 
           {loading ? (
             <div className="loading-state">
-              <Skeleton.Table rows={8} columns={8} />
+              <Skeleton.Table rows={8} columns={11} />
             </div>
           ) : expenses.length === 0 ? (
             <EmptyState
@@ -481,6 +553,7 @@ function ExpenseHistory({ user, setUser }) {
                       <th>Amount</th>
                       <th>Status</th>
                       <th>Payment</th>
+                      <th>Files</th>
                       <th>Actions</th>
                     </tr>
                   </thead>
@@ -533,6 +606,41 @@ function ExpenseHistory({ user, setUser }) {
                             <Badge variant={getPaymentStatusVariant(expense.payment_status)} size="small">
                               {expense.payment_status}
                             </Badge>
+                          ) : (
+                            <span className="text-muted">-</span>
+                          )}
+                        </td>
+                        <td className="files-cell">
+                          {(expense.has_invoice || expense.has_receipt || expense.has_quote) ? (
+                            <div className="file-icons">
+                              {expense.invoice_filename && (
+                                <Button
+                                  variant="ghost"
+                                  size="small"
+                                  icon="fas fa-file-invoice"
+                                  onClick={() => window.open(`/download/${expense.invoice_filename}`, '_blank')}
+                                  title="Download Invoice"
+                                />
+                              )}
+                              {expense.receipt_filename && (
+                                <Button
+                                  variant="ghost"
+                                  size="small"
+                                  icon="fas fa-receipt"
+                                  onClick={() => window.open(`/download/${expense.receipt_filename}`, '_blank')}
+                                  title="Download Receipt"
+                                />
+                              )}
+                              {expense.quote_filename && (
+                                <Button
+                                  variant="ghost"
+                                  size="small"
+                                  icon="fas fa-file-alt"
+                                  onClick={() => window.open(`/download/${expense.quote_filename}`, '_blank')}
+                                  title="Download Quote"
+                                />
+                              )}
+                            </div>
                           ) : (
                             <span className="text-muted">-</span>
                           )}
@@ -639,6 +747,37 @@ function ExpenseHistory({ user, setUser }) {
             <option value="paid">Paid</option>
             <option value="cancelled">Cancelled</option>
           </Select>
+
+          <Input
+            type="number"
+            label="Amount"
+            name="amount"
+            value={editFormData.amount}
+            onChange={(e) => setEditFormData(prev => ({ ...prev, amount: e.target.value }))}
+            step="0.01"
+            min="0"
+          />
+
+          <Input
+            label="Description"
+            name="description"
+            value={editFormData.description}
+            onChange={(e) => setEditFormData(prev => ({ ...prev, description: e.target.value }))}
+          />
+
+          <Input
+            label="Business Reason"
+            name="reason"
+            value={editFormData.reason}
+            onChange={(e) => setEditFormData(prev => ({ ...prev, reason: e.target.value }))}
+          />
+
+          <Input
+            label="Accounting Notes"
+            name="accounting_notes"
+            value={editFormData.accounting_notes}
+            onChange={(e) => setEditFormData(prev => ({ ...prev, accounting_notes: e.target.value }))}
+          />
 
           <div className="modal-actions">
             <Button type="button" variant="secondary" onClick={() => setEditModalOpen(false)}>
