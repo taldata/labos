@@ -860,7 +860,7 @@ def admin_list_expenses():
                 'credit_card_id': expense.credit_card_id,
                 'credit_card': {
                     'id': expense.credit_card.id,
-                    'name': expense.credit_card.name,
+                    'name': expense.credit_card.description or f"Card *{expense.credit_card.last_four_digits}",
                     'last_four_digits': expense.credit_card.last_four_digits
                 } if expense.credit_card else None,
                 'user': {
