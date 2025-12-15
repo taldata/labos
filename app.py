@@ -711,14 +711,14 @@ def download_file(filename):
         ).first_or_404() # If file not found in DB, this will raise a 404
         
         # Check permissions for the specific user role
-        if current_user.is_manager or current_user.is_accounting or expense.user_id == current_user.id:
+        if current_user.is_admin or current_user.is_manager or current_user.is_accounting or expense.user_id == current_user.id:
             try:
                 return send_file(filepath, as_attachment=True)
             except Exception as e:
                 logging.error(f"Error downloading file {filename}: {str(e)}")
                 flash('Error downloading file', 'error')
                 return redirect(url_for(redirect_url))
-                
+
         flash('Unauthorized access', 'error') # Added 'error' category for consistency
         return redirect(url_for(redirect_url))
 
