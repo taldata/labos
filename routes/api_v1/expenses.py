@@ -606,7 +606,6 @@ def get_expense_details(expense_id):
             'description': expense.description,
             'reason': expense.reason,
             'date': expense.date.isoformat() if expense.date else None,
-            'created_at': expense.created_at.isoformat() if expense.created_at else None,
             'status': expense.status,
             'type': expense.type,
             'payment_method': expense.payment_method,
