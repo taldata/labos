@@ -641,7 +641,7 @@ def get_expense_details(expense_id):
             'invoice_filename': expense.invoice_filename,
             'receipt_filename': expense.receipt_filename,
             'quote_filename': expense.quote_filename,
-            'accounting_notes': expense.accounting_notes,
+            'rejection_reason': expense.rejection_reason,
             'budget_impact': budget_impact
         }
 
@@ -716,7 +716,7 @@ def reject_expense(expense_id):
 
         expense.status = 'rejected'
         if rejection_reason:
-            expense.accounting_notes = f"Rejected: {rejection_reason}"
+            expense.rejection_reason = rejection_reason
 
         db.session.commit()
 
