@@ -1,12 +1,21 @@
-from flask import jsonify, request
+from flask import jsonify, request, current_app
 from flask_login import login_required, current_user
 from models import Expense, Department, Category, Subcategory, User, Supplier, CreditCard, db
 from sqlalchemy import func, and_
 from datetime import datetime, timedelta
 from dateutil.relativedelta import relativedelta
 from werkzeug.security import generate_password_hash
+from werkzeug.utils import secure_filename
 import logging
+import os
+import pytz
 from . import api_v1
+
+
+def allowed_file(filename):
+    """Check if the file extension is allowed"""
+    ALLOWED_EXTENSIONS = {'pdf', 'png', 'jpg', 'jpeg', 'gif'}
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 def get_date_range(period):
     """Get start and end dates based on period"""
@@ -842,10 +851,18 @@ def admin_list_expenses():
                 'description': expense.description,
                 'reason': expense.reason,
                 'date': expense.date.isoformat() if expense.date else None,
+                'invoice_date': expense.invoice_date.isoformat() if expense.invoice_date else None,
                 'status': expense.status,
                 'type': expense.type,
                 'payment_method': expense.payment_method,
                 'payment_status': expense.payment_status,
+                'rejection_reason': expense.rejection_reason,
+                'credit_card_id': expense.credit_card_id,
+                'credit_card': {
+                    'id': expense.credit_card.id,
+                    'name': expense.credit_card.name,
+                    'last_four_digits': expense.credit_card.last_four_digits
+                } if expense.credit_card else None,
                 'user': {
                     'id': expense.submitter.id,
                     'username': expense.submitter.username,
@@ -898,7 +915,7 @@ def admin_list_expenses():
 @api_v1.route('/admin/expenses/<int:expense_id>', methods=['PUT'])
 @login_required
 def admin_update_expense(expense_id):
-    """Update an expense (admin only)"""
+    """Update an expense (admin only) - supports all fields and file uploads"""
     if not current_user.is_admin:
         return jsonify({'error': 'Admin access required'}), 403
 
@@ -907,20 +924,18 @@ def admin_update_expense(expense_id):
         if not expense:
             return jsonify({'error': 'Expense not found'}), 404
 
-        data = request.get_json()
+        # Handle both JSON and FormData
+        if request.content_type and 'multipart/form-data' in request.content_type:
+            data = request.form.to_dict()
+        else:
+            data = request.get_json() or {}
 
-        # Update allowed fields
-        if 'status' in data:
-            expense.status = data['status']
-            if data['status'] in ['approved', 'rejected']:
-                expense.handler_id = current_user.id
-                expense.handled_at = datetime.now()
+        # Basic fields
+        if 'amount' in data and data['amount']:
+            expense.amount = float(data['amount'])
 
-        if 'payment_status' in data:
-            expense.payment_status = data['payment_status']
-
-        if 'amount' in data:
-            expense.amount = data['amount']
+        if 'currency' in data and data['currency']:
+            expense.currency = data['currency']
 
         if 'description' in data:
             expense.description = data['description']
@@ -928,16 +943,205 @@ def admin_update_expense(expense_id):
         if 'reason' in data:
             expense.reason = data['reason']
 
+        if 'type' in data and data['type']:
+            expense.type = data['type']
+
+        if 'subcategory_id' in data and data['subcategory_id']:
+            expense.subcategory_id = int(data['subcategory_id'])
+
+        # Status handling
+        if 'status' in data and data['status']:
+            old_status = expense.status
+            new_status = data['status']
+            expense.status = new_status
+
+            # Set handler when status changes to approved/rejected
+            if new_status in ['approved', 'rejected'] and old_status == 'pending':
+                if not expense.manager_id:
+                    expense.manager_id = current_user.id
+                    expense.handled_at = datetime.now(pytz.utc).replace(microsecond=0)
+
+            # Reset handler if status changed to pending
+            if new_status == 'pending' and old_status != 'pending':
+                expense.manager_id = None
+                expense.handled_at = None
+
+        # Date fields
+        if 'date' in data and data['date']:
+            try:
+                expense.date = datetime.fromisoformat(data['date'].replace('Z', '+00:00'))
+            except:
+                expense.date = datetime.strptime(data['date'], '%Y-%m-%d')
+
+        if 'invoice_date' in data:
+            if data['invoice_date']:
+                try:
+                    expense.invoice_date = datetime.fromisoformat(data['invoice_date'].replace('Z', '+00:00'))
+                except:
+                    expense.invoice_date = datetime.strptime(data['invoice_date'], '%Y-%m-%d')
+            else:
+                expense.invoice_date = None
+
+        # User assignments
+        if 'user_id' in data and data['user_id']:
+            expense.user_id = int(data['user_id'])
+
+        if 'manager_id' in data:
+            if data['manager_id']:
+                expense.manager_id = int(data['manager_id'])
+            else:
+                expense.manager_id = None
+
+        # Rejection reason
+        if 'rejection_reason' in data:
+            expense.rejection_reason = data['rejection_reason'] if data['rejection_reason'] else None
+
+        # Payment related fields
+        if 'payment_method' in data and data['payment_method']:
+            expense.payment_method = data['payment_method']
+
+        if 'payment_due_date' in data and data['payment_due_date']:
+            expense.payment_due_date = data['payment_due_date']
+
+        if 'payment_status' in data:
+            expense.payment_status = data['payment_status'] if data['payment_status'] else 'pending_attention'
+
+        if 'is_paid' in data:
+            expense.is_paid = data['is_paid'] in [True, 'true', 'True', '1', 1, 'on']
+
+        # Supplier and credit card
+        if 'supplier_id' in data:
+            if data['supplier_id']:
+                expense.supplier_id = int(data['supplier_id'])
+            else:
+                expense.supplier_id = None
+
+        if 'credit_card_id' in data:
+            if data['credit_card_id']:
+                expense.credit_card_id = int(data['credit_card_id'])
+            else:
+                expense.credit_card_id = None
+
+        # Payment tracking
+        if 'paid_by_id' in data:
+            if data['paid_by_id']:
+                expense.paid_by_id = int(data['paid_by_id'])
+            else:
+                expense.paid_by_id = None
+
+        if 'paid_at' in data:
+            if data['paid_at']:
+                try:
+                    expense.paid_at = datetime.fromisoformat(data['paid_at'].replace('Z', '+00:00'))
+                except:
+                    try:
+                        expense.paid_at = datetime.strptime(data['paid_at'], '%Y-%m-%dT%H:%M')
+                    except:
+                        expense.paid_at = datetime.strptime(data['paid_at'], '%Y-%m-%d')
+            else:
+                expense.paid_at = None
+
+        # Handle file uploads
+        upload_folder = current_app.config.get('UPLOAD_FOLDER', 'uploads')
+
+        if 'quote' in request.files:
+            file = request.files['quote']
+            if file and file.filename and allowed_file(file.filename):
+                # Delete old file if exists
+                if expense.quote_filename:
+                    try:
+                        old_path = os.path.join(upload_folder, expense.quote_filename)
+                        if os.path.exists(old_path):
+                            os.remove(old_path)
+                    except OSError:
+                        pass
+                filename = f"{expense_id}_{datetime.now().strftime('%Y%m%d%H%M%S')}_quote_{secure_filename(file.filename)}"
+                file.save(os.path.join(upload_folder, filename))
+                expense.quote_filename = filename
+
+        if 'invoice' in request.files:
+            file = request.files['invoice']
+            if file and file.filename and allowed_file(file.filename):
+                # Delete old file if exists
+                if expense.invoice_filename:
+                    try:
+                        old_path = os.path.join(upload_folder, expense.invoice_filename)
+                        if os.path.exists(old_path):
+                            os.remove(old_path)
+                    except OSError:
+                        pass
+                filename = f"{expense_id}_{datetime.now().strftime('%Y%m%d%H%M%S')}_invoice_{secure_filename(file.filename)}"
+                file.save(os.path.join(upload_folder, filename))
+                expense.invoice_filename = filename
+
+        if 'receipt' in request.files:
+            file = request.files['receipt']
+            if file and file.filename and allowed_file(file.filename):
+                # Delete old file if exists
+                if expense.receipt_filename:
+                    try:
+                        old_path = os.path.join(upload_folder, expense.receipt_filename)
+                        if os.path.exists(old_path):
+                            os.remove(old_path)
+                    except OSError:
+                        pass
+                filename = f"{expense_id}_{datetime.now().strftime('%Y%m%d%H%M%S')}_receipt_{secure_filename(file.filename)}"
+                file.save(os.path.join(upload_folder, filename))
+                expense.receipt_filename = filename
+
+        # Handle file deletion requests
+        if data.get('delete_quote') in [True, 'true', 'True', '1', 1]:
+            if expense.quote_filename:
+                try:
+                    old_path = os.path.join(upload_folder, expense.quote_filename)
+                    if os.path.exists(old_path):
+                        os.remove(old_path)
+                except OSError:
+                    pass
+                expense.quote_filename = None
+
+        if data.get('delete_invoice') in [True, 'true', 'True', '1', 1]:
+            if expense.invoice_filename:
+                try:
+                    old_path = os.path.join(upload_folder, expense.invoice_filename)
+                    if os.path.exists(old_path):
+                        os.remove(old_path)
+                except OSError:
+                    pass
+                expense.invoice_filename = None
+
+        if data.get('delete_receipt') in [True, 'true', 'True', '1', 1]:
+            if expense.receipt_filename:
+                try:
+                    old_path = os.path.join(upload_folder, expense.receipt_filename)
+                    if os.path.exists(old_path):
+                        os.remove(old_path)
+                except OSError:
+                    pass
+                expense.receipt_filename = None
+
         db.session.commit()
 
         logging.info(f"Expense {expense_id} updated by admin {current_user.username}")
 
-        return jsonify({'message': 'Expense updated successfully'}), 200
+        return jsonify({
+            'message': 'Expense updated successfully',
+            'expense': {
+                'id': expense.id,
+                'amount': expense.amount,
+                'currency': expense.currency,
+                'description': expense.description,
+                'status': expense.status,
+                'quote_filename': expense.quote_filename,
+                'invoice_filename': expense.invoice_filename,
+                'receipt_filename': expense.receipt_filename
+            }
+        }), 200
 
     except Exception as e:
         db.session.rollback()
         logging.error(f"Error updating expense: {str(e)}", exc_info=True)
-        return jsonify({'error': 'Failed to update expense'}), 500
+        return jsonify({'error': f'Failed to update expense: {str(e)}'}), 500
 
 
 @api_v1.route('/admin/expenses/<int:expense_id>', methods=['DELETE'])

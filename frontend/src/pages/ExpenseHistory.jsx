@@ -50,9 +50,29 @@ function ExpenseHistory({ user, setUser }) {
     status: '',
     payment_status: '',
     amount: '',
+    currency: 'ILS',
     description: '',
-    reason: ''
+    reason: '',
+    type: '',
+    subcategory_id: '',
+    supplier_id: '',
+    credit_card_id: '',
+    payment_method: '',
+    invoice_date: '',
+    rejection_reason: ''
   })
+  const [editFiles, setEditFiles] = useState({
+    quote: null,
+    invoice: null,
+    receipt: null
+  })
+  const [deleteFiles, setDeleteFiles] = useState({
+    quote: false,
+    invoice: false,
+    receipt: false
+  })
+  const [creditCards, setCreditCards] = useState([])
+  const [subcategories, setSubcategories] = useState([])
 
   // Delete confirmation
   const [deleteModalOpen, setDeleteModalOpen] = useState(false)
@@ -90,11 +110,13 @@ function ExpenseHistory({ user, setUser }) {
 
   const fetchFilterOptions = async () => {
     try {
-      const [deptRes, userRes, catRes, suppRes] = await Promise.all([
+      const [deptRes, userRes, catRes, suppRes, ccRes, subcatRes] = await Promise.all([
         fetch('/api/v1/form-data/departments', { credentials: 'include' }),
         fetch('/api/v1/admin/users', { credentials: 'include' }),
         fetch('/api/v1/form-data/categories?all=true&include_subcategories=true', { credentials: 'include' }),
-        fetch('/api/v1/form-data/suppliers', { credentials: 'include' })
+        fetch('/api/v1/form-data/suppliers', { credentials: 'include' }),
+        fetch('/api/v1/form-data/credit-cards', { credentials: 'include' }),
+        fetch('/api/v1/form-data/subcategories?all=true', { credentials: 'include' })
       ])
 
       if (deptRes.ok) {
@@ -141,6 +163,14 @@ function ExpenseHistory({ user, setUser }) {
       if (suppRes.ok) {
         const data = await suppRes.json()
         setSuppliers(data.suppliers || [])
+      }
+      if (ccRes.ok) {
+        const data = await ccRes.json()
+        setCreditCards(data.credit_cards || [])
+      }
+      if (subcatRes.ok) {
+        const data = await subcatRes.json()
+        setSubcategories(data.subcategories || [])
       }
     } catch (err) {
       console.error('Failed to fetch filter options:', err)
@@ -238,28 +268,70 @@ function ExpenseHistory({ user, setUser }) {
   const openEditModal = (expense) => {
     setCurrentExpense(expense)
     setEditFormData({
-      status: expense.status,
+      status: expense.status || '',
       payment_status: expense.payment_status || '',
       amount: expense.amount || '',
+      currency: expense.currency || 'ILS',
       description: expense.description || '',
-      reason: expense.reason || ''
+      reason: expense.reason || '',
+      type: expense.type || 'needs_approval',
+      subcategory_id: expense.subcategory?.id || '',
+      supplier_id: expense.supplier?.id || '',
+      credit_card_id: expense.credit_card_id || '',
+      payment_method: expense.payment_method || '',
+      invoice_date: expense.invoice_date ? expense.invoice_date.split('T')[0] : '',
+      rejection_reason: expense.rejection_reason || ''
     })
+    setEditFiles({ quote: null, invoice: null, receipt: null })
+    setDeleteFiles({ quote: false, invoice: false, receipt: false })
     setEditModalOpen(true)
   }
 
   const handleEditSubmit = async (e) => {
     e.preventDefault()
     try {
+      const formData = new FormData()
+
+      // Add all form fields
+      Object.entries(editFormData).forEach(([key, value]) => {
+        if (value !== null && value !== undefined && value !== '') {
+          formData.append(key, value)
+        }
+      })
+
+      // Add files if selected
+      if (editFiles.quote) {
+        formData.append('quote', editFiles.quote)
+      }
+      if (editFiles.invoice) {
+        formData.append('invoice', editFiles.invoice)
+      }
+      if (editFiles.receipt) {
+        formData.append('receipt', editFiles.receipt)
+      }
+
+      // Add delete file flags
+      if (deleteFiles.quote) {
+        formData.append('delete_quote', 'true')
+      }
+      if (deleteFiles.invoice) {
+        formData.append('delete_invoice', 'true')
+      }
+      if (deleteFiles.receipt) {
+        formData.append('delete_receipt', 'true')
+      }
+
       const res = await fetch(`/api/v1/admin/expenses/${currentExpense.id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify(editFormData)
+        body: formData
       })
 
       if (res.ok) {
         success('Expense updated successfully')
         setEditModalOpen(false)
+        setEditFiles({ quote: null, invoice: null, receipt: null })
+        setDeleteFiles({ quote: false, invoice: false, receipt: false })
         fetchExpenses()
       } else {
         const data = await res.json()
@@ -268,6 +340,19 @@ function ExpenseHistory({ user, setUser }) {
     } catch (err) {
       showError('An error occurred')
     }
+  }
+
+  const handleFileChange = (e, fileType) => {
+    const file = e.target.files[0]
+    if (file) {
+      setEditFiles(prev => ({ ...prev, [fileType]: file }))
+      setDeleteFiles(prev => ({ ...prev, [fileType]: false }))
+    }
+  }
+
+  const handleDeleteFile = (fileType) => {
+    setDeleteFiles(prev => ({ ...prev, [fileType]: true }))
+    setEditFiles(prev => ({ ...prev, [fileType]: null }))
   }
 
   const openDeleteModal = (expense) => {
@@ -712,63 +797,296 @@ function ExpenseHistory({ user, setUser }) {
         isOpen={editModalOpen}
         onClose={() => setEditModalOpen(false)}
         title="Edit Expense"
-        size="medium"
+        size="large"
       >
         <form onSubmit={handleEditSubmit} className="edit-form">
           {currentExpense && (
             <div className="expense-summary">
               <p><strong>Employee:</strong> {currentExpense.user?.name}</p>
-              <p><strong>Amount:</strong> {formatCurrency(currentExpense.amount, currentExpense.currency)}</p>
-              <p><strong>Description:</strong> {currentExpense.description}</p>
+              <p><strong>Original Amount:</strong> {formatCurrency(currentExpense.amount, currentExpense.currency)}</p>
             </div>
           )}
 
-          <Select
-            label="Status"
-            name="status"
-            value={editFormData.status}
-            onChange={(e) => setEditFormData(prev => ({ ...prev, status: e.target.value }))}
-          >
-            <option value="pending">Pending</option>
-            <option value="approved">Approved</option>
-            <option value="rejected">Rejected</option>
-          </Select>
+          <div className="form-section">
+            <h4 className="section-title"><i className="fas fa-info-circle"></i> Basic Information</h4>
+            <div className="form-row">
+              <Input
+                type="number"
+                label="Amount"
+                name="amount"
+                value={editFormData.amount}
+                onChange={(e) => setEditFormData(prev => ({ ...prev, amount: e.target.value }))}
+                step="0.01"
+                min="0"
+              />
+              <Select
+                label="Currency"
+                name="currency"
+                value={editFormData.currency}
+                onChange={(e) => setEditFormData(prev => ({ ...prev, currency: e.target.value }))}
+              >
+                <option value="ILS">ILS (₪)</option>
+                <option value="USD">USD ($)</option>
+                <option value="EUR">EUR (€)</option>
+              </Select>
+            </div>
 
-          <Select
-            label="Payment Status"
-            name="payment_status"
-            value={editFormData.payment_status}
-            onChange={(e) => setEditFormData(prev => ({ ...prev, payment_status: e.target.value }))}
-          >
-            <option value="">Not Set</option>
-            <option value="pending">Pending</option>
-            <option value="paid">Paid</option>
-            <option value="cancelled">Cancelled</option>
-          </Select>
+            <Input
+              label="Description"
+              name="description"
+              value={editFormData.description}
+              onChange={(e) => setEditFormData(prev => ({ ...prev, description: e.target.value }))}
+            />
 
-          <Input
-            type="number"
-            label="Amount"
-            name="amount"
-            value={editFormData.amount}
-            onChange={(e) => setEditFormData(prev => ({ ...prev, amount: e.target.value }))}
-            step="0.01"
-            min="0"
-          />
+            <Input
+              label="Business Reason"
+              name="reason"
+              value={editFormData.reason}
+              onChange={(e) => setEditFormData(prev => ({ ...prev, reason: e.target.value }))}
+            />
 
-          <Input
-            label="Description"
-            name="description"
-            value={editFormData.description}
-            onChange={(e) => setEditFormData(prev => ({ ...prev, description: e.target.value }))}
-          />
+            <div className="form-row">
+              <Select
+                label="Type"
+                name="type"
+                value={editFormData.type}
+                onChange={(e) => setEditFormData(prev => ({ ...prev, type: e.target.value }))}
+              >
+                <option value="needs_approval">Needs Approval</option>
+                <option value="pre_approved">Pre-approved</option>
+                <option value="reimbursement">Reimbursement</option>
+              </Select>
+              <Select
+                label="Subcategory"
+                name="subcategory_id"
+                value={editFormData.subcategory_id}
+                onChange={(e) => setEditFormData(prev => ({ ...prev, subcategory_id: e.target.value }))}
+              >
+                <option value="">Select Subcategory</option>
+                {subcategories.map(sub => (
+                  <option key={sub.id} value={sub.id}>
+                    {sub.department_name} &gt; {sub.category_name} &gt; {sub.name}
+                  </option>
+                ))}
+              </Select>
+            </div>
+          </div>
 
-          <Input
-            label="Business Reason"
-            name="reason"
-            value={editFormData.reason}
-            onChange={(e) => setEditFormData(prev => ({ ...prev, reason: e.target.value }))}
-          />
+          <div className="form-section">
+            <h4 className="section-title"><i className="fas fa-check-circle"></i> Status & Payment</h4>
+            <div className="form-row">
+              <Select
+                label="Status"
+                name="status"
+                value={editFormData.status}
+                onChange={(e) => setEditFormData(prev => ({ ...prev, status: e.target.value }))}
+              >
+                <option value="pending">Pending</option>
+                <option value="approved">Approved</option>
+                <option value="rejected">Rejected</option>
+              </Select>
+              <Select
+                label="Payment Status"
+                name="payment_status"
+                value={editFormData.payment_status}
+                onChange={(e) => setEditFormData(prev => ({ ...prev, payment_status: e.target.value }))}
+              >
+                <option value="">Not Set</option>
+                <option value="pending_attention">Pending Attention</option>
+                <option value="pending_payment">Pending Payment</option>
+                <option value="paid">Paid</option>
+              </Select>
+            </div>
+
+            {editFormData.status === 'rejected' && (
+              <Input
+                label="Rejection Reason"
+                name="rejection_reason"
+                value={editFormData.rejection_reason}
+                onChange={(e) => setEditFormData(prev => ({ ...prev, rejection_reason: e.target.value }))}
+                placeholder="Enter reason for rejection..."
+              />
+            )}
+
+            <div className="form-row">
+              <Select
+                label="Payment Method"
+                name="payment_method"
+                value={editFormData.payment_method}
+                onChange={(e) => setEditFormData(prev => ({ ...prev, payment_method: e.target.value }))}
+              >
+                <option value="">Select Method</option>
+                <option value="credit">Credit Card</option>
+                <option value="transfer">Bank Transfer</option>
+                <option value="standing_order">Standing Order</option>
+              </Select>
+              {editFormData.payment_method === 'credit' && (
+                <Select
+                  label="Credit Card"
+                  name="credit_card_id"
+                  value={editFormData.credit_card_id}
+                  onChange={(e) => setEditFormData(prev => ({ ...prev, credit_card_id: e.target.value }))}
+                >
+                  <option value="">Select Card</option>
+                  {creditCards.map(card => (
+                    <option key={card.id} value={card.id}>
+                      {card.name} (*{card.last_four_digits})
+                    </option>
+                  ))}
+                </Select>
+              )}
+            </div>
+          </div>
+
+          <div className="form-section">
+            <h4 className="section-title"><i className="fas fa-store"></i> Supplier & Date</h4>
+            <div className="form-row">
+              <Select
+                label="Supplier"
+                name="supplier_id"
+                value={editFormData.supplier_id}
+                onChange={(e) => setEditFormData(prev => ({ ...prev, supplier_id: e.target.value }))}
+              >
+                <option value="">Select Supplier</option>
+                {suppliers.map(sup => (
+                  <option key={sup.id} value={sup.id}>{sup.name}</option>
+                ))}
+              </Select>
+              <Input
+                type="date"
+                label="Invoice Date"
+                name="invoice_date"
+                value={editFormData.invoice_date}
+                onChange={(e) => setEditFormData(prev => ({ ...prev, invoice_date: e.target.value }))}
+              />
+            </div>
+          </div>
+
+          <div className="form-section">
+            <h4 className="section-title"><i className="fas fa-paperclip"></i> Attachments</h4>
+
+            <div className="file-upload-grid">
+              <div className="file-upload-item">
+                <label className="file-label">Quote</label>
+                {currentExpense?.quote_filename && !deleteFiles.quote && !editFiles.quote ? (
+                  <div className="existing-file">
+                    <a href={`/download/${currentExpense.quote_filename}`} target="_blank" rel="noopener noreferrer">
+                      <i className="fas fa-file-alt"></i> View Quote
+                    </a>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="small"
+                      icon="fas fa-trash"
+                      onClick={() => handleDeleteFile('quote')}
+                      title="Delete Quote"
+                    />
+                  </div>
+                ) : deleteFiles.quote ? (
+                  <div className="file-deleted">
+                    <span><i className="fas fa-times-circle"></i> Will be deleted</span>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="small"
+                      onClick={() => setDeleteFiles(prev => ({ ...prev, quote: false }))}
+                    >
+                      Undo
+                    </Button>
+                  </div>
+                ) : null}
+                <input
+                  type="file"
+                  accept=".pdf,.png,.jpg,.jpeg"
+                  onChange={(e) => handleFileChange(e, 'quote')}
+                  className="file-input"
+                />
+                {editFiles.quote && (
+                  <span className="new-file-name"><i className="fas fa-check"></i> {editFiles.quote.name}</span>
+                )}
+              </div>
+
+              <div className="file-upload-item">
+                <label className="file-label">Invoice</label>
+                {currentExpense?.invoice_filename && !deleteFiles.invoice && !editFiles.invoice ? (
+                  <div className="existing-file">
+                    <a href={`/download/${currentExpense.invoice_filename}`} target="_blank" rel="noopener noreferrer">
+                      <i className="fas fa-file-invoice"></i> View Invoice
+                    </a>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="small"
+                      icon="fas fa-trash"
+                      onClick={() => handleDeleteFile('invoice')}
+                      title="Delete Invoice"
+                    />
+                  </div>
+                ) : deleteFiles.invoice ? (
+                  <div className="file-deleted">
+                    <span><i className="fas fa-times-circle"></i> Will be deleted</span>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="small"
+                      onClick={() => setDeleteFiles(prev => ({ ...prev, invoice: false }))}
+                    >
+                      Undo
+                    </Button>
+                  </div>
+                ) : null}
+                <input
+                  type="file"
+                  accept=".pdf,.png,.jpg,.jpeg"
+                  onChange={(e) => handleFileChange(e, 'invoice')}
+                  className="file-input"
+                />
+                {editFiles.invoice && (
+                  <span className="new-file-name"><i className="fas fa-check"></i> {editFiles.invoice.name}</span>
+                )}
+              </div>
+
+              <div className="file-upload-item">
+                <label className="file-label">Receipt</label>
+                {currentExpense?.receipt_filename && !deleteFiles.receipt && !editFiles.receipt ? (
+                  <div className="existing-file">
+                    <a href={`/download/${currentExpense.receipt_filename}`} target="_blank" rel="noopener noreferrer">
+                      <i className="fas fa-receipt"></i> View Receipt
+                    </a>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="small"
+                      icon="fas fa-trash"
+                      onClick={() => handleDeleteFile('receipt')}
+                      title="Delete Receipt"
+                    />
+                  </div>
+                ) : deleteFiles.receipt ? (
+                  <div className="file-deleted">
+                    <span><i className="fas fa-times-circle"></i> Will be deleted</span>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="small"
+                      onClick={() => setDeleteFiles(prev => ({ ...prev, receipt: false }))}
+                    >
+                      Undo
+                    </Button>
+                  </div>
+                ) : null}
+                <input
+                  type="file"
+                  accept=".pdf,.png,.jpg,.jpeg"
+                  onChange={(e) => handleFileChange(e, 'receipt')}
+                  className="file-input"
+                />
+                {editFiles.receipt && (
+                  <span className="new-file-name"><i className="fas fa-check"></i> {editFiles.receipt.name}</span>
+                )}
+              </div>
+            </div>
+          </div>
 
           <div className="modal-actions">
             <Button type="button" variant="secondary" onClick={() => setEditModalOpen(false)}>

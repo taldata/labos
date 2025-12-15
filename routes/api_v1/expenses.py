@@ -431,6 +431,7 @@ def get_subcategories():
     """Get subcategories for a category"""
     try:
         category_id = request.args.get('category_id', type=int)
+        include_all = request.args.get('all', 'false').lower() == 'true'
 
         if category_id:
             subcategories = Subcategory.query.filter_by(category_id=category_id).all()
@@ -441,7 +442,9 @@ def get_subcategories():
             'id': sub.id,
             'name': sub.name,
             'budget': sub.budget,
-            'category_id': sub.category_id
+            'category_id': sub.category_id,
+            'category_name': sub.category.name if sub.category else None,
+            'department_name': sub.category.department.name if sub.category and sub.category.department else None
         } for sub in subcategories]
 
         return jsonify({'subcategories': subcat_list}), 200
