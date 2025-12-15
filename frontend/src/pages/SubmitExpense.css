@@ -384,3 +384,55 @@
     gap: 1.25rem;
   }
 }
+
+/* Existing Files Section for Edit Page */
+.existing-files {
+  margin-bottom: 1.5rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.existing-files h4 {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #475569;
+  margin: 0 0 1rem 0;
+}
+
+.existing-files-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.existing-file-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  background: #f8fafc;
+  border-radius: 10px;
+  border: 1px solid #e2e8f0;
+}
+
+.existing-file-item i:first-child {
+  color: #667eea;
+  font-size: 1.1rem;
+}
+
+.existing-file-item span {
+  flex: 1;
+  font-size: 0.9rem;
+  color: #334155;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.existing-file-item .btn-delete {
+  color: #ef4444;
+}
+
+.existing-file-item .btn-delete:hover {
+  background: rgba(239, 68, 68, 0.1);
+}

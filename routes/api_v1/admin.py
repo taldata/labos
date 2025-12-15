@@ -898,7 +898,7 @@ def admin_list_expenses():
 @api_v1.route('/admin/expenses/<int:expense_id>', methods=['PUT'])
 @login_required
 def admin_update_expense(expense_id):
-    """Update an expense (admin only)"""
+    """Update an expense (admin only) - supports both JSON and FormData for file uploads"""
     if not current_user.is_admin:
         return jsonify({'error': 'Admin access required'}), 403
 
@@ -907,7 +907,11 @@ def admin_update_expense(expense_id):
         if not expense:
             return jsonify({'error': 'Expense not found'}), 404
 
-        data = request.get_json()
+        # Support both JSON and FormData
+        if request.content_type and 'multipart/form-data' in request.content_type:
+            data = request.form.to_dict()
+        else:
+            data = request.get_json() or {}
 
         # Update allowed fields
         if 'status' in data:
@@ -919,14 +923,74 @@ def admin_update_expense(expense_id):
         if 'payment_status' in data:
             expense.payment_status = data['payment_status']
 
-        if 'amount' in data:
-            expense.amount = data['amount']
+        if 'amount' in data and data['amount']:
+            expense.amount = float(data['amount'])
+
+        if 'currency' in data:
+            expense.currency = data['currency']
 
         if 'description' in data:
             expense.description = data['description']
 
         if 'reason' in data:
             expense.reason = data['reason']
+
+        if 'date' in data and data['date']:
+            expense.date = datetime.fromisoformat(data['date'])
+
+        if 'subcategory_id' in data and data['subcategory_id']:
+            expense.subcategory_id = int(data['subcategory_id'])
+
+        if 'supplier_id' in data:
+            expense.supplier_id = int(data['supplier_id']) if data['supplier_id'] else None
+
+        if 'payment_method' in data:
+            expense.payment_method = data['payment_method']
+
+        if 'credit_card_id' in data:
+            expense.credit_card_id = int(data['credit_card_id']) if data['credit_card_id'] else None
+
+        if 'payment_due_date' in data:
+            expense.payment_due_date = data['payment_due_date']
+
+        # Handle file uploads
+        from werkzeug.utils import secure_filename
+        from config import Config
+        import os
+
+        upload_folder = Config.UPLOAD_FOLDER
+
+        # Handle invoice file
+        if 'invoice' in request.files:
+            file = request.files['invoice']
+            if file and file.filename:
+                filename = secure_filename(f"{expense.user_id}_{datetime.now().strftime('%Y%m%d%H%M%S')}_{file.filename}")
+                file.save(os.path.join(upload_folder, filename))
+                expense.invoice_filename = filename
+
+        # Handle receipt file
+        if 'receipt' in request.files:
+            file = request.files['receipt']
+            if file and file.filename:
+                filename = secure_filename(f"{expense.user_id}_{datetime.now().strftime('%Y%m%d%H%M%S')}_{file.filename}")
+                file.save(os.path.join(upload_folder, filename))
+                expense.receipt_filename = filename
+
+        # Handle quote file
+        if 'quote' in request.files:
+            file = request.files['quote']
+            if file and file.filename:
+                filename = secure_filename(f"{expense.user_id}_{datetime.now().strftime('%Y%m%d%H%M%S')}_{file.filename}")
+                file.save(os.path.join(upload_folder, filename))
+                expense.quote_filename = filename
+
+        # Handle file deletions
+        if data.get('delete_invoice') == 'true':
+            expense.invoice_filename = None
+        if data.get('delete_receipt') == 'true':
+            expense.receipt_filename = None
+        if data.get('delete_quote') == 'true':
+            expense.quote_filename = None
 
         db.session.commit()
 

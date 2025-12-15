@@ -15,6 +15,7 @@ import SupplierManagement from './pages/SupplierManagement'
 import CreditCardManagement from './pages/CreditCardManagement'
 import Reports from './pages/Reports'
 import ExpenseHistory from './pages/ExpenseHistory'
+import EditExpense from './pages/EditExpense'
 import './App.css'
 
 function App() {
@@ -107,6 +108,10 @@ function App() {
         <Route
           path="/admin/expense-history"
           element={user ? <ExpenseHistory user={user} setUser={setUser} /> : <Navigate to="/login" />}
+        />
+        <Route
+          path="/admin/expenses/:id/edit"
+          element={user ? <EditExpense user={user} setUser={setUser} /> : <Navigate to="/login" />}
         />
         <Route path="/" element={<Navigate to={user ? "/dashboard" : "/login"} />} />
         </Routes>

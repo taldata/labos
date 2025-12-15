@@ -655,7 +655,7 @@ function ExpenseHistory({ user, setUser }) {
                             variant="ghost"
                             size="small"
                             icon="fas fa-edit"
-                            onClick={() => openEditModal(expense)}
+                            onClick={() => navigate(`/admin/expenses/${expense.id}/edit`)}
                             title="Edit"
                           />
                           <Button
