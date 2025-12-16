@@ -14,7 +14,7 @@ function SubmitExpense({ user, setUser }) {
     currency: 'ILS',
     description: '',
     reason: '',
-    expense_type: 'needs_approval',
+    expense_type: 'auto_approved',
     date: new Date().toISOString().split('T')[0],
     subcategory_id: '',
     supplier_id: '',
@@ -35,6 +35,10 @@ function SubmitExpense({ user, setUser }) {
     receipt: null,
     quote: null
   })
+
+  // OCR state
+  const [ocrProcessing, setOcrProcessing] = useState(false)
+  const [ocrData, setOcrData] = useState(null)
 
   // UI state
   const [loading, setLoading] = useState(false)
@@ -103,13 +107,55 @@ function SubmitExpense({ user, setUser }) {
     }))
   }
 
-  const handleFileChange = (e) => {
+  const handleFileChange = async (e) => {
     const { name, files: fileList } = e.target
     if (fileList && fileList[0]) {
+      const file = fileList[0]
       setFiles(prev => ({
         ...prev,
-        [name]: fileList[0]
+        [name]: file
       }))
+
+      // Process invoice through OCR to extract amount
+      if (name === 'invoice') {
+        setOcrProcessing(true)
+        setOcrData(null)
+        try {
+          const formData = new FormData()
+          formData.append('document', file)
+
+          const response = await fetch('/api/expense/process-expense', {
+            method: 'POST',
+            credentials: 'include',
+            body: formData
+          })
+
+          if (response.ok) {
+            const data = await response.json()
+            setOcrData(data)
+            // Auto-fill the form with extracted data
+            if (data.amount) {
+              setFormData(prev => ({
+                ...prev,
+                amount: data.amount
+              }))
+            }
+            if (data.purchase_date) {
+              const date = new Date(data.purchase_date)
+              const formattedDate = date.toISOString().split('T')[0]
+              setFormData(prev => ({
+                ...prev,
+                date: formattedDate
+              }))
+            }
+            showSuccess('נתונים חולצו מהחשבונית בהצלחה')
+          }
+        } catch (error) {
+          console.error('Error processing invoice:', error)
+        } finally {
+          setOcrProcessing(false)
+        }
+      }
     }
   }
 
@@ -181,6 +227,55 @@ function SubmitExpense({ user, setUser }) {
         </div>
 
         <form onSubmit={handleSubmit} className="expense-form">
+          {/* File Uploads - First Section */}
+          <Card className="form-section">
+            <Card.Header>
+              <i className="fas fa-paperclip"></i> Upload Invoice
+            </Card.Header>
+            <Card.Body>
+              <p className="section-hint" style={{ marginBottom: '1rem', color: '#666', fontSize: '0.9rem' }}>
+                העלה חשבונית והמערכת תחלץ אוטומטית את הסכום כולל מע"מ
+              </p>
+              <div className="form-row">
+                <FileUpload
+                  label="Invoice *"
+                  name="invoice"
+                  onChange={handleFileChange}
+                  accept=".pdf,.jpg,.jpeg,.png"
+                  file={files.invoice}
+                />
+
+                <FileUpload
+                  label="Receipt"
+                  name="receipt"
+                  onChange={handleFileChange}
+                  accept=".pdf,.jpg,.jpeg,.png"
+                  file={files.receipt}
+                />
+
+                <FileUpload
+                  label="Quote"
+                  name="quote"
+                  onChange={handleFileChange}
+                  accept=".pdf,.jpg,.jpeg,.png"
+                  file={files.quote}
+                />
+              </div>
+              {ocrProcessing && (
+                <div className="ocr-processing" style={{ marginTop: '1rem', padding: '1rem', backgroundColor: '#f0f7ff', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <i className="fas fa-spinner fa-spin"></i>
+                  <span>מעבד את החשבונית וחולץ נתונים...</span>
+                </div>
+              )}
+              {ocrData && !ocrProcessing && (
+                <div className="ocr-result" style={{ marginTop: '1rem', padding: '1rem', backgroundColor: '#e8f5e9', borderRadius: '8px' }}>
+                  <i className="fas fa-check-circle" style={{ color: '#4caf50', marginRight: '0.5rem' }}></i>
+                  <span>נתונים חולצו בהצלחה: סכום {ocrData.amount} ₪</span>
+                </div>
+              )}
+            </Card.Body>
+          </Card>
+
           {/* Basic Information */}
           <Card className="form-section">
             <Card.Header>
@@ -288,9 +383,9 @@ function SubmitExpense({ user, setUser }) {
                 onChange={handleInputChange}
                 required
               >
+                <option value="auto_approved">Auto Approved</option>
                 <option value="needs_approval">Needs Approval</option>
                 <option value="future_approval">Future Approval</option>
-                <option value="auto_approved">Auto Approved</option>
               </Select>
             </Card.Body>
           </Card>
@@ -354,40 +449,6 @@ function SubmitExpense({ user, setUser }) {
                   </Select>
                 </div>
               )}
-            </Card.Body>
-          </Card>
-
-          {/* File Uploads */}
-          <Card className="form-section">
-            <Card.Header>
-              <i className="fas fa-paperclip"></i> Attachments
-            </Card.Header>
-            <Card.Body>
-              <div className="form-row">
-                <FileUpload
-                  label="Invoice"
-                  name="invoice"
-                  onChange={handleFileChange}
-                  accept=".pdf,.jpg,.jpeg,.png"
-                  file={files.invoice}
-                />
-
-                <FileUpload
-                  label="Receipt"
-                  name="receipt"
-                  onChange={handleFileChange}
-                  accept=".pdf,.jpg,.jpeg,.png"
-                  file={files.receipt}
-                />
-
-                <FileUpload
-                  label="Quote"
-                  name="quote"
-                  onChange={handleFileChange}
-                  accept=".pdf,.jpg,.jpeg,.png"
-                  file={files.quote}
-                />
-              </div>
             </Card.Body>
           </Card>
 
