@@ -10,42 +10,77 @@ from sqlalchemy import or_
 expense_bp = Blueprint('expense', __name__)
 document_processor = DocumentProcessor()
 
-@expense_bp.route('/process-expense', methods=['POST'])
-async def process_expense():
+def _process_document_file(file):
     """
-    Process an expense document and extract information
+    Helper function to process a document file and extract information
+    Expected input: FileStorage object
+    Returns: dict with extracted data or error
+    """
+    if not file or file.filename == '':
+        return {'error': 'No selected file'}, 400
+
+    # Create uploads directory if it doesn't exist
+    upload_dir = os.path.join(os.getcwd(), 'uploads')
+    os.makedirs(upload_dir, exist_ok=True)
+
+    # Save the file temporarily
+    file_path = os.path.join(upload_dir, file.filename)
+    file.save(file_path)
+
+    try:
+        # Process the document using unified processor
+        result = document_processor.process_document(file_path)
+
+        # Clean up
+        os.remove(file_path)
+
+        return result, 200
+
+    except Exception as e:
+        # Clean up in case of error
+        if os.path.exists(file_path):
+            os.remove(file_path)
+        logging.error(f"Error processing document: {str(e)}")
+        return {'error': str(e)}, 500
+
+@expense_bp.route('/process-expense', methods=['POST'])
+def process_expense():
+    """
+    Process an invoice document and extract information
     Expected input: multipart/form-data with 'document' file
     """
     if 'document' not in request.files:
         return jsonify({'error': 'No document provided'}), 400
-    
-    file = request.files['document']
-    if file.filename == '':
-        return jsonify({'error': 'No selected file'}), 400
 
-    if file:
-        # Create uploads directory if it doesn't exist
-        upload_dir = os.path.join(os.getcwd(), 'uploads')
-        os.makedirs(upload_dir, exist_ok=True)
-        
-        # Save the file temporarily
-        file_path = os.path.join(upload_dir, file.filename)
-        file.save(file_path)
-        
-        try:
-            # Process the document using unified processor
-            result = await document_processor.process_document(file_path)
-            
-            # Clean up
-            os.remove(file_path)
-            
-            return jsonify(result)
-            
-        except Exception as e:
-            # Clean up in case of error
-            if os.path.exists(file_path):
-                os.remove(file_path)
-            return jsonify({'error': str(e)}), 500
+    file = request.files['document']
+    result, status = _process_document_file(file)
+    return jsonify(result), status
+
+@expense_bp.route('/process-receipt', methods=['POST'])
+def process_receipt():
+    """
+    Process a receipt document and extract information
+    Expected input: multipart/form-data with 'document' file
+    """
+    if 'document' not in request.files:
+        return jsonify({'error': 'No document provided'}), 400
+
+    file = request.files['document']
+    result, status = _process_document_file(file)
+    return jsonify(result), status
+
+@expense_bp.route('/process-quote', methods=['POST'])
+def process_quote():
+    """
+    Process a quote document and extract information
+    Expected input: multipart/form-data with 'document' file
+    """
+    if 'document' not in request.files:
+        return jsonify({'error': 'No document provided'}), 400
+
+    file = request.files['document']
+    result, status = _process_document_file(file)
+    return jsonify(result), status
 
 @expense_bp.route('/get_supplier/<int:supplier_id>', methods=['GET'])
 @login_required

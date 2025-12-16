@@ -642,57 +642,7 @@ document.addEventListener('click', function(e) {
     }
 });
 
-document.querySelectorAll('.document-upload').forEach(input => {
-    input.addEventListener('change', async function(e) {
-        const file = e.target.files[0];
-        if (!file) return;
-
-        const documentType = this.dataset.type;
-        const previewDiv = document.getElementById(`${documentType}_preview`);
-        
-        // Show loading state
-        previewDiv.innerHTML = '<div class="loading">Processing document...</div>';
-        previewDiv.classList.add('active');
-
-        const formData = new FormData();
-        formData.append('document', file);
-        formData.append('document_type', documentType);
-
-        try {
-            const response = await fetch('/api/expense/process-document', {
-                method: 'POST',
-                body: formData
-            });
-
-            const data = await response.json();
-            
-            if (data.success) {
-                // Clear loading state
-                previewDiv.innerHTML = '';
-                
-                // Display extracted fields
-                Object.entries(data.extracted_data).forEach(([field, value]) => {
-                    const fieldDiv = document.createElement('div');
-                    fieldDiv.className = 'extracted-field';
-                    fieldDiv.innerHTML = `
-                        <label>${field}:</label>
-                        <div class="field-value">${value}</div>
-                        <div class="field-actions">
-                            <button type="button" class="button primary" onclick="saveField(this, '${field}', '${value}')">Save</button>
-                            <button type="button" class="button secondary" onclick="ignoreField(this, '${field}')">Ignore</button>
-                        </div>
-                        <input type="hidden" name="${documentType}_${field}" value="${value}">
-                    `;
-                    previewDiv.appendChild(fieldDiv);
-                });
-            } else {
-                previewDiv.innerHTML = `<div class="error">Error: ${data.error}</div>`;
-            }
-        } catch (error) {
-            previewDiv.innerHTML = `<div class="error">Error processing document: ${error.message}</div>`;
-        }
-    });
-});
+// Document upload OCR processing is handled by expense_form.js
 
 function formatDateForInput(dateStr) {
     try {
