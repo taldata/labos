@@ -17,12 +17,16 @@
   display: flex;
   align-items: center;
   gap: 3rem;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
 }
 
 .logo-section {
   display: flex;
   align-items: center;
   gap: 0.75rem;
+  flex-shrink: 0;
 }
 
 .logo-link {
@@ -56,6 +60,30 @@
 .header-nav {
   display: flex;
   gap: 0.75rem;
+  overflow-x: auto;
+  overflow-y: hidden;
+  max-width: 100%;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.3) transparent;
+  padding-bottom: 4px;
+  margin-bottom: -4px;
+}
+
+.header-nav::-webkit-scrollbar {
+  height: 6px;
+}
+
+.header-nav::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.header-nav::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 3px;
+}
+
+.header-nav::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.5);
 }
 
 .nav-link {
@@ -73,6 +101,8 @@
   gap: 0.5rem;
   position: relative;
   overflow: hidden;
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 
 .nav-link::before {
@@ -139,6 +169,7 @@
   display: flex;
   align-items: center;
   gap: 1.5rem;
+  flex-shrink: 0;
 }
 
 /* User Menu */
@@ -499,6 +530,21 @@
 }
 
 /* Responsive */
+@media (max-width: 1200px) {
+  .header-left {
+    gap: 1.5rem;
+  }
+
+  .header-nav {
+    gap: 0.5rem;
+  }
+
+  .nav-link {
+    padding: 0.625rem 1rem;
+    font-size: 0.8rem;
+  }
+}
+
 @media (max-width: 768px) {
   .app-header {
     padding: 1rem 1.5rem;
