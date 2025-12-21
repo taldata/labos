@@ -132,23 +132,32 @@ function SubmitExpense({ user, setUser }) {
 
           if (response.ok) {
             const data = await response.json()
-            setOcrData(data)
+            // Extract the actual OCR data from the response - data is inside extracted_data
+            const ocrResult = data.extracted_data || data
+            setOcrData(ocrResult)
             // Auto-fill the form with extracted data
-            if (data.amount) {
+            if (ocrResult.amount) {
               setFormData(prev => ({
                 ...prev,
-                amount: data.amount
+                amount: ocrResult.amount
               }))
             }
-            if (data.purchase_date) {
-              const date = new Date(data.purchase_date)
+            if (ocrResult.purchase_date) {
+              const date = new Date(ocrResult.purchase_date)
               const formattedDate = date.toISOString().split('T')[0]
               setFormData(prev => ({
                 ...prev,
                 date: formattedDate
               }))
             }
-            showSuccess('נתונים חולצו מהחשבונית בהצלחה')
+            if (ocrResult.amount || ocrResult.purchase_date) {
+              showSuccess('נתונים חולצו מהחשבונית בהצלחה')
+            } else {
+              showSuccess('החשבונית עובדה, אך לא נמצאו נתונים לחילוץ')
+            }
+          } else {
+            const errorData = await response.json()
+            console.error('OCR processing failed:', errorData)
           }
         } catch (error) {
           console.error('Error processing invoice:', error)
