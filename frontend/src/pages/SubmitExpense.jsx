@@ -107,9 +107,8 @@ function SubmitExpense({ user, setUser }) {
     }))
   }
 
-  const handleFileChange = async (e) => {
-    const { name, files: fileList } = e.target
-    if (fileList && fileList[0]) {
+  const handleFileChange = async (name, fileList) => {
+    if (fileList && fileList.length > 0) {
       const file = fileList[0]
       setFiles(prev => ({
         ...prev,
@@ -249,7 +248,7 @@ function SubmitExpense({ user, setUser }) {
                 <FileUpload
                   label="Invoice *"
                   name="invoice"
-                  onChange={handleFileChange}
+                  onChange={(files) => handleFileChange('invoice', files)}
                   accept=".pdf,.jpg,.jpeg,.png"
                   file={files.invoice}
                 />
@@ -257,7 +256,7 @@ function SubmitExpense({ user, setUser }) {
                 <FileUpload
                   label="Receipt"
                   name="receipt"
-                  onChange={handleFileChange}
+                  onChange={(files) => handleFileChange('receipt', files)}
                   accept=".pdf,.jpg,.jpeg,.png"
                   file={files.receipt}
                 />
@@ -265,7 +264,7 @@ function SubmitExpense({ user, setUser }) {
                 <FileUpload
                   label="Quote"
                   name="quote"
-                  onChange={handleFileChange}
+                  onChange={(files) => handleFileChange('quote', files)}
                   accept=".pdf,.jpg,.jpeg,.png"
                   file={files.quote}
                 />
