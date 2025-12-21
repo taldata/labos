@@ -75,13 +75,21 @@ function Sidebar({ user, setUser, isOpen, onToggle }) {
       <aside className={`sidebar ${isOpen ? 'sidebar-open' : 'sidebar-collapsed'}`}>
         {/* Logo Section */}
         <div className="sidebar-header">
-          <div className="sidebar-logo" onClick={() => navigate('/dashboard')}>
-            <span className="logo-icon">💰</span>
-            {isOpen && <span className="logo-text">Labos</span>}
-          </div>
-          <button className="sidebar-toggle" onClick={onToggle}>
-            <i className={`fas ${isOpen ? 'fa-chevron-left' : 'fa-chevron-right'}`}></i>
-          </button>
+          {isOpen ? (
+            <>
+              <div className="sidebar-logo" onClick={() => navigate('/dashboard')}>
+                <span className="logo-icon">💰</span>
+                <span className="logo-text">Labos</span>
+              </div>
+              <button className="sidebar-toggle" onClick={onToggle} title="Collapse menu">
+                <i className="fas fa-chevron-left"></i>
+              </button>
+            </>
+          ) : (
+            <button className="sidebar-toggle expand-btn" onClick={onToggle} title="Expand menu">
+              <i className="fas fa-chevron-right"></i>
+            </button>
+          )}
         </div>
 
         {/* Main Navigation */}
