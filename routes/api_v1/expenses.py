@@ -84,6 +84,23 @@ def get_recent_expenses():
                 .order_by(Expense.date.desc())\
                 .limit(limit)\
                 .all()
+        elif current_user.is_manager:
+            # Managers see expenses from their managed departments
+            managed_dept_ids = [d.id for d in current_user.managed_departments]
+            if current_user.department_id and current_user.department_id not in managed_dept_ids:
+                managed_dept_ids.append(current_user.department_id)
+            
+            if managed_dept_ids:
+                expenses = Expense.query.join(User, Expense.user_id == User.id)\
+                    .filter(User.department_id.in_(managed_dept_ids))\
+                    .order_by(Expense.date.desc())\
+                    .limit(limit)\
+                    .all()
+            else:
+                expenses = Expense.query.filter_by(user_id=current_user.id)\
+                    .order_by(Expense.date.desc())\
+                    .limit(limit)\
+                    .all()
         else:
             # Regular users see only their own expenses
             expenses = Expense.query.filter_by(user_id=current_user.id)\

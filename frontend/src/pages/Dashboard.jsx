@@ -101,41 +101,46 @@ function Dashboard({ user, setUser }) {
                   </Card.Body>
                 </Card>
 
-                <Card hoverable clickable onClick={() => navigate('/admin/departments')} className="action-card">
-                  <Card.Body>
-                    <div className="action-icon action-icon-org">
-                      <i className="fas fa-sitemap"></i>
-                    </div>
-                    <div className="action-content">
-                      <h4>Organization</h4>
-                      <p>Manage departments & categories</p>
-                    </div>
-                  </Card.Body>
-                </Card>
+                {/* Admin-only cards */}
+                {user?.is_admin && (
+                  <>
+                    <Card hoverable clickable onClick={() => navigate('/admin/departments')} className="action-card">
+                      <Card.Body>
+                        <div className="action-icon action-icon-org">
+                          <i className="fas fa-sitemap"></i>
+                        </div>
+                        <div className="action-content">
+                          <h4>Organization</h4>
+                          <p>Manage departments & categories</p>
+                        </div>
+                      </Card.Body>
+                    </Card>
 
-                <Card hoverable clickable onClick={() => navigate('/admin/suppliers')} className="action-card">
-                  <Card.Body>
-                    <div className="action-icon action-icon-suppliers">
-                      <i className="fas fa-building"></i>
-                    </div>
-                    <div className="action-content">
-                      <h4>Suppliers</h4>
-                      <p>Manage vendors</p>
-                    </div>
-                  </Card.Body>
-                </Card>
+                    <Card hoverable clickable onClick={() => navigate('/admin/suppliers')} className="action-card">
+                      <Card.Body>
+                        <div className="action-icon action-icon-suppliers">
+                          <i className="fas fa-building"></i>
+                        </div>
+                        <div className="action-content">
+                          <h4>Suppliers</h4>
+                          <p>Manage vendors</p>
+                        </div>
+                      </Card.Body>
+                    </Card>
 
-                <Card hoverable clickable onClick={() => navigate('/admin/expense-history')} className="action-card">
-                  <Card.Body>
-                    <div className="action-icon action-icon-history">
-                      <i className="fas fa-history"></i>
-                    </div>
-                    <div className="action-content">
-                      <h4>Expense History</h4>
-                      <p>View all expenses</p>
-                    </div>
-                  </Card.Body>
-                </Card>
+                    <Card hoverable clickable onClick={() => navigate('/admin/expense-history')} className="action-card">
+                      <Card.Body>
+                        <div className="action-icon action-icon-history">
+                          <i className="fas fa-history"></i>
+                        </div>
+                        <div className="action-content">
+                          <h4>Expense History</h4>
+                          <p>View all expenses</p>
+                        </div>
+                      </Card.Body>
+                    </Card>
+                  </>
+                )}
 
                 {/* Additional actions */}
                 <Card hoverable clickable onClick={() => navigate('/my-expenses')} className="action-card">
