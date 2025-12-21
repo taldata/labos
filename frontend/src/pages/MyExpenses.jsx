@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import Header from '../components/Header'
 import { Card, Button, Badge, Input, Select, Skeleton, EmptyState } from '../components/ui'
 import './MyExpenses.css'
 
@@ -135,7 +134,6 @@ function MyExpenses({ user, setUser }) {
 
   return (
     <div className="my-expenses-container">
-      <Header user={user} setUser={setUser} currentPage="my-expenses" />
 
       <div className="page-content">
         {/* Page Header */}

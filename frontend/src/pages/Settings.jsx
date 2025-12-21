@@ -1,6 +1,5 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import Header from '../components/Header'
 import { Card, Button, Input, Badge, useToast } from '../components/ui'
 import './Settings.css'
 
@@ -128,7 +127,6 @@ function Settings({ user, setUser }) {
 
   return (
     <div className="settings-container">
-      <Header user={user} setUser={setUser} currentPage="settings" />
 
       <main className="settings-main">
         <div className="page-header">

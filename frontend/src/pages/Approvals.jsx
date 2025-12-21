@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import Header from '../components/Header'
 import { Card, Button, Badge, Modal, Skeleton, EmptyState, Textarea, useToast } from '../components/ui'
 import BudgetImpactWidget from '../components/BudgetImpactWidget'
 import './Approvals.css'
@@ -133,7 +132,6 @@ function Approvals({ user, setUser }) {
   if (!user?.is_manager && !user?.is_admin) {
     return (
       <div className="approvals-container">
-        <Header user={user} setUser={setUser} currentPage="approvals" />
         <div className="approvals-content">
           <Card className="unauthorized-card">
             <Card.Body>
@@ -153,7 +151,6 @@ function Approvals({ user, setUser }) {
 
   return (
     <div className="approvals-container">
-      <Header user={user} setUser={setUser} currentPage="approvals" />
 
       <div className="approvals-content">
         <div className="page-title-section">

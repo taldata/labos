@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import Header from '../components/Header'
 import { Card, Button, Badge, Input, Select, SearchableSelect, Skeleton, EmptyState, Modal, useToast } from '../components/ui'
 import './ExpenseHistory.css'
 
@@ -424,7 +423,6 @@ function ExpenseHistory({ user, setUser }) {
 
   return (
     <div className="expense-history-container">
-      <Header user={user} setUser={setUser} currentPage="admin" />
 
       <main className="expense-history-main">
         <div className="page-header-section">

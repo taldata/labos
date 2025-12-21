@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import Header from '../components/Header'
 import { Card, Button, Input, Select, Badge, Skeleton } from '../components/ui'
 import './Reports.css'
 
@@ -143,7 +142,6 @@ function Reports({ user, setUser }) {
 
   return (
     <div className="reports-container">
-      <Header user={user} setUser={setUser} currentPage="reports" />
 
       <main className="reports-main">
         <div className="page-header-section">

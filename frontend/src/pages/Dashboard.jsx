@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import Header from '../components/Header'
 import { Card, Badge, Skeleton, Button } from '../components/ui'
 import './Dashboard.css'
 
@@ -56,7 +55,6 @@ function Dashboard({ user, setUser }) {
 
   return (
     <div className="dashboard-container">
-      <Header user={user} setUser={setUser} currentPage="dashboard" />
 
       <main className="dashboard-main">
         <div className="welcome-section">

@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import Header from '../components/Header'
 import { Card, Button, Input, Select, Textarea, Modal, Badge, Skeleton, useToast } from '../components/ui'
 import './SupplierManagement.css'
 
@@ -173,7 +172,6 @@ function SupplierManagement({ user, setUser }) {
 
   return (
     <div className="supplier-management-container">
-      <Header user={user} setUser={setUser} currentPage="admin" />
 
       <main className="supplier-management-main">
         <div className="page-header-section">

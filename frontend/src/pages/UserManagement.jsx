@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import Header from '../components/Header'
 import { Card, Button, Input, Select, Modal, Badge, Skeleton, useToast } from '../components/ui'
 import './UserManagement.css'
 
@@ -220,7 +219,6 @@ function UserManagement({ user, setUser }) {
 
   return (
     <div className="user-management-container">
-      <Header user={user} setUser={setUser} currentPage="admin" />
 
       <main className="user-management-main">
         <div className="page-header-section">

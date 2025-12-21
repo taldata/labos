@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import Header from '../components/Header'
 import { Card, Button, Input, Select, Modal, Badge, Skeleton, useToast } from '../components/ui'
 import './CreditCardManagement.css'
 
@@ -149,7 +148,6 @@ function CreditCardManagement({ user, setUser }) {
 
   return (
     <div className="credit-card-management-container">
-      <Header user={user} setUser={setUser} currentPage="admin" />
 
       <main className="credit-card-management-main">
         <div className="page-header-section">

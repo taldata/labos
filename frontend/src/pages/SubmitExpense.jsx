@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import Header from '../components/Header'
 import { Card, Button, Input, Select, SearchableSelect, Textarea, FileUpload, useToast } from '../components/ui'
 import './SubmitExpense.css'
 
@@ -220,7 +219,6 @@ function SubmitExpense({ user, setUser }) {
 
   return (
     <div className="submit-expense-container">
-      <Header user={user} setUser={setUser} />
 
       <div className="submit-expense-content">
         {/* Page Title Section */}

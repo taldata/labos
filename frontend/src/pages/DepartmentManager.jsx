@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import Header from '../components/Header';
 import { Card, Button, Input, Select, Modal, Skeleton, useToast } from '../components/ui';
 import './DepartmentManager.css';
 
@@ -252,7 +251,6 @@ const DepartmentManager = ({ user, setUser }) => {
 
     return (
         <div className="department-manager-container">
-            <Header user={user} setUser={setUser} currentPage="departments" />
             
             {loading ? (
                 <div className="loading-container">

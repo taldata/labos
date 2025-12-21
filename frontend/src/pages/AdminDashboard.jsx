@@ -4,7 +4,6 @@ import {
   LineChart, Line, BarChart, Bar, PieChart, Pie, Cell,
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
 } from 'recharts'
-import Header from '../components/Header'
 import { Card, Select, Skeleton } from '../components/ui'
 import './AdminDashboard.css'
 
@@ -49,7 +48,6 @@ function AdminDashboard({ user, setUser }) {
 
   return (
     <div className="admin-dashboard-container">
-      <Header user={user} setUser={setUser} currentPage="admin" />
       
       <main className="admin-dashboard-main">
         <div className="page-header-section">

@@ -1,6 +1,7 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import { useState, useEffect } from 'react'
 import { ToastProvider } from './components/ui'
+import AppLayout from './components/AppLayout'
 import Login from './pages/Login'
 import Dashboard from './pages/Dashboard'
 import SubmitExpense from './pages/SubmitExpense'
@@ -16,6 +17,16 @@ import CreditCardManagement from './pages/CreditCardManagement'
 import Reports from './pages/Reports'
 import ExpenseHistory from './pages/ExpenseHistory'
 import './App.css'
+
+// Wrapper component for authenticated routes with sidebar
+function AuthenticatedRoute({ user, setUser, children }) {
+  if (!user) return <Navigate to="/login" />
+  return (
+    <AppLayout user={user} setUser={setUser}>
+      {children}
+    </AppLayout>
+  )
+}
 
 function App() {
   const [user, setUser] = useState(null)
@@ -58,55 +69,55 @@ function App() {
         <Route path="/login" element={<Login setUser={setUser} />} />
         <Route
           path="/dashboard"
-          element={user ? <Dashboard user={user} setUser={setUser} /> : <Navigate to="/login" />}
+          element={<AuthenticatedRoute user={user} setUser={setUser}><Dashboard user={user} setUser={setUser} /></AuthenticatedRoute>}
         />
         <Route
           path="/submit-expense"
-          element={user ? <SubmitExpense user={user} setUser={setUser} /> : <Navigate to="/login" />}
+          element={<AuthenticatedRoute user={user} setUser={setUser}><SubmitExpense user={user} setUser={setUser} /></AuthenticatedRoute>}
         />
         <Route
           path="/my-expenses"
-          element={user ? <MyExpenses user={user} setUser={setUser} /> : <Navigate to="/login" />}
+          element={<AuthenticatedRoute user={user} setUser={setUser}><MyExpenses user={user} setUser={setUser} /></AuthenticatedRoute>}
         />
         <Route
           path="/approvals"
-          element={user ? <Approvals user={user} setUser={setUser} /> : <Navigate to="/login" />}
+          element={<AuthenticatedRoute user={user} setUser={setUser}><Approvals user={user} setUser={setUser} /></AuthenticatedRoute>}
         />
         <Route
           path="/expenses/:id"
-          element={user ? <ExpenseDetails user={user} setUser={setUser} /> : <Navigate to="/login" />}
+          element={<AuthenticatedRoute user={user} setUser={setUser}><ExpenseDetails user={user} setUser={setUser} /></AuthenticatedRoute>}
         />
         <Route
           path="/admin/departments"
-          element={user ? <DepartmentManager user={user} setUser={setUser} /> : <Navigate to="/login" />}
+          element={<AuthenticatedRoute user={user} setUser={setUser}><DepartmentManager user={user} setUser={setUser} /></AuthenticatedRoute>}
         />
         <Route
           path="/admin/users"
-          element={user ? <UserManagement user={user} setUser={setUser} /> : <Navigate to="/login" />}
+          element={<AuthenticatedRoute user={user} setUser={setUser}><UserManagement user={user} setUser={setUser} /></AuthenticatedRoute>}
         />
         <Route
           path="/admin"
-          element={user ? <AdminDashboard user={user} setUser={setUser} /> : <Navigate to="/login" />}
+          element={<AuthenticatedRoute user={user} setUser={setUser}><AdminDashboard user={user} setUser={setUser} /></AuthenticatedRoute>}
         />
         <Route
           path="/settings"
-          element={user ? <Settings user={user} setUser={setUser} /> : <Navigate to="/login" />}
+          element={<AuthenticatedRoute user={user} setUser={setUser}><Settings user={user} setUser={setUser} /></AuthenticatedRoute>}
         />
         <Route
           path="/admin/suppliers"
-          element={user ? <SupplierManagement user={user} setUser={setUser} /> : <Navigate to="/login" />}
+          element={<AuthenticatedRoute user={user} setUser={setUser}><SupplierManagement user={user} setUser={setUser} /></AuthenticatedRoute>}
         />
         <Route
           path="/admin/credit-cards"
-          element={user ? <CreditCardManagement user={user} setUser={setUser} /> : <Navigate to="/login" />}
+          element={<AuthenticatedRoute user={user} setUser={setUser}><CreditCardManagement user={user} setUser={setUser} /></AuthenticatedRoute>}
         />
         <Route
           path="/reports"
-          element={user ? <Reports user={user} setUser={setUser} /> : <Navigate to="/login" />}
+          element={<AuthenticatedRoute user={user} setUser={setUser}><Reports user={user} setUser={setUser} /></AuthenticatedRoute>}
         />
         <Route
           path="/admin/expense-history"
-          element={user ? <ExpenseHistory user={user} setUser={setUser} /> : <Navigate to="/login" />}
+          element={<AuthenticatedRoute user={user} setUser={setUser}><ExpenseHistory user={user} setUser={setUser} /></AuthenticatedRoute>}
         />
         <Route path="/" element={<Navigate to={user ? "/dashboard" : "/login"} />} />
         </Routes>
@@ -116,3 +127,4 @@ function App() {
 }
 
 export default App
+

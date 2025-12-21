@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import Header from '../components/Header'
 import { Card, Button, Badge, Modal, Skeleton, Textarea, useToast } from '../components/ui'
 import BudgetImpactWidget from '../components/BudgetImpactWidget'
 import './ExpenseDetails.css'
@@ -145,7 +144,6 @@ function ExpenseDetails({ user, setUser }) {
   if (loading) {
     return (
       <div className="expense-details-container">
-        <Header user={user} setUser={setUser} />
         <div className="expense-details-content">
           <Card>
             <Card.Body>
@@ -161,7 +159,6 @@ function ExpenseDetails({ user, setUser }) {
   if (!expense) {
     return (
       <div className="expense-details-container">
-        <Header user={user} setUser={setUser} />
         <div className="expense-details-content">
           <Card>
             <Card.Body>
@@ -181,7 +178,6 @@ function ExpenseDetails({ user, setUser }) {
 
   return (
     <div className="expense-details-container">
-      <Header user={user} setUser={setUser} />
 
       <div className="expense-details-content">
         {/* Page Title Section */}
