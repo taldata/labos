@@ -1,15 +1,15 @@
 /* App Layout Styles */
 .app-layout {
   min-height: 100vh;
-  transition: padding-right 0.3s ease;
+  transition: padding-left 0.3s ease;
 }
 
 .app-layout.sidebar-open {
-  padding-right: 260px;
+  padding-left: 260px;
 }
 
 .app-layout.sidebar-collapsed {
-  padding-right: 72px;
+  padding-left: 72px;
 }
 
 .app-main {

@@ -2,7 +2,7 @@
 .sidebar {
   position: fixed;
   top: 0;
-  right: 0;
+  left: 0;
   height: 100vh;
   background: linear-gradient(180deg, #1a1a2e 0%, #16213e 100%);
   color: white;
@@ -10,7 +10,7 @@
   flex-direction: column;
   z-index: 1000;
   transition: width 0.3s ease;
-  box-shadow: -2px 0 10px rgba(0, 0, 0, 0.2);
+  box-shadow: 2px 0 10px rgba(0, 0, 0, 0.2);
 }
 
 .sidebar-open {
@@ -251,16 +251,16 @@
 /* Mobile Styles */
 @media (max-width: 768px) {
   .sidebar {
-    right: -260px;
+    left: -260px;
     width: 260px;
   }
 
   .sidebar-open {
-    right: 0;
+    left: 0;
   }
 
   .sidebar-collapsed {
-    right: -260px;
+    left: -260px;
   }
 
   .sidebar-overlay {
