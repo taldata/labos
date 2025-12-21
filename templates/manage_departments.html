@@ -15,6 +15,22 @@
                 </div>
             </div>
             <div class="header-actions">
+                <!-- Year Selector -->
+                <div class="year-selector-container" style="display: flex; align-items: center; gap: 0.5rem; margin-right: 1rem;">
+                    <label style="font-weight: 500; color: #4a5568;">שנת תקציב:</label>
+                    <select id="yearSelector" class="form-select-modern" style="min-width: 120px;" onchange="changeYear(this.value)">
+                        {% for year in budget_years %}
+                        <option value="{{ year.id }}" {% if selected_year and selected_year.id == year.id %}selected{% endif %}>
+                            {{ year.name or year.year }} {% if year.is_current %}(נוכחית){% endif %}
+                        </option>
+                        {% endfor %}
+                    </select>
+                    {% if current_user.is_admin %}
+                    <button onclick="showAddYearModal()" class="button-modern secondary" style="padding: 0.5rem 0.75rem;" title="הוסף שנה חדשה">
+                        <i class="fas fa-calendar-plus"></i>
+                    </button>
+                    {% endif %}
+                </div>
                 <div class="search-container">
                     <div class="search-input-wrapper">
                         <i class="fas fa-search search-icon"></i>
@@ -756,6 +772,94 @@
 </div>
 
 <script>
+    // Year Change Function
+    function changeYear(yearId) {
+        window.location.href = '/manager/departments?year_id=' + yearId;
+    }
+
+    // Add Year Modal Functions
+    function showAddYearModal() {
+        const modal = document.getElementById('addYearModal');
+        if (modal) {
+            modal.classList.add('active');
+        } else {
+            // Create modal dynamically if not exists
+            const currentYear = new Date().getFullYear();
+            const modalHtml = `
+                <div id="addYearModal" class="modal-overlay active">
+                    <div class="modal-container">
+                        <div class="modal-header">
+                            <div class="modal-title">
+                                <i class="fas fa-calendar-plus"></i>
+                                <h2>הוסף שנת תקציב</h2>
+                            </div>
+                            <button class="modal-close" onclick="closeAddYearModal()">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                        <form id="addYearForm" class="modal-form" onsubmit="addYear(event)">
+                            <div class="form-section-modern">
+                                <div class="form-group-modern">
+                                    <label for="newYear">
+                                        <i class="fas fa-calendar"></i>
+                                        שנה
+                                    </label>
+                                    <input type="number" id="newYear" class="form-input-modern" 
+                                        value="${currentYear + 1}" min="2020" max="2100" required>
+                                </div>
+                            </div>
+                            <div class="modal-actions">
+                                <button type="button" onclick="closeAddYearModal()" class="button-modern secondary">
+                                    <i class="fas fa-times"></i>
+                                    ביטול
+                                </button>
+                                <button type="submit" class="button-modern primary">
+                                    <i class="fas fa-plus"></i>
+                                    הוסף שנה
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            `;
+            document.body.insertAdjacentHTML('beforeend', modalHtml);
+        }
+    }
+
+    function closeAddYearModal() {
+        const modal = document.getElementById('addYearModal');
+        if (modal) {
+            modal.classList.remove('active');
+        }
+    }
+
+    async function addYear(event) {
+        event.preventDefault();
+        const year = document.getElementById('newYear').value;
+        
+        try {
+            const response = await fetch('/api/v1/organization/years', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ year: parseInt(year) })
+            });
+            
+            const data = await response.json();
+            
+            if (response.ok) {
+                closeAddYearModal();
+                window.location.href = '/manager/departments?year_id=' + data.year.id;
+            } else {
+                alert(data.error || 'שגיאה ביצירת שנה');
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            alert('שגיאה ביצירת שנה');
+        }
+    }
+
     // Subcategory Search Functionality
     let searchTimeout;
     const searchInput = document.getElementById('subcategorySearch');

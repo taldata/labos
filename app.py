@@ -16,7 +16,7 @@ from flask_cors import CORS
 from config import Config
 from io import BytesIO
 import pandas as pd
-from models import db, Department, Category, Subcategory, User, Supplier, Expense, CreditCard
+from models import db, Department, Category, Subcategory, User, Supplier, Expense, CreditCard, BudgetYear
 import msal
 import requests
 from dateutil.relativedelta import relativedelta
@@ -1072,10 +1072,26 @@ def manage_departments():
         flash('Access denied. Manager privileges required.', 'danger')
         return redirect(url_for('index'))
     
+    # Get budget years for selector
+    budget_years = BudgetYear.query.order_by(BudgetYear.year.desc()).all()
+    
+    # Get selected year from query params or use current year
+    selected_year_id = request.args.get('year_id', type=int)
+    if not selected_year_id:
+        current_year = BudgetYear.query.filter_by(is_current=True).first()
+        selected_year_id = current_year.id if current_year else None
+    
+    selected_year = BudgetYear.query.get(selected_year_id) if selected_year_id else None
+    
+    # Filter departments by year if selected
     if current_user.is_admin:
-        departments = Department.query.all()
+        if selected_year_id:
+            departments = Department.query.filter_by(year_id=selected_year_id).all()
+        else:
+            departments = Department.query.all()
     else:
-        departments = current_user.managed_departments
+        departments = [d for d in current_user.managed_departments if not selected_year_id or d.year_id == selected_year_id]
+
     
     # Calculate budget metrics for each department
     departments_with_metrics = []
@@ -1141,7 +1157,10 @@ def manage_departments():
             'categories': categories_with_metrics
         })
     
-    return render_template('manage_departments.html', departments_data=departments_with_metrics)
+    return render_template('manage_departments.html', 
+                          departments_data=departments_with_metrics,
+                          budget_years=budget_years,
+                          selected_year=selected_year)
 
 @app.route('/manager/categories/<int:dept_id>')
 @login_required
