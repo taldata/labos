@@ -1,0 +1,78 @@
+/* App Layout Styles */
+.app-layout {
+  min-height: 100vh;
+  transition: padding-right 0.3s ease;
+}
+
+.app-layout.sidebar-open {
+  padding-right: 260px;
+}
+
+.app-layout.sidebar-collapsed {
+  padding-right: 72px;
+}
+
+.app-main {
+  min-height: 100vh;
+  background: #f5f7fa;
+}
+
+/* Mobile Header - Hidden on Desktop */
+.mobile-header {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 60px;
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+  color: white;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 1rem;
+  z-index: 998;
+}
+
+.mobile-menu-btn {
+  background: rgba(255, 255, 255, 0.1);
+  border: none;
+  color: white;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  font-size: 1.25rem;
+  cursor: pointer;
+}
+
+.mobile-logo {
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
+.mobile-user {
+  width: 36px;
+  height: 36px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+
+/* Mobile Styles */
+@media (max-width: 768px) {
+  .app-layout.sidebar-open,
+  .app-layout.sidebar-collapsed {
+    padding-right: 0;
+  }
+
+  .mobile-header {
+    display: flex;
+  }
+
+  .app-main {
+    padding-top: 60px;
+  }
+}
