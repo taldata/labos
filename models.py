@@ -4,12 +4,25 @@ from datetime import datetime
 
 db = SQLAlchemy()
 
+class BudgetYear(db.Model):
+    """Model for tracking budget years - each year has its own structure"""
+    __tablename__ = 'budget_year'
+    id = db.Column(db.Integer, primary_key=True)
+    year = db.Column(db.Integer, nullable=False, unique=True)
+    name = db.Column(db.String(50))  # e.g., "2024", "FY2024"
+    is_active = db.Column(db.Boolean, default=True)
+    is_current = db.Column(db.Boolean, default=False)  # Current working year
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    departments = db.relationship('Department', back_populates='budget_year', lazy=True)
+
 class Department(db.Model):
     __tablename__ = 'department'
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
     budget = db.Column(db.Float, default=0.0)
     currency = db.Column(db.String(3), nullable=False, default='ILS')
+    year_id = db.Column(db.Integer, db.ForeignKey('budget_year.id'), nullable=True)
+    budget_year = db.relationship('BudgetYear', back_populates='departments')
     employees = db.relationship('User', foreign_keys='User.department_id', back_populates='home_department')
     categories = db.relationship('Category', backref='department', lazy=True)
 

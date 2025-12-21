@@ -15,9 +15,14 @@ const DepartmentManager = ({ user, setUser }) => {
     const [structure, setStructure] = useState([]);
     const [loading, setLoading] = useState(true);
 
+    // Year State
+    const [years, setYears] = useState([]);
+    const [selectedYear, setSelectedYear] = useState(null);
+    const [loadingYears, setLoadingYears] = useState(true);
+
     // Modal State
     const [modalOpen, setModalOpen] = useState(false);
-    const [modalType, setModalType] = useState(null); // 'department', 'category', 'subcategory'
+    const [modalType, setModalType] = useState(null); // 'department', 'category', 'subcategory', 'year'
     const [modalMode, setModalMode] = useState('create'); // 'create', 'edit'
     const [currentItem, setCurrentItem] = useState(null);
     const [parentId, setParentId] = useState(null); // For creating child items
@@ -26,7 +31,8 @@ const DepartmentManager = ({ user, setUser }) => {
     const [formData, setFormData] = useState({
         name: '',
         budget: '',
-        currency: 'ILS'
+        currency: 'ILS',
+        year: new Date().getFullYear()
     });
 
     // Expanded State
@@ -36,18 +42,50 @@ const DepartmentManager = ({ user, setUser }) => {
     // Search State
     const [searchQuery, setSearchQuery] = useState('');
 
+    // Copy Year Modal
+    const [showCopyModal, setShowCopyModal] = useState(false);
+    const [sourceYearId, setSourceYearId] = useState(null);
+
     useEffect(() => {
         if (!user?.is_admin) {
             navigate('/dashboard');
             return;
         }
-        fetchStructure();
+        fetchYears();
     }, []);
 
-    const fetchStructure = async () => {
+    useEffect(() => {
+        if (selectedYear) {
+            fetchStructure(selectedYear.id);
+        }
+    }, [selectedYear]);
+
+    const fetchYears = async () => {
+        try {
+            setLoadingYears(true);
+            const response = await api.get('/api/v1/organization/years');
+            const yearsData = response.data.years || [];
+            setYears(yearsData);
+            
+            // Select current year or first available
+            const currentYear = yearsData.find(y => y.is_current) || yearsData[0];
+            if (currentYear) {
+                setSelectedYear(currentYear);
+            } else {
+                setLoading(false);
+            }
+            setLoadingYears(false);
+        } catch (err) {
+            showError('Failed to load budget years');
+            setLoadingYears(false);
+            setLoading(false);
+        }
+    };
+
+    const fetchStructure = async (yearId) => {
         try {
             setLoading(true);
-            const response = await api.get('/api/v1/organization/structure');
+            const response = await api.get(`/api/v1/organization/structure?year_id=${yearId}`);
             setStructure(response.data.structure);
             setLoading(false);
         } catch (err) {
@@ -76,17 +114,26 @@ const DepartmentManager = ({ user, setUser }) => {
         setCurrentItem(item);
         setParentId(parent);
 
-        if (mode === 'edit' && item) {
+        if (type === 'year') {
+            setFormData({
+                name: '',
+                budget: '',
+                currency: 'ILS',
+                year: mode === 'edit' && item ? item.year : new Date().getFullYear() + 1
+            });
+        } else if (mode === 'edit' && item) {
             setFormData({
                 name: item.name,
                 budget: item.budget || 0,
-                currency: item.currency || 'ILS'
+                currency: item.currency || 'ILS',
+                year: new Date().getFullYear()
             });
         } else {
             setFormData({
                 name: '',
                 budget: '',
-                currency: 'ILS'
+                currency: 'ILS',
+                year: new Date().getFullYear()
             });
         }
 
@@ -95,7 +142,7 @@ const DepartmentManager = ({ user, setUser }) => {
 
     const closeModal = () => {
         setModalOpen(false);
-        setFormData({ name: '', budget: '', currency: 'ILS' });
+        setFormData({ name: '', budget: '', currency: 'ILS', year: new Date().getFullYear() });
         setCurrentItem(null);
         setParentId(null);
     };
@@ -116,11 +163,26 @@ const DepartmentManager = ({ user, setUser }) => {
             let method = modalMode === 'create' ? 'post' : 'put';
             let data = { ...formData };
 
+            // Handle year type
+            if (modalType === 'year') {
+                url = '/api/v1/organization/years';
+                data = { year: parseInt(formData.year), name: formData.year.toString() };
+                await api.post(url, data);
+                success('שנת תקציב נוצרה בהצלחה');
+                await fetchYears();
+                closeModal();
+                return;
+            }
+
             // Construct URL and Data based on type
             if (modalType === 'department') {
                 url = modalMode === 'create'
                     ? '/api/v1/organization/departments'
                     : `/api/v1/organization/departments/${currentItem.id}`;
+                // Add year_id to new departments
+                if (modalMode === 'create' && selectedYear) {
+                    data.year_id = selectedYear.id;
+                }
             } else if (modalType === 'category') {
                 url = modalMode === 'create'
                     ? '/api/v1/organization/categories'
@@ -135,7 +197,7 @@ const DepartmentManager = ({ user, setUser }) => {
 
             await api[method](url, data);
             success(modalMode === 'create' ? `${modalType} created successfully` : `${modalType} updated successfully`);
-            await fetchStructure();
+            await fetchStructure(selectedYear?.id);
             closeModal();
         } catch (err) {
             showError(err.response?.data?.error || 'An error occurred');
@@ -153,7 +215,7 @@ const DepartmentManager = ({ user, setUser }) => {
 
             await api.delete(url);
             success(`${type} deleted successfully`);
-            fetchStructure();
+            fetchStructure(selectedYear?.id);
         } catch (err) {
             showError(err.response?.data?.error || 'Failed to delete item');
         }
@@ -201,9 +263,36 @@ const DepartmentManager = ({ user, setUser }) => {
             <main className="department-manager">
             <div className="manager-header">
                 <h1>Organization Structure</h1>
-                <Button variant="primary" icon="fas fa-plus" onClick={() => openModal('department', 'create')}>
-                    Add Department
-                </Button>
+                <div className="header-actions" style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                    {/* Year Selector */}
+                    <div className="year-selector" style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                        <label style={{ fontWeight: 500, color: '#4a5568' }}>שנת תקציב:</label>
+                        <Select 
+                            value={selectedYear?.id || ''} 
+                            onChange={(e) => {
+                                const yearObj = years.find(y => y.id === parseInt(e.target.value));
+                                setSelectedYear(yearObj);
+                            }}
+                            style={{ minWidth: '120px' }}
+                        >
+                            {years.map(y => (
+                                <option key={y.id} value={y.id}>
+                                    {y.name} {y.is_current ? '(נוכחית)' : ''}
+                                </option>
+                            ))}
+                        </Select>
+                        <Button 
+                            variant="ghost" 
+                            size="small" 
+                            icon="fas fa-calendar-plus" 
+                            onClick={() => openModal('year', 'create')}
+                            title="הוסף שנה חדשה"
+                        />
+                    </div>
+                    <Button variant="primary" icon="fas fa-plus" onClick={() => openModal('department', 'create')}>
+                        Add Department
+                    </Button>
+                </div>
             </div>
 
             {/* Search Bar */}
@@ -339,46 +428,66 @@ const DepartmentManager = ({ user, setUser }) => {
             <Modal
                 isOpen={modalOpen}
                 onClose={closeModal}
-                title={`${modalMode === 'create' ? 'Add' : 'Edit'} ${modalType ? modalType.charAt(0).toUpperCase() + modalType.slice(1) : ''}`}
+                title={modalType === 'year' ? 'הוסף שנת תקציב' : `${modalMode === 'create' ? 'Add' : 'Edit'} ${modalType ? modalType.charAt(0).toUpperCase() + modalType.slice(1) : ''}`}
                 size="medium"
             >
                 <form onSubmit={handleSubmit} className="modal-form">
-                    <Input
-                        label="Name"
-                        icon="fas fa-tag"
-                        type="text"
-                        name="name"
-                        value={formData.name}
-                        onChange={handleInputChange}
-                        required
-                        autoFocus
-                        placeholder={`Enter ${modalType} name`}
-                    />
-
-                    <Input
-                        label="Budget"
-                        icon="fas fa-wallet"
-                        type="number"
-                        name="budget"
-                        value={formData.budget}
-                        onChange={handleInputChange}
-                        min="0"
-                        step="0.01"
-                        placeholder="Enter budget amount"
-                    />
-
-                    {modalType === 'department' && (
-                        <Select
-                            label="Currency"
-                            icon="fas fa-dollar-sign"
-                            name="currency"
-                            value={formData.currency}
+                    {modalType === 'year' ? (
+                        // Year form
+                        <Input
+                            label="שנה"
+                            icon="fas fa-calendar"
+                            type="number"
+                            name="year"
+                            value={formData.year}
                             onChange={handleInputChange}
-                        >
-                            <option value="ILS">₪ ILS (Israeli Shekel)</option>
-                            <option value="USD">$ USD (US Dollar)</option>
-                            <option value="EUR">€ EUR (Euro)</option>
-                        </Select>
+                            required
+                            autoFocus
+                            placeholder="הזן שנה (למשל 2026)"
+                            min="2020"
+                            max="2100"
+                        />
+                    ) : (
+                        // Standard form for department/category/subcategory
+                        <>
+                            <Input
+                                label="Name"
+                                icon="fas fa-tag"
+                                type="text"
+                                name="name"
+                                value={formData.name}
+                                onChange={handleInputChange}
+                                required
+                                autoFocus
+                                placeholder={`Enter ${modalType} name`}
+                            />
+
+                            <Input
+                                label="Budget"
+                                icon="fas fa-wallet"
+                                type="number"
+                                name="budget"
+                                value={formData.budget}
+                                onChange={handleInputChange}
+                                min="0"
+                                step="0.01"
+                                placeholder="Enter budget amount"
+                            />
+
+                            {modalType === 'department' && (
+                                <Select
+                                    label="Currency"
+                                    icon="fas fa-dollar-sign"
+                                    name="currency"
+                                    value={formData.currency}
+                                    onChange={handleInputChange}
+                                >
+                                    <option value="ILS">₪ ILS (Israeli Shekel)</option>
+                                    <option value="USD">$ USD (US Dollar)</option>
+                                    <option value="EUR">€ EUR (Euro)</option>
+                                </Select>
+                            )}
+                        </>
                     )}
 
                     <div className="modal-actions">
