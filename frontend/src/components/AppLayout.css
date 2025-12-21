@@ -2,6 +2,7 @@
 .app-layout {
   min-height: 100vh;
   transition: padding-left 0.3s ease;
+  width: 100%;
 }
 
 .app-layout.sidebar-open {
@@ -15,8 +16,7 @@
 .app-main {
   min-height: 100vh;
   background: #f5f7fa;
-  position: relative;
-  overflow-x: hidden;
+  width: 100%;
 }
 
 /* Mobile Header - Hidden on Desktop */
@@ -67,7 +67,7 @@
 @media (max-width: 768px) {
   .app-layout.sidebar-open,
   .app-layout.sidebar-collapsed {
-    padding-right: 0;
+    padding-left: 0;
   }
 
   .mobile-header {
@@ -78,3 +78,4 @@
     padding-top: 60px;
   }
 }
+
