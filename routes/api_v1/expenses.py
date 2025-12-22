@@ -241,7 +241,8 @@ def _calculate_budget_impact(expense):
             department = expense.submitter.home_department
             
             # Calculate used budget (approved expenses in current period)
-            dept_used = db.session.query(func.sum(Expense.amount)).join(User)\
+            # Explicitly specify the join condition to avoid ambiguity with multiple foreign keys
+            dept_used = db.session.query(func.sum(Expense.amount)).join(User, Expense.user_id == User.id)\
                 .filter(
                     User.department_id == department.id,
                     Expense.status == 'approved'
