@@ -156,8 +156,16 @@ class DocumentProcessor:
                         
                         # If we found either date or amount, return the results
                         if date_value or amount_value:
+                            # Convert date to ISO format string for JSON serialization
+                            date_str = None
+                            if date_value:
+                                if hasattr(date_value, 'isoformat'):
+                                    date_str = date_value.isoformat()
+                                else:
+                                    date_str = str(date_value)
+                            
                             result = {
-                                "purchase_date": date_value,
+                                "purchase_date": date_str,
                                 "amount": amount_value
                             }
                             logging.info(f"DocumentProcessor: Success! Returning: {result}")
