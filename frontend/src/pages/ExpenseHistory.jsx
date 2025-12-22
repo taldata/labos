@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Card, Button, Badge, Input, Select, SearchableSelect, Skeleton, EmptyState, Modal, useToast } from '../components/ui'
+import MoveExpenseToYearModal from '../components/MoveExpenseToYearModal'
 import './ExpenseHistory.css'
 
 function ExpenseHistory({ user, setUser }) {
@@ -76,6 +77,10 @@ function ExpenseHistory({ user, setUser }) {
   // Delete confirmation
   const [deleteModalOpen, setDeleteModalOpen] = useState(false)
   const [expenseToDelete, setExpenseToDelete] = useState(null)
+
+  // Move to year modal
+  const [moveModalOpen, setMoveModalOpen] = useState(false)
+  const [expenseToMove, setExpenseToMove] = useState(null)
 
   useEffect(() => {
     if (!user?.is_admin) {
@@ -378,6 +383,18 @@ function ExpenseHistory({ user, setUser }) {
     } catch (err) {
       showError('An error occurred')
     }
+  }
+
+  const openMoveModal = (expense) => {
+    setExpenseToMove(expense)
+    setMoveModalOpen(true)
+  }
+
+  const handleMoveSuccess = (data) => {
+    success(`Expense moved successfully from year ${data.old_year} to ${data.new_year}`)
+    setMoveModalOpen(false)
+    setExpenseToMove(null)
+    fetchExpenses()
   }
 
   const getStatusVariant = (status) => {
@@ -744,6 +761,14 @@ function ExpenseHistory({ user, setUser }) {
                           <Button
                             variant="ghost"
                             size="small"
+                            icon="fas fa-calendar-alt"
+                            onClick={() => openMoveModal(expense)}
+                            title="Move to Different Year"
+                            className="btn-move-year"
+                          />
+                          <Button
+                            variant="ghost"
+                            size="small"
                             icon="fas fa-trash"
                             onClick={() => openDeleteModal(expense)}
                             title="Delete"
@@ -1096,6 +1121,14 @@ function ExpenseHistory({ user, setUser }) {
           </div>
         </form>
       </Modal>
+
+      {/* Move to Year Modal */}
+      <MoveExpenseToYearModal
+        isOpen={moveModalOpen}
+        onClose={() => setMoveModalOpen(false)}
+        expense={expenseToMove}
+        onSuccess={handleMoveSuccess}
+      />
 
       {/* Delete Confirmation Modal */}
       <Modal
