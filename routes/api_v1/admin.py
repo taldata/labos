@@ -1,6 +1,6 @@
 from flask import jsonify, request, current_app
 from flask_login import login_required, current_user
-from models import Expense, Department, Category, Subcategory, User, Supplier, CreditCard, db
+from models import Expense, Department, Category, Subcategory, User, Supplier, CreditCard, BudgetYear, db
 from sqlalchemy import func, and_
 from datetime import datetime, timedelta
 from dateutil.relativedelta import relativedelta
