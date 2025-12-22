@@ -1168,3 +1168,221 @@ def admin_delete_expense(expense_id):
         logging.error(f"Error deleting expense: {str(e)}", exc_info=True)
         return jsonify({'error': 'Failed to delete expense'}), 500
 
+
+# --- Move Expense to Different Budget Year ---
+
+def find_matching_subcategory(source_subcategory, target_year_id):
+    """
+    Find matching subcategory in target year based on name hierarchy
+    Returns: dict with 'exact_match' (Subcategory or None) and 'suggestions' (list of Subcategory)
+    """
+    try:
+        # Get the full hierarchy of the source subcategory
+        source_category = Category.query.get(source_subcategory.category_id)
+        source_department = Department.query.get(source_category.department_id)
+
+        # Try to find exact match in target year: Department -> Category -> Subcategory by names
+        target_department = Department.query.filter_by(
+            year_id=target_year_id,
+            name=source_department.name
+        ).first()
+
+        exact_match = None
+        suggestions = []
+
+        if target_department:
+            target_category = Category.query.filter_by(
+                department_id=target_department.id,
+                name=source_category.name
+            ).first()
+
+            if target_category:
+                exact_match = Subcategory.query.filter_by(
+                    category_id=target_category.id,
+                    name=source_subcategory.name
+                ).first()
+
+                # Get all subcategories in this category as suggestions
+                suggestions = Subcategory.query.filter_by(
+                    category_id=target_category.id
+                ).order_by(Subcategory.name).all()
+
+        # If no exact match, get all subcategories in target year as suggestions
+        if not suggestions:
+            # Get all departments in target year
+            target_departments = Department.query.filter_by(year_id=target_year_id).all()
+            for dept in target_departments:
+                categories = Category.query.filter_by(department_id=dept.id).all()
+                for cat in categories:
+                    subs = Subcategory.query.filter_by(category_id=cat.id).order_by(Subcategory.name).all()
+                    suggestions.extend(subs)
+
+        return {
+            'exact_match': exact_match,
+            'suggestions': suggestions[:20]  # Limit to 20 suggestions
+        }
+
+    except Exception as e:
+        logging.error(f"Error finding matching subcategory: {str(e)}")
+        return {'exact_match': None, 'suggestions': []}
+
+
+@api_v1.route('/admin/expenses/<int:expense_id>/move-options/<int:target_year_id>', methods=['GET'])
+@login_required
+def get_move_expense_options(expense_id, target_year_id):
+    """Get available options for moving an expense to a different budget year"""
+    if not current_user.is_admin:
+        return jsonify({'error': 'Admin access required'}), 403
+
+    try:
+        # Get the expense
+        expense = Expense.query.get(expense_id)
+        if not expense:
+            return jsonify({'error': 'Expense not found'}), 404
+
+        # Get target budget year
+        target_year = BudgetYear.query.get(target_year_id)
+        if not target_year:
+            return jsonify({'error': 'Target budget year not found'}), 404
+
+        # Get current hierarchy
+        current_subcategory = Subcategory.query.get(expense.subcategory_id)
+        current_category = Category.query.get(current_subcategory.category_id)
+        current_department = Department.query.get(current_category.department_id)
+        current_budget_year = BudgetYear.query.get(current_department.year_id)
+
+        # Find matching subcategory in target year
+        match_result = find_matching_subcategory(current_subcategory, target_year_id)
+
+        # Format response
+        response = {
+            'current': {
+                'budget_year': {
+                    'id': current_budget_year.id,
+                    'year': current_budget_year.year,
+                    'name': current_budget_year.name
+                },
+                'department': {
+                    'id': current_department.id,
+                    'name': current_department.name
+                },
+                'category': {
+                    'id': current_category.id,
+                    'name': current_category.name
+                },
+                'subcategory': {
+                    'id': current_subcategory.id,
+                    'name': current_subcategory.name
+                }
+            },
+            'target': {
+                'budget_year': {
+                    'id': target_year.id,
+                    'year': target_year.year,
+                    'name': target_year.name
+                }
+            }
+        }
+
+        # Add exact match if found
+        if match_result['exact_match']:
+            exact = match_result['exact_match']
+            cat = Category.query.get(exact.category_id)
+            dept = Department.query.get(cat.department_id)
+            response['exact_match'] = {
+                'subcategory_id': exact.id,
+                'subcategory_name': exact.name,
+                'category_name': cat.name,
+                'department_name': dept.name
+            }
+        else:
+            response['exact_match'] = None
+
+        # Add suggestions
+        response['suggestions'] = []
+        for sub in match_result['suggestions']:
+            cat = Category.query.get(sub.category_id)
+            dept = Department.query.get(cat.department_id)
+            response['suggestions'].append({
+                'subcategory_id': sub.id,
+                'subcategory_name': sub.name,
+                'category_name': cat.name,
+                'department_name': dept.name,
+                'full_path': f"{dept.name} > {cat.name} > {sub.name}"
+            })
+
+        return jsonify(response), 200
+
+    except Exception as e:
+        logging.error(f"Error getting move options: {str(e)}", exc_info=True)
+        return jsonify({'error': f'Failed to get move options: {str(e)}'}), 500
+
+
+@api_v1.route('/admin/expenses/<int:expense_id>/move-to-year', methods=['POST'])
+@login_required
+def move_expense_to_year(expense_id):
+    """Move an expense to a different budget year by changing its subcategory"""
+    if not current_user.is_admin:
+        return jsonify({'error': 'Admin access required'}), 403
+
+    try:
+        data = request.get_json()
+        if not data or 'target_subcategory_id' not in data:
+            return jsonify({'error': 'target_subcategory_id is required'}), 400
+
+        target_subcategory_id = int(data['target_subcategory_id'])
+
+        # Get the expense
+        expense = Expense.query.get(expense_id)
+        if not expense:
+            return jsonify({'error': 'Expense not found'}), 404
+
+        # Get target subcategory and validate it exists
+        target_subcategory = Subcategory.query.get(target_subcategory_id)
+        if not target_subcategory:
+            return jsonify({'error': 'Target subcategory not found'}), 404
+
+        # Get the full hierarchy for logging
+        target_category = Category.query.get(target_subcategory.category_id)
+        target_department = Department.query.get(target_category.department_id)
+        target_year = BudgetYear.query.get(target_department.year_id)
+
+        # Get old hierarchy for logging
+        old_subcategory = Subcategory.query.get(expense.subcategory_id)
+        old_category = Category.query.get(old_subcategory.category_id)
+        old_department = Department.query.get(old_category.department_id)
+        old_year = BudgetYear.query.get(old_department.year_id)
+
+        # Validate that target is in a different year
+        if old_year.id == target_year.id:
+            return jsonify({'error': 'Target subcategory is in the same budget year'}), 400
+
+        # Update the expense
+        old_subcategory_id = expense.subcategory_id
+        expense.subcategory_id = target_subcategory_id
+
+        db.session.commit()
+
+        # Log the action
+        logging.info(
+            f"Expense {expense_id} moved from budget year {old_year.year} "
+            f"({old_department.name} > {old_category.name} > {old_subcategory.name}) "
+            f"to budget year {target_year.year} "
+            f"({target_department.name} > {target_category.name} > {target_subcategory.name}) "
+            f"by admin {current_user.username}"
+        )
+
+        return jsonify({
+            'message': 'Expense moved successfully',
+            'expense_id': expense_id,
+            'old_year': old_year.year,
+            'new_year': target_year.year,
+            'old_subcategory_id': old_subcategory_id,
+            'new_subcategory_id': target_subcategory_id
+        }), 200
+
+    except Exception as e:
+        db.session.rollback()
+        logging.error(f"Error moving expense to year: {str(e)}", exc_info=True)
+        return jsonify({'error': f'Failed to move expense: {str(e)}'}), 500
+
