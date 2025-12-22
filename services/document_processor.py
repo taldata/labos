@@ -2,6 +2,7 @@ from azure.ai.formrecognizer import DocumentAnalysisClient
 from azure.core.credentials import AzureKeyCredential
 import os
 import hashlib
+import logging
 from functools import lru_cache
 from dotenv import load_dotenv
 from datetime import datetime
@@ -16,6 +17,7 @@ class DocumentProcessor:
         # Check if Azure Form Recognizer is properly configured
         if not key or key.strip() == '':
             print("⚠️  Warning: AZURE_FORM_RECOGNIZER_KEY not set. Document processing will be disabled.")
+            logging.warning("AZURE_FORM_RECOGNIZER_KEY not set")
             self.document_analysis_client = None
         else:
             try:
@@ -24,8 +26,10 @@ class DocumentProcessor:
                     credential=AzureKeyCredential(key)
                 )
                 print("✅ Azure Form Recognizer initialized successfully")
+                logging.info("Azure Form Recognizer initialized successfully")
             except Exception as e:
                 print(f"⚠️  Warning: Failed to initialize Azure Form Recognizer: {e}")
+                logging.error(f"Failed to initialize Azure Form Recognizer: {e}")
                 self.document_analysis_client = None
         
         # Mapping of document types to their field names for amount and date
@@ -96,9 +100,12 @@ class DocumentProcessor:
         Returns:
             dict: Extracted document information with amount and purchase date
         """
+        logging.info(f"DocumentProcessor: Starting to process {document_path}")
+        
         # Check if Azure Form Recognizer is available
         if self.document_analysis_client is None:
             print("⚠️  Document processing skipped: Azure Form Recognizer not configured")
+            logging.warning("Document processing skipped: Azure Form Recognizer not configured")
             return {
                 'amount': None,
                 'purchase_date': None,
@@ -110,15 +117,19 @@ class DocumentProcessor:
         try:
             # Calculate file hash for caching
             file_hash = self._calculate_file_hash(document_path)
+            logging.info(f"DocumentProcessor: File hash: {file_hash}")
             
             # Try each document type until we get valid results
             for doc_type, fields in self.field_mappings.items():
                 try:
+                    logging.info(f"DocumentProcessor: Trying doc_type: {doc_type}")
+                    
                     # Check if we have this result cached
                     cache_key = f"{file_hash}_{doc_type}"
                     cached_result = getattr(self, f"_cached_{cache_key}", None)
                     
                     if cached_result:
+                        logging.info(f"DocumentProcessor: Using cached result for {doc_type}")
                         return cached_result
                     
                     with open(document_path, "rb") as f:
@@ -126,18 +137,22 @@ class DocumentProcessor:
                             doc_type, document=f
                         )
                     result = poller.result()
+                    logging.info(f"DocumentProcessor: Azure returned {len(result.documents) if result.documents else 0} documents")
 
                     # If we got any documents, process them
                     if result.documents:
                         doc = result.documents[0]
+                        logging.info(f"DocumentProcessor: Document fields: {list(doc.fields.keys())}")
                         
                         # Extract date
                         date_field = doc.fields.get(fields["date"])
                         date_value = date_field.value if date_field else None
+                        logging.info(f"DocumentProcessor: Date field ({fields['date']}): {date_value}")
                         
                         # Extract amount and convert to float
                         amount_field = doc.fields.get(fields["amount"])
                         amount_value = self._extract_amount(amount_field.value if amount_field else None)
+                        logging.info(f"DocumentProcessor: Amount field ({fields['amount']}): {amount_value}")
                         
                         # If we found either date or amount, return the results
                         if date_value or amount_value:
@@ -145,18 +160,25 @@ class DocumentProcessor:
                                 "purchase_date": date_value,
                                 "amount": amount_value
                             }
+                            logging.info(f"DocumentProcessor: Success! Returning: {result}")
                             # Cache the result
                             setattr(self, f"_cached_{cache_key}", result)
                             return result
-                except Exception:
+                        else:
+                            logging.info(f"DocumentProcessor: No date or amount found for {doc_type}")
+                except Exception as e:
                     # If this document type fails, try the next one
+                    logging.error(f"DocumentProcessor: Error with {doc_type}: {str(e)}")
                     continue
                     
             # If we get here, we couldn't extract information from any document type
+            logging.warning("DocumentProcessor: Could not extract data from any document type")
             return {
                 "purchase_date": None,
                 "amount": None
             }
 
         except Exception as e:
+            logging.error(f"DocumentProcessor: Fatal error: {str(e)}")
             raise Exception(f"Error processing document: {str(e)}")
+

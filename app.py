@@ -3277,12 +3277,17 @@ def process_quote_endpoint(document_path):
 @app.route('/api/expense/process-expense', methods=['POST'])
 @login_required
 def process_expense_document():
+    logging.info("=== OCR PROCESSING START ===")
     if 'document' not in request.files:
+        logging.error("OCR: No document in request.files")
         return jsonify({'error': 'No document provided'}), 400
     
     file = request.files['document']
     if file.filename == '':
+        logging.error("OCR: Empty filename")
         return jsonify({'error': 'No selected file'}), 400
+    
+    logging.info(f"OCR: Processing file: {file.filename}")
     
     if file and allowed_file(file.filename):
         try:
@@ -3291,15 +3296,14 @@ def process_expense_document():
             temp_path = os.path.join(app.config['UPLOAD_FOLDER'], 'temp', filename)
             os.makedirs(os.path.dirname(temp_path), exist_ok=True)
             file.save(temp_path)
+            logging.info(f"OCR: File saved to: {temp_path}")
             
             # Process the document
             document_type = request.form.get('document_type', 'receipt')  # receipt, invoice, or quote
-            if document_type == 'receipt':
-                extracted_data = processor.process_document(temp_path)
-            elif document_type == 'invoice':
-                extracted_data = processor.process_document(temp_path)
-            else:
-                extracted_data = processor.process_document(temp_path)
+            logging.info(f"OCR: Document type: {document_type}")
+            
+            extracted_data = processor.process_document(temp_path)
+            logging.info(f"OCR: Extracted data: {extracted_data}")
             
             # Clean up temporary file
             os.remove(temp_path)
@@ -3311,8 +3315,12 @@ def process_expense_document():
             })
             
         except Exception as e:
+            logging.error(f"OCR: Exception occurred: {str(e)}")
+            import traceback
+            logging.error(f"OCR: Traceback: {traceback.format_exc()}")
             return jsonify({'error': str(e)}), 500
             
+    logging.error(f"OCR: Invalid file type: {file.filename}")
     return jsonify({'error': 'Invalid file type'}), 400
 
 @app.route('/api/expense/process-receipt', methods=['POST'])
