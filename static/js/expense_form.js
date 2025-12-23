@@ -18,6 +18,25 @@ document.addEventListener('DOMContentLoaded', function() {
     form.insertBefore(previewContainer, form.querySelector('.form-actions'));
 
     function showOcrPreview(data, documentType) {
+        // Check if we actually extracted any data
+        if (!data.amount && !data.purchase_date) {
+            previewContainer.innerHTML = `
+                <h4>No Data Extracted from ${documentType}</h4>
+                <div class="ocr-data">
+                    <p style="color: #856404; background: #fff3cd; padding: 10px; border-radius: 4px;">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        Could not extract amount or date from the uploaded document.
+                        Please verify the document is clear and readable, or enter the data manually.
+                    </p>
+                </div>
+                <div class="ocr-actions">
+                    <button type="button" class="button secondary" onclick="dismissOcrPreview()">Dismiss</button>
+                </div>
+            `;
+            previewContainer.style.display = 'block';
+            return;
+        }
+
         previewContainer.innerHTML = `
             <h4>Extracted Data from ${documentType}</h4>
             <div class="ocr-data">
@@ -65,6 +84,15 @@ document.addEventListener('DOMContentLoaded', function() {
             const formData = new FormData();
             formData.append('document', file);
 
+            // Show loading indicator
+            previewContainer.innerHTML = `
+                <div style="text-align: center; padding: 20px;">
+                    <i class="fas fa-spinner fa-spin" style="font-size: 24px; color: #007bff;"></i>
+                    <p style="margin-top: 10px;">Processing invoice...</p>
+                </div>
+            `;
+            previewContainer.style.display = 'block';
+
             try {
                 const response = await fetch('/api/expense/process-expense', {
                     method: 'POST',
@@ -72,13 +100,27 @@ document.addEventListener('DOMContentLoaded', function() {
                 });
 
                 if (!response.ok) {
-                    throw new Error('Failed to process invoice');
+                    const errorData = await response.json().catch(() => ({}));
+                    throw new Error(errorData.error || 'Failed to process invoice');
                 }
 
                 const data = await response.json();
                 showOcrPreview(data, 'Invoice');
             } catch (error) {
                 console.error('Error processing invoice:', error);
+                previewContainer.innerHTML = `
+                    <h4>Error Processing Invoice</h4>
+                    <div class="ocr-data">
+                        <p style="color: #721c24; background: #f8d7da; padding: 10px; border-radius: 4px;">
+                            <i class="fas fa-exclamation-circle"></i>
+                            ${error.message}
+                        </p>
+                    </div>
+                    <div class="ocr-actions">
+                        <button type="button" class="button secondary" onclick="dismissOcrPreview()">Dismiss</button>
+                    </div>
+                `;
+                previewContainer.style.display = 'block';
             }
         });
     }
@@ -91,6 +133,15 @@ document.addEventListener('DOMContentLoaded', function() {
             const formData = new FormData();
             formData.append('document', file);
 
+            // Show loading indicator
+            previewContainer.innerHTML = `
+                <div style="text-align: center; padding: 20px;">
+                    <i class="fas fa-spinner fa-spin" style="font-size: 24px; color: #007bff;"></i>
+                    <p style="margin-top: 10px;">Processing receipt...</p>
+                </div>
+            `;
+            previewContainer.style.display = 'block';
+
             try {
                 const response = await fetch('/api/expense/process-receipt', {
                     method: 'POST',
@@ -98,13 +149,27 @@ document.addEventListener('DOMContentLoaded', function() {
                 });
 
                 if (!response.ok) {
-                    throw new Error('Failed to process receipt');
+                    const errorData = await response.json().catch(() => ({}));
+                    throw new Error(errorData.error || 'Failed to process receipt');
                 }
 
                 const data = await response.json();
                 showOcrPreview(data, 'Receipt');
             } catch (error) {
                 console.error('Error processing receipt:', error);
+                previewContainer.innerHTML = `
+                    <h4>Error Processing Receipt</h4>
+                    <div class="ocr-data">
+                        <p style="color: #721c24; background: #f8d7da; padding: 10px; border-radius: 4px;">
+                            <i class="fas fa-exclamation-circle"></i>
+                            ${error.message}
+                        </p>
+                    </div>
+                    <div class="ocr-actions">
+                        <button type="button" class="button secondary" onclick="dismissOcrPreview()">Dismiss</button>
+                    </div>
+                `;
+                previewContainer.style.display = 'block';
             }
         });
     }
@@ -117,6 +182,15 @@ document.addEventListener('DOMContentLoaded', function() {
             const formData = new FormData();
             formData.append('document', file);
 
+            // Show loading indicator
+            previewContainer.innerHTML = `
+                <div style="text-align: center; padding: 20px;">
+                    <i class="fas fa-spinner fa-spin" style="font-size: 24px; color: #007bff;"></i>
+                    <p style="margin-top: 10px;">Processing quote...</p>
+                </div>
+            `;
+            previewContainer.style.display = 'block';
+
             try {
                 const response = await fetch('/api/expense/process-quote', {
                     method: 'POST',
@@ -124,13 +198,27 @@ document.addEventListener('DOMContentLoaded', function() {
                 });
 
                 if (!response.ok) {
-                    throw new Error('Failed to process quote');
+                    const errorData = await response.json().catch(() => ({}));
+                    throw new Error(errorData.error || 'Failed to process quote');
                 }
 
                 const data = await response.json();
                 showOcrPreview(data, 'Quote');
             } catch (error) {
                 console.error('Error processing quote:', error);
+                previewContainer.innerHTML = `
+                    <h4>Error Processing Quote</h4>
+                    <div class="ocr-data">
+                        <p style="color: #721c24; background: #f8d7da; padding: 10px; border-radius: 4px;">
+                            <i class="fas fa-exclamation-circle"></i>
+                            ${error.message}
+                        </p>
+                    </div>
+                    <div class="ocr-actions">
+                        <button type="button" class="button secondary" onclick="dismissOcrPreview()">Dismiss</button>
+                    </div>
+                `;
+                previewContainer.style.display = 'block';
             }
         });
     }
