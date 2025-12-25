@@ -3277,18 +3277,19 @@ def process_quote_endpoint(document_path):
 @app.route('/api/expense/process-expense', methods=['POST'])
 @login_required
 def process_expense_document():
-    logging.info("=== OCR PROCESSING START ===")
+    """Process invoice/expense document and extract data using OCR"""
+    logging.info("=== INVOICE OCR PROCESSING START ===")
     if 'document' not in request.files:
-        logging.error("OCR: No document in request.files")
+        logging.error("Invoice OCR: No document in request.files")
         return jsonify({'error': 'No document provided'}), 400
-    
+
     file = request.files['document']
     if file.filename == '':
-        logging.error("OCR: Empty filename")
+        logging.error("Invoice OCR: Empty filename")
         return jsonify({'error': 'No selected file'}), 400
-    
-    logging.info(f"OCR: Processing file: {file.filename}")
-    
+
+    logging.info(f"Invoice OCR: Processing file: {file.filename}")
+
     if file and allowed_file(file.filename):
         try:
             # Save file temporarily
@@ -3296,36 +3297,45 @@ def process_expense_document():
             temp_path = os.path.join(app.config['UPLOAD_FOLDER'], 'temp', filename)
             os.makedirs(os.path.dirname(temp_path), exist_ok=True)
             file.save(temp_path)
-            logging.info(f"OCR: File saved to: {temp_path}")
-            
-            # Process the document
-            document_type = request.form.get('document_type', 'receipt')  # receipt, invoice, or quote
-            logging.info(f"OCR: Document type: {document_type}")
-            
-            extracted_data = processor.process_document(temp_path)
-            logging.info(f"OCR: Extracted data: {extracted_data}")
-            
+            logging.info(f"Invoice OCR: File saved to: {temp_path}")
+
+            # Initialize processor (ensures we have a fresh instance)
+            doc_processor = DocumentProcessor()
+            extracted_data = doc_processor.process_document(temp_path)
+            logging.info(f"Invoice OCR: Extracted data: {extracted_data}")
+
             # Clean up temporary file
             os.remove(temp_path)
-            
+
+            # Check if OCR service was available
+            if extracted_data.get('processing_status') == 'skipped_no_service':
+                return jsonify({
+                    'success': False,
+                    'warning': 'OCR service not configured',
+                    'message': 'Document uploaded but OCR is not available. Please enter data manually.',
+                    'extracted_data': {'amount': None, 'purchase_date': None},
+                    'filename': filename
+                })
+
             return jsonify({
                 'success': True,
                 'extracted_data': extracted_data,
                 'filename': filename
             })
-            
+
         except Exception as e:
-            logging.error(f"OCR: Exception occurred: {str(e)}")
+            logging.error(f"Invoice OCR: Exception occurred: {str(e)}")
             import traceback
-            logging.error(f"OCR: Traceback: {traceback.format_exc()}")
+            logging.error(f"Invoice OCR: Traceback: {traceback.format_exc()}")
             return jsonify({'error': str(e)}), 500
-            
-    logging.error(f"OCR: Invalid file type: {file.filename}")
+
+    logging.error(f"Invoice OCR: Invalid file type: {file.filename}")
     return jsonify({'error': 'Invalid file type'}), 400
 
 @app.route('/api/expense/process-receipt', methods=['POST'])
 @login_required
 def process_receipt_document():
+    """Process receipt document and extract data using OCR"""
     logging.info("=== RECEIPT OCR PROCESSING START ===")
     if 'document' not in request.files:
         logging.error("Receipt OCR: No document in request.files")
@@ -3347,13 +3357,23 @@ def process_receipt_document():
             file.save(temp_path)
             logging.info(f"Receipt OCR: File saved to: {temp_path}")
 
-            # Process the receipt
+            # Initialize processor (ensures we have a fresh instance)
             doc_processor = DocumentProcessor()
             receipt_data = doc_processor.process_document(temp_path)
             logging.info(f"Receipt OCR: Extracted data: {receipt_data}")
 
             # Clean up temporary file
             os.remove(temp_path)
+
+            # Check if OCR service was available
+            if receipt_data.get('processing_status') == 'skipped_no_service':
+                return jsonify({
+                    'success': False,
+                    'warning': 'OCR service not configured',
+                    'message': 'Document uploaded but OCR is not available. Please enter data manually.',
+                    'extracted_data': {'amount': None, 'purchase_date': None},
+                    'filename': filename
+                })
 
             return jsonify({
                 'success': True,
@@ -3372,6 +3392,7 @@ def process_receipt_document():
 @app.route('/api/expense/process-quote', methods=['POST'])
 @login_required
 def process_quote_document():
+    """Process quote document and extract data using OCR"""
     logging.info("=== QUOTE OCR PROCESSING START ===")
     if 'document' not in request.files:
         logging.error("Quote OCR: No document in request.files")
@@ -3393,13 +3414,23 @@ def process_quote_document():
             file.save(temp_path)
             logging.info(f"Quote OCR: File saved to: {temp_path}")
 
-            # Process the quote
+            # Initialize processor (ensures we have a fresh instance)
             doc_processor = DocumentProcessor()
             quote_data = doc_processor.process_document(temp_path)
             logging.info(f"Quote OCR: Extracted data: {quote_data}")
 
             # Clean up temporary file
             os.remove(temp_path)
+
+            # Check if OCR service was available
+            if quote_data.get('processing_status') == 'skipped_no_service':
+                return jsonify({
+                    'success': False,
+                    'warning': 'OCR service not configured',
+                    'message': 'Document uploaded but OCR is not available. Please enter data manually.',
+                    'extracted_data': {'amount': None, 'purchase_date': None},
+                    'filename': filename
+                })
 
             return jsonify({
                 'success': True,
