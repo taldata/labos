@@ -6,9 +6,9 @@ import './index.css'
 // Suppress Chrome extension message channel errors
 // These are caused by browser extensions, not our application code
 window.addEventListener('error', (event) => {
-  if (event.message && event.message.includes('message channel closed')) {
+  if (event.message && (event.message.includes('message channel closed') || event.message.includes('runtime.lastError'))) {
     event.preventDefault()
-    console.debug('Suppressed Chrome extension message channel error:', event.message)
+    console.debug('Suppressed Chrome extension error:', event.message)
   }
 })
 
