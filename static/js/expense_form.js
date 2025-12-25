@@ -323,26 +323,38 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Invoice upload handler
     if (invoiceInput) {
+        console.log('Adding event listener to invoice input');
         invoiceInput.addEventListener('change', function(e) {
+            console.log('Invoice file selected:', e.target.files[0]);
             const file = e.target.files[0];
             processDocument(file, 'Invoice', '/api/expense/process-expense');
         });
+    } else {
+        console.warn('Invoice input not found!');
     }
 
     // Receipt upload handler
     if (receiptInput) {
+        console.log('Adding event listener to receipt input');
         receiptInput.addEventListener('change', function(e) {
+            console.log('Receipt file selected:', e.target.files[0]);
             const file = e.target.files[0];
             processDocument(file, 'Receipt', '/api/expense/process-receipt');
         });
+    } else {
+        console.warn('Receipt input not found!');
     }
 
     // Quote upload handler
     if (quoteInput) {
+        console.log('Adding event listener to quote input');
         quoteInput.addEventListener('change', function(e) {
+            console.log('Quote file selected:', e.target.files[0]);
             const file = e.target.files[0];
             processDocument(file, 'Quote', '/api/expense/process-quote');
         });
+    } else {
+        console.warn('Quote input not found!');
     }
 
     // File input validation
