@@ -1,5 +1,10 @@
 {% extends "base.html" %}
 
+{% block head %}
+<!-- OCR Interface Styles -->
+<link rel="stylesheet" href="{{ url_for('static', filename='css/ocr-interface.css') }}">
+{% endblock %}
+
 {% block content %}
 <div class="container">
     <header class="page-header">
@@ -238,6 +243,7 @@
 </div>
 
 <style>
+/* Minimal inline styles for form-specific components */
 .document-preview {
     margin-top: 10px;
     padding: 15px;
@@ -254,8 +260,6 @@
     margin-bottom: 10px;
 }
 
-/* OCR styles are now injected by expense_form.js for better maintainability */
-
 .currency-select {
     width: auto !important;
     flex: 0 0 80px;
@@ -265,15 +269,6 @@
 .input-group {
     display: flex;
     align-items: center;
-}
-
-/* Add custom styling for the subcategory dropdown */
-#subcategory option {
-    font-weight: normal;
-}
-#subcategory option::after {
-    content: attr(value);
-    font-weight: bold;
 }
 
 /* Custom Select Styling */
@@ -789,5 +784,8 @@ document.getElementById('expense-form').addEventListener('submit', function(e) {
 {% endblock %}
 
 {% block scripts %}
+<!-- OCR Processor Module - Must load before expense_form.js -->
+<script src="{{ url_for('static', filename='js/ocr-processor.js') }}"></script>
+<!-- Main expense form handler -->
 <script src="{{ url_for('static', filename='js/expense_form.js') }}"></script>
 {% endblock %}

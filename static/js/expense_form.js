@@ -1,663 +1,425 @@
-document.addEventListener('DOMContentLoaded', function() {
-    console.log('=== expense_form.js loaded and DOMContentLoaded fired ===');
+/**
+ * Expense Form Handler
+ * Handles expense form functionality including OCR document processing
+ *
+ * @version 2.0.0 - Rebuilt with modular OCR processor
+ */
 
+document.addEventListener('DOMContentLoaded', function() {
+    // ==================== OCR Setup ====================
+
+    // Initialize OCR Processor
+    const ocrProcessor = new OCRProcessor({
+        containerSelector: '#ocr-preview',
+        formSelector: '#expense-form',
+        amountInputSelector: '#amount',
+        dateInputSelector: '#invoice_date',
+        locale: 'he-IL', // Hebrew locale for Israeli shekel
+        currency: 'ILS'
+    });
+
+    // File input elements
     const invoiceInput = document.getElementById('invoice');
     const receiptInput = document.getElementById('receipt');
     const quoteInput = document.getElementById('quote');
-    const amountInput = document.getElementById('amount');
-    const invoiceDateInput = document.getElementById('invoice_date');
-    const form = document.getElementById('expense-form');
 
-    console.log('Form elements found:', {
-        invoice: !!invoiceInput,
-        receipt: !!receiptInput,
-        quote: !!quoteInput,
-        amount: !!amountInput,
-        invoiceDate: !!invoiceDateInput,
-        form: !!form
-    });
-
-    // Create preview container for OCR data
-    const previewContainer = document.createElement('div');
-    previewContainer.id = 'ocr-preview';
-    previewContainer.className = 'ocr-preview-container';
-    previewContainer.style.display = 'none';
-
-    const formActionsElement = form.querySelector('.form-actions');
-    console.log('Form element:', form);
-    console.log('Form actions element:', formActionsElement);
-
-    if (formActionsElement) {
-        form.insertBefore(previewContainer, formActionsElement);
-        console.log('OCR preview container inserted before form-actions');
-    } else {
-        form.appendChild(previewContainer);
-        console.log('OCR preview container appended to form (form-actions not found)');
-    }
-
-    console.log('Preview container created and inserted:', previewContainer);
-
-    // Track currently uploaded files
-    let currentOcrData = null;
-    let currentDocumentType = null;
-
-    /**
-     * Show OCR preview with extracted data
-     */
-    function showOcrPreview(data, response, documentType) {
-        console.log('=== showOcrPreview called ===');
-        console.log('data:', data);
-        console.log('response:', response);
-        console.log('documentType:', documentType);
-
-        currentDocumentType = documentType;
-
-        // Handle OCR service not configured
-        if (response.warning === 'OCR service not configured') {
-            console.log('Showing warning: OCR service not configured');
-            previewContainer.innerHTML = `
-                <div class="ocr-preview warning">
-                    <div class="ocr-header">
-                        <i class="fas fa-exclamation-triangle"></i>
-                        <h4>OCR Not Available</h4>
-                    </div>
-                    <div class="ocr-message">
-                        <p>${response.message}</p>
-                        <p class="ocr-hint">Your ${documentType.toLowerCase()} has been selected and will be uploaded when you submit the form.</p>
-                    </div>
-                    <div class="ocr-actions">
-                        <button type="button" class="button secondary" onclick="window.dismissOcrPreview()">
-                            <i class="fas fa-times"></i> Dismiss
-                        </button>
-                    </div>
-                </div>
-            `;
-            previewContainer.style.display = 'block';
-            return;
-        }
-
-        // Check if we actually extracted any data
-        const hasAmount = data.amount !== null && data.amount !== undefined;
-        const hasDate = data.purchase_date !== null && data.purchase_date !== undefined;
-
-        console.log('hasAmount:', hasAmount, 'amount:', data.amount);
-        console.log('hasDate:', hasDate, 'date:', data.purchase_date);
-
-        if (!hasAmount && !hasDate) {
-            console.log('No data extracted, showing info message');
-            previewContainer.innerHTML = `
-                <div class="ocr-preview info">
-                    <div class="ocr-header">
-                        <i class="fas fa-info-circle"></i>
-                        <h4>No Data Extracted from ${documentType}</h4>
-                    </div>
-                    <div class="ocr-message">
-                        <p>Could not extract amount or date from the uploaded document.</p>
-                        <p class="ocr-hint">Please verify the document is clear and readable, or enter the data manually.</p>
-                        <p class="ocr-hint">Your ${documentType.toLowerCase()} will still be uploaded when you submit the form.</p>
-                    </div>
-                    <div class="ocr-actions">
-                        <button type="button" class="button secondary" onclick="window.dismissOcrPreview()">
-                            <i class="fas fa-times"></i> Dismiss
-                        </button>
-                    </div>
-                </div>
-            `;
-            previewContainer.style.display = 'block';
-            return;
-        }
-
-        // Show extracted data
-        console.log('Showing extracted data successfully');
-        currentOcrData = data;
-
-        previewContainer.innerHTML = `
-            <div class="ocr-preview success">
-                <div class="ocr-header">
-                    <i class="fas fa-check-circle"></i>
-                    <h4>Data Extracted from ${documentType}</h4>
-                </div>
-                <div class="ocr-data">
-                    ${hasAmount ? `
-                        <div class="ocr-field">
-                            <span class="ocr-field-label">Amount:</span>
-                            <span class="ocr-field-value">${formatAmount(data.amount)}</span>
-                        </div>
-                    ` : ''}
-                    ${hasDate ? `
-                        <div class="ocr-field">
-                            <span class="ocr-field-label">Date:</span>
-                            <span class="ocr-field-value">${formatDate(data.purchase_date)}</span>
-                        </div>
-                    ` : ''}
-                </div>
-                <div class="ocr-message">
-                    <p class="ocr-hint">Review the extracted data and apply it to your form if it looks correct.</p>
-                </div>
-                <div class="ocr-actions">
-                    <button type="button" class="button primary" onclick="window.applyOcrData()">
-                        <i class="fas fa-check"></i> Apply Data
-                    </button>
-                    <button type="button" class="button secondary" onclick="window.dismissOcrPreview()">
-                        <i class="fas fa-times"></i> Dismiss
-                    </button>
-                </div>
-            </div>
-        `;
-        previewContainer.style.display = 'block';
-    }
-
-    /**
-     * Show loading state
-     */
-    function showLoading(documentType) {
-        previewContainer.innerHTML = `
-            <div class="ocr-preview loading">
-                <div class="ocr-header">
-                    <div class="ocr-spinner">
-                        <i class="fas fa-spinner fa-spin"></i>
-                    </div>
-                    <h4>Processing ${documentType}...</h4>
-                </div>
-                <div class="ocr-message">
-                    <p>Extracting data from your document. This may take a few seconds.</p>
-                </div>
-            </div>
-        `;
-        previewContainer.style.display = 'block';
-    }
-
-    /**
-     * Show error message
-     */
-    function showError(documentType, errorMessage) {
-        previewContainer.innerHTML = `
-            <div class="ocr-preview error">
-                <div class="ocr-header">
-                    <i class="fas fa-exclamation-circle"></i>
-                    <h4>Error Processing ${documentType}</h4>
-                </div>
-                <div class="ocr-message">
-                    <p class="error-text">${errorMessage}</p>
-                    <p class="ocr-hint">Please try again or enter the data manually.</p>
-                </div>
-                <div class="ocr-actions">
-                    <button type="button" class="button secondary" onclick="window.dismissOcrPreview()">
-                        <i class="fas fa-times"></i> Dismiss
-                    </button>
-                </div>
-            </div>
-        `;
-        previewContainer.style.display = 'block';
-    }
-
-    /**
-     * Format amount for display
-     */
-    function formatAmount(amount) {
-        if (amount === null || amount === undefined) return '';
-        return new Intl.NumberFormat('he-IL', {
-            style: 'currency',
-            currency: 'ILS',
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2
-        }).format(amount);
-    }
-
-    /**
-     * Format date for display
-     */
-    function formatDate(dateStr) {
-        if (!dateStr) return '';
-        try {
-            const date = new Date(dateStr);
-            return date.toLocaleDateString('he-IL', {
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric'
-            });
-        } catch (e) {
-            return dateStr;
-        }
-    }
-
-    /**
-     * Apply OCR data to form fields
-     */
-    function applyOcrData() {
-        if (!currentOcrData) return;
-
-        // Apply amount if available and field is empty
-        if (currentOcrData.amount && !amountInput.value) {
-            amountInput.value = currentOcrData.amount;
-            // Add visual feedback
-            amountInput.classList.add('field-updated');
-            setTimeout(() => amountInput.classList.remove('field-updated'), 1000);
-        }
-
-        // Apply date if available and field is empty
-        if (currentOcrData.purchase_date && !invoiceDateInput.value) {
-            const date = new Date(currentOcrData.purchase_date);
-            const formattedDate = date.toISOString().split('T')[0];
-            invoiceDateInput.value = formattedDate;
-            // Add visual feedback
-            invoiceDateInput.classList.add('field-updated');
-            setTimeout(() => invoiceDateInput.classList.remove('field-updated'), 1000);
-        }
-
-        // Show success message
-        const successMsg = document.createElement('div');
-        successMsg.className = 'alert success ocr-success-alert';
-        successMsg.innerHTML = '<i class="fas fa-check"></i> Data applied successfully!';
-        previewContainer.insertAdjacentElement('afterend', successMsg);
-
-        setTimeout(() => {
-            successMsg.style.opacity = '0';
-            setTimeout(() => successMsg.remove(), 300);
-        }, 3000);
-
-        dismissOcrPreview();
-    }
-
-    /**
-     * Dismiss OCR preview
-     */
-    function dismissOcrPreview() {
-        previewContainer.style.opacity = '0';
-        setTimeout(() => {
-            previewContainer.style.display = 'none';
-            previewContainer.style.opacity = '1';
-        }, 300);
-        currentOcrData = null;
-    }
-
-    // Make functions globally available
-    window.applyOcrData = applyOcrData;
-    window.dismissOcrPreview = dismissOcrPreview;
-
-    /**
-     * Process document upload
-     */
-    async function processDocument(file, documentType, endpoint) {
-        if (!file) {
-            console.log('No file provided to processDocument');
-            return;
-        }
-
-        console.log(`Processing ${documentType}:`, file.name);
-        console.log('OCR Preview Container:', previewContainer);
-        console.log('Preview Container Display:', previewContainer.style.display);
-
-        const formData = new FormData();
-        formData.append('document', file);
-
-        showLoading(documentType);
-        console.log('Loading state shown, display:', previewContainer.style.display);
-
-        try {
-            console.log(`Sending request to: ${endpoint}`);
-            const response = await fetch(endpoint, {
-                method: 'POST',
-                body: formData
-            });
-
-            const data = await response.json();
-            console.log('Response received:', data);
-
-            if (!response.ok) {
-                throw new Error(data.error || `Failed to process ${documentType.toLowerCase()}`);
-            }
-
-            // Handle both success and warning cases
-            const extractedData = data.extracted_data || {};
-            console.log('Extracted data:', extractedData);
-            console.log('Full response:', data);
-            showOcrPreview(extractedData, data, documentType);
-            console.log('Preview shown, display:', previewContainer.style.display);
-
-        } catch (error) {
-            console.error(`Error processing ${documentType}:`, error);
-            showError(documentType, error.message);
-        }
-    }
-
-    // Invoice upload handler
+    // Attach OCR processing to file inputs
     if (invoiceInput) {
-        console.log('Adding event listener to invoice input');
         invoiceInput.addEventListener('change', function(e) {
-            console.log('Invoice file selected:', e.target.files[0]);
             const file = e.target.files[0];
-            processDocument(file, 'Invoice', '/api/expense/process-expense');
+            if (file) {
+                ocrProcessor.processDocument(file, 'Invoice');
+            }
         });
-    } else {
-        console.warn('Invoice input not found!');
     }
 
-    // Receipt upload handler
     if (receiptInput) {
-        console.log('Adding event listener to receipt input');
         receiptInput.addEventListener('change', function(e) {
-            console.log('Receipt file selected:', e.target.files[0]);
             const file = e.target.files[0];
-            processDocument(file, 'Receipt', '/api/expense/process-receipt');
+            if (file) {
+                ocrProcessor.processDocument(file, 'Receipt');
+            }
         });
-    } else {
-        console.warn('Receipt input not found!');
     }
 
-    // Quote upload handler
     if (quoteInput) {
-        console.log('Adding event listener to quote input');
         quoteInput.addEventListener('change', function(e) {
-            console.log('Quote file selected:', e.target.files[0]);
             const file = e.target.files[0];
-            processDocument(file, 'Quote', '/api/expense/process-quote');
+            if (file) {
+                ocrProcessor.processDocument(file, 'Quote');
+            }
         });
-    } else {
-        console.warn('Quote input not found!');
     }
 
-    // File input validation
+    // ==================== File Validation ====================
+
     const fileInputs = document.querySelectorAll('input[type="file"]');
+    const MAX_FILE_SIZE = 16 * 1024 * 1024; // 16MB
+
     fileInputs.forEach(input => {
         input.addEventListener('change', function() {
             if (this.files && this.files[0]) {
-                const fileSize = this.files[0].size / 1024 / 1024; // in MB
-                if (fileSize > 16) {
-                    alert('File size exceeds 16MB limit. Please choose a smaller file.');
+                const fileSize = this.files[0].size;
+                if (fileSize > MAX_FILE_SIZE) {
+                    alert('גודל הקובץ חורג מהמגבלה של 16MB. אנא בחר קובץ קטן יותר.\n\nFile size exceeds 16MB limit. Please choose a smaller file.');
                     this.value = '';
-                    dismissOcrPreview();
+                    ocrProcessor.dismiss();
                 }
             }
         });
     });
 
-    // Form validation
-    form.addEventListener('submit', function(e) {
-        const amount = document.getElementById('amount').value;
-        const type = document.getElementById('type').value;
-        const description = document.getElementById('description').value;
-        const reason = document.getElementById('reason').value;
-        const subcategory = document.getElementById('subcategory').value;
+    // ==================== Form Validation & Submission ====================
 
-        if (!amount || !type || !description || !reason || !subcategory) {
-            e.preventDefault();
-            alert('Please fill in all required fields.');
-        } else {
-            // Disable submit button to prevent multiple submissions
-            const submitButton = document.querySelector('button[type="submit"]');
+    const form = document.getElementById('expense-form');
+    const amountInput = document.getElementById('amount');
+    const typeInput = document.getElementById('type');
+    const descriptionInput = document.getElementById('description');
+    const reasonInput = document.getElementById('reason');
+    const subcategoryInput = document.getElementById('subcategory');
+
+    if (form) {
+        // Prevent double submission
+        form.addEventListener('submit', function(e) {
+            // Check if form was already submitted
+            if (this.dataset.submitted === 'true') {
+                e.preventDefault();
+                return;
+            }
+
+            // Validate required fields
+            if (!amountInput.value || !typeInput.value || !descriptionInput.value ||
+                !reasonInput.value || !subcategoryInput.value) {
+                e.preventDefault();
+                alert('אנא מלא את כל השדות הנדרשים.\n\nPlease fill in all required fields.');
+                return;
+            }
+
+            // Mark form as submitted
+            this.dataset.submitted = 'true';
+
+            // Disable submit button
+            const submitButton = this.querySelector('button[type="submit"]');
             if (submitButton) {
                 submitButton.disabled = true;
-                submitButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting...';
+                submitButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> ' +
+                    (document.documentElement.lang === 'he' ? 'שולח...' : 'Submitting...');
+            }
 
-                // Add loading overlay
-                const loadingOverlay = document.createElement('div');
-                loadingOverlay.className = 'loading-overlay';
-                loadingOverlay.innerHTML = `
-                    <div class="loading-content">
-                        <div class="loading-spinner"></div>
-                        <div class="loading-text">Submitting expense, please wait...</div>
-                    </div>
-                `;
-                document.body.appendChild(loadingOverlay);
+            // Show loading overlay
+            showLoadingOverlay();
+        });
+    }
+
+    function showLoadingOverlay() {
+        const overlay = document.createElement('div');
+        overlay.className = 'loading-overlay';
+        overlay.innerHTML = `
+            <div class="loading-content">
+                <div class="loading-spinner"></div>
+                <div class="loading-text">
+                    ${document.documentElement.lang === 'he'
+                        ? 'שולח הוצאה, אנא המתן...'
+                        : 'Submitting expense, please wait...'}
+                </div>
+            </div>
+        `;
+        document.body.appendChild(overlay);
+    }
+
+    // ==================== Currency Symbol Handler ====================
+
+    const currencySelect = document.getElementById('currency');
+    const currencySymbol = document.getElementById('currency-symbol');
+
+    if (currencySelect && currencySymbol) {
+        currencySelect.addEventListener('change', function() {
+            const symbols = {
+                'ILS': '₪',
+                'USD': '$',
+                'EUR': '€'
+            };
+            currencySymbol.textContent = symbols[this.value] || '₪';
+        });
+    }
+
+    // ==================== Custom Select with Search ====================
+
+    const customSelect = document.getElementById('custom-subcategory-select');
+    if (customSelect) {
+        const selectTrigger = customSelect.querySelector('.custom-select-trigger');
+        const options = customSelect.querySelector('.custom-options');
+        const originalSelect = document.getElementById('subcategory');
+        const searchInput = document.getElementById('category-search');
+        const noResultsElement = document.querySelector('.no-results');
+        const allOptions = document.querySelectorAll('.custom-option');
+
+        // Toggle dropdown
+        customSelect.addEventListener('click', function(e) {
+            if (e.target === searchInput || e.target.closest('.category-search-container')) {
+                e.stopPropagation();
+                return;
+            }
+
+            e.stopPropagation();
+            options.classList.toggle('open');
+
+            if (options.classList.contains('open')) {
+                setTimeout(() => searchInput?.focus(), 100);
+            }
+        });
+
+        // Close dropdown when clicking outside
+        document.addEventListener('click', function() {
+            options.classList.remove('open');
+            if (searchInput) {
+                searchInput.value = '';
+                filterOptions('');
+            }
+        });
+
+        // Filter options
+        if (searchInput) {
+            searchInput.addEventListener('click', (e) => e.stopPropagation());
+            searchInput.addEventListener('keyup', function() {
+                filterOptions(this.value.toLowerCase());
+            });
+        }
+
+        function filterOptions(searchTerm) {
+            let visibleCount = 0;
+
+            allOptions.forEach(option => {
+                const dept = option.getAttribute('data-dept')?.toLowerCase() || '';
+                const cat = option.getAttribute('data-cat')?.toLowerCase() || '';
+                const subcat = option.getAttribute('data-subcat')?.toLowerCase() || '';
+                const fullText = `${dept} ${cat} ${subcat}`;
+
+                if (fullText.includes(searchTerm)) {
+                    option.style.display = '';
+                    visibleCount++;
+                } else {
+                    option.style.display = 'none';
+                }
+            });
+
+            if (noResultsElement) {
+                noResultsElement.style.display = visibleCount === 0 ? 'block' : 'none';
             }
         }
-    });
+
+        // Select option
+        allOptions.forEach(option => {
+            option.addEventListener('click', function() {
+                const value = this.getAttribute('data-value');
+                originalSelect.value = value;
+                selectTrigger.innerHTML = this.innerHTML;
+
+                const event = new Event('change', { bubbles: true });
+                originalSelect.dispatchEvent(event);
+
+                if (searchInput) {
+                    searchInput.value = '';
+                    filterOptions('');
+                }
+            });
+        });
+    }
+
+    // ==================== Payment Method Handler ====================
+
+    const paymentMethodSelect = document.getElementById('payment_method');
+    const creditCardGroup = document.getElementById('credit_card_group');
+    const creditCardSelect = document.getElementById('credit_card_id');
+
+    function updatePaymentMethodFields() {
+        if (!paymentMethodSelect || !creditCardGroup || !creditCardSelect) return;
+
+        if (paymentMethodSelect.value === 'credit') {
+            creditCardSelect.setAttribute('required', '');
+            creditCardGroup.style.display = 'block';
+        } else {
+            creditCardSelect.removeAttribute('required');
+            creditCardGroup.style.display = 'none';
+        }
+    }
+
+    if (paymentMethodSelect) {
+        paymentMethodSelect.addEventListener('change', updatePaymentMethodFields);
+        updatePaymentMethodFields(); // Initialize on page load
+    }
+
+    // ==================== Supplier Search ====================
+
+    const supplierSearchInput = document.getElementById('supplier_search');
+    const supplierSearchResults = document.getElementById('supplier_search_results');
+    const supplierSelect = document.getElementById('supplier_id');
+    let searchDebounceTimeout;
+
+    if (supplierSearchInput && supplierSearchResults) {
+        supplierSearchInput.addEventListener('input', function(e) {
+            clearTimeout(searchDebounceTimeout);
+            const searchQuery = e.target.value.trim();
+
+            if (!searchQuery) {
+                supplierSearchResults.style.display = 'none';
+                return;
+            }
+
+            searchDebounceTimeout = setTimeout(() => {
+                performSupplierSearch(searchQuery);
+            }, 300);
+        });
+
+        // Hide results when clicking outside
+        document.addEventListener('click', function(e) {
+            if (!supplierSearchResults.contains(e.target) && e.target !== supplierSearchInput) {
+                supplierSearchResults.style.display = 'none';
+            }
+        });
+    }
+
+    async function performSupplierSearch(query) {
+        supplierSearchResults.innerHTML = `
+            <div class="result-item searching">
+                <i class="fas fa-spinner fa-spin"></i> ${document.documentElement.lang === 'he' ? 'מחפש...' : 'Searching...'}
+            </div>
+        `;
+        supplierSearchResults.style.display = 'block';
+
+        try {
+            const params = new URLSearchParams({ search_query: query });
+            const response = await fetch(`/api/expense/search_suppliers?${params}`);
+
+            const contentType = response.headers.get('content-type');
+            if (!contentType?.includes('application/json')) {
+                throw new Error('Server returned non-JSON response');
+            }
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.error || 'Search failed');
+            }
+
+            displaySupplierResults(data);
+
+        } catch (error) {
+            console.error('Supplier search error:', error);
+            supplierSearchResults.innerHTML = `
+                <div class="result-item error">
+                    <i class="fas fa-exclamation-circle"></i> ${error.message}
+                </div>
+            `;
+        }
+    }
+
+    function displaySupplierResults(suppliers) {
+        if (!Array.isArray(suppliers) || suppliers.length === 0) {
+            supplierSearchResults.innerHTML = `
+                <div class="result-item no-results">
+                    <i class="fas fa-info-circle"></i> ${document.documentElement.lang === 'he' ? 'לא נמצאו ספקים' : 'No suppliers found'}
+                </div>
+            `;
+            return;
+        }
+
+        supplierSearchResults.innerHTML = '';
+
+        suppliers.forEach(supplier => {
+            const div = document.createElement('div');
+            div.className = 'result-item';
+            div.innerHTML = `
+                <div class="supplier-name">${supplier.name}</div>
+                ${supplier.tax_id ? `<div class="tax-id"><i class="fas fa-id-card"></i> ${supplier.tax_id}</div>` : ''}
+            `;
+
+            div.addEventListener('click', () => {
+                // Add option if it doesn't exist
+                if (!supplierSelect.querySelector(`option[value="${supplier.id}"]`)) {
+                    const option = new Option(
+                        supplier.tax_id ? `${supplier.name} (${supplier.tax_id})` : supplier.name,
+                        supplier.id
+                    );
+                    supplierSelect.add(option);
+                }
+
+                supplierSelect.value = supplier.id;
+                supplierSearchInput.value = '';
+                supplierSearchResults.style.display = 'none';
+            });
+
+            supplierSearchResults.appendChild(div);
+        });
+    }
 });
 
-// Add CSS for OCR preview
-document.addEventListener('DOMContentLoaded', function() {
-    const style = document.createElement('style');
-    style.textContent = `
-        /* OCR Preview Container */
-        .ocr-preview-container {
-            margin: 20px 0;
-            transition: opacity 0.3s ease;
-            z-index: 100;
-            position: relative;
-        }
+// ==================== Global Functions for Modal ====================
 
-        .ocr-preview {
-            border-radius: 8px;
-            padding: 20px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-            animation: slideDown 0.3s ease;
-        }
+function openAddSupplierModal() {
+    document.getElementById('addSupplierModal').style.display = 'block';
+}
 
-        @keyframes slideDown {
-            from {
-                opacity: 0;
-                transform: translateY(-10px);
+function closeAddSupplierModal() {
+    document.getElementById('addSupplierModal').style.display = 'none';
+    document.getElementById('addSupplierForm').reset();
+}
+
+async function submitSupplier(event) {
+    event.preventDefault();
+    const form = event.target;
+    const formData = new FormData(form);
+
+    try {
+        const response = await fetch('/add_supplier', {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
             }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            throw new Error(data.message || 'Failed to add supplier');
         }
 
-        .ocr-preview.success {
-            background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
-            border: 2px solid #28a745;
-        }
+        if (data.success) {
+            // Add supplier to dropdown
+            const supplierSelect = document.getElementById('supplier_id');
+            const option = new Option(data.supplier.name, data.supplier.id);
+            supplierSelect.add(option);
+            supplierSelect.value = data.supplier.id;
 
-        .ocr-preview.error {
-            background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%);
-            border: 2px solid #dc3545;
-        }
+            // Show success message
+            showAlert(form, 'success', document.documentElement.lang === 'he'
+                ? 'הספק נוסף בהצלחה!'
+                : 'Supplier added successfully!');
 
-        .ocr-preview.warning {
-            background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%);
-            border: 2px solid #ffc107;
+            closeAddSupplierModal();
+        } else {
+            throw new Error(data.message || 'Failed to add supplier');
         }
+    } catch (error) {
+        console.error('Error adding supplier:', error);
+        showAlert(form, 'error', error.message);
+    }
+}
 
-        .ocr-preview.info {
-            background: linear-gradient(135deg, #d1ecf1 0%, #bee5eb 100%);
-            border: 2px solid #17a2b8;
-        }
+function showAlert(container, type, message) {
+    const alert = document.createElement('div');
+    alert.className = `alert ${type}`;
+    alert.textContent = message;
+    container.insertBefore(alert, container.firstChild);
 
-        .ocr-preview.loading {
-            background: linear-gradient(135deg, #e7f3ff 0%, #d0e7ff 100%);
-            border: 2px solid #007bff;
-        }
+    setTimeout(() => alert.remove(), 3000);
+}
 
-        .ocr-header {
-            display: flex;
-            align-items: center;
-            margin-bottom: 15px;
-            gap: 10px;
-        }
-
-        .ocr-header i {
-            font-size: 24px;
-        }
-
-        .ocr-preview.success .ocr-header i {
-            color: #28a745;
-        }
-
-        .ocr-preview.error .ocr-header i {
-            color: #dc3545;
-        }
-
-        .ocr-preview.warning .ocr-header i {
-            color: #ffc107;
-        }
-
-        .ocr-preview.info .ocr-header i {
-            color: #17a2b8;
-        }
-
-        .ocr-preview.loading .ocr-header i {
-            color: #007bff;
-        }
-
-        .ocr-header h4 {
-            margin: 0;
-            font-size: 18px;
-            font-weight: 600;
-            color: #333;
-        }
-
-        .ocr-spinner {
-            display: flex;
-            align-items: center;
-        }
-
-        .ocr-data {
-            background: rgba(255, 255, 255, 0.7);
-            border-radius: 6px;
-            padding: 15px;
-            margin-bottom: 15px;
-        }
-
-        .ocr-field {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 8px 0;
-            border-bottom: 1px solid rgba(0, 0, 0, 0.1);
-        }
-
-        .ocr-field:last-child {
-            border-bottom: none;
-        }
-
-        .ocr-field-label {
-            font-weight: 600;
-            color: #555;
-        }
-
-        .ocr-field-value {
-            font-weight: 500;
-            color: #333;
-            font-size: 16px;
-        }
-
-        .ocr-message {
-            margin-bottom: 15px;
-        }
-
-        .ocr-message p {
-            margin: 8px 0;
-            color: #555;
-            line-height: 1.5;
-        }
-
-        .ocr-hint {
-            font-size: 14px;
-            color: #666;
-            font-style: italic;
-        }
-
-        .error-text {
-            color: #721c24;
-            font-weight: 500;
-        }
-
-        .ocr-actions {
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
-        }
-
-        .ocr-actions .button {
-            padding: 10px 20px;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            font-weight: 500;
-            transition: all 0.2s ease;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .ocr-actions .button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
-        }
-
-        .ocr-actions .button.primary {
-            background-color: #28a745;
-            color: white;
-        }
-
-        .ocr-actions .button.primary:hover {
-            background-color: #218838;
-        }
-
-        .ocr-actions .button.secondary {
-            background-color: #6c757d;
-            color: white;
-        }
-
-        .ocr-actions .button.secondary:hover {
-            background-color: #5a6268;
-        }
-
-        /* Field updated animation */
-        .field-updated {
-            animation: fieldHighlight 1s ease;
-        }
-
-        @keyframes fieldHighlight {
-            0%, 100% {
-                background-color: white;
-            }
-            50% {
-                background-color: #d4edda;
-            }
-        }
-
-        /* Success alert */
-        .ocr-success-alert {
-            margin: 15px 0;
-            padding: 12px 15px;
-            border-radius: 6px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            transition: opacity 0.3s ease;
-        }
-
-        /* Loading overlay */
-        .loading-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.5);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 9999;
-        }
-
-        .loading-content {
-            text-align: center;
-        }
-
-        .loading-spinner {
-            border: 4px solid #f3f3f3;
-            border-top: 4px solid #3498db;
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            animation: spin 1s linear infinite;
-            margin: 0 auto 15px;
-        }
-
-        .loading-text {
-            color: white;
-            font-size: 18px;
-            font-weight: 500;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-    `;
-    document.head.appendChild(style);
-});
+// Close modal when clicking outside
+window.onclick = function(event) {
+    const modal = document.getElementById('addSupplierModal');
+    if (event.target === modal) {
+        closeAddSupplierModal();
+    }
+};
