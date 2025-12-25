@@ -105,7 +105,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
 
                 const data = await response.json();
-                showOcrPreview(data, 'Invoice');
+                // Handle both wrapped (extracted_data) and direct format
+                const extractedData = data.extracted_data || data;
+                showOcrPreview(extractedData, 'Invoice');
             } catch (error) {
                 console.error('Error processing invoice:', error);
                 previewContainer.innerHTML = `
@@ -154,7 +156,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
 
                 const data = await response.json();
-                showOcrPreview(data, 'Receipt');
+                // Handle both wrapped (extracted_data) and direct format
+                const extractedData = data.extracted_data || data;
+                showOcrPreview(extractedData, 'Receipt');
             } catch (error) {
                 console.error('Error processing receipt:', error);
                 previewContainer.innerHTML = `
@@ -203,7 +207,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
 
                 const data = await response.json();
-                showOcrPreview(data, 'Quote');
+                // Handle both wrapped (extracted_data) and direct format
+                const extractedData = data.extracted_data || data;
+                showOcrPreview(extractedData, 'Quote');
             } catch (error) {
                 console.error('Error processing quote:', error);
                 previewContainer.innerHTML = `

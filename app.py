@@ -3326,13 +3326,18 @@ def process_expense_document():
 @app.route('/api/expense/process-receipt', methods=['POST'])
 @login_required
 def process_receipt_document():
+    logging.info("=== RECEIPT OCR PROCESSING START ===")
     if 'document' not in request.files:
+        logging.error("Receipt OCR: No document in request.files")
         return jsonify({'error': 'No document provided'}), 400
-    
+
     file = request.files['document']
     if file.filename == '':
+        logging.error("Receipt OCR: Empty filename")
         return jsonify({'error': 'No selected file'}), 400
-    
+
+    logging.info(f"Receipt OCR: Processing file: {file.filename}")
+
     if file and allowed_file(file.filename):
         try:
             # Save file temporarily
@@ -3340,19 +3345,74 @@ def process_receipt_document():
             temp_path = os.path.join(app.config['UPLOAD_FOLDER'], 'temp', filename)
             os.makedirs(os.path.dirname(temp_path), exist_ok=True)
             file.save(temp_path)
-            
+            logging.info(f"Receipt OCR: File saved to: {temp_path}")
+
             # Process the receipt
             doc_processor = DocumentProcessor()
             receipt_data = doc_processor.process_document(temp_path)
-            
+            logging.info(f"Receipt OCR: Extracted data: {receipt_data}")
+
             # Clean up temporary file
             os.remove(temp_path)
-            
-            return jsonify(receipt_data)
+
+            return jsonify({
+                'success': True,
+                'extracted_data': receipt_data,
+                'filename': filename
+            })
         except Exception as e:
-            logging.error(f"Error processing receipt: {str(e)}")
+            logging.error(f"Receipt OCR: Exception occurred: {str(e)}")
+            import traceback
+            logging.error(f"Receipt OCR: Traceback: {traceback.format_exc()}")
             return jsonify({'error': str(e)}), 500
-    
+
+    logging.error(f"Receipt OCR: Invalid file type: {file.filename}")
+    return jsonify({'error': 'Invalid file type'}), 400
+
+@app.route('/api/expense/process-quote', methods=['POST'])
+@login_required
+def process_quote_document():
+    logging.info("=== QUOTE OCR PROCESSING START ===")
+    if 'document' not in request.files:
+        logging.error("Quote OCR: No document in request.files")
+        return jsonify({'error': 'No document provided'}), 400
+
+    file = request.files['document']
+    if file.filename == '':
+        logging.error("Quote OCR: Empty filename")
+        return jsonify({'error': 'No selected file'}), 400
+
+    logging.info(f"Quote OCR: Processing file: {file.filename}")
+
+    if file and allowed_file(file.filename):
+        try:
+            # Save file temporarily
+            filename = secure_filename(file.filename)
+            temp_path = os.path.join(app.config['UPLOAD_FOLDER'], 'temp', filename)
+            os.makedirs(os.path.dirname(temp_path), exist_ok=True)
+            file.save(temp_path)
+            logging.info(f"Quote OCR: File saved to: {temp_path}")
+
+            # Process the quote
+            doc_processor = DocumentProcessor()
+            quote_data = doc_processor.process_document(temp_path)
+            logging.info(f"Quote OCR: Extracted data: {quote_data}")
+
+            # Clean up temporary file
+            os.remove(temp_path)
+
+            return jsonify({
+                'success': True,
+                'extracted_data': quote_data,
+                'filename': filename
+            })
+        except Exception as e:
+            logging.error(f"Quote OCR: Exception occurred: {str(e)}")
+            import traceback
+            logging.error(f"Quote OCR: Traceback: {traceback.format_exc()}")
+            return jsonify({'error': str(e)}), 500
+
+    logging.error(f"Quote OCR: Invalid file type: {file.filename}")
     return jsonify({'error': 'Invalid file type'}), 400
 
 @app.route('/admin/users/<int:user_id>/reset_password', methods=['POST'])
