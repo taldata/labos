@@ -780,8 +780,15 @@ def submit_expense():
             payment_method=data.get('payment_method', 'credit'),
             credit_card_id=int(data['credit_card_id']) if data.get('credit_card_id') else None,
             payment_due_date=data.get('payment_due_date', 'end_of_month'),
-            status='pending'
+            status='approved' if data['expense_type'] == 'auto_approved' else 'pending'
         )
+
+        # Auto-mark credit card and standing order payments as paid for auto-approved expenses
+        if (data.get('payment_method') in ['credit', 'standing_order']) and expense.status == 'approved':
+            expense.is_paid = True
+            expense.paid_at = datetime.utcnow()
+            expense.paid_by_id = current_user.id
+            expense.payment_status = 'paid'
 
         # Handle file uploads
         upload_folder = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'uploads')
