@@ -280,6 +280,31 @@
     </div>
 
     <script>
+        // Suppress Chrome extension message channel errors
+        // These are caused by browser extensions, not our application code
+        window.addEventListener('error', function(event) {
+            if (event.message && event.message.includes('message channel closed')) {
+                event.preventDefault();
+                console.debug('Suppressed Chrome extension message channel error:', event.message);
+            }
+        });
+
+        // Suppress unhandled promise rejections from Chrome extensions
+        window.addEventListener('unhandledrejection', function(event) {
+            if (event.reason && event.reason.message && event.reason.message.includes('message channel closed')) {
+                event.preventDefault();
+                console.debug('Suppressed Chrome extension promise rejection:', event.reason.message);
+            }
+        });
+
+        // Suppress runtime.lastError from Chrome extensions
+        window.addEventListener('error', function(event) {
+            if (event.message && event.message.includes('runtime.lastError')) {
+                event.preventDefault();
+                console.debug('Suppressed Chrome extension runtime.lastError:', event.message);
+            }
+        });
+
         // Auto-hide flash messages after 5 seconds
         document.addEventListener('DOMContentLoaded', function() {
             // Flash messages
@@ -296,7 +321,7 @@
             // Mobile menu toggle
             const menuToggle = document.querySelector('.menu-toggle');
             const navItems = document.querySelector('.nav-items');
-            
+
             menuToggle.addEventListener('click', function() {
                 navItems.classList.toggle('active');
             });
