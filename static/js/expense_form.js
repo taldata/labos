@@ -1,4 +1,6 @@
 document.addEventListener('DOMContentLoaded', function() {
+    console.log('=== expense_form.js loaded and DOMContentLoaded fired ===');
+
     const invoiceInput = document.getElementById('invoice');
     const receiptInput = document.getElementById('receipt');
     const quoteInput = document.getElementById('quote');
@@ -6,12 +8,34 @@ document.addEventListener('DOMContentLoaded', function() {
     const invoiceDateInput = document.getElementById('invoice_date');
     const form = document.getElementById('expense-form');
 
+    console.log('Form elements found:', {
+        invoice: !!invoiceInput,
+        receipt: !!receiptInput,
+        quote: !!quoteInput,
+        amount: !!amountInput,
+        invoiceDate: !!invoiceDateInput,
+        form: !!form
+    });
+
     // Create preview container for OCR data
     const previewContainer = document.createElement('div');
     previewContainer.id = 'ocr-preview';
     previewContainer.className = 'ocr-preview-container';
     previewContainer.style.display = 'none';
-    form.insertBefore(previewContainer, form.querySelector('.form-actions'));
+
+    const formActionsElement = form.querySelector('.form-actions');
+    console.log('Form element:', form);
+    console.log('Form actions element:', formActionsElement);
+
+    if (formActionsElement) {
+        form.insertBefore(previewContainer, formActionsElement);
+        console.log('OCR preview container inserted before form-actions');
+    } else {
+        form.appendChild(previewContainer);
+        console.log('OCR preview container appended to form (form-actions not found)');
+    }
+
+    console.log('Preview container created and inserted:', previewContainer);
 
     // Track currently uploaded files
     let currentOcrData = null;
@@ -21,10 +45,16 @@ document.addEventListener('DOMContentLoaded', function() {
      * Show OCR preview with extracted data
      */
     function showOcrPreview(data, response, documentType) {
+        console.log('=== showOcrPreview called ===');
+        console.log('data:', data);
+        console.log('response:', response);
+        console.log('documentType:', documentType);
+
         currentDocumentType = documentType;
 
         // Handle OCR service not configured
         if (response.warning === 'OCR service not configured') {
+            console.log('Showing warning: OCR service not configured');
             previewContainer.innerHTML = `
                 <div class="ocr-preview warning">
                     <div class="ocr-header">
@@ -50,7 +80,11 @@ document.addEventListener('DOMContentLoaded', function() {
         const hasAmount = data.amount !== null && data.amount !== undefined;
         const hasDate = data.purchase_date !== null && data.purchase_date !== undefined;
 
+        console.log('hasAmount:', hasAmount, 'amount:', data.amount);
+        console.log('hasDate:', hasDate, 'date:', data.purchase_date);
+
         if (!hasAmount && !hasDate) {
+            console.log('No data extracted, showing info message');
             previewContainer.innerHTML = `
                 <div class="ocr-preview info">
                     <div class="ocr-header">
@@ -74,6 +108,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         // Show extracted data
+        console.log('Showing extracted data successfully');
         currentOcrData = data;
 
         previewContainer.innerHTML = `
@@ -244,20 +279,30 @@ document.addEventListener('DOMContentLoaded', function() {
      * Process document upload
      */
     async function processDocument(file, documentType, endpoint) {
-        if (!file) return;
+        if (!file) {
+            console.log('No file provided to processDocument');
+            return;
+        }
+
+        console.log(`Processing ${documentType}:`, file.name);
+        console.log('OCR Preview Container:', previewContainer);
+        console.log('Preview Container Display:', previewContainer.style.display);
 
         const formData = new FormData();
         formData.append('document', file);
 
         showLoading(documentType);
+        console.log('Loading state shown, display:', previewContainer.style.display);
 
         try {
+            console.log(`Sending request to: ${endpoint}`);
             const response = await fetch(endpoint, {
                 method: 'POST',
                 body: formData
             });
 
             const data = await response.json();
+            console.log('Response received:', data);
 
             if (!response.ok) {
                 throw new Error(data.error || `Failed to process ${documentType.toLowerCase()}`);
@@ -265,7 +310,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
             // Handle both success and warning cases
             const extractedData = data.extracted_data || {};
+            console.log('Extracted data:', extractedData);
+            console.log('Full response:', data);
             showOcrPreview(extractedData, data, documentType);
+            console.log('Preview shown, display:', previewContainer.style.display);
 
         } catch (error) {
             console.error(`Error processing ${documentType}:`, error);
@@ -275,26 +323,38 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Invoice upload handler
     if (invoiceInput) {
+        console.log('Adding event listener to invoice input');
         invoiceInput.addEventListener('change', function(e) {
+            console.log('Invoice file selected:', e.target.files[0]);
             const file = e.target.files[0];
             processDocument(file, 'Invoice', '/api/expense/process-expense');
         });
+    } else {
+        console.warn('Invoice input not found!');
     }
 
     // Receipt upload handler
     if (receiptInput) {
+        console.log('Adding event listener to receipt input');
         receiptInput.addEventListener('change', function(e) {
+            console.log('Receipt file selected:', e.target.files[0]);
             const file = e.target.files[0];
             processDocument(file, 'Receipt', '/api/expense/process-receipt');
         });
+    } else {
+        console.warn('Receipt input not found!');
     }
 
     // Quote upload handler
     if (quoteInput) {
+        console.log('Adding event listener to quote input');
         quoteInput.addEventListener('change', function(e) {
+            console.log('Quote file selected:', e.target.files[0]);
             const file = e.target.files[0];
             processDocument(file, 'Quote', '/api/expense/process-quote');
         });
+    } else {
+        console.warn('Quote input not found!');
     }
 
     // File input validation
@@ -353,6 +413,8 @@ document.addEventListener('DOMContentLoaded', function() {
         .ocr-preview-container {
             margin: 20px 0;
             transition: opacity 0.3s ease;
+            z-index: 100;
+            position: relative;
         }
 
         .ocr-preview {
