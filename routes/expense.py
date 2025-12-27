@@ -7,6 +7,19 @@ from forms import SupplierSearchForm
 from models import Supplier
 from sqlalchemy import or_
 
+import logging
+import os
+
+# Configure debug logger
+debug_logger = logging.getLogger('ocr_debug')
+debug_logger.setLevel(logging.INFO)
+# Clear existing handlers to avoid duplicates during reloads
+if debug_logger.handlers:
+    debug_logger.handlers.clear()
+fh = logging.FileHandler(os.path.join(os.getcwd(), 'debug_ocr.log'))
+fh.setFormatter(logging.Formatter('%(asctime)s - %(message)s'))
+debug_logger.addHandler(fh)
+
 expense_bp = Blueprint('expense', __name__)
 document_processor = DocumentProcessor()
 
@@ -17,7 +30,7 @@ def _process_document_file(file):
     Returns: dict with extracted data or error
     """
     if not file or file.filename == '':
-        logging.warning("No file provided in request")
+        debug_logger.warning("No file provided in request")
         return {'error': 'No selected file'}, 400
 
     # Create uploads directory if it doesn't exist
@@ -26,18 +39,18 @@ def _process_document_file(file):
 
     # Save the file temporarily
     file_path = os.path.join(upload_dir, file.filename)
-    logging.info(f"Saving temporary file for OCR to: {file_path}")
+    debug_logger.info(f"Saving temporary file for OCR to: {file_path}")
     file.save(file_path)
 
     try:
         # Process the document using unified processor
-        logging.info(f"Starting OCR processing for {file_path}")
+        debug_logger.info(f"Starting OCR processing for {file_path}")
         result = document_processor.process_document(file_path)
-        logging.info(f"OCR processing result: {result}")
+        debug_logger.info(f"OCR processing result: {result}")
 
         # Clean up
         os.remove(file_path)
-        logging.info("Temporary file removed")
+        debug_logger.info("Temporary file removed")
 
         return result, 200
 
@@ -45,7 +58,7 @@ def _process_document_file(file):
         # Clean up in case of error
         if os.path.exists(file_path):
             os.remove(file_path)
-        logging.error(f"Error processing document: {str(e)}", exc_info=True)
+        debug_logger.error(f"Error processing document: {str(e)}", exc_info=True)
         return {'error': str(e)}, 500
 
 @expense_bp.route('/process-expense', methods=['POST'])
