@@ -45,7 +45,7 @@ if os.getenv('RENDER') == 'true' or os.getenv('FLASK_ENV') != 'development':
     cors_origins = ["*"]  # Or specify your production domain
 
 CORS(app, resources={
-    r"/api/v1/*": {
+    r"/api/*": {
         "origins": cors_origins,
         "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
         "allow_headers": ["Content-Type", "Authorization"],
