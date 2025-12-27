@@ -17,6 +17,7 @@ def _process_document_file(file):
     Returns: dict with extracted data or error
     """
     if not file or file.filename == '':
+        logging.warning("No file provided in request")
         return {'error': 'No selected file'}, 400
 
     # Create uploads directory if it doesn't exist
@@ -25,14 +26,18 @@ def _process_document_file(file):
 
     # Save the file temporarily
     file_path = os.path.join(upload_dir, file.filename)
+    logging.info(f"Saving temporary file for OCR to: {file_path}")
     file.save(file_path)
 
     try:
         # Process the document using unified processor
+        logging.info(f"Starting OCR processing for {file_path}")
         result = document_processor.process_document(file_path)
+        logging.info(f"OCR processing result: {result}")
 
         # Clean up
         os.remove(file_path)
+        logging.info("Temporary file removed")
 
         return result, 200
 
@@ -40,7 +45,7 @@ def _process_document_file(file):
         # Clean up in case of error
         if os.path.exists(file_path):
             os.remove(file_path)
-        logging.error(f"Error processing document: {str(e)}")
+        logging.error(f"Error processing document: {str(e)}", exc_info=True)
         return {'error': str(e)}, 500
 
 @expense_bp.route('/process-expense', methods=['POST'])
