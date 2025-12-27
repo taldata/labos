@@ -309,7 +309,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
 
             // Handle both success and warning cases
-            const extractedData = data.extracted_data || {};
+            const extractedData = data.extracted_data || data;
             console.log('Extracted data:', extractedData);
             console.log('Full response:', data);
             showOcrPreview(extractedData, data, documentType);

@@ -7,14 +7,6 @@ from functools import lru_cache
 from dotenv import load_dotenv
 from datetime import datetime
 
-# Debug logger
-debug_logger = logging.getLogger('doc_processor_debug')
-debug_logger.setLevel(logging.INFO)
-if not debug_logger.handlers:
-    fh = logging.FileHandler(os.path.join(os.getcwd(), 'ocr_debug.log'))
-    fh.setFormatter(logging.Formatter('%(asctime)s - DOCPROC - %(message)s'))
-    debug_logger.addHandler(fh)
-
 load_dotenv()
 
 class DocumentProcessor:
@@ -130,14 +122,14 @@ class DocumentProcessor:
             # Try each document type until we get valid results
             for doc_type, fields in self.field_mappings.items():
                 try:
-                    debug_logger.info(f"Trying doc_type: {doc_type}")
+                    logging.info(f"DocumentProcessor: Trying doc_type: {doc_type}")
                     
                     # Check if we have this result cached
                     cache_key = f"{file_hash}_{doc_type}"
                     cached_result = getattr(self, f"_cached_{cache_key}", None)
                     
                     if cached_result:
-                        debug_logger.info(f"Using cached result for {doc_type}: {cached_result}")
+                        logging.info(f"DocumentProcessor: Using cached result for {doc_type}")
                         return cached_result
                     
                     with open(document_path, "rb") as f:
@@ -145,22 +137,22 @@ class DocumentProcessor:
                             doc_type, document=f
                         )
                     result = poller.result()
-                    debug_logger.info(f"Azure returned {len(result.documents) if result.documents else 0} documents for {doc_type}")
+                    logging.info(f"DocumentProcessor: Azure returned {len(result.documents) if result.documents else 0} documents")
 
                     # If we got any documents, process them
                     if result.documents:
                         doc = result.documents[0]
-                        debug_logger.info(f"Document fields keys: {list(doc.fields.keys())}")
+                        logging.info(f"DocumentProcessor: Document fields: {list(doc.fields.keys())}")
                         
                         # Extract date
                         date_field = doc.fields.get(fields["date"])
                         date_value = date_field.value if date_field else None
-                        debug_logger.info(f"Date field ({fields['date']}): {date_value} (Type: {type(date_value)})")
+                        logging.info(f"DocumentProcessor: Date field ({fields['date']}): {date_value}")
                         
                         # Extract amount and convert to float
                         amount_field = doc.fields.get(fields["amount"])
                         amount_value = self._extract_amount(amount_field.value if amount_field else None)
-                        debug_logger.info(f"Amount field ({fields['amount']}):Raw: {amount_field.value if amount_field else None} -> Extracted: {amount_value}")
+                        logging.info(f"DocumentProcessor: Amount field ({fields['amount']}): {amount_value}")
                         
                         # If we found either date or amount, return the results
                         if date_value or amount_value:
@@ -176,19 +168,19 @@ class DocumentProcessor:
                                 "purchase_date": date_str,
                                 "amount": amount_value
                             }
-                            debug_logger.info(f"Success! Returning: {result}")
+                            logging.info(f"DocumentProcessor: Success! Returning: {result}")
                             # Cache the result
                             setattr(self, f"_cached_{cache_key}", result)
                             return result
                         else:
-                            debug_logger.info(f"No date or amount found for {doc_type}")
+                            logging.info(f"DocumentProcessor: No date or amount found for {doc_type}")
                 except Exception as e:
                     # If this document type fails, try the next one
-                    debug_logger.error(f"Error with {doc_type}: {str(e)}")
+                    logging.error(f"DocumentProcessor: Error with {doc_type}: {str(e)}")
                     continue
                     
             # If we get here, we couldn't extract information from any document type
-            debug_logger.warning("Could not extract data from any document type")
+            logging.warning("DocumentProcessor: Could not extract data from any document type")
             return {
                 "purchase_date": None,
                 "amount": None
@@ -197,4 +189,3 @@ class DocumentProcessor:
         except Exception as e:
             logging.error(f"DocumentProcessor: Fatal error: {str(e)}")
             raise Exception(f"Error processing document: {str(e)}")
-
