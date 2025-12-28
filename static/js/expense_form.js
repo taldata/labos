@@ -377,10 +377,9 @@ document.addEventListener('DOMContentLoaded', function() {
         const amount = document.getElementById('amount').value;
         const type = document.getElementById('type').value;
         const description = document.getElementById('description').value;
-        const reason = document.getElementById('reason').value;
         const subcategory = document.getElementById('subcategory').value;
 
-        if (!amount || !type || !description || !reason || !subcategory) {
+        if (!amount || !type || !description || !subcategory) {
             e.preventDefault();
             alert('Please fill in all required fields.');
         } else {
