@@ -207,7 +207,7 @@ def get_pending_approvals():
                     'id': expense.submitter.id,
                     'username': expense.submitter.username,
                     'name': f"{expense.submitter.first_name} {expense.submitter.last_name}",
-                    'department': expense.submitter.home_department.name if expense.submitter.home_department else None
+                    'department': expense.subcategory.category.department.name if expense.subcategory and expense.subcategory.category and expense.subcategory.category.department else None
                 },
                 'subcategory': expense.subcategory.name if expense.subcategory else None,
                 'category': expense.subcategory.category.name if expense.subcategory and expense.subcategory.category else None,
@@ -895,7 +895,7 @@ def get_expense_report():
                 'subcategory': exp.subcategory.name if exp.subcategory else '',
                 'supplier': exp.supplier.name if exp.supplier else '',
                 'user': f"{exp.submitter.first_name} {exp.submitter.last_name}" if exp.submitter else '',
-                'department': exp.submitter.home_department.name if exp.submitter and exp.submitter.home_department else '',
+                'department': exp.subcategory.category.department.name if exp.subcategory and exp.subcategory.category and exp.subcategory.category.department else '',
                 'payment_method': exp.payment_method or '',
                 'reason': exp.reason or ''
             })
@@ -960,7 +960,7 @@ def export_expenses():
         if employee_id != 'all':
             expenses = [exp for exp in expenses if exp.user_id == int(employee_id)]
         if department_id != 'all':
-            expenses = [exp for exp in expenses if exp.submitter.department_id == int(department_id)]
+            expenses = [exp for exp in expenses if exp.subcategory and exp.subcategory.category and exp.subcategory.category.department_id == int(department_id)]
         if category_id != 'all':
             expenses = [exp for exp in expenses if exp.subcategory and exp.subcategory.category_id == int(category_id)]
         if subcategory_id != 'all':
@@ -1044,7 +1044,7 @@ def export_expenses():
         for row, exp in enumerate(expenses, start=1):
             worksheet.write_datetime(row, 0, exp.date, date_format)
             worksheet.write(row, 1, exp.submitter.username if exp.submitter else '')
-            worksheet.write(row, 2, exp.submitter.home_department.name if exp.submitter and exp.submitter.home_department else '')
+            worksheet.write(row, 2, exp.subcategory.category.department.name if exp.subcategory and exp.subcategory.category and exp.subcategory.category.department else '')
             worksheet.write(row, 3, exp.description or '')
             worksheet.write(row, 4, exp.reason or '')
             worksheet.write(row, 5, exp.supplier.name if exp.supplier else '')

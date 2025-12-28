@@ -939,7 +939,7 @@ def expense_history():
     if employee != 'all':
         expenses = [expense for expense in expenses if expense.user_id == int(employee)]
     if department != 'all':
-        expenses = [expense for expense in expenses if expense.submitter.department_id == int(department)]
+        expenses = [expense for expense in expenses if expense.subcategory and expense.subcategory.category and expense.subcategory.category.department_id == int(department)]
     if category != 'all':
         expenses = [expense for expense in expenses if expense.subcategory and expense.subcategory.category_id == int(category)]
     if subcategory != 'all':
