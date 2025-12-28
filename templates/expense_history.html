@@ -223,8 +223,8 @@
                         <tr>
                             <td class="col-date small">{{ expense.date.strftime('%d/%m/%Y %H:%M') }}</td>
                             <td class="col-employee">{{ expense.submitter.first_name }} {{ expense.submitter.last_name }}</td>
-                            <td class="col-department">{{ expense.submitter.home_department.name if
-                                expense.submitter.home_department else 'No Department' }}</td>
+                            <td class="col-department">{{ expense.subcategory.category.department.name if
+                                expense.subcategory and expense.subcategory.category and expense.subcategory.category.department else 'No Department' }}</td>
                             <td>{{ expense.description }}</td>
                             <td>{{ expense.reason }}</td>
                             <td>{{ expense.supplier.name if expense.supplier else '-' }}</td>
