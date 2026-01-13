@@ -30,7 +30,7 @@ function AppLayout({ children, user, setUser }) {
           <i className="fas fa-bars"></i>
         </button>
         <img
-          src="https://labos.co/"
+          src="/static/images/labos-logo.svg"
           alt="Labos"
           className="mobile-logo"
         />
