@@ -182,40 +182,14 @@
   animation: fadeInUp 0.6s ease-out 0.2s both;
 }
 
-.logo-icon {
-  width: 80px;
-  height: 80px;
-  margin: 0 auto 1.25rem;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  border-radius: 20px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: white;
-  font-size: 2.25rem;
-  box-shadow:
-    0 10px 30px -8px rgba(102, 126, 234, 0.5),
-    0 0 0 4px rgba(102, 126, 234, 0.1);
-  position: relative;
-  overflow: hidden;
+.login-logo-image {
+  height: 120px;
+  width: auto;
+  max-width: 280px;
+  margin: 0 auto 1.5rem;
+  display: block;
+  object-fit: contain;
   animation: logoFloat 3s ease-in-out infinite;
-}
-
-.logo-icon::after {
-  content: '';
-  position: absolute;
-  top: -50%;
-  left: -50%;
-  width: 200%;
-  height: 200%;
-  background: linear-gradient(
-    to right,
-    transparent 0%,
-    rgba(255, 255, 255, 0.3) 50%,
-    transparent 100%
-  );
-  transform: rotate(30deg);
-  animation: shimmer 2.5s infinite;
 }
 
 @keyframes logoFloat {

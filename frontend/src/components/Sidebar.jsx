@@ -95,8 +95,11 @@ function Sidebar({ user, setUser, isOpen, onToggle }) {
           {isOpen ? (
             <>
               <div className="sidebar-logo" onClick={() => navigate('/dashboard')}>
-                <span className="logo-icon">💰</span>
-                <span className="logo-text">Labos</span>
+                <img
+                  src="https://labos.co/"
+                  alt="Labos"
+                  className="sidebar-logo-image"
+                />
               </div>
               <button className="sidebar-toggle" onClick={onToggle} title="Collapse menu">
                 <i className="fas fa-chevron-left"></i>

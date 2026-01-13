@@ -29,7 +29,11 @@ function AppLayout({ children, user, setUser }) {
         <button className="mobile-menu-btn" onClick={toggleSidebar}>
           <i className="fas fa-bars"></i>
         </button>
-        <span className="mobile-logo">💰 Labos</span>
+        <img
+          src="https://labos.co/"
+          alt="Labos"
+          className="mobile-logo"
+        />
         <div className="mobile-user">
           {user?.first_name?.[0]}{user?.last_name?.[0]}
         </div>
