@@ -29,18 +29,15 @@
   flex-shrink: 0;
 }
 
-.logo-link {
-  font-size: 1.75rem;
-  font-weight: 700;
-  margin: 0;
+.logo-image {
+  height: 40px;
+  width: auto;
   cursor: pointer;
-  color: white;
-  text-decoration: none;
   transition: all 0.3s ease;
-  letter-spacing: -0.5px;
+  object-fit: contain;
 }
 
-.logo-link:hover {
+.logo-image:hover {
   opacity: 0.9;
   transform: scale(1.02);
 }

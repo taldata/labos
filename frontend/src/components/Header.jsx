@@ -100,9 +100,12 @@ function Header({ user, setUser, currentPage = 'dashboard' }) {
           <i className={`fas fa-${showMobileMenu ? 'times' : 'bars'}`}></i>
         </button>
         <div className="logo-section">
-          <h1 onClick={() => navigate('/dashboard')} className="logo-link">
-            Labos
-          </h1>
+          <img
+            src="https://labos.co/"
+            alt="Labos"
+            className="logo-image"
+            onClick={() => navigate('/dashboard')}
+          />
           <span className="version-badge">Modern UI</span>
         </div>
         {currentPage !== 'dashboard' && (

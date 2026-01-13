@@ -45,10 +45,11 @@ function Login({ setUser }) {
       <Card className="login-card">
         <Card.Body>
           <div className="login-header">
-            <div className="logo-icon">
-              <i className="fas fa-receipt"></i>
-            </div>
-            <h1>Labos</h1>
+            <img
+              src="https://labos.co/"
+              alt="Labos"
+              className="login-logo-image"
+            />
             <p className="tagline">Expense Management System</p>
           </div>
 
