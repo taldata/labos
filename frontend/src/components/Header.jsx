@@ -101,7 +101,7 @@ function Header({ user, setUser, currentPage = 'dashboard' }) {
         </button>
         <div className="logo-section">
           <img
-            src="https://labos.co/"
+            src="https://budget-management-app-noxf.onrender.com/static/images/labos-logo.svg"
             alt="Labos"
             className="logo-image"
             onClick={() => navigate('/dashboard')}
