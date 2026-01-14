@@ -46,7 +46,7 @@ function Login({ setUser }) {
         <Card.Body>
           <div className="login-header">
             <img
-              src="https://labos.co/"
+              src="https://budget-management-app-noxf.onrender.com/static/images/labos-logo.svg"
               alt="Labos"
               className="login-logo-image"
             />
