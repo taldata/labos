@@ -96,7 +96,7 @@ function Sidebar({ user, setUser, isOpen, onToggle }) {
             <>
               <div className="sidebar-logo" onClick={() => navigate('/dashboard')}>
                 <img
-                  src="https://budget-management-app-noxf.onrender.com/static/images/labos-logo.svg"
+                  src="/static/images/labos-logo.svg"
                   alt="Labos"
                   className="sidebar-logo-image"
                 />
