@@ -1,6 +1,7 @@
 from flask import jsonify, request
 from flask_login import login_required, current_user
 from models import db, Department, Category, Subcategory, Expense, BudgetYear
+from sqlalchemy import func, case
 from . import api_v1
 import logging
 from datetime import datetime
@@ -191,7 +192,7 @@ def get_organization_structure():
 
         # Filter by year if provided
         year_id = request.args.get('year_id', type=int)
-        
+
         if year_id:
             departments = Department.query.filter_by(year_id=year_id).order_by(Department.name).all()
         else:
@@ -202,56 +203,85 @@ def get_organization_structure():
             else:
                 departments = Department.query.order_by(Department.name).all()
 
+        # Pre-calculate all budget usage in 3 queries instead of N*M*K queries
+        # Get all department IDs for filtering
+        dept_ids = [d.id for d in departments]
+
+        # 1. Calculate department spending (approved expenses only)
+        dept_spending = {}
+        if dept_ids:
+            dept_query = db.session.query(
+                Category.department_id,
+                func.sum(Expense.amount).label('spent')
+            ).join(Subcategory, Expense.subcategory_id == Subcategory.id)\
+             .join(Category, Subcategory.category_id == Category.id)\
+             .filter(Category.department_id.in_(dept_ids))\
+             .filter(Expense.status == 'approved')\
+             .group_by(Category.department_id).all()
+
+            for dept_id, spent in dept_query:
+                dept_spending[dept_id] = float(spent) if spent else 0.0
+
+        # 2. Calculate category spending
+        cat_spending = {}
+        if dept_ids:
+            cat_query = db.session.query(
+                Subcategory.category_id,
+                func.sum(Expense.amount).label('spent')
+            ).join(Subcategory, Expense.subcategory_id == Subcategory.id)\
+             .join(Category, Subcategory.category_id == Category.id)\
+             .filter(Category.department_id.in_(dept_ids))\
+             .filter(Expense.status == 'approved')\
+             .group_by(Subcategory.category_id).all()
+
+            for cat_id, spent in cat_query:
+                cat_spending[cat_id] = float(spent) if spent else 0.0
+
+        # 3. Calculate subcategory spending
+        subcat_spending = {}
+        if dept_ids:
+            subcat_query = db.session.query(
+                Expense.subcategory_id,
+                func.sum(Expense.amount).label('spent')
+            ).join(Subcategory, Expense.subcategory_id == Subcategory.id)\
+             .join(Category, Subcategory.category_id == Category.id)\
+             .filter(Category.department_id.in_(dept_ids))\
+             .filter(Expense.status == 'approved')\
+             .group_by(Expense.subcategory_id).all()
+
+            for subcat_id, spent in subcat_query:
+                subcat_spending[subcat_id] = float(spent) if spent else 0.0
+
+        # Build structure using pre-calculated spending data
         structure = []
         for dept in departments:
-            # Calculate actual expenses for the department (approved expenses only)
-            dept_spent = db.session.query(db.func.sum(Expense.amount))\
-                .join(Subcategory, Expense.subcategory_id == Subcategory.id)\
-                .join(Category, Subcategory.category_id == Category.id)\
-                .filter(Category.department_id == dept.id)\
-                .filter(Expense.status == 'approved')\
-                .scalar() or 0.0
-
             dept_data = {
                 'id': dept.id,
                 'name': dept.name,
                 'budget': dept.budget,
-                'spent': dept_spent,
+                'spent': dept_spending.get(dept.id, 0.0),
                 'currency': dept.currency,
                 'categories': []
             }
 
             categories = Category.query.filter_by(department_id=dept.id).order_by(Category.name).all()
             for cat in categories:
-                # Calculate actual expenses for the category
-                cat_spent = db.session.query(db.func.sum(Expense.amount))\
-                    .join(Subcategory, Expense.subcategory_id == Subcategory.id)\
-                    .filter(Subcategory.category_id == cat.id)\
-                    .filter(Expense.status == 'approved')\
-                    .scalar() or 0.0
-
                 cat_data = {
                     'id': cat.id,
                     'name': cat.name,
                     'budget': cat.budget,
-                    'spent': cat_spent,
+                    'spent': cat_spending.get(cat.id, 0.0),
                     'department_id': cat.department_id,
                     'subcategories': []
                 }
 
                 subcategories = Subcategory.query.filter_by(category_id=cat.id).order_by(Subcategory.name).all()
                 for sub in subcategories:
-                    # Calculate actual expenses for the subcategory
-                    sub_spent = db.session.query(db.func.sum(Expense.amount))\
-                        .filter(Expense.subcategory_id == sub.id)\
-                        .filter(Expense.status == 'approved')\
-                        .scalar() or 0.0
-
                     sub_data = {
                         'id': sub.id,
                         'name': sub.name,
                         'budget': sub.budget,
-                        'spent': sub_spent,
+                        'spent': subcat_spending.get(sub.id, 0.0),
                         'category_id': sub.category_id
                     }
                     cat_data['subcategories'].append(sub_data)

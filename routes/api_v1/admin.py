@@ -1,7 +1,8 @@
 from flask import jsonify, request, current_app
 from flask_login import login_required, current_user
 from models import Expense, Department, Category, Subcategory, User, Supplier, CreditCard, BudgetYear, db
-from sqlalchemy import func, and_
+from sqlalchemy import func, and_, or_
+from sqlalchemy.orm import joinedload
 from datetime import datetime, timedelta
 from dateutil.relativedelta import relativedelta
 from werkzeug.security import generate_password_hash
@@ -54,18 +55,7 @@ def get_admin_stats():
         period = request.args.get('period', 'this_month')
         start_date, end_date = get_date_range(period)
         
-        # Base query for expenses in period
-        base_query = Expense.query.filter(
-            Expense.date >= start_date,
-            Expense.date <= end_date
-        )
-        
-        # Total expenses
-        total_expenses = base_query.filter(Expense.status == 'approved').all()
-        total_amount = sum(exp.amount for exp in total_expenses)
-        total_count = len(total_expenses)
-        
-        # Status breakdown
+        # Status breakdown - use a single query instead of multiple
         status_query = db.session.query(
             Expense.status,
             func.count(Expense.id).label('count'),
@@ -74,23 +64,32 @@ def get_admin_stats():
             Expense.date >= start_date,
             Expense.date <= end_date
         ).group_by(Expense.status).all()
-        
-        status_distribution = [
-            {'name': status, 'count': int(count), 'amount': float(amount or 0)}
-            for status, count, amount in status_query
-        ]
-        
-        approved_query = base_query.filter(Expense.status == 'approved')
-        approved_amount = sum(exp.amount for exp in approved_query.all())
-        approved_count = approved_query.count()
-        
-        pending_query = base_query.filter(Expense.status == 'pending')
-        pending_amount = sum(exp.amount for exp in pending_query.all())
-        pending_count = pending_query.count()
-        
-        rejected_query = base_query.filter(Expense.status == 'rejected')
-        rejected_amount = sum(exp.amount for exp in rejected_query.all())
-        rejected_count = rejected_query.count()
+
+        # Build status distribution and extract individual status stats
+        status_distribution = []
+        status_map = {}
+        for status, count, amount in status_query:
+            status_distribution.append({
+                'name': status,
+                'count': int(count),
+                'amount': float(amount or 0)
+            })
+            status_map[status] = {
+                'count': int(count),
+                'amount': float(amount or 0)
+            }
+
+        # Extract individual status stats from the single query result
+        approved_count = status_map.get('approved', {}).get('count', 0)
+        approved_amount = status_map.get('approved', {}).get('amount', 0.0)
+        pending_count = status_map.get('pending', {}).get('count', 0)
+        pending_amount = status_map.get('pending', {}).get('amount', 0.0)
+        rejected_count = status_map.get('rejected', {}).get('count', 0)
+        rejected_amount = status_map.get('rejected', {}).get('amount', 0.0)
+
+        # Total is same as approved
+        total_count = approved_count
+        total_amount = approved_amount
         
         # Expense trend over time
         if period in ['this_year', 'last_6_months']:
@@ -182,21 +181,25 @@ def get_admin_stats():
             for username, amount in user_query
         ]
         
-        # Budget usage by department
+        # Budget usage by department - pre-calculate all department spending in single query
+        dept_spending_query = db.session.query(
+            User.department_id,
+            func.sum(Expense.amount).label('spent')
+        ).join(User, Expense.user_id == User.id)\
+         .filter(
+             Expense.date >= start_date,
+             Expense.date <= end_date,
+             Expense.status == 'approved'
+         ).group_by(User.department_id).all()
+
+        dept_spending_map = {dept_id: float(spent or 0) for dept_id, spent in dept_spending_query}
+
         departments = Department.query.all()
         budget_usage = []
         for dept in departments:
-            dept_expenses = db.session.query(func.sum(Expense.amount))\
-                .join(User, Expense.user_id == User.id)\
-                .filter(
-                    User.department_id == dept.id,
-                    Expense.date >= start_date,
-                    Expense.date <= end_date,
-                    Expense.status == 'approved'
-                ).scalar() or 0
-            
+            dept_expenses = dept_spending_map.get(dept.id, 0.0)
             usage_percent = (dept_expenses / dept.budget * 100) if dept.budget > 0 else 0
-            
+
             budget_usage.append({
                 'name': dept.name,
                 'budget': float(dept.budget),
@@ -238,24 +241,24 @@ def get_all_users():
     """Get all users with filtering options"""
     if not current_user.is_admin:
         return jsonify({'error': 'Admin access required'}), 403
-    
+
     try:
         # Get query parameters
         status = request.args.get('status', 'all')
         department_id = request.args.get('department_id')
         role = request.args.get('role')
-        search = request.args.get('search', '').lower()
-        
-        # Base query
-        query = User.query
-        
+        search = request.args.get('search', '').strip()
+
+        # Base query with eager loading to avoid N+1 queries
+        query = User.query.options(joinedload(User.home_department))
+
         # Apply filters
         if status != 'all':
             query = query.filter(User.status == status)
-        
+
         if department_id:
             query = query.filter(User.department_id == int(department_id))
-        
+
         if role == 'admin':
             query = query.filter(User.is_admin == True)
         elif role == 'manager':
@@ -264,17 +267,21 @@ def get_all_users():
             query = query.filter(User.is_accounting == True)
         elif role == 'employee':
             query = query.filter(User.is_admin == False, User.is_manager == False, User.is_accounting == False)
-        
-        users = query.order_by(User.first_name, User.last_name).all()
-        
-        # Apply search filter in memory (for username, first_name, last_name, email)
+
+        # Apply search filter in SQL instead of in-memory
         if search:
-            users = [u for u in users if 
-                     search in (u.username or '').lower() or
-                     search in (u.first_name or '').lower() or
-                     search in (u.last_name or '').lower() or
-                     search in (u.email or '').lower()]
-        
+            search_pattern = f'%{search}%'
+            query = query.filter(
+                or_(
+                    User.username.ilike(search_pattern),
+                    User.first_name.ilike(search_pattern),
+                    User.last_name.ilike(search_pattern),
+                    User.email.ilike(search_pattern)
+                )
+            )
+
+        users = query.order_by(User.first_name, User.last_name).all()
+
         users_data = []
         for user in users:
             users_data.append({
@@ -291,9 +298,9 @@ def get_all_users():
                 'department_id': user.department_id,
                 'department_name': user.home_department.name if user.home_department else None
             })
-        
+
         return jsonify({'users': users_data}), 200
-        
+
     except Exception as e:
         logging.error(f"Error getting users: {str(e)}", exc_info=True)
         return jsonify({'error': 'Failed to fetch users'}), 500
@@ -466,24 +473,34 @@ def get_all_suppliers():
     """Get all suppliers"""
     if not current_user.is_admin:
         return jsonify({'error': 'Admin access required'}), 403
-    
+
     try:
         status = request.args.get('status', 'all')
-        search = request.args.get('search', '').lower()
-        
-        query = Supplier.query
-        
+        search = request.args.get('search', '').strip()
+
+        # Use aggregate query to get expense counts and avoid N+1 queries
+        query = db.session.query(
+            Supplier,
+            func.count(Expense.id).label('expense_count')
+        ).outerjoin(Expense, Supplier.id == Expense.supplier_id)\
+         .group_by(Supplier.id)
+
         if status != 'all':
             query = query.filter(Supplier.status == status)
-        
-        suppliers = query.order_by(Supplier.name).all()
-        
+
+        # Apply search filter in SQL instead of in-memory
         if search:
-            suppliers = [s for s in suppliers if 
-                        search in (s.name or '').lower() or
-                        search in (s.email or '').lower() or
-                        search in (s.tax_id or '').lower()]
-        
+            search_pattern = f'%{search}%'
+            query = query.filter(
+                or_(
+                    Supplier.name.ilike(search_pattern),
+                    Supplier.email.ilike(search_pattern),
+                    Supplier.tax_id.ilike(search_pattern)
+                )
+            )
+
+        suppliers = query.order_by(Supplier.name).all()
+
         suppliers_data = [{
             'id': s.id,
             'name': s.name,
@@ -497,11 +514,11 @@ def get_all_suppliers():
             'bank_swift': s.bank_swift,
             'notes': s.notes,
             'status': s.status,
-            'expense_count': len(s.expenses)
-        } for s in suppliers]
-        
+            'expense_count': int(expense_count)
+        } for s, expense_count in suppliers]
+
         return jsonify({'suppliers': suppliers_data}), 200
-        
+
     except Exception as e:
         logging.error(f"Error getting suppliers: {str(e)}", exc_info=True)
         return jsonify({'error': 'Failed to fetch suppliers'}), 500
@@ -637,27 +654,32 @@ def get_all_credit_cards():
     """Get all credit cards"""
     if not current_user.is_admin:
         return jsonify({'error': 'Admin access required'}), 403
-    
+
     try:
         status = request.args.get('status', 'all')
-        
-        query = CreditCard.query
-        
+
+        # Use aggregate query to get expense counts and avoid N+1 queries
+        query = db.session.query(
+            CreditCard,
+            func.count(Expense.id).label('expense_count')
+        ).outerjoin(Expense, CreditCard.id == Expense.credit_card_id)\
+         .group_by(CreditCard.id)
+
         if status != 'all':
             query = query.filter(CreditCard.status == status)
-        
+
         cards = query.order_by(CreditCard.last_four_digits).all()
-        
+
         cards_data = [{
             'id': c.id,
             'last_four_digits': c.last_four_digits,
             'description': c.description,
             'status': c.status,
-            'expense_count': len(c.expenses)
-        } for c in cards]
-        
+            'expense_count': int(expense_count)
+        } for c, expense_count in cards]
+
         return jsonify({'credit_cards': cards_data}), 200
-        
+
     except Exception as e:
         logging.error(f"Error getting credit cards: {str(e)}", exc_info=True)
         return jsonify({'error': 'Failed to fetch credit cards'}), 500
@@ -838,6 +860,15 @@ def admin_list_expenses():
             query = query.order_by(Expense.status.desc() if sort_order == 'desc' else Expense.status.asc())
         else:
             query = query.order_by(Expense.date.desc())
+
+        # Add eager loading to avoid N+1 queries
+        query = query.options(
+            joinedload(Expense.submitter).joinedload(User.home_department),
+            joinedload(Expense.subcategory).joinedload(Subcategory.category),
+            joinedload(Expense.supplier),
+            joinedload(Expense.credit_card),
+            joinedload(Expense.handler)
+        )
 
         # Paginate
         pagination = query.paginate(page=page, per_page=per_page, error_out=False)
