@@ -53,6 +53,15 @@ function Dashboard({ user, setUser }) {
     return variants[status] || 'default'
   }
 
+  const formatDate = (dateString) => {
+    if (!dateString) return '-'
+    const date = new Date(dateString)
+    const day = String(date.getDate()).padStart(2, '0')
+    const month = String(date.getMonth() + 1).padStart(2, '0')
+    const year = date.getFullYear()
+    return `${day}/${month}/${year}`
+  }
+
   return (
     <div className="dashboard-container">
 
@@ -239,7 +248,7 @@ function Dashboard({ user, setUser }) {
                         <div className="expense-desc">{expense.description || 'No description'}</div>
                         <div className="expense-meta">
                           {expense.category} • {expense.subcategory} •{' '}
-                          {new Date(expense.date).toLocaleDateString()}
+                          {formatDate(expense.date)}
                         </div>
                       </div>
                       <div className="expense-right">
