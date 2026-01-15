@@ -3,12 +3,12 @@ services:
     name: labos-expense-management
     env: python
     buildCommand: poetry install --no-root && cd frontend && npm ci && npm run build && rm -rf node_modules
-    startCommand: poetry run gunicorn app:app
+    startCommand: poetry run gunicorn --workers 4 --threads 2 --worker-class gthread app:app
     envVars:
       - key: PYTHON_VERSION
-        value: 3.11.10
+        value: 3.12.2
       - key: NODE_VERSION
-        value: 18
+        value: 22
     # Uncomment if you want to disable Poetry detection
     # plan: free
 
