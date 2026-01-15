@@ -1,0 +1,11 @@
+# Exclude heavy directories from the Render build upload
+frontend/node_modules/
+venv/
+.git/
+.vscode/
+__pycache__/
+*.pyc
+
+# Exclude frontend source after build (optional, but saves space)
+# frontend/src/
+# frontend/public/

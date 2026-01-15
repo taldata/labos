@@ -2,7 +2,7 @@ services:
   - type: web
     name: labos-expense-management
     env: python
-    buildCommand: poetry install && cd frontend && npm install && npm run build
+    buildCommand: poetry install --no-root && cd frontend && npm ci && npm run build && rm -rf node_modules
     startCommand: poetry run gunicorn app:app
     envVars:
       - key: PYTHON_VERSION
