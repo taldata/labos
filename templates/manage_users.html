@@ -14,9 +14,6 @@
                             <i class="fas fa-users me-2"></i>
                             <h5 class="d-inline mb-0">Manage Users</h5>
                         </div>
-                        <button class="btn btn-light" onclick="toggleAddUserRow()">
-                            <i class="fas fa-plus me-1"></i>Add User
-                        </button>
                     </div>
                 </div>
                 <div class="card-body">
@@ -34,61 +31,6 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                <!-- Add User Row (Initially Hidden) -->
-                                <tr id="addUserRow" style="display: none;" class="bg-light">
-                                    <td>
-                                        <input type="text" class="form-control form-control-sm" id="newUsername"
-                                            placeholder="Enter username" required>
-                                    </td>
-                                    <td>
-                                        <input type="email" class="form-control form-control-sm" id="newEmail"
-                                            placeholder="Enter email" required>
-                                    </td>
-                                    <td>
-                                        <select class="form-select form-select-sm" id="newRole"
-                                            onchange="toggleManagedDepartments()">
-                                            <option value="user">Employee</option>
-                                            <option value="manager">Manager</option>
-                                            <option value="accounting">Accounting</option>
-                                            <option value="admin">Admin</option>
-                                        </select>
-                                    </td>
-                                    <td>
-                                        <select class="form-select form-select-sm" id="newDepartment">
-                                            <option value="">None</option>
-                                            {% for dept in departments %}
-                                            <option value="{{ dept.id }}">{{ dept.name }}</option>
-                                            {% endfor %}
-                                        </select>
-                                    </td>
-                                    <td>
-                                        <div id="managedDepartmentsGroup" style="display: none;">
-                                            <select class="form-select form-select-sm" id="managed_departments" multiple
-                                                data-bs-toggle="tooltip" title="Hold Ctrl/Cmd to select multiple">
-                                                {% for dept in departments %}
-                                                <option value="{{ dept.id }}">{{ dept.name }}</option>
-                                                {% endfor %}
-                                            </select>
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <div class="d-flex flex-column gap-2">
-                                            <select class="form-select form-select-sm" id="newStatus">
-                                                <option value="active">Active</option>
-                                                <option value="inactive">Inactive</option>
-                                            </select>
-                                            <input type="password" class="form-control form-control-sm" id="newPassword"
-                                                placeholder="Enter password" required>
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <div class="btn-group">
-                                            <button class="btn btn-sm btn-primary" onclick="saveNewUser()">Save</button>
-                                            <button class="btn btn-sm btn-outline-secondary"
-                                                onclick="toggleAddUserRow()">Cancel</button>
-                                        </div>
-                                    </td>
-                                </tr>
                                 {% for user in users %}
                                 <tr data-user-id="{{ user.id }}" class="view-row">
                                     <td>{{ user.username }}</td>
@@ -243,60 +185,6 @@
         justify-content: flex-end;
         gap: 8px;
         align-items: center;
-    }
-
-    /* Add consistent width and height for form controls in add user row */
-    #addUserRow .form-control-sm,
-    #addUserRow .form-select-sm {
-        width: 160px !important;
-        height: 35px !important;
-        padding: 0.25rem 0.5rem;
-        font-size: 0.875rem;
-        border-radius: 4px;
-        border: 1px solid #dee2e6;
-    }
-
-    #addUserRow td {
-        padding: 0.75rem;
-        vertical-align: middle;
-    }
-
-    #addUserRow .btn-group {
-        display: flex;
-        gap: 8px;
-    }
-
-    #addUserRow .btn-sm {
-        height: 35px;
-        padding: 0 1rem;
-        font-size: 0.875rem;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        min-width: 80px;
-    }
-
-    #addUserRow .btn-primary {
-        background-color: #0d6efd;
-        border-color: #0d6efd;
-        color: white;
-    }
-
-    #addUserRow .btn-primary:hover {
-        background-color: #0b5ed7;
-        border-color: #0a58ca;
-    }
-
-    #addUserRow .btn-outline-secondary {
-        color: #6c757d;
-        border-color: #6c757d;
-        background-color: white;
-    }
-
-    #addUserRow .btn-outline-secondary:hover {
-        color: #fff;
-        background-color: #6c757d;
-        border-color: #6c757d;
     }
 
     /* Action buttons styling */
@@ -566,78 +454,6 @@
 </style>
 
 <script>
-    function toggleAddUserRow() {
-        const addUserRow = document.getElementById('addUserRow');
-        const managedDeptGroup = document.getElementById('managedDepartmentsGroup');
-        addUserRow.style.display = addUserRow.style.display === 'none' ? 'table-row' : 'none';
-        managedDeptGroup.style.display = 'none';
-        if (addUserRow.style.display === 'table-row') {
-            document.getElementById('newUsername').focus();
-        }
-    }
-
-    function toggleManagedDepartments() {
-        const roleSelect = document.getElementById('newRole');
-        const managedDeptGroup = document.getElementById('managedDepartmentsGroup');
-
-        if (roleSelect.value === 'manager') {
-            managedDeptGroup.style.display = 'table-row';
-        } else {
-            managedDeptGroup.style.display = 'none';
-        }
-    }
-
-    function saveNewUser() {
-        const username = document.getElementById('newUsername').value;
-        const email = document.getElementById('newEmail').value;
-        const password = document.getElementById('newPassword').value;
-        const department = document.getElementById('newDepartment').value;
-        const role = document.getElementById('newRole').value;
-        const status = document.getElementById('newStatus').value;
-        const managedDepartmentsSelect = document.getElementById('managed_departments');
-        const managedDepartments = role === 'manager' && managedDepartmentsSelect ?
-            Array.from(managedDepartmentsSelect.selectedOptions).map(option => option.value) : [];
-
-        if (!username || !email || !password) {
-            alert('Username, email, and password are required');
-            return;
-        }
-
-        const formData = new FormData();
-        formData.append('username', username);
-        formData.append('email', email);
-        formData.append('password', password);
-        formData.append('department_id', department);
-        formData.append('role', role);
-        formData.append('status', status);
-
-        if (managedDepartments.length > 0) {
-            managedDepartments.forEach(deptId => {
-                formData.append('managed_departments[]', deptId);
-            });
-        }
-
-        fetch('/admin/users/add', {
-            method: 'POST',
-            body: formData,
-            headers: {
-                'X-Requested-With': 'XMLHttpRequest'
-            }
-        })
-            .then(response => {
-                if (!response.ok) {
-                    return response.text().then(text => {
-                        throw new Error(text || 'Failed to add user');
-                    });
-                }
-                window.location.reload();
-            })
-            .catch(error => {
-                console.error('Error adding user:', error);
-                alert('Error adding user: ' + error.message);
-            });
-    }
-
     function startEdit(userId) {
         // Hide view row and show edit row
         document.querySelector(`tr.view-row[data-user-id="${userId}"]`).style.display = 'none';
