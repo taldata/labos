@@ -1077,18 +1077,39 @@ def export_expenses():
     from flask import send_file
     import xlsxwriter
     from io import BytesIO
+    from datetime import datetime as dt
 
     try:
-        # Get filter parameters from expense history page
+        # Get filter parameters - support both old (Flask template) and new (React) parameter names
         status = request.args.get('status', 'all')
-        employee_id = request.args.get('employee', 'all')
-        department_id = request.args.get('department', 'all')
-        category_id = request.args.get('category', 'all')
-        subcategory_id = request.args.get('subcategory', 'all')
+
+        # Support both 'employee' (old) and 'user_id' (new) parameters
+        employee_id = request.args.get('employee', request.args.get('user_id', 'all'))
+
+        # Support both 'department' (old) and 'department_id' (new) parameters
+        department_id = request.args.get('department', request.args.get('department_id', 'all'))
+
+        # Support both 'category' (old) and 'category_id' (new) parameters
+        category_id = request.args.get('category', request.args.get('category_id', 'all'))
+
+        # Support both 'subcategory' (old) and 'subcategory_id' (new) parameters
+        subcategory_id = request.args.get('subcategory', request.args.get('subcategory_id', 'all'))
+
+        # Support both 'supplier' (old) and 'supplier_id' (new) parameters
+        supplier_id = request.args.get('supplier', request.args.get('supplier_id', 'all'))
+
+        payment_method = request.args.get('payment_method', 'all')
+
+        # Date range filters (React version)
+        start_date = request.args.get('start_date', None)
+        end_date = request.args.get('end_date', None)
+
+        # Month filters (Flask template version)
         adding_month = request.args.get('adding_month', 'all')
         purchase_month = request.args.get('purchase_month', 'all')
-        supplier_id = request.args.get('supplier', 'all')
-        payment_method = request.args.get('payment_method', 'all')
+
+        # Search parameter (React version)
+        search = request.args.get('search', None)
 
         # Build query based on user role
         if current_user.is_admin:
@@ -1105,18 +1126,48 @@ def export_expenses():
                 .order_by(Expense.date.desc()).all()
 
         # Apply filters
-        if status != 'all':
+        if status != 'all' and status:
             expenses = [exp for exp in expenses if exp.status == status]
-        if employee_id != 'all':
+
+        if employee_id != 'all' and employee_id:
             expenses = [exp for exp in expenses if exp.user_id == int(employee_id)]
-        if department_id != 'all':
-            expenses = [exp for exp in expenses if exp.subcategory and exp.subcategory.category and exp.subcategory.category.department_id == int(department_id)]
-        if category_id != 'all':
+
+        # Fix department filter - filter by user's department, not category's department
+        if department_id != 'all' and department_id:
+            expenses = [exp for exp in expenses if exp.submitter and exp.submitter.department_id == int(department_id)]
+
+        if category_id != 'all' and category_id:
             expenses = [exp for exp in expenses if exp.subcategory and exp.subcategory.category_id == int(category_id)]
-        if subcategory_id != 'all':
+
+        if subcategory_id != 'all' and subcategory_id:
             expenses = [exp for exp in expenses if exp.subcategory_id == int(subcategory_id)]
 
-        # Apply admin-only filters
+        if supplier_id != 'all' and supplier_id:
+            expenses = [exp for exp in expenses if exp.supplier_id and exp.supplier_id == int(supplier_id)]
+
+        if payment_method != 'all' and payment_method:
+            expenses = [exp for exp in expenses if exp.payment_method == payment_method]
+
+        # Apply date range filters (React version)
+        if start_date:
+            start_dt = dt.fromisoformat(start_date)
+            expenses = [exp for exp in expenses if exp.date and exp.date >= start_dt]
+
+        if end_date:
+            end_dt = dt.fromisoformat(end_date)
+            expenses = [exp for exp in expenses if exp.date and exp.date <= end_dt]
+
+        # Apply search filter
+        if search:
+            search_lower = search.lower()
+            expenses = [exp for exp in expenses if
+                       (exp.description and search_lower in exp.description.lower()) or
+                       (exp.reason and search_lower in exp.reason.lower()) or
+                       (exp.submitter and search_lower in (exp.submitter.first_name + ' ' + exp.submitter.last_name).lower()) or
+                       (exp.supplier and exp.supplier.name and search_lower in exp.supplier.name.lower()) or
+                       (search_lower in str(exp.amount))]
+
+        # Apply admin-only month filters (Flask template version)
         if current_user.is_admin:
             if adding_month != 'all':
                 year, month = adding_month.split('-')
@@ -1128,13 +1179,6 @@ def export_expenses():
                 expenses = [exp for exp in expenses if
                            exp.invoice_date and exp.invoice_date.year == int(year) and
                            exp.invoice_date.month == int(month)]
-
-            if supplier_id != 'all':
-                expenses = [exp for exp in expenses if
-                           exp.supplier_id and exp.supplier_id == int(supplier_id)]
-
-            if payment_method != 'all':
-                expenses = [exp for exp in expenses if exp.payment_method == payment_method]
 
         # Create XLSX file in memory
         output = BytesIO()
