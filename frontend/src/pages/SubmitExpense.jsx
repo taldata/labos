@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Card, Button, Input, Select, SearchableSelect, Textarea, FileUpload, useToast } from '../components/ui'
+import { Card, Button, Input, Select, SearchableSelect, TomSelectInput, Textarea, FileUpload, useToast } from '../components/ui'
 import './SubmitExpense.css'
 
 function SubmitExpense({ user, setUser }) {
@@ -403,14 +403,13 @@ function SubmitExpense({ user, setUser }) {
             </Card.Header>
             <Card.Body>
               <div className="form-row">
-                <SearchableSelect
+                <TomSelectInput
                   label="Supplier"
                   name="supplier_id"
                   value={formData.supplier_id}
                   onChange={handleInputChange}
                   options={suppliers}
                   placeholder="Select a supplier"
-                  searchPlaceholder="Search suppliers..."
                   displayKey="name"
                   valueKey="id"
                 />

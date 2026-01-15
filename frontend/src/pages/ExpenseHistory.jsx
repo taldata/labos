@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Card, Button, Badge, Input, Select, SearchableSelect, Skeleton, EmptyState, Modal, useToast } from '../components/ui'
+import { Card, Button, Badge, Input, Select, SearchableSelect, TomSelectInput, Skeleton, EmptyState, Modal, useToast } from '../components/ui'
 import MoveExpenseToYearModal from '../components/MoveExpenseToYearModal'
 import './ExpenseHistory.css'
 
@@ -529,26 +529,24 @@ function ExpenseHistory({ user, setUser }) {
               </div>
 
               <div className="filter-row">
-                <SearchableSelect
+                <TomSelectInput
                   label="Category"
                   name="category_id"
                   value={selectedCategoryOption}
                   onChange={handleCategorySelect}
                   options={categoryOptions}
                   placeholder="All Categories"
-                  searchPlaceholder="Search categories..."
                   displayKey="name"
                   valueKey="id"
                 />
 
-                <SearchableSelect
+                <TomSelectInput
                   label="Supplier"
                   name="supplier_id"
                   value={filters.supplier_id}
                   onChange={handleFilterChange}
                   options={suppliers}
                   placeholder="All Suppliers"
-                  searchPlaceholder="Search suppliers..."
                   displayKey="name"
                   valueKey="id"
                 />

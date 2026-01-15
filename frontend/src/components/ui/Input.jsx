@@ -1,4 +1,6 @@
 import React, { forwardRef, useState, useRef, useEffect } from 'react';
+import TomSelect from 'tom-select';
+import 'tom-select/dist/css/tom-select.css';
 import './Input.css';
 
 const Input = forwardRef(({
@@ -317,5 +319,141 @@ export const SearchableSelect = forwardRef(({
 });
 
 SearchableSelect.displayName = 'SearchableSelect';
+
+export const TomSelectInput = forwardRef(({
+  label,
+  error,
+  helperText,
+  required = false,
+  fullWidth = false,
+  className = '',
+  options = [],
+  value,
+  onChange,
+  placeholder = 'Select an option',
+  name,
+  displayKey = 'name',
+  valueKey = 'id',
+  allowClear = true,
+  ...props
+}, ref) => {
+  const selectRef = useRef(null);
+  const tomSelectRef = useRef(null);
+
+  useEffect(() => {
+    if (!selectRef.current) return;
+
+    // Prepare options for Tom Select
+    const tomOptions = options.map(option => ({
+      value: option[valueKey]?.toString() || '',
+      text: option[displayKey] || ''
+    }));
+
+    // Initialize Tom Select
+    const config = {
+      options: tomOptions,
+      items: value ? [value.toString()] : [],
+      placeholder: placeholder,
+      maxOptions: null,
+      allowEmptyOption: allowClear,
+      create: false,
+      sortField: {
+        field: 'text',
+        direction: 'asc'
+      },
+      onItemAdd: function() {
+        const selectedValue = this.getValue();
+        if (onChange) {
+          const syntheticEvent = {
+            target: {
+              name: name,
+              value: selectedValue
+            }
+          };
+          onChange(syntheticEvent);
+        }
+      },
+      onClear: function() {
+        if (onChange) {
+          const syntheticEvent = {
+            target: {
+              name: name,
+              value: ''
+            }
+          };
+          onChange(syntheticEvent);
+        }
+      }
+    };
+
+    tomSelectRef.current = new TomSelect(selectRef.current, config);
+
+    // Cleanup
+    return () => {
+      if (tomSelectRef.current) {
+        tomSelectRef.current.destroy();
+      }
+    };
+  }, []);
+
+  // Update Tom Select when options change
+  useEffect(() => {
+    if (tomSelectRef.current && options.length > 0) {
+      tomSelectRef.current.clearOptions();
+      const tomOptions = options.map(option => ({
+        value: option[valueKey]?.toString() || '',
+        text: option[displayKey] || ''
+      }));
+      tomSelectRef.current.addOptions(tomOptions);
+
+      // Re-set the value if it exists
+      if (value) {
+        tomSelectRef.current.setValue(value.toString(), true);
+      }
+    }
+  }, [options, displayKey, valueKey]);
+
+  // Update Tom Select when value changes externally
+  useEffect(() => {
+    if (tomSelectRef.current) {
+      const currentValue = tomSelectRef.current.getValue();
+      const newValue = value?.toString() || '';
+      if (currentValue !== newValue) {
+        tomSelectRef.current.setValue(newValue, true);
+      }
+    }
+  }, [value]);
+
+  return (
+    <div className={`input-wrapper ${fullWidth ? 'input-wrapper-full-width' : ''}`}>
+      {label && (
+        <label className="input-label">
+          {label}
+          {required && <span className="input-required">*</span>}
+        </label>
+      )}
+      <div className="tom-select-container">
+        <select
+          ref={selectRef}
+          name={name}
+          required={required}
+          className={`tom-select-field ${className}`}
+          {...props}
+        >
+          {allowClear && <option value="">-- {placeholder} --</option>}
+          {options.map((option) => (
+            <option key={option[valueKey]} value={option[valueKey]}>
+              {option[displayKey]}
+            </option>
+          ))}
+        </select>
+      </div>
+      {error && <span className="input-error-message">{error}</span>}
+      {!error && helperText && <span className="input-helper-text">{helperText}</span>}
+    </div>
+  );
+});
+
+TomSelectInput.displayName = 'TomSelectInput';
 
 export default Input;
