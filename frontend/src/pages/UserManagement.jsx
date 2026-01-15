@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Card, Button, Input, Select, Modal, Badge, Skeleton, useToast } from '../components/ui'
+import { Card, Button, Input, Select, TomSelectInput, Modal, Badge, Skeleton, useToast } from '../components/ui'
 import { useScrollToItem } from '../hooks/useScrollToItem'
 import './UserManagement.css'
 
@@ -235,9 +235,6 @@ function UserManagement({ user, setUser }) {
             <h1>User Management</h1>
             <p className="subtitle">Manage user accounts and permissions</p>
           </div>
-          <Button variant="primary" icon="fas fa-user-plus" onClick={() => openModal('create')}>
-            Add User
-          </Button>
         </div>
 
         {/* Filters */}
@@ -427,18 +424,16 @@ function UserManagement({ user, setUser }) {
               onChange={handleInputChange}
               placeholder={modalMode === 'create' ? 'Enter password' : 'Leave blank to keep current'}
             />
-            <Select
+            <TomSelectInput
               label="Department"
-              icon="fas fa-building"
               name="department_id"
               value={formData.department_id}
               onChange={handleInputChange}
-            >
-              <option value="">No Department</option>
-              {departments.map(dept => (
-                <option key={dept.id} value={dept.id}>{dept.name}</option>
-              ))}
-            </Select>
+              options={departments}
+              displayKey="name"
+              valueKey="id"
+              placeholder="No Department"
+            />
           </div>
 
           <Select

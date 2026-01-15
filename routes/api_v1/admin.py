@@ -1178,19 +1178,25 @@ def admin_update_expense(expense_id):
 @api_v1.route('/admin/expenses/<int:expense_id>', methods=['DELETE'])
 @login_required
 def admin_delete_expense(expense_id):
-    """Delete an expense (admin only)"""
-    if not current_user.is_admin:
-        return jsonify({'error': 'Admin access required'}), 403
-
+    """Delete an expense (admin can delete any, manager can delete their own)"""
     try:
         expense = Expense.query.get(expense_id)
         if not expense:
             return jsonify({'error': 'Expense not found'}), 404
 
+        # Check permissions: admins can delete any expense, managers can delete their own
+        if not current_user.is_admin and not current_user.is_manager:
+            return jsonify({'error': 'Admin or manager access required'}), 403
+
+        # If manager, they can only delete their own expenses
+        if current_user.is_manager and not current_user.is_admin:
+            if expense.user_id != current_user.id:
+                return jsonify({'error': 'Managers can only delete their own expenses'}), 403
+
         db.session.delete(expense)
         db.session.commit()
 
-        logging.info(f"Expense {expense_id} deleted by admin {current_user.username}")
+        logging.info(f"Expense {expense_id} deleted by {current_user.username} (admin={current_user.is_admin}, manager={current_user.is_manager})")
 
         return jsonify({'message': 'Expense deleted successfully'}), 200
 
