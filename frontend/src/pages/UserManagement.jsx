@@ -27,7 +27,6 @@ function UserManagement({ user, setUser }) {
     email: '',
     first_name: '',
     last_name: '',
-    password: '',
     is_admin: false,
     is_manager: false,
     is_accounting: false,
@@ -103,7 +102,6 @@ function UserManagement({ user, setUser }) {
         email: userToEdit.email,
         first_name: userToEdit.first_name || '',
         last_name: userToEdit.last_name || '',
-        password: '',
         is_admin: userToEdit.is_admin,
         is_manager: userToEdit.is_manager,
         is_accounting: userToEdit.is_accounting,
@@ -117,7 +115,6 @@ function UserManagement({ user, setUser }) {
         email: '',
         first_name: '',
         last_name: '',
-        password: '',
         is_admin: false,
         is_manager: false,
         is_accounting: false,
@@ -155,7 +152,6 @@ function UserManagement({ user, setUser }) {
       const method = modalMode === 'create' ? 'POST' : 'PUT'
       
       const payload = { ...formData }
-      if (!payload.password) delete payload.password
       if (!payload.department_id) payload.department_id = null
 
       const res = await fetch(url, {
@@ -414,27 +410,16 @@ function UserManagement({ user, setUser }) {
             />
           </div>
 
-          <div className="form-row">
-            <Input
-              label={`Password ${modalMode === 'edit' ? '(leave blank to keep)' : ''}`}
-              icon="fas fa-lock"
-              type="password"
-              name="password"
-              value={formData.password}
-              onChange={handleInputChange}
-              placeholder={modalMode === 'create' ? 'Enter password' : 'Leave blank to keep current'}
-            />
-            <TomSelectInput
-              label="Department"
-              name="department_id"
-              value={formData.department_id}
-              onChange={handleInputChange}
-              options={departments}
-              displayKey="name"
-              valueKey="id"
-              placeholder="No Department"
-            />
-          </div>
+          <TomSelectInput
+            label="Department"
+            name="department_id"
+            value={formData.department_id}
+            onChange={handleInputChange}
+            options={departments}
+            displayKey="name"
+            valueKey="id"
+            placeholder="No Department"
+          />
 
           <Select
             label="Status"
