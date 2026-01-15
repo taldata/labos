@@ -14,6 +14,7 @@ function UserManagement({ user, setUser }) {
 
   // Filters
   const [searchQuery, setSearchQuery] = useState('')
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
   const [roleFilter, setRoleFilter] = useState('all')
   const [departmentFilter, setDepartmentFilter] = useState('all')
@@ -40,23 +41,30 @@ function UserManagement({ user, setUser }) {
   const { getItemRef } = useScrollToItem(users, newUserId, () => setNewUserId(null))
 
   useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery)
+    }, 400)
+    return () => clearTimeout(handler)
+  }, [searchQuery])
+
+  useEffect(() => {
     if (!user?.is_admin) {
       navigate('/dashboard')
       return
     }
     fetchData()
-  }, [statusFilter, roleFilter, departmentFilter])
+  }, [statusFilter, roleFilter, departmentFilter, debouncedSearchQuery])
 
   const fetchData = async () => {
     try {
       setLoading(true)
-      
+
       // Build query string
       const params = new URLSearchParams()
       if (statusFilter !== 'all') params.append('status', statusFilter)
       if (roleFilter !== 'all') params.append('role', roleFilter)
       if (departmentFilter !== 'all') params.append('department_id', departmentFilter)
-      if (searchQuery) params.append('search', searchQuery)
+      if (debouncedSearchQuery) params.append('search', debouncedSearchQuery)
 
       // Fetch users
       const usersRes = await fetch(`/api/v1/admin/users?${params.toString()}`, {
@@ -88,7 +96,7 @@ function UserManagement({ user, setUser }) {
   }
 
   const doSearch = () => {
-    fetchData()
+    setDebouncedSearchQuery(searchQuery)
   }
 
   const openModal = (mode, userToEdit = null) => {
@@ -145,12 +153,12 @@ function UserManagement({ user, setUser }) {
     setFormError('')
 
     try {
-      const url = modalMode === 'create' 
-        ? '/api/v1/admin/users' 
+      const url = modalMode === 'create'
+        ? '/api/v1/admin/users'
         : `/api/v1/admin/users/${currentUser.id}`
-      
+
       const method = modalMode === 'create' ? 'POST' : 'PUT'
-      
+
       const payload = { ...formData }
       if (!payload.department_id) payload.department_id = null
 
@@ -245,7 +253,6 @@ function UserManagement({ user, setUser }) {
                 onKeyPress={(e) => e.key === 'Enter' && doSearch()}
                 icon="fas fa-search"
               />
-              <Button variant="primary" onClick={doSearch}>Search</Button>
             </div>
             <div className="filter-group">
               <Select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>

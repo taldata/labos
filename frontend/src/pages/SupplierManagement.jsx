@@ -13,6 +13,7 @@ function SupplierManagement({ user, setUser }) {
 
   // Filters
   const [searchQuery, setSearchQuery] = useState('')
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
 
   // Modal state
@@ -40,20 +41,31 @@ function SupplierManagement({ user, setUser }) {
   // Auto-scroll to newly created supplier
   const { getItemRef } = useScrollToItem(suppliers, newSupplierId, () => setNewSupplierId(null))
 
+  // Debounce search query
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery)
+    }, 400) // 400ms delay
+
+    return () => {
+      clearTimeout(handler)
+    }
+  }, [searchQuery])
+
   useEffect(() => {
     if (!user?.is_admin) {
       navigate('/dashboard')
       return
     }
     fetchSuppliers()
-  }, [statusFilter])
+  }, [statusFilter, debouncedSearchQuery])
 
   const fetchSuppliers = async () => {
     try {
       setLoading(true)
       const params = new URLSearchParams()
       if (statusFilter !== 'all') params.append('status', statusFilter)
-      if (searchQuery) params.append('search', searchQuery)
+      if (debouncedSearchQuery) params.append('search', debouncedSearchQuery)
 
       const res = await fetch(`/api/v1/admin/suppliers?${params.toString()}`, {
         credentials: 'include'
@@ -72,7 +84,7 @@ function SupplierManagement({ user, setUser }) {
   }
 
   const handleSearch = () => {
-    fetchSuppliers()
+    setDebouncedSearchQuery(searchQuery)
   }
 
   const openModal = (mode, supplier = null) => {
@@ -205,7 +217,6 @@ function SupplierManagement({ user, setUser }) {
                 onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
                 icon="fas fa-search"
               />
-              <Button variant="primary" onClick={handleSearch}>Search</Button>
             </div>
             <Select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
               <option value="all">All Status</option>
