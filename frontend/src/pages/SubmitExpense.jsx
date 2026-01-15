@@ -243,7 +243,7 @@ function SubmitExpense({ user, setUser }) {
               <p className="section-hint" style={{ marginBottom: '1rem', color: '#666', fontSize: '0.9rem' }}>
                 העלה חשבונית והמערכת תחלץ אוטומטית את הסכום כולל מע"מ
               </p>
-              <div className="form-row">
+              <div className="form-row file-upload-row">
                 <FileUpload
                   label="Invoice *"
                   name="invoice"

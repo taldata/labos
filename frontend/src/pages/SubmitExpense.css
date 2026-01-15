@@ -166,6 +166,11 @@
   gap: 1.5rem;
 }
 
+/* Force 3 file upload boxes in one row */
+.form-row.file-upload-row {
+  grid-template-columns: repeat(3, 1fr);
+}
+
 /* Enhanced Input Styling */
 .form-section input,
 .form-section select,
