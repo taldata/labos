@@ -1,13 +1,16 @@
 import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { Card, Button, Badge, Input, Select, Skeleton, EmptyState } from '../components/ui'
+import { useScrollToItem } from '../hooks/useScrollToItem'
 import './MyExpenses.css'
 
 function MyExpenses({ user, setUser }) {
   const navigate = useNavigate()
+  const location = useLocation()
   const [expenses, setExpenses] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [newExpenseId, setNewExpenseId] = useState(location.state?.newExpenseId || null)
 
   // Pagination
   const [currentPage, setCurrentPage] = useState(1)
@@ -28,6 +31,9 @@ function MyExpenses({ user, setUser }) {
   // Form data
   const [categories, setCategories] = useState([])
   const [showFilters, setShowFilters] = useState(false)
+
+  // Auto-scroll to newly created expense
+  const { getItemRef } = useScrollToItem(expenses, newExpenseId, () => setNewExpenseId(null))
 
   useEffect(() => {
     fetchCategories()
@@ -285,7 +291,13 @@ function MyExpenses({ user, setUser }) {
                   </thead>
                   <tbody>
                     {expenses.map(expense => (
-                      <tr key={expense.id} className="expense-row" onClick={() => navigate(`/expenses/${expense.id}`)}>
+                      <tr
+                        key={expense.id}
+                        ref={getItemRef(expense.id)}
+                        data-item-id={expense.id}
+                        className="expense-row"
+                        onClick={() => navigate(`/expenses/${expense.id}`)}
+                      >
                         <td>{formatDate(expense.date)}</td>
                         <td>
                           <div className="expense-description">

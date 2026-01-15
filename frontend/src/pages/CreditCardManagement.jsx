@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Card, Button, Input, Select, Modal, Badge, Skeleton, useToast } from '../components/ui'
+import { useScrollToItem } from '../hooks/useScrollToItem'
 import './CreditCardManagement.css'
 
 function CreditCardManagement({ user, setUser }) {
@@ -9,6 +10,7 @@ function CreditCardManagement({ user, setUser }) {
   const [loading, setLoading] = useState(true)
   const [cards, setCards] = useState([])
   const [statusFilter, setStatusFilter] = useState('all')
+  const [newCardId, setNewCardId] = useState(null)
 
   // Modal state
   const [modalOpen, setModalOpen] = useState(false)
@@ -20,6 +22,9 @@ function CreditCardManagement({ user, setUser }) {
     status: 'active'
   })
   const [formError, setFormError] = useState('')
+
+  // Auto-scroll to newly created credit card
+  const { getItemRef } = useScrollToItem(cards, newCardId, () => setNewCardId(null))
 
   useEffect(() => {
     if (!user?.is_admin) {
@@ -110,12 +115,16 @@ function CreditCardManagement({ user, setUser }) {
         body: JSON.stringify(formData)
       })
 
+      const data = await res.json()
       if (res.ok) {
         success(modalMode === 'create' ? 'Credit card added successfully' : 'Credit card updated successfully')
         closeModal()
+        // Store the new card ID for auto-scroll
+        if (modalMode === 'create' && data.credit_card?.id) {
+          setNewCardId(data.credit_card.id)
+        }
         fetchCards()
       } else {
-        const data = await res.json()
         setFormError(data.error || 'Operation failed')
       }
     } catch (err) {
@@ -211,7 +220,12 @@ function CreditCardManagement({ user, setUser }) {
               </Card>
             ) : (
               cards.map(card => (
-                <Card key={card.id} className={`credit-card-item ${card.status === 'inactive' ? 'inactive' : ''}`}>
+                <Card
+                  key={card.id}
+                  ref={getItemRef(card.id)}
+                  data-item-id={card.id}
+                  className={`credit-card-item ${card.status === 'inactive' ? 'inactive' : ''}`}
+                >
                   <div className="card-visual">
                     <div className="card-chip"></div>
                     <div className="card-number">
