@@ -89,6 +89,7 @@ h3 { font-size: 1.1rem; }
     border: 1px solid var(--border-color);
     border-radius: var(--border-radius);
     font-size: 1rem;
+    background-color: white;
     transition: border-color 0.2s ease;
 }
 
@@ -246,6 +247,7 @@ button:hover {
     padding: var(--spacing-lg);
     border-radius: var(--border-radius);
     box-shadow: var(--shadow-sm);
+    overflow: visible;
 }
 
 .form-section h3 {
@@ -279,7 +281,7 @@ button:hover {
     line-height: 1.5;
     border: 1px solid var(--border-color);
     border-radius: var(--border-radius);
-    background-color: white;
+    background-color: white !important;
     transition: all 0.2s ease;
 }
 
@@ -1225,6 +1227,7 @@ select[multiple].form-select option:checked {
 .supplier-search-container {
     position: relative;
     margin-bottom: 1rem;
+    overflow: visible;
 }
 
 .supplier-search-container input {
@@ -1252,9 +1255,10 @@ select[multiple].form-select option:checked {
     background: white;
     border: 1px solid var(--border-color);
     border-radius: var(--border-radius);
-    max-height: 250px;
+    max-height: 300px;
     overflow-y: auto;
-    z-index: 1000;
+    overflow-x: hidden;
+    z-index: 1050;
     display: none;
     box-shadow: var(--shadow-lg);
     margin-top: 4px;
