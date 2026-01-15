@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Card, Button, Input, Select, Modal, Badge, Skeleton, useToast } from '../components/ui'
+import { Card, Button, Input, Select, TomSelectInput, Modal, Badge, Skeleton, useToast } from '../components/ui'
 import './UserManagement.css'
 
 function UserManagement({ user, setUser }) {
@@ -410,18 +410,16 @@ function UserManagement({ user, setUser }) {
               onChange={handleInputChange}
               placeholder={modalMode === 'create' ? 'Enter password' : 'Leave blank to keep current'}
             />
-            <Select
+            <TomSelectInput
               label="Department"
-              icon="fas fa-building"
               name="department_id"
               value={formData.department_id}
               onChange={handleInputChange}
-            >
-              <option value="">No Department</option>
-              {departments.map(dept => (
-                <option key={dept.id} value={dept.id}>{dept.name}</option>
-              ))}
-            </Select>
+              options={departments}
+              displayKey="name"
+              valueKey="id"
+              placeholder="No Department"
+            />
           </div>
 
           <Select

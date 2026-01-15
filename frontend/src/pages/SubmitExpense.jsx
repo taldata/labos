@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Card, Button, Input, Select, SearchableSelect, Textarea, FileUpload, useToast } from '../components/ui'
+import { Card, Button, Input, Select, SearchableSelect, TomSelectInput, Textarea, FileUpload, useToast } from '../components/ui'
 import './SubmitExpense.css'
 
 function SubmitExpense({ user, setUser }) {
@@ -27,6 +27,7 @@ function SubmitExpense({ user, setUser }) {
   const [subcategories, setSubcategories] = useState([])
   const [suppliers, setSuppliers] = useState([])
   const [creditCards, setCreditCards] = useState([])
+  const [selectedCategory, setSelectedCategory] = useState('')
 
   // Files
   const [files, setFiles] = useState({
@@ -348,38 +349,35 @@ function SubmitExpense({ user, setUser }) {
             </Card.Header>
             <Card.Body>
               <div className="form-row">
-                <Select
-                  label="Category *"
+                <TomSelectInput
+                  label="Category"
+                  name="category_id"
+                  value={selectedCategory}
+                  options={categories}
+                  displayKey="name"
+                  valueKey="id"
+                  placeholder="Select a category"
+                  required
                   onChange={(e) => {
                     const catId = e.target.value
+                    setSelectedCategory(catId)
                     handleCategoryChange(catId)
                     setFormData(prev => ({ ...prev, subcategory_id: '' }))
                   }}
-                  required
-                >
-                  <option value="">Select a category</option>
-                  {categories.map(cat => (
-                    <option key={cat.id} value={cat.id}>
-                      {cat.name}
-                    </option>
-                  ))}
-                </Select>
+                />
 
-                <Select
-                  label="Subcategory *"
+                <TomSelectInput
+                  label="Subcategory"
                   name="subcategory_id"
                   value={formData.subcategory_id}
                   onChange={handleInputChange}
+                  options={subcategories}
+                  displayKey="name"
+                  valueKey="id"
+                  placeholder="Select a subcategory"
                   required
-                  disabled={subcategories.length === 0}
-                >
-                  <option value="">Select a subcategory</option>
-                  {subcategories.map(sub => (
-                    <option key={sub.id} value={sub.id}>
-                      {sub.name}
-                    </option>
-                  ))}
-                </Select>
+                  allowClear={false}
+                />
               </div>
 
               <Select
@@ -403,14 +401,13 @@ function SubmitExpense({ user, setUser }) {
             </Card.Header>
             <Card.Body>
               <div className="form-row">
-                <SearchableSelect
+                <TomSelectInput
                   label="Supplier"
                   name="supplier_id"
                   value={formData.supplier_id}
                   onChange={handleInputChange}
                   options={suppliers}
                   placeholder="Select a supplier"
-                  searchPlaceholder="Search suppliers..."
                   displayKey="name"
                   valueKey="id"
                 />

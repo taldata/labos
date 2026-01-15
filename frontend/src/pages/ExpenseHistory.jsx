@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Card, Button, Badge, Input, Select, SearchableSelect, Skeleton, EmptyState, Modal, useToast } from '../components/ui'
+import { Card, Button, Badge, Input, Select, SearchableSelect, TomSelectInput, Skeleton, EmptyState, Modal, useToast } from '../components/ui'
 import MoveExpenseToYearModal from '../components/MoveExpenseToYearModal'
 import './ExpenseHistory.css'
 
@@ -501,54 +501,51 @@ function ExpenseHistory({ user, setUser }) {
                   <option value="rejected">Rejected</option>
                 </Select>
 
-                <Select
+                <TomSelectInput
                   label="Department"
                   name="department_id"
                   value={filters.department_id}
                   onChange={handleFilterChange}
-                >
-                  <option value="">All Departments</option>
-                  {departments.map(dept => (
-                    <option key={dept.id} value={dept.id}>{dept.name}</option>
-                  ))}
-                </Select>
+                  options={departments}
+                  displayKey="name"
+                  valueKey="id"
+                  placeholder="All Departments"
+                />
 
-                <Select
+                <TomSelectInput
                   label="Employee"
                   name="user_id"
                   value={filters.user_id}
                   onChange={handleFilterChange}
-                >
-                  <option value="">All Employees</option>
-                  {users.map(u => (
-                    <option key={u.id} value={u.id}>
-                      {u.first_name} {u.last_name}
-                    </option>
-                  ))}
-                </Select>
+                  options={users.map(u => ({
+                    id: u.id,
+                    name: `${u.first_name} ${u.last_name}`
+                  }))}
+                  displayKey="name"
+                  valueKey="id"
+                  placeholder="All Employees"
+                />
               </div>
 
               <div className="filter-row">
-                <SearchableSelect
+                <TomSelectInput
                   label="Category"
                   name="category_id"
                   value={selectedCategoryOption}
                   onChange={handleCategorySelect}
                   options={categoryOptions}
                   placeholder="All Categories"
-                  searchPlaceholder="Search categories..."
                   displayKey="name"
                   valueKey="id"
                 />
 
-                <SearchableSelect
+                <TomSelectInput
                   label="Supplier"
                   name="supplier_id"
                   value={filters.supplier_id}
                   onChange={handleFilterChange}
                   options={suppliers}
                   placeholder="All Suppliers"
-                  searchPlaceholder="Search suppliers..."
                   displayKey="name"
                   valueKey="id"
                 />
