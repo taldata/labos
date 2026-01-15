@@ -321,18 +321,20 @@ function UserManagement({ user, setUser }) {
                       data-item-id={u.id}
                       className={u.status === 'inactive' ? 'inactive-row' : ''}
                     >
-                      <td className="user-cell">
-                        <div className="user-avatar">
-                          {(u.first_name?.[0] || u.username[0]).toUpperCase()}
-                        </div>
-                        <div className="user-info">
-                          <span className="user-name">{u.first_name} {u.last_name}</span>
-                          <span className="user-username">@{u.username}</span>
+                      <td>
+                        <div className="user-cell">
+                          <div className="user-avatar">
+                            {(u.first_name?.[0] || u.username[0]).toUpperCase()}
+                          </div>
+                          <div className="user-info">
+                            <span className="user-name">{u.first_name} {u.last_name}</span>
+                            <span className="user-username">@{u.username}</span>
+                          </div>
                         </div>
                       </td>
                       <td>{u.email}</td>
                       <td>{u.department_name || <span className="no-dept">No department</span>}</td>
-                      <td className="roles-cell">{getRoleBadges(u)}</td>
+                      <td><div className="roles-cell">{getRoleBadges(u)}</div></td>
                       <td><Badge variant={getStatusVariant(u.status)}>{u.status}</Badge></td>
                       <td>
                         {u.can_use_modern_version ? (
@@ -341,24 +343,26 @@ function UserManagement({ user, setUser }) {
                           <span className="modern-disabled"><i className="fas fa-times-circle"></i></span>
                         )}
                       </td>
-                      <td className="actions-cell">
-                        <Button
-                          variant="ghost"
-                          size="small"
-                          icon="fas fa-edit"
-                          onClick={() => openModal('edit', u)}
-                          title="Edit user"
-                        />
-                        {u.id !== user.id && (
+                      <td>
+                        <div className="actions-cell">
                           <Button
                             variant="ghost"
                             size="small"
-                            icon="fas fa-trash"
-                            onClick={() => handleDelete(u)}
-                            title="Delete user"
-                            className="btn-delete"
+                            icon="fas fa-edit"
+                            onClick={() => openModal('edit', u)}
+                            title="Edit user"
                           />
-                        )}
+                          {u.id !== user.id && (
+                            <Button
+                              variant="ghost"
+                              size="small"
+                              icon="fas fa-trash"
+                              onClick={() => handleDelete(u)}
+                              title="Delete user"
+                              className="btn-delete"
+                            />
+                          )}
+                        </div>
                       </td>
                     </tr>
                   ))
