@@ -382,7 +382,7 @@ function SubmitExpense({ user, setUser }) {
               <div className="form-row">
                 <Input
                   type="number"
-                  label="Amount *"
+                  label="Amount"
                   name="amount"
                   step="0.01"
                   value={formData.amount}
@@ -405,7 +405,7 @@ function SubmitExpense({ user, setUser }) {
                 <div className="date-input-wrapper">
                   <Input
                     type="text"
-                    label="Date *"
+                    label="Date"
                     name="date"
                     value={formData.date}
                     onChange={handleDateChange}
