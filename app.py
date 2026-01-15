@@ -713,7 +713,7 @@ def download_file(filename):
         # Check permissions for the specific user role
         if current_user.is_admin or current_user.is_manager or current_user.is_accounting or expense.user_id == current_user.id:
             try:
-                return send_file(filepath, as_attachment=True)
+                return send_file(filepath, as_attachment=False)
             except Exception as e:
                 logging.error(f"Error downloading file {filename}: {str(e)}")
                 flash('Error downloading file', 'error')
