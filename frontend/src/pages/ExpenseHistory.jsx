@@ -501,31 +501,30 @@ function ExpenseHistory({ user, setUser }) {
                   <option value="rejected">Rejected</option>
                 </Select>
 
-                <Select
+                <TomSelectInput
                   label="Department"
                   name="department_id"
                   value={filters.department_id}
                   onChange={handleFilterChange}
-                >
-                  <option value="">All Departments</option>
-                  {departments.map(dept => (
-                    <option key={dept.id} value={dept.id}>{dept.name}</option>
-                  ))}
-                </Select>
+                  options={departments}
+                  displayKey="name"
+                  valueKey="id"
+                  placeholder="All Departments"
+                />
 
-                <Select
+                <TomSelectInput
                   label="Employee"
                   name="user_id"
                   value={filters.user_id}
                   onChange={handleFilterChange}
-                >
-                  <option value="">All Employees</option>
-                  {users.map(u => (
-                    <option key={u.id} value={u.id}>
-                      {u.first_name} {u.last_name}
-                    </option>
-                  ))}
-                </Select>
+                  options={users.map(u => ({
+                    id: u.id,
+                    name: `${u.first_name} ${u.last_name}`
+                  }))}
+                  displayKey="name"
+                  valueKey="id"
+                  placeholder="All Employees"
+                />
               </div>
 
               <div className="filter-row">

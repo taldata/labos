@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Card, Button, Input, Select, Badge, Skeleton } from '../components/ui'
+import { Card, Button, Input, Select, TomSelectInput, Badge, Skeleton } from '../components/ui'
 import './Reports.css'
 
 function Reports({ user, setUser }) {
@@ -205,29 +205,27 @@ function Reports({ user, setUser }) {
                 <option value="paid">Paid</option>
               </Select>
               {user?.is_admin && (
-                <Select
+                <TomSelectInput
                   label="Department"
                   name="department_id"
                   value={filters.department_id}
                   onChange={handleFilterChange}
-                >
-                  <option value="">All Departments</option>
-                  {departments.map(dept => (
-                    <option key={dept.id} value={dept.id}>{dept.name}</option>
-                  ))}
-                </Select>
+                  options={departments}
+                  displayKey="name"
+                  valueKey="id"
+                  placeholder="All Departments"
+                />
               )}
-              <Select
+              <TomSelectInput
                 label="Category"
                 name="category_id"
                 value={filters.category_id}
                 onChange={handleFilterChange}
-              >
-                <option value="">All Categories</option>
-                {categories.map(cat => (
-                  <option key={cat.id} value={cat.id}>{cat.name}</option>
-                ))}
-              </Select>
+                options={categories}
+                displayKey="name"
+                valueKey="id"
+                placeholder="All Categories"
+              />
             </div>
 
             <div className="filter-actions">
