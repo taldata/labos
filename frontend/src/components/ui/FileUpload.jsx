@@ -17,6 +17,8 @@ const FileUpload = ({
   const [dragActive, setDragActive] = useState(false);
   const [files, setFiles] = useState(value);
   const [uploadError, setUploadError] = useState(error);
+  const [previewFile, setPreviewFile] = useState(null);
+  const [previewUrl, setPreviewUrl] = useState(null);
   const inputRef = useRef(null);
 
   const handleDrag = (e) => {
@@ -143,6 +145,45 @@ const FileUpload = ({
     return iconMap[extension] || 'fa-file';
   };
 
+  const isPreviewable = (fileName) => {
+    const extension = fileName.split('.').pop().toLowerCase();
+    return ['jpg', 'jpeg', 'png', 'gif', 'pdf', 'webp', 'bmp'].includes(extension);
+  };
+
+  const isImage = (fileName) => {
+    const extension = fileName.split('.').pop().toLowerCase();
+    return ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp'].includes(extension);
+  };
+
+  const handlePreview = (file, e) => {
+    e.stopPropagation();
+    if (!isPreviewable(file.name)) return;
+    
+    const url = URL.createObjectURL(file);
+    setPreviewFile(file);
+    setPreviewUrl(url);
+  };
+
+  const handleClosePreview = () => {
+    if (previewUrl) {
+      URL.revokeObjectURL(previewUrl);
+    }
+    setPreviewFile(null);
+    setPreviewUrl(null);
+  };
+
+  const handleDownload = (file, e) => {
+    e.stopPropagation();
+    const url = URL.createObjectURL(file);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = file.name;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div className="file-upload-wrapper">
       {label && (
@@ -200,26 +241,85 @@ const FileUpload = ({
         <div className="file-upload-list">
           {files.map((file, index) => (
             <div key={index} className="file-upload-item">
-              <i className={`fas ${getFileIcon(file.name)} file-upload-item-icon`}></i>
+              <button
+                type="button"
+                className={`file-upload-item-icon-btn ${isPreviewable(file.name) ? 'previewable' : ''}`}
+                onClick={(e) => handlePreview(file, e)}
+                title={isPreviewable(file.name) ? 'Click to preview' : 'Preview not available'}
+              >
+                <i className={`fas ${getFileIcon(file.name)} file-upload-item-icon`}></i>
+              </button>
               <div className="file-upload-item-info">
                 <span className="file-upload-item-name">{file.name}</span>
                 <span className="file-upload-item-size">{formatFileSize(file.size)}</span>
               </div>
-              {!disabled && (
+              <div className="file-upload-item-actions">
                 <button
                   type="button"
-                  className="file-upload-item-remove"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleRemoveFile(index);
-                  }}
-                  aria-label="Remove file"
+                  className="file-upload-item-download"
+                  onClick={(e) => handleDownload(file, e)}
+                  aria-label="Download file"
+                  title="Download"
+                >
+                  <i className="fas fa-download"></i>
+                </button>
+                {!disabled && (
+                  <button
+                    type="button"
+                    className="file-upload-item-remove"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleRemoveFile(index);
+                    }}
+                    aria-label="Remove file"
+                    title="Remove"
+                  >
+                    <i className="fas fa-times"></i>
+                  </button>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Preview Modal */}
+      {previewFile && previewUrl && (
+        <div className="file-preview-overlay" onClick={handleClosePreview}>
+          <div className="file-preview-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="file-preview-header">
+              <span className="file-preview-title">{previewFile.name}</span>
+              <div className="file-preview-actions">
+                <button
+                  type="button"
+                  className="file-preview-download"
+                  onClick={(e) => handleDownload(previewFile, e)}
+                  title="Download"
+                >
+                  <i className="fas fa-download"></i>
+                </button>
+                <button
+                  type="button"
+                  className="file-preview-close"
+                  onClick={handleClosePreview}
+                  title="Close"
                 >
                   <i className="fas fa-times"></i>
                 </button>
+              </div>
+            </div>
+            <div className="file-preview-content">
+              {isImage(previewFile.name) ? (
+                <img src={previewUrl} alt={previewFile.name} className="file-preview-image" />
+              ) : (
+                <iframe
+                  src={previewUrl}
+                  title={previewFile.name}
+                  className="file-preview-pdf"
+                />
               )}
             </div>
-          ))}
+          </div>
         </div>
       )}
     </div>

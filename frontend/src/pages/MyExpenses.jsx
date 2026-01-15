@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
-import { Card, Button, Badge, Input, Select, Skeleton, EmptyState, Modal, useToast } from '../components/ui'
+import { Card, Button, Badge, Input, Select, Skeleton, EmptyState, Modal, useToast, FilePreviewButton } from '../components/ui'
 import { useScrollToItem } from '../hooks/useScrollToItem'
 import './MyExpenses.css'
 
@@ -358,9 +358,23 @@ function MyExpenses({ user, setUser }) {
                           </Badge>
                         </td>
                         <td className="attachments-cell">
-                          {expense.has_invoice && <i className="fas fa-file-invoice" title="Has invoice"></i>}
-                          {expense.has_receipt && <i className="fas fa-receipt" title="Has receipt"></i>}
-                          {!expense.has_invoice && !expense.has_receipt && <span className="no-attachments">-</span>}
+                          {expense.invoice_filename && (
+                            <FilePreviewButton
+                              fileUrl={`/download/${expense.invoice_filename}`}
+                              fileName={expense.invoice_filename}
+                              icon="fas fa-file-invoice"
+                              title="Preview invoice"
+                            />
+                          )}
+                          {expense.receipt_filename && (
+                            <FilePreviewButton
+                              fileUrl={`/download/${expense.receipt_filename}`}
+                              fileName={expense.receipt_filename}
+                              icon="fas fa-receipt"
+                              title="Preview receipt"
+                            />
+                          )}
+                          {!expense.invoice_filename && !expense.receipt_filename && <span className="no-attachments">-</span>}
                         </td>
                         {(user?.is_manager || user?.is_admin) && (
                           <td className="actions-cell" onClick={(e) => e.stopPropagation()}>

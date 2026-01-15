@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Card, Button, Badge, Input, Select, SearchableSelect, TomSelectInput, Skeleton, EmptyState, Modal, useToast } from '../components/ui'
+import { Card, Button, Badge, Input, Select, SearchableSelect, TomSelectInput, Skeleton, EmptyState, Modal, useToast, FilePreviewButton } from '../components/ui'
 import MoveExpenseToYearModal from '../components/MoveExpenseToYearModal'
 import './ExpenseHistory.css'
 
@@ -706,33 +706,30 @@ function ExpenseHistory({ user, setUser }) {
                           )}
                         </td>
                         <td className="files-cell">
-                          {(expense.has_invoice || expense.has_receipt || expense.has_quote) ? (
+                          {(expense.invoice_filename || expense.receipt_filename || expense.quote_filename) ? (
                             <div className="file-icons">
                               {expense.invoice_filename && (
-                                <Button
-                                  variant="ghost"
-                                  size="small"
+                                <FilePreviewButton
+                                  fileUrl={`/download/${expense.invoice_filename}`}
+                                  fileName={expense.invoice_filename}
                                   icon="fas fa-file-invoice"
-                                  onClick={() => window.open(`/download/${expense.invoice_filename}`, '_blank')}
-                                  title="Download Invoice"
+                                  title="Preview Invoice"
                                 />
                               )}
                               {expense.receipt_filename && (
-                                <Button
-                                  variant="ghost"
-                                  size="small"
+                                <FilePreviewButton
+                                  fileUrl={`/download/${expense.receipt_filename}`}
+                                  fileName={expense.receipt_filename}
                                   icon="fas fa-receipt"
-                                  onClick={() => window.open(`/download/${expense.receipt_filename}`, '_blank')}
-                                  title="Download Receipt"
+                                  title="Preview Receipt"
                                 />
                               )}
                               {expense.quote_filename && (
-                                <Button
-                                  variant="ghost"
-                                  size="small"
+                                <FilePreviewButton
+                                  fileUrl={`/download/${expense.quote_filename}`}
+                                  fileName={expense.quote_filename}
                                   icon="fas fa-file-alt"
-                                  onClick={() => window.open(`/download/${expense.quote_filename}`, '_blank')}
-                                  title="Download Quote"
+                                  title="Preview Quote"
                                 />
                               )}
                             </div>

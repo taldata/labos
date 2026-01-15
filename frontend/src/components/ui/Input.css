@@ -353,15 +353,26 @@
 }
 
 .ts-wrapper.single .ts-control::after {
-  border-color: #64748b transparent transparent transparent;
-  border-width: 6px 6px 0 6px;
+  border-color: #0f172a transparent transparent transparent !important;
+  border-width: 6px 6px 0 6px !important;
   margin-top: -3px;
 }
 
 .ts-wrapper.single.focus .ts-control::after {
-  border-color: transparent transparent #64748b transparent;
-  border-width: 0 6px 6px 6px;
+  border-color: transparent transparent #0f172a transparent !important;
+  border-width: 0 6px 6px 6px !important;
   margin-top: -9px;
+}
+
+/* Ensure Tom Select text is black like other fields */
+.ts-wrapper .ts-control,
+.ts-wrapper .ts-control input,
+.ts-wrapper .ts-control .item {
+  color: #0f172a !important;
+}
+
+.ts-wrapper .ts-control input::placeholder {
+  color: #94a3b8 !important;
 }
 
 .ts-wrapper.single .ts-control.error {

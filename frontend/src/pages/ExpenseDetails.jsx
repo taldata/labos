@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { Card, Button, Badge, Modal, Skeleton, Textarea, useToast } from '../components/ui'
+import { Card, Button, Badge, Modal, Skeleton, Textarea, useToast, FilePreviewButton } from '../components/ui'
 import BudgetImpactWidget from '../components/BudgetImpactWidget'
 import './ExpenseDetails.css'
 
@@ -337,7 +337,13 @@ function ExpenseDetails({ user, setUser }) {
               <div className="attachments-grid">
                 {expense.invoice_filename && (
                   <div className="attachment-item">
-                    <i className="fas fa-file-invoice"></i>
+                    <FilePreviewButton
+                      fileUrl={`/download/${expense.invoice_filename}`}
+                      fileName={expense.invoice_filename}
+                      icon="fas fa-file-invoice"
+                      title="Click to preview invoice"
+                      className="attachment-icon-btn"
+                    />
                     <div className="attachment-info">
                       <span className="attachment-name">Invoice</span>
                       <span className="attachment-filename">{expense.invoice_filename}</span>
@@ -348,13 +354,19 @@ function ExpenseDetails({ user, setUser }) {
                       icon="fas fa-download"
                       onClick={() => window.open(`/download/${expense.invoice_filename}`, '_blank')}
                     >
-                      View
+                      Download
                     </Button>
                   </div>
                 )}
                 {expense.receipt_filename && (
                   <div className="attachment-item">
-                    <i className="fas fa-receipt"></i>
+                    <FilePreviewButton
+                      fileUrl={`/download/${expense.receipt_filename}`}
+                      fileName={expense.receipt_filename}
+                      icon="fas fa-receipt"
+                      title="Click to preview receipt"
+                      className="attachment-icon-btn"
+                    />
                     <div className="attachment-info">
                       <span className="attachment-name">Receipt</span>
                       <span className="attachment-filename">{expense.receipt_filename}</span>
@@ -365,13 +377,19 @@ function ExpenseDetails({ user, setUser }) {
                       icon="fas fa-download"
                       onClick={() => window.open(`/download/${expense.receipt_filename}`, '_blank')}
                     >
-                      View
+                      Download
                     </Button>
                   </div>
                 )}
                 {expense.quote_filename && (
                   <div className="attachment-item">
-                    <i className="fas fa-file-alt"></i>
+                    <FilePreviewButton
+                      fileUrl={`/download/${expense.quote_filename}`}
+                      fileName={expense.quote_filename}
+                      icon="fas fa-file-alt"
+                      title="Click to preview quote"
+                      className="attachment-icon-btn"
+                    />
                     <div className="attachment-info">
                       <span className="attachment-name">Quote</span>
                       <span className="attachment-filename">{expense.quote_filename}</span>
@@ -382,7 +400,7 @@ function ExpenseDetails({ user, setUser }) {
                       icon="fas fa-download"
                       onClick={() => window.open(`/download/${expense.quote_filename}`, '_blank')}
                     >
-                      View
+                      Download
                     </Button>
                   </div>
                 )}
