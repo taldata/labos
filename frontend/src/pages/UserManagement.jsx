@@ -226,9 +226,6 @@ function UserManagement({ user, setUser }) {
             <h1>User Management</h1>
             <p className="subtitle">Manage user accounts and permissions</p>
           </div>
-          <Button variant="primary" icon="fas fa-user-plus" onClick={() => openModal('create')}>
-            Add User
-          </Button>
         </div>
 
         {/* Filters */}
