@@ -3,24 +3,79 @@ import { useNavigate } from 'react-router-dom'
 import { Card, Button, Input, Select, SearchableSelect, TomSelectInput, Textarea, FileUpload, useToast } from '../components/ui'
 import './SubmitExpense.css'
 
+// Helper functions for DD/MM/YYYY date format
+const formatDateForDisplay = (isoDate) => {
+  if (!isoDate) return ''
+  const [year, month, day] = isoDate.split('-')
+  return `${day}/${month}/${year}`
+}
+
+const formatDateForApi = (displayDate) => {
+  if (!displayDate) return ''
+  const parts = displayDate.split('/')
+  if (parts.length !== 3) return ''
+  const [day, month, year] = parts
+  return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`
+}
+
+const isValidDate = (displayDate) => {
+  if (!displayDate) return false
+  const regex = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/
+  const match = displayDate.match(regex)
+  if (!match) return false
+  
+  const day = parseInt(match[1], 10)
+  const month = parseInt(match[2], 10)
+  const year = parseInt(match[3], 10)
+  
+  if (month < 1 || month > 12) return false
+  if (day < 1 || day > 31) return false
+  
+  // Check for valid day in month
+  const daysInMonth = new Date(year, month, 0).getDate()
+  if (day > daysInMonth) return false
+  
+  return true
+}
+
+const applyDateMask = (value) => {
+  // Remove non-digits
+  const digits = value.replace(/\D/g, '')
+  
+  // Apply mask DD/MM/YYYY
+  let masked = ''
+  for (let i = 0; i < digits.length && i < 8; i++) {
+    if (i === 2 || i === 4) masked += '/'
+    masked += digits[i]
+  }
+  return masked
+}
+
 function SubmitExpense({ user, setUser }) {
   const navigate = useNavigate()
   const { success: showSuccess, error: showError } = useToast()
 
-  // Form data
+  // Get today's date in DD/MM/YYYY format
+  const today = new Date()
+  const todayFormatted = `${String(today.getDate()).padStart(2, '0')}/${String(today.getMonth() + 1).padStart(2, '0')}/${today.getFullYear()}`
+
+  // Form data - date stored in DD/MM/YYYY display format
   const [formData, setFormData] = useState({
     amount: '',
     currency: 'ILS',
     description: '',
     reason: '',
     expense_type: 'auto_approved',
-    date: new Date().toISOString().split('T')[0],
+    date: todayFormatted,
     subcategory_id: '',
     supplier_id: '',
     payment_method: 'credit',
     credit_card_id: '',
     payment_due_date: 'end_of_month'
   })
+  
+  // Date validation error
+  const [dateError, setDateError] = useState('')
 
   // Dropdown options
   const [categories, setCategories] = useState([])
@@ -107,6 +162,27 @@ function SubmitExpense({ user, setUser }) {
     }))
   }
 
+  const handleDateChange = (e) => {
+    const rawValue = e.target.value
+    const maskedValue = applyDateMask(rawValue)
+    
+    setFormData(prev => ({
+      ...prev,
+      date: maskedValue
+    }))
+    
+    // Validate and show error if incomplete or invalid
+    if (maskedValue.length === 10) {
+      if (!isValidDate(maskedValue)) {
+        setDateError('תאריך לא תקין')
+      } else {
+        setDateError('')
+      }
+    } else if (maskedValue.length > 0) {
+      setDateError('')
+    }
+  }
+
   const handleFileChange = async (name, fileList) => {
     if (fileList && fileList.length > 0) {
       const file = fileList[0]
@@ -142,12 +218,13 @@ function SubmitExpense({ user, setUser }) {
               }))
             }
             if (ocrResult.purchase_date) {
-              const date = new Date(ocrResult.purchase_date)
-              const formattedDate = date.toISOString().split('T')[0]
+              // Convert ISO date to DD/MM/YYYY format for display
+              const formattedDate = formatDateForDisplay(ocrResult.purchase_date)
               setFormData(prev => ({
                 ...prev,
                 date: formattedDate
               }))
+              setDateError('')
             }
             if (ocrResult.amount || ocrResult.purchase_date) {
               showSuccess('נתונים חולצו מהחשבונית בהצלחה')
@@ -178,14 +255,27 @@ function SubmitExpense({ user, setUser }) {
         setLoading(false)
         return
       }
+      
+      // Validate date format
+      if (!isValidDate(formData.date)) {
+        showError('תאריך לא תקין (DD/MM/YYYY)')
+        setDateError('תאריך לא תקין')
+        setLoading(false)
+        return
+      }
 
       // Create FormData for file upload
       const submitData = new FormData()
 
-      // Add form fields
+      // Add form fields - convert date to ISO format for API
       Object.keys(formData).forEach(key => {
         if (formData[key]) {
-          submitData.append(key, formData[key])
+          if (key === 'date') {
+            // Convert DD/MM/YYYY to YYYY-MM-DD for API
+            submitData.append(key, formatDateForApi(formData[key]))
+          } else {
+            submitData.append(key, formData[key])
+          }
         }
       })
 
@@ -312,14 +402,20 @@ function SubmitExpense({ user, setUser }) {
                   <option value="EUR">EUR (€)</option>
                 </Select>
 
-                <Input
-                  type="date"
-                  label="Date *"
-                  name="date"
-                  value={formData.date}
-                  onChange={handleInputChange}
-                  required
-                />
+                <div className="date-input-wrapper">
+                  <Input
+                    type="text"
+                    label="Date *"
+                    name="date"
+                    value={formData.date}
+                    onChange={handleDateChange}
+                    required
+                    placeholder="DD/MM/YYYY"
+                    maxLength={10}
+                    className={dateError ? 'input-error' : ''}
+                  />
+                  {dateError && <span className="date-error-text">{dateError}</span>}
+                </div>
               </div>
 
               <Input

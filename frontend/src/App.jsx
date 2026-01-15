@@ -14,7 +14,7 @@ import UserManagement from './pages/UserManagement'
 import Settings from './pages/Settings'
 import SupplierManagement from './pages/SupplierManagement'
 import CreditCardManagement from './pages/CreditCardManagement'
-import Reports from './pages/Reports'
+
 import ExpenseHistory from './pages/ExpenseHistory'
 import './App.css'
 
@@ -111,10 +111,7 @@ function App() {
           path="/admin/credit-cards"
           element={<AuthenticatedRoute user={user} setUser={setUser}><CreditCardManagement user={user} setUser={setUser} /></AuthenticatedRoute>}
         />
-        <Route
-          path="/reports"
-          element={<AuthenticatedRoute user={user} setUser={setUser}><Reports user={user} setUser={setUser} /></AuthenticatedRoute>}
-        />
+
         <Route
           path="/admin/expense-history"
           element={<AuthenticatedRoute user={user} setUser={setUser}><ExpenseHistory user={user} setUser={setUser} /></AuthenticatedRoute>}

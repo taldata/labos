@@ -162,17 +162,7 @@ function Dashboard({ user, setUser }) {
                   </Card.Body>
                 </Card>
 
-                <Card hoverable clickable onClick={() => navigate('/reports')} className="action-card">
-                  <Card.Body>
-                    <div className="action-icon action-icon-reports">
-                      <i className="fas fa-chart-bar"></i>
-                    </div>
-                    <div className="action-content">
-                      <h4>Reports</h4>
-                      <p>Generate & export reports</p>
-                    </div>
-                  </Card.Body>
-                </Card>
+
 
                 {(user?.is_manager || user?.is_admin) && (
                   <Card hoverable clickable onClick={() => navigate('/approvals')} className="action-card">

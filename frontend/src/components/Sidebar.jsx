@@ -72,7 +72,6 @@ function Sidebar({ user, setUser, isOpen, onToggle }) {
       label: 'Approvals',
       badge: pendingCount > 0 ? pendingCount : null 
     },
-    { path: '/reports', icon: 'fa-chart-bar', label: 'Reports' },
   ]
 
   const adminItems = [

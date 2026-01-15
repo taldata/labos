@@ -389,3 +389,40 @@
     gap: 1.25rem;
   }
 }
+
+/* Date Input Wrapper */
+.date-input-wrapper {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+.date-input-wrapper input {
+  font-family: 'Inter', system-ui, monospace;
+  letter-spacing: 0.5px;
+}
+
+.date-input-wrapper input::placeholder {
+  color: #94a3b8;
+  font-weight: 400;
+}
+
+.date-error-text {
+  color: #ef4444;
+  font-size: 0.75rem;
+  margin-top: 0.35rem;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.date-error-text::before {
+  content: '⚠';
+  font-size: 0.7rem;
+}
+
+.input-error input,
+.date-input-wrapper:has(.date-error-text) input {
+  border-color: #ef4444 !important;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1) !important;
+}

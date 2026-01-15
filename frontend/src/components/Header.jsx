@@ -122,12 +122,7 @@ function Header({ user, setUser, currentPage = 'dashboard' }) {
             >
               <i className="fas fa-list"></i> My Expenses
             </button>
-            <button 
-              className={`nav-link ${currentPage === 'reports' ? 'active' : ''}`}
-              onClick={() => navigate('/reports')}
-            >
-              <i className="fas fa-chart-bar"></i> Reports
-            </button>
+
             {(user?.is_manager || user?.is_admin) && (
               <button 
                 className={`nav-link ${currentPage === 'approvals' ? 'active' : ''}`}
@@ -196,12 +191,7 @@ function Header({ user, setUser, currentPage = 'dashboard' }) {
           >
             <i className="fas fa-list"></i> My Expenses
           </button>
-          <button
-            className={`mobile-nav-link ${currentPage === 'reports' ? 'active' : ''}`}
-            onClick={() => handleNavigation('/reports')}
-          >
-            <i className="fas fa-chart-bar"></i> Reports
-          </button>
+
           {(user?.is_manager || user?.is_admin) && (
             <button
               className={`mobile-nav-link ${currentPage === 'approvals' ? 'active' : ''}`}
