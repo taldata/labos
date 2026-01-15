@@ -477,7 +477,7 @@ function SubmitExpense({ user, setUser }) {
               </div>
 
               <Select
-                label="Expense Type *"
+                label="Expense Type"
                 name="expense_type"
                 value={formData.expense_type}
                 onChange={handleInputChange}
