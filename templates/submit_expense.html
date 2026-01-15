@@ -118,29 +118,31 @@
                     </div>
 
                     <h3 class="mt-4"><i class="fas fa-file-alt"></i> Supporting Documents</h3>
-                    <div class="form-group">
-                        <label for="quote">
-                            <i class="fas fa-file-invoice"></i> Quote
-                        </label>
-                        <input type="file" name="quote" id="quote" class="form-control document-upload" data-type="quote" accept=".pdf,.png,.jpg,.jpeg">
-                        <small class="text-muted">Upload a quote document (PDF, PNG, JPG)</small>
-                        <div id="quote_preview" class="document-preview"></div>
-                    </div>
-                    <div class="form-group">
-                        <label for="invoice">
-                            <i class="fas fa-file-invoice-dollar"></i> Invoice
-                        </label>
-                        <input type="file" name="invoice" id="invoice" class="form-control document-upload" data-type="invoice" accept=".pdf,.png,.jpg,.jpeg">
-                        <small class="text-muted">Upload an invoice document (PDF, PNG, JPG)</small>
-                        <div id="invoice_preview" class="document-preview"></div>
-                    </div>
-                    <div class="form-group">
-                        <label for="receipt">
-                            <i class="fas fa-receipt"></i> Receipt
-                        </label>
-                        <input type="file" name="receipt" id="receipt" class="form-control document-upload" data-type="receipt" accept=".pdf,.png,.jpg,.jpeg">
-                        <small class="text-muted">Upload a receipt document (PDF, PNG, JPG)</small>
-                        <div id="receipt_preview" class="document-preview"></div>
+                    <div class="documents-upload-row">
+                        <div class="form-group">
+                            <label for="quote">
+                                <i class="fas fa-file-invoice"></i> Quote
+                            </label>
+                            <input type="file" name="quote" id="quote" class="form-control document-upload" data-type="quote" accept=".pdf,.png,.jpg,.jpeg">
+                            <small class="text-muted">PDF, PNG, JPG</small>
+                            <div id="quote_preview" class="document-preview"></div>
+                        </div>
+                        <div class="form-group">
+                            <label for="invoice">
+                                <i class="fas fa-file-invoice-dollar"></i> Invoice
+                            </label>
+                            <input type="file" name="invoice" id="invoice" class="form-control document-upload" data-type="invoice" accept=".pdf,.png,.jpg,.jpeg">
+                            <small class="text-muted">PDF, PNG, JPG</small>
+                            <div id="invoice_preview" class="document-preview"></div>
+                        </div>
+                        <div class="form-group">
+                            <label for="receipt">
+                                <i class="fas fa-receipt"></i> Receipt
+                            </label>
+                            <input type="file" name="receipt" id="receipt" class="form-control document-upload" data-type="receipt" accept=".pdf,.png,.jpg,.jpeg">
+                            <small class="text-muted">PDF, PNG, JPG</small>
+                            <div id="receipt_preview" class="document-preview"></div>
+                        </div>
                     </div>
                 </div>
 
@@ -238,6 +240,18 @@
 </div>
 
 <style>
+/* Documents upload row layout */
+.documents-upload-row {
+    display: flex;
+    gap: 15px;
+    flex-wrap: wrap;
+}
+
+.documents-upload-row .form-group {
+    flex: 1;
+    min-width: 200px;
+}
+
 .document-preview {
     margin-top: 10px;
     padding: 15px;
