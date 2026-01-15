@@ -344,7 +344,7 @@ function SupplierManagement({ user, setUser }) {
             <h4>Basic Information</h4>
             <div className="form-row">
               <Input
-                label="Supplier Name *"
+                label="Supplier Name"
                 type="text"
                 name="name"
                 value={formData.name}
