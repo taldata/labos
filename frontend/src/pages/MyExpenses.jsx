@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Card, Button, Badge, Input, Select, Skeleton, EmptyState } from '../components/ui'
+import { Card, Button, Badge, Input, Select, Skeleton, EmptyState, Modal, useToast } from '../components/ui'
 import './MyExpenses.css'
 
 function MyExpenses({ user, setUser }) {
   const navigate = useNavigate()
+  const { success, error: showError } = useToast()
   const [expenses, setExpenses] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -28,6 +29,10 @@ function MyExpenses({ user, setUser }) {
   // Form data
   const [categories, setCategories] = useState([])
   const [showFilters, setShowFilters] = useState(false)
+
+  // Delete confirmation
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false)
+  const [expenseToDelete, setExpenseToDelete] = useState(null)
 
   useEffect(() => {
     fetchCategories()
@@ -102,6 +107,32 @@ function MyExpenses({ user, setUser }) {
       sort_order: 'desc'
     })
     setCurrentPage(1)
+  }
+
+  const openDeleteModal = (e, expense) => {
+    e.stopPropagation() // Prevent row click navigation
+    setExpenseToDelete(expense)
+    setDeleteModalOpen(true)
+  }
+
+  const handleDelete = async () => {
+    try {
+      const res = await fetch(`/api/v1/admin/expenses/${expenseToDelete.id}`, {
+        method: 'DELETE',
+        credentials: 'include'
+      })
+      if (res.ok) {
+        success('Expense deleted successfully')
+        setDeleteModalOpen(false)
+        setExpenseToDelete(null)
+        fetchExpenses() // Refresh the list
+      } else {
+        const data = await res.json()
+        showError(data.error || 'Failed to delete expense')
+      }
+    } catch (err) {
+      showError('An error occurred')
+    }
   }
 
   const getStatusVariant = (status) => {
@@ -281,6 +312,7 @@ function MyExpenses({ user, setUser }) {
                       <th>Amount</th>
                       <th>Status</th>
                       <th>Attachments</th>
+                      {(user?.is_manager || user?.is_admin) && <th>Actions</th>}
                     </tr>
                   </thead>
                   <tbody>
@@ -318,6 +350,18 @@ function MyExpenses({ user, setUser }) {
                           {expense.has_receipt && <i className="fas fa-receipt" title="Has receipt"></i>}
                           {!expense.has_invoice && !expense.has_receipt && <span className="no-attachments">-</span>}
                         </td>
+                        {(user?.is_manager || user?.is_admin) && (
+                          <td className="actions-cell" onClick={(e) => e.stopPropagation()}>
+                            <Button
+                              variant="ghost"
+                              size="small"
+                              icon="fas fa-trash"
+                              onClick={(e) => openDeleteModal(e, expense)}
+                              title="Delete"
+                              className="btn-delete"
+                            />
+                          </td>
+                        )}
                       </tr>
                     ))}
                   </tbody>
@@ -357,6 +401,34 @@ function MyExpenses({ user, setUser }) {
           )}
         </Card>
       </div>
+
+      {/* Delete Confirmation Modal */}
+      <Modal
+        isOpen={deleteModalOpen}
+        onClose={() => setDeleteModalOpen(false)}
+        title="Delete Expense"
+        size="small"
+      >
+        <div className="delete-confirmation">
+          <p>Are you sure you want to delete this expense?</p>
+          {expenseToDelete && (
+            <div className="expense-details">
+              <p><strong>Description:</strong> {expenseToDelete.description}</p>
+              <p><strong>Amount:</strong> {formatCurrency(expenseToDelete.amount, expenseToDelete.currency)}</p>
+              <p><strong>Date:</strong> {formatDate(expenseToDelete.date)}</p>
+            </div>
+          )}
+          <p className="warning-text">This action cannot be undone.</p>
+        </div>
+        <div className="modal-actions">
+          <Button type="button" variant="secondary" onClick={() => setDeleteModalOpen(false)}>
+            Cancel
+          </Button>
+          <Button type="button" variant="danger" onClick={handleDelete}>
+            Delete
+          </Button>
+        </div>
+      </Modal>
     </div>
   )
 }
