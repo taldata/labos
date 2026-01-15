@@ -232,7 +232,7 @@ function Dashboard({ user, setUser }) {
             {recentExpenses.length > 0 && (
               <Card className="recent-expenses">
                 <Card.Header>
-                  <h3><i className="fas fa-receipt"></i> Recent Expenses</h3>
+                  <h3><i className="fas fa-receipt"></i> 5 Most Recent Expenses</h3>
                   <Button variant="ghost" size="small" onClick={() => navigate('/admin/expense-history')}>
                     View All <i className="fas fa-arrow-right"></i>
                   </Button>
