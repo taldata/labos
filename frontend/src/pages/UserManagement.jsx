@@ -48,14 +48,33 @@ function UserManagement({ user, setUser }) {
   }, [searchQuery])
 
   useEffect(() => {
+    // Fetch departments once on mount
+    fetchDepartments()
+  }, [])
+
+  useEffect(() => {
     if (!user?.is_admin) {
       navigate('/dashboard')
       return
     }
-    fetchData()
+    fetchUsers()
   }, [statusFilter, roleFilter, departmentFilter, debouncedSearchQuery])
 
-  const fetchData = async () => {
+  const fetchDepartments = async () => {
+    try {
+      const deptRes = await fetch('/api/v1/organization/structure', {
+        credentials: 'include'
+      })
+      if (deptRes.ok) {
+        const data = await deptRes.json()
+        setDepartments(data.structure)
+      }
+    } catch (err) {
+      console.error('Failed to load departments', err)
+    }
+  }
+
+  const fetchUsers = async () => {
     try {
       setLoading(true)
 
@@ -74,17 +93,8 @@ function UserManagement({ user, setUser }) {
         const data = await usersRes.json()
         setUsers(data.users)
       }
-
-      // Fetch departments for filter and form
-      const deptRes = await fetch('/api/v1/organization/structure', {
-        credentials: 'include'
-      })
-      if (deptRes.ok) {
-        const data = await deptRes.json()
-        setDepartments(data.structure)
-      }
     } catch (err) {
-      showError('Failed to load data')
+      showError('Failed to load users')
       console.error(err)
     } finally {
       setLoading(false)

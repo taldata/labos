@@ -193,15 +193,16 @@ def get_organization_structure():
         # Filter by year if provided
         year_id = request.args.get('year_id', type=int)
 
+        query = Department.query
         if year_id:
-            departments = Department.query.filter_by(year_id=year_id).order_by(Department.name).all()
+            query = query.filter_by(year_id=year_id)
         else:
             # Default to current year or all if no current year set
             current_year = BudgetYear.query.filter_by(is_current=True).first()
             if current_year:
-                departments = Department.query.filter_by(year_id=current_year.id).order_by(Department.name).all()
-            else:
-                departments = Department.query.order_by(Department.name).all()
+                query = query.filter_by(year_id=current_year.id)
+        
+        departments = query.order_by(Department.name).all()
 
         # Pre-calculate all budget usage in 3 queries instead of N*M*K queries
         # Get all department IDs for filtering
@@ -252,7 +253,30 @@ def get_organization_structure():
             for subcat_id, spent in subcat_query:
                 subcat_spending[subcat_id] = float(spent) if spent else 0.0
 
-        # Build structure using pre-calculated spending data
+        # Fetch all categories and subcategories in bulk
+        all_categories = []
+        all_subcategories = []
+        if dept_ids:
+            all_categories = Category.query.filter(Category.department_id.in_(dept_ids)).order_by(Category.name).all()
+            if all_categories:
+                cat_ids = [c.id for c in all_categories]
+                all_subcategories = Subcategory.query.filter(Subcategory.category_id.in_(cat_ids)).order_by(Subcategory.name).all()
+
+        # Map categories to departments
+        cats_by_dept = {}
+        for cat in all_categories:
+            if cat.department_id not in cats_by_dept:
+                cats_by_dept[cat.department_id] = []
+            cats_by_dept[cat.department_id].append(cat)
+            
+        # Map subcategories to categories
+        subcats_by_cat = {}
+        for sub in all_subcategories:
+            if sub.category_id not in subcats_by_cat:
+                subcats_by_cat[sub.category_id] = []
+            subcats_by_cat[sub.category_id].append(sub)
+
+        # Build structure using pre-calculated spending data and in-memory maps
         structure = []
         for dept in departments:
             dept_data = {
@@ -264,8 +288,7 @@ def get_organization_structure():
                 'categories': []
             }
 
-            categories = Category.query.filter_by(department_id=dept.id).order_by(Category.name).all()
-            for cat in categories:
+            for cat in cats_by_dept.get(dept.id, []):
                 cat_data = {
                     'id': cat.id,
                     'name': cat.name,
@@ -275,8 +298,7 @@ def get_organization_structure():
                     'subcategories': []
                 }
 
-                subcategories = Subcategory.query.filter_by(category_id=cat.id).order_by(Subcategory.name).all()
-                for sub in subcategories:
+                for sub in subcats_by_cat.get(cat.id, []):
                     sub_data = {
                         'id': sub.id,
                         'name': sub.name,
