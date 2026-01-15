@@ -157,6 +157,21 @@
   flex-direction: column;
   gap: 1.5rem;
   padding: 2rem;
+  overflow: visible;
+}
+
+/* Ensure Tom Select dropdowns are fully visible */
+.form-section .tom-select-container {
+  position: relative;
+}
+
+.form-section .ts-wrapper {
+  position: relative;
+}
+
+.form-section .ts-dropdown {
+  position: absolute;
+  z-index: 9999;
 }
 
 /* Form Row Grid */
