@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Card, Button, Input, Select, TomSelectInput, Modal, Badge, Skeleton, useToast } from '../components/ui'
+import { useScrollToItem } from '../hooks/useScrollToItem'
 import './UserManagement.css'
 
 function UserManagement({ user, setUser }) {
@@ -9,6 +10,7 @@ function UserManagement({ user, setUser }) {
   const [loading, setLoading] = useState(true)
   const [users, setUsers] = useState([])
   const [departments, setDepartments] = useState([])
+  const [newUserId, setNewUserId] = useState(null)
 
   // Filters
   const [searchQuery, setSearchQuery] = useState('')
@@ -34,6 +36,9 @@ function UserManagement({ user, setUser }) {
     department_id: ''
   })
   const [formError, setFormError] = useState('')
+
+  // Auto-scroll to newly created user
+  const { getItemRef } = useScrollToItem(users, newUserId, () => setNewUserId(null))
 
   useEffect(() => {
     if (!user?.is_admin) {
@@ -160,12 +165,16 @@ function UserManagement({ user, setUser }) {
         body: JSON.stringify(payload)
       })
 
+      const data = await res.json()
       if (res.ok) {
         success(modalMode === 'create' ? 'User created successfully' : 'User updated successfully')
         closeModal()
+        // Store the new user ID for auto-scroll
+        if (modalMode === 'create' && data.user?.id) {
+          setNewUserId(data.user.id)
+        }
         fetchData()
       } else {
-        const data = await res.json()
         setFormError(data.error || 'Operation failed')
       }
     } catch (err) {
@@ -293,7 +302,12 @@ function UserManagement({ user, setUser }) {
                   </tr>
                 ) : (
                   users.map(u => (
-                    <tr key={u.id} className={u.status === 'inactive' ? 'inactive-row' : ''}>
+                    <tr
+                      key={u.id}
+                      ref={getItemRef(u.id)}
+                      data-item-id={u.id}
+                      className={u.status === 'inactive' ? 'inactive-row' : ''}
+                    >
                       <td className="user-cell">
                         <div className="user-avatar">
                           {(u.first_name?.[0] || u.username[0]).toUpperCase()}

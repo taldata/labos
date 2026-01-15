@@ -205,7 +205,7 @@ function SubmitExpense({ user, setUser }) {
       if (response.ok) {
         showSuccess('Expense submitted successfully!')
         setTimeout(() => {
-          navigate('/dashboard')
+          navigate('/my-expenses', { state: { newExpenseId: data.expense_id } })
         }, 1500)
       } else {
         showError(data.error || 'Failed to submit expense')

@@ -1,14 +1,17 @@
 import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { Card, Button, Badge, Input, Select, Skeleton, EmptyState, Modal, useToast } from '../components/ui'
+import { useScrollToItem } from '../hooks/useScrollToItem'
 import './MyExpenses.css'
 
 function MyExpenses({ user, setUser }) {
   const navigate = useNavigate()
+  const location = useLocation()
   const { success, error: showError } = useToast()
   const [expenses, setExpenses] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [newExpenseId, setNewExpenseId] = useState(location.state?.newExpenseId || null)
 
   // Pagination
   const [currentPage, setCurrentPage] = useState(1)
@@ -29,6 +32,9 @@ function MyExpenses({ user, setUser }) {
   // Form data
   const [categories, setCategories] = useState([])
   const [showFilters, setShowFilters] = useState(false)
+
+  // Auto-scroll to newly created expense
+  const { getItemRef } = useScrollToItem(expenses, newExpenseId, () => setNewExpenseId(null))
 
   // Delete confirmation
   const [deleteModalOpen, setDeleteModalOpen] = useState(false)
@@ -317,7 +323,13 @@ function MyExpenses({ user, setUser }) {
                   </thead>
                   <tbody>
                     {expenses.map(expense => (
-                      <tr key={expense.id} className="expense-row" onClick={() => navigate(`/expenses/${expense.id}`)}>
+                      <tr
+                        key={expense.id}
+                        ref={getItemRef(expense.id)}
+                        data-item-id={expense.id}
+                        className="expense-row"
+                        onClick={() => navigate(`/expenses/${expense.id}`)}
+                      >
                         <td>{formatDate(expense.date)}</td>
                         <td>
                           <div className="expense-description">
@@ -413,12 +425,10 @@ function MyExpenses({ user, setUser }) {
           <p>Are you sure you want to delete this expense?</p>
           {expenseToDelete && (
             <div className="expense-details">
-              <p><strong>Description:</strong> {expenseToDelete.description}</p>
-              <p><strong>Amount:</strong> {formatCurrency(expenseToDelete.amount, expenseToDelete.currency)}</p>
-              <p><strong>Date:</strong> {formatDate(expenseToDelete.date)}</p>
+              <strong>{expenseToDelete.description || 'No description'}</strong>
+              <span>{formatCurrency(expenseToDelete.amount, expenseToDelete.currency)}</span>
             </div>
           )}
-          <p className="warning-text">This action cannot be undone.</p>
         </div>
         <div className="modal-actions">
           <Button type="button" variant="secondary" onClick={() => setDeleteModalOpen(false)}>

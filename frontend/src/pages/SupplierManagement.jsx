@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Card, Button, Input, Select, Textarea, Modal, Badge, Skeleton, useToast } from '../components/ui'
+import { useScrollToItem } from '../hooks/useScrollToItem'
 import './SupplierManagement.css'
 
 function SupplierManagement({ user, setUser }) {
@@ -8,6 +9,7 @@ function SupplierManagement({ user, setUser }) {
   const { success, error: showError } = useToast()
   const [loading, setLoading] = useState(true)
   const [suppliers, setSuppliers] = useState([])
+  const [newSupplierId, setNewSupplierId] = useState(null)
 
   // Filters
   const [searchQuery, setSearchQuery] = useState('')
@@ -34,6 +36,9 @@ function SupplierManagement({ user, setUser }) {
 
   // Expanded view
   const [expandedId, setExpandedId] = useState(null)
+
+  // Auto-scroll to newly created supplier
+  const { getItemRef } = useScrollToItem(suppliers, newSupplierId, () => setNewSupplierId(null))
 
   useEffect(() => {
     if (!user?.is_admin) {
@@ -134,12 +139,16 @@ function SupplierManagement({ user, setUser }) {
         body: JSON.stringify(formData)
       })
 
+      const data = await res.json()
       if (res.ok) {
         success(modalMode === 'create' ? 'Supplier added successfully' : 'Supplier updated successfully')
         closeModal()
+        // Store the new supplier ID for auto-scroll
+        if (modalMode === 'create' && data.supplier?.id) {
+          setNewSupplierId(data.supplier.id)
+        }
         fetchSuppliers()
       } else {
-        const data = await res.json()
         setFormError(data.error || 'Operation failed')
       }
     } catch (err) {
@@ -224,7 +233,12 @@ function SupplierManagement({ user, setUser }) {
               </Card>
             ) : (
               suppliers.map(supplier => (
-                <Card key={supplier.id} className={`supplier-card ${supplier.status === 'inactive' ? 'inactive' : ''}`}>
+                <Card
+                  key={supplier.id}
+                  ref={getItemRef(supplier.id)}
+                  data-item-id={supplier.id}
+                  className={`supplier-card ${supplier.status === 'inactive' ? 'inactive' : ''}`}
+                >
                   <div className="supplier-header">
                     <div className="supplier-avatar">
                       {supplier.name[0].toUpperCase()}

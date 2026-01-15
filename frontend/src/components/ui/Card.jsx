@@ -1,7 +1,7 @@
 import React from 'react';
 import './Card.css';
 
-const Card = ({
+const Card = React.forwardRef(({
   children,
   variant = 'default',
   padding = 'default',
@@ -10,7 +10,7 @@ const Card = ({
   onClick,
   className = '',
   ...props
-}) => {
+}, ref) => {
   const classNames = [
     'card',
     `card-${variant}`,
@@ -29,6 +29,7 @@ const Card = ({
 
   return (
     <div
+      ref={ref}
       className={classNames}
       onClick={clickable ? onClick : undefined}
       onKeyDown={clickable ? handleKeyDown : undefined}
@@ -39,7 +40,8 @@ const Card = ({
       {children}
     </div>
   );
-};
+});
+Card.displayName = 'Card';
 
 Card.Header = ({ children, className = '', ...props }) => (
   <div className={`card-header ${className}`} {...props}>

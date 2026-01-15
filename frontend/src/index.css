@@ -59,6 +59,34 @@ code {
   }
 }
 
+/* Highlight animation for newly created items */
+@keyframes highlight-pulse {
+  0% {
+    background-color: transparent;
+    transform: scale(1);
+  }
+  15% {
+    background-color: rgba(37, 99, 235, 0.15);
+    transform: scale(1.02);
+  }
+  30% {
+    background-color: rgba(16, 185, 129, 0.2);
+  }
+  60% {
+    background-color: rgba(16, 185, 129, 0.15);
+  }
+  100% {
+    background-color: transparent;
+    transform: scale(1);
+  }
+}
+
+.highlight-new-item {
+  animation: highlight-pulse 2s ease-in-out;
+  scroll-margin-top: 100px;
+  scroll-margin-bottom: 100px;
+}
+
 button {
   cursor: pointer;
   border: none;
