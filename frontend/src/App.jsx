@@ -1,6 +1,7 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { ToastProvider } from './components/ui'
+import ErrorBoundary from './components/ErrorBoundary'
 import AppLayout from './components/AppLayout'
 import Login from './pages/Login'
 import Dashboard from './pages/Dashboard'
@@ -14,8 +15,8 @@ import UserManagement from './pages/UserManagement'
 import Settings from './pages/Settings'
 import SupplierManagement from './pages/SupplierManagement'
 import CreditCardManagement from './pages/CreditCardManagement'
-
 import ExpenseHistory from './pages/ExpenseHistory'
+import logger from './utils/logger'
 import './App.css'
 
 // Wrapper component for authenticated routes with sidebar
@@ -32,12 +33,7 @@ function App() {
   const [user, setUser] = useState(null)
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    // Check if user is authenticated
-    checkAuth()
-  }, [])
-
-  const checkAuth = async () => {
+  const checkAuth = useCallback(async () => {
     try {
       const response = await fetch('/api/v1/auth/me', {
         credentials: 'include'
@@ -47,11 +43,16 @@ function App() {
         setUser(data.user)
       }
     } catch (error) {
-      console.error('Auth check failed:', error)
+      logger.error('Auth check failed', { error: error.message })
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
+
+  useEffect(() => {
+    // Check if user is authenticated
+    checkAuth()
+  }, [checkAuth])
 
   if (loading) {
     return (
@@ -63,63 +64,65 @@ function App() {
   }
 
   return (
-    <ToastProvider>
-      <Router basename="/modern">
-        <Routes>
-        <Route path="/login" element={<Login setUser={setUser} />} />
-        <Route
-          path="/dashboard"
-          element={<AuthenticatedRoute user={user} setUser={setUser}><Dashboard user={user} setUser={setUser} /></AuthenticatedRoute>}
-        />
-        <Route
-          path="/submit-expense"
-          element={<AuthenticatedRoute user={user} setUser={setUser}><SubmitExpense user={user} setUser={setUser} /></AuthenticatedRoute>}
-        />
-        <Route
-          path="/my-expenses"
-          element={<AuthenticatedRoute user={user} setUser={setUser}><MyExpenses user={user} setUser={setUser} /></AuthenticatedRoute>}
-        />
-        <Route
-          path="/approvals"
-          element={<AuthenticatedRoute user={user} setUser={setUser}><Approvals user={user} setUser={setUser} /></AuthenticatedRoute>}
-        />
-        <Route
-          path="/expenses/:id"
-          element={<AuthenticatedRoute user={user} setUser={setUser}><ExpenseDetails user={user} setUser={setUser} /></AuthenticatedRoute>}
-        />
-        <Route
-          path="/admin/departments"
-          element={<AuthenticatedRoute user={user} setUser={setUser}><DepartmentManager user={user} setUser={setUser} /></AuthenticatedRoute>}
-        />
-        <Route
-          path="/admin/users"
-          element={<AuthenticatedRoute user={user} setUser={setUser}><UserManagement user={user} setUser={setUser} /></AuthenticatedRoute>}
-        />
-        <Route
-          path="/admin"
-          element={<AuthenticatedRoute user={user} setUser={setUser}><AdminDashboard user={user} setUser={setUser} /></AuthenticatedRoute>}
-        />
-        <Route
-          path="/settings"
-          element={<AuthenticatedRoute user={user} setUser={setUser}><Settings user={user} setUser={setUser} /></AuthenticatedRoute>}
-        />
-        <Route
-          path="/admin/suppliers"
-          element={<AuthenticatedRoute user={user} setUser={setUser}><SupplierManagement user={user} setUser={setUser} /></AuthenticatedRoute>}
-        />
-        <Route
-          path="/admin/credit-cards"
-          element={<AuthenticatedRoute user={user} setUser={setUser}><CreditCardManagement user={user} setUser={setUser} /></AuthenticatedRoute>}
-        />
+    <ErrorBoundary>
+      <ToastProvider>
+        <Router basename="/modern">
+          <Routes>
+          <Route path="/login" element={<Login setUser={setUser} />} />
+          <Route
+            path="/dashboard"
+            element={<AuthenticatedRoute user={user} setUser={setUser}><Dashboard user={user} setUser={setUser} /></AuthenticatedRoute>}
+          />
+          <Route
+            path="/submit-expense"
+            element={<AuthenticatedRoute user={user} setUser={setUser}><SubmitExpense user={user} setUser={setUser} /></AuthenticatedRoute>}
+          />
+          <Route
+            path="/my-expenses"
+            element={<AuthenticatedRoute user={user} setUser={setUser}><MyExpenses user={user} setUser={setUser} /></AuthenticatedRoute>}
+          />
+          <Route
+            path="/approvals"
+            element={<AuthenticatedRoute user={user} setUser={setUser}><Approvals user={user} setUser={setUser} /></AuthenticatedRoute>}
+          />
+          <Route
+            path="/expenses/:id"
+            element={<AuthenticatedRoute user={user} setUser={setUser}><ExpenseDetails user={user} setUser={setUser} /></AuthenticatedRoute>}
+          />
+          <Route
+            path="/admin/departments"
+            element={<AuthenticatedRoute user={user} setUser={setUser}><DepartmentManager user={user} setUser={setUser} /></AuthenticatedRoute>}
+          />
+          <Route
+            path="/admin/users"
+            element={<AuthenticatedRoute user={user} setUser={setUser}><UserManagement user={user} setUser={setUser} /></AuthenticatedRoute>}
+          />
+          <Route
+            path="/admin"
+            element={<AuthenticatedRoute user={user} setUser={setUser}><AdminDashboard user={user} setUser={setUser} /></AuthenticatedRoute>}
+          />
+          <Route
+            path="/settings"
+            element={<AuthenticatedRoute user={user} setUser={setUser}><Settings user={user} setUser={setUser} /></AuthenticatedRoute>}
+          />
+          <Route
+            path="/admin/suppliers"
+            element={<AuthenticatedRoute user={user} setUser={setUser}><SupplierManagement user={user} setUser={setUser} /></AuthenticatedRoute>}
+          />
+          <Route
+            path="/admin/credit-cards"
+            element={<AuthenticatedRoute user={user} setUser={setUser}><CreditCardManagement user={user} setUser={setUser} /></AuthenticatedRoute>}
+          />
 
-        <Route
-          path="/admin/expense-history"
-          element={<AuthenticatedRoute user={user} setUser={setUser}><ExpenseHistory user={user} setUser={setUser} /></AuthenticatedRoute>}
-        />
-        <Route path="/" element={<Navigate to={user ? "/dashboard" : "/login"} />} />
-        </Routes>
-      </Router>
-    </ToastProvider>
+          <Route
+            path="/admin/expense-history"
+            element={<AuthenticatedRoute user={user} setUser={setUser}><ExpenseHistory user={user} setUser={setUser} /></AuthenticatedRoute>}
+          />
+          <Route path="/" element={<Navigate to={user ? "/dashboard" : "/login"} />} />
+          </Routes>
+        </Router>
+      </ToastProvider>
+    </ErrorBoundary>
   )
 }
 

@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { Card, Button, Badge, Input, Select, Skeleton, EmptyState, Modal, useToast, FilePreviewButton } from '../components/ui'
 import { useScrollToItem } from '../hooks/useScrollToItem'
+import logger from '../utils/logger'
 import './MyExpenses.css'
 
 function MyExpenses({ user, setUser }) {
@@ -12,6 +13,7 @@ function MyExpenses({ user, setUser }) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [newExpenseId, setNewExpenseId] = useState(location.state?.newExpenseId || null)
+  const isMountedRef = useRef(true)
 
   // Pagination
   const [currentPage, setCurrentPage] = useState(1)
@@ -40,29 +42,32 @@ function MyExpenses({ user, setUser }) {
   const [deleteModalOpen, setDeleteModalOpen] = useState(false)
   const [expenseToDelete, setExpenseToDelete] = useState(null)
 
-  useEffect(() => {
-    fetchCategories()
-  }, [])
+  const fetchCategories = useCallback(async () => {
+    const abortController = new AbortController()
 
-  useEffect(() => {
-    fetchExpenses()
-  }, [currentPage, filters])
-
-  const fetchCategories = async () => {
     try {
       const response = await fetch('/api/v1/form-data/categories', {
-        credentials: 'include'
+        credentials: 'include',
+        signal: abortController.signal
       })
       if (response.ok) {
         const data = await response.json()
-        setCategories(data.categories)
+        if (isMountedRef.current) {
+          setCategories(data.categories)
+        }
       }
     } catch (error) {
-      console.error('Failed to fetch categories:', error)
+      // Ignore abort errors
+      if (error.name === 'AbortError') return
+      logger.error('Failed to fetch categories', { error: error.message })
     }
-  }
 
-  const fetchExpenses = async () => {
+    return () => abortController.abort()
+  }, [])
+
+  const fetchExpenses = useCallback(async () => {
+    const abortController = new AbortController()
+
     try {
       setLoading(true)
       setError('')
@@ -77,24 +82,60 @@ function MyExpenses({ user, setUser }) {
       })
 
       const response = await fetch(`/api/v1/expenses?${params}`, {
-        credentials: 'include'
+        credentials: 'include',
+        signal: abortController.signal
       })
 
       if (response.ok) {
         const data = await response.json()
-        setExpenses(data.expenses)
-        setTotalPages(data.pagination.pages)
-        setTotalExpenses(data.pagination.total)
+        if (isMountedRef.current) {
+          setExpenses(data.expenses)
+          setTotalPages(data.pagination.pages)
+          setTotalExpenses(data.pagination.total)
+        }
       } else {
-        setError('Failed to load expenses')
+        if (isMountedRef.current) {
+          setError('Failed to load expenses')
+        }
       }
     } catch (err) {
-      setError('An error occurred while fetching expenses')
-      console.error('Fetch error:', err)
+      // Ignore abort errors
+      if (err.name === 'AbortError') return
+      if (isMountedRef.current) {
+        setError('An error occurred while fetching expenses')
+      }
+      logger.error('Fetch error', { error: err.message })
     } finally {
-      setLoading(false)
+      if (isMountedRef.current) {
+        setLoading(false)
+      }
     }
-  }
+
+    return () => abortController.abort()
+  }, [currentPage, filters])
+
+  useEffect(() => {
+    isMountedRef.current = true
+    const cleanup = fetchCategories()
+
+    return () => {
+      cleanup?.then(fn => fn?.())
+    }
+  }, [fetchCategories])
+
+  useEffect(() => {
+    const cleanup = fetchExpenses()
+
+    return () => {
+      cleanup?.then(fn => fn?.())
+    }
+  }, [fetchExpenses])
+
+  useEffect(() => {
+    return () => {
+      isMountedRef.current = false
+    }
+  }, [])
 
   const handleFilterChange = (e) => {
     const { name, value } = e.target
