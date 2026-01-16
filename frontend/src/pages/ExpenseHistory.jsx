@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Card, Button, Badge, Input, Select, SearchableSelect, TomSelectInput, Skeleton, EmptyState, Modal, useToast, FilePreviewButton } from '../components/ui'
 import MoveExpenseToYearModal from '../components/MoveExpenseToYearModal'
+import logger from '../utils/logger'
 import './ExpenseHistory.css'
 
 function ExpenseHistory({ user, setUser }) {
@@ -177,7 +178,7 @@ function ExpenseHistory({ user, setUser }) {
         setSubcategories(data.subcategories || [])
       }
     } catch (err) {
-      console.error('Failed to fetch filter options:', err)
+      logger.error('Failed to fetch filter options', { error: err.message })
     }
   }
 
@@ -208,7 +209,7 @@ function ExpenseHistory({ user, setUser }) {
       }
     } catch (err) {
       setError('An error occurred while fetching expenses')
-      console.error('Fetch error:', err)
+      logger.error('Fetch error', { error: err.message })
     } finally {
       setLoading(false)
     }

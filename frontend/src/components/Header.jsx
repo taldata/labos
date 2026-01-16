@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
+import logger from '../utils/logger'
 import './Header.css'
 
 function Header({ user, setUser, currentPage = 'dashboard' }) {
@@ -43,7 +44,7 @@ function Header({ user, setUser, currentPage = 'dashboard' }) {
         setPendingCount(data.count || 0)
       }
     } catch (err) {
-      console.error('Failed to fetch pending count')
+      logger.error('Failed to fetch pending count')
     }
   }
 
@@ -56,7 +57,7 @@ function Header({ user, setUser, currentPage = 'dashboard' }) {
       setUser(null)
       navigate('/login')
     } catch (error) {
-      console.error('Logout failed:', error)
+      logger.error('Logout failed', { error: error.message })
     }
   }
 
@@ -72,7 +73,7 @@ function Header({ user, setUser, currentPage = 'dashboard' }) {
       })
       window.location.href = '/'
     } catch (error) {
-      console.error('Failed to switch version:', error)
+      logger.error('Failed to switch version', { error: error.message })
       window.location.href = '/'
     }
   }
