@@ -13,6 +13,7 @@ from routes.expense import expense_bp
 from routes.api_v1 import api_v1
 from flask_migrate import Migrate
 from flask_cors import CORS
+from flask_compress import Compress
 from config import Config
 from io import BytesIO
 import pandas as pd
@@ -37,19 +38,25 @@ Config.init_app(app)
 db.init_app(app)
 migrate = Migrate(app, db)
 
+# Enable response compression for better performance
+Compress(app)
+
 # Initialize CORS for modern frontend
 # In production, allow same-origin (served from Flask); in dev, allow Vite dev server
 cors_origins = ["http://localhost:3000", "https://localhost:3000"]
 if os.getenv('RENDER') == 'true' or os.getenv('FLASK_ENV') != 'development':
-    # In production, allow requests from the same origin (Flask serves the React app)
-    cors_origins = ["*"]  # Or specify your production domain
+    # In production, use environment variable or default to same-origin
+    # SECURITY: Never use ["*"] in production - specify actual domain
+    production_origin = os.getenv('FRONTEND_URL', os.getenv('RENDER_EXTERNAL_URL', 'https://labos.onrender.com'))
+    cors_origins = [production_origin]
 
 CORS(app, resources={
     r"/api/*": {
         "origins": cors_origins,
         "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
         "allow_headers": ["Content-Type", "Authorization"],
-        "supports_credentials": True
+        "supports_credentials": True,
+        "max_age": 3600  # Cache preflight requests for 1 hour
     }
 })
 
@@ -135,6 +142,25 @@ def check_version_preference():
                 flash('You have access to the modern version! Click "Switch to Modern" in settings.')
 
     return None
+
+# Add caching headers for performance optimization
+@app.after_request
+def add_cache_headers(response):
+    """Add HTTP caching headers to optimize performance"""
+    # Form data endpoints can be cached heavily as they rarely change
+    if request.path.startswith('/api/v1/form-data/'):
+        response.headers['Cache-Control'] = 'public, max-age=3600'  # 1 hour
+    # Static resources can be cached longer
+    elif request.path.startswith('/static/'):
+        response.headers['Cache-Control'] = 'public, max-age=31536000'  # 1 year
+    # Most API endpoints should not be cached
+    elif request.path.startswith('/api/'):
+        response.headers['Cache-Control'] = 'no-cache, max-age=0, must-revalidate'
+    # Modern frontend build files can be cached
+    elif request.path.startswith('/modern/assets/'):
+        response.headers['Cache-Control'] = 'public, max-age=31536000'  # 1 year
+
+    return response
 
 @app.route('/')
 def index():

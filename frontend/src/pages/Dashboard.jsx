@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Card, Badge, Skeleton, Button } from '../components/ui'
 import './Dashboard.css'
@@ -10,11 +10,7 @@ function Dashboard({ user, setUser }) {
   const [budget, setBudget] = useState(null)
   const [recentExpenses, setRecentExpenses] = useState([])
 
-  useEffect(() => {
-    fetchDashboardData()
-  }, [])
-
-  const fetchDashboardData = async () => {
+  const fetchDashboardData = useCallback(async () => {
     try {
       setLoading(true)
 
@@ -41,9 +37,14 @@ function Dashboard({ user, setUser }) {
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
 
-  const getStatusVariant = (status) => {
+  useEffect(() => {
+    fetchDashboardData()
+  }, [fetchDashboardData])
+
+  // Memoize helper functions to prevent recreation on every render
+  const getStatusVariant = useCallback((status) => {
     const variants = {
       pending: 'warning',
       approved: 'success',
@@ -51,16 +52,16 @@ function Dashboard({ user, setUser }) {
       paid: 'info'
     }
     return variants[status] || 'default'
-  }
+  }, [])
 
-  const formatDate = (dateString) => {
+  const formatDate = useCallback((dateString) => {
     if (!dateString) return '-'
     const date = new Date(dateString)
     const day = String(date.getDate()).padStart(2, '0')
     const month = String(date.getMonth() + 1).padStart(2, '0')
     const year = date.getFullYear()
     return `${day}/${month}/${year}`
-  }
+  }, [])
 
   return (
     <div className="dashboard-container">

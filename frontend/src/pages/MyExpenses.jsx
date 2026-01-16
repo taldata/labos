@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { Card, Button, Badge, Input, Select, Skeleton, EmptyState, Modal, useToast, FilePreviewButton } from '../components/ui'
 import { useScrollToItem } from '../hooks/useScrollToItem'
@@ -141,7 +141,8 @@ function MyExpenses({ user, setUser }) {
     }
   }
 
-  const getStatusVariant = (status) => {
+  // Memoize helper functions to prevent recreation on every render
+  const getStatusVariant = useCallback((status) => {
     const variants = {
       pending: 'warning',
       approved: 'success',
@@ -149,23 +150,23 @@ function MyExpenses({ user, setUser }) {
       paid: 'info'
     }
     return variants[status] || 'default'
-  }
+  }, [])
 
-  const formatDate = (dateString) => {
+  const formatDate = useCallback((dateString) => {
     if (!dateString) return '-'
     const date = new Date(dateString)
     const day = String(date.getDate()).padStart(2, '0')
     const month = String(date.getMonth() + 1).padStart(2, '0')
     const year = date.getFullYear()
     return `${day}/${month}/${year}`
-  }
+  }, [])
 
-  const formatCurrency = (amount, currency) => {
+  const formatCurrency = useCallback((amount, currency) => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: currency || 'ILS'
     }).format(amount)
-  }
+  }, [])
 
   const hasActiveFilters = filters.status || filters.category_id || filters.search || filters.start_date || filters.end_date
 

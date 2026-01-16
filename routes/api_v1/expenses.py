@@ -555,14 +555,19 @@ def get_categories():
         all_categories = request.args.get('all', 'false').lower() == 'true'
 
         # Admin users can see all categories if 'all' param is true
+        # Use eager loading to prevent N+1 queries
+        base_options = [joinedload(Category.department)]
+        if include_subcategories:
+            base_options.append(joinedload(Category.subcategories))
+
         if all_categories and current_user.is_admin:
-            categories = Category.query.join(Department).order_by(Department.name, Category.name).all()
+            categories = Category.query.join(Department).options(*base_options).order_by(Department.name, Category.name).all()
         elif department_id:
-            categories = Category.query.filter_by(department_id=department_id).order_by(Category.name).all()
+            categories = Category.query.filter_by(department_id=department_id).options(*base_options).order_by(Category.name).all()
         elif current_user.department_id:
-            categories = Category.query.filter_by(department_id=current_user.department_id).order_by(Category.name).all()
+            categories = Category.query.filter_by(department_id=current_user.department_id).options(*base_options).order_by(Category.name).all()
         else:
-            categories = Category.query.join(Department).order_by(Department.name, Category.name).all()
+            categories = Category.query.join(Department).options(*base_options).order_by(Department.name, Category.name).all()
 
         cat_list = []
         for cat in categories:
@@ -595,10 +600,13 @@ def get_subcategories():
         category_id = request.args.get('category_id', type=int)
         include_all = request.args.get('all', 'false').lower() == 'true'
 
+        # Use eager loading to prevent N+1 queries
         if category_id:
-            subcategories = Subcategory.query.filter_by(category_id=category_id).all()
+            subcategories = Subcategory.query.filter_by(category_id=category_id)\
+                .options(joinedload(Subcategory.category).joinedload(Category.department)).all()
         else:
-            subcategories = Subcategory.query.all()
+            subcategories = Subcategory.query\
+                .options(joinedload(Subcategory.category).joinedload(Category.department)).all()
 
         subcat_list = [{
             'id': sub.id,
@@ -756,7 +764,13 @@ def list_expenses():
 def get_expense_details(expense_id):
     """Get detailed information about a specific expense"""
     try:
-        expense = Expense.query.get(expense_id)
+        # Use eager loading to prevent N+1 queries
+        expense = Expense.query.options(
+            joinedload(Expense.submitter),
+            joinedload(Expense.subcategory).joinedload(Subcategory.category).joinedload(Category.department),
+            joinedload(Expense.supplier),
+            joinedload(Expense.credit_card)
+        ).filter_by(id=expense_id).first()
 
         if not expense:
             return jsonify({'error': 'Expense not found'}), 404
@@ -1025,8 +1039,13 @@ def get_expense_report():
             query = query.join(Subcategory).filter(Subcategory.category_id == int(category_id))
         if user_id and (current_user.is_admin or current_user.is_manager):
             query = query.filter(Expense.user_id == int(user_id))
-        
-        expenses = query.order_by(Expense.date.desc()).all()
+
+        # Add eager loading to prevent N+1 queries
+        expenses = query.options(
+            joinedload(Expense.submitter),
+            joinedload(Expense.subcategory).joinedload(Subcategory.category).joinedload(Category.department),
+            joinedload(Expense.supplier)
+        ).order_by(Expense.date.desc()).all()
         
         # Build response
         report_data = []
@@ -1111,18 +1130,38 @@ def export_expenses():
         # Search parameter (React version)
         search = request.args.get('search', None)
 
-        # Build query based on user role
+        # Build query based on user role with eager loading to prevent N+1 queries
         if current_user.is_admin:
-            expenses = Expense.query.order_by(Expense.date.desc()).all()
+            expenses = Expense.query.options(
+                joinedload(Expense.submitter),
+                joinedload(Expense.subcategory).joinedload(Subcategory.category).joinedload(Category.department),
+                joinedload(Expense.supplier),
+                joinedload(Expense.handler),
+                joinedload(Expense.credit_card)
+            ).order_by(Expense.date.desc()).all()
         elif current_user.is_manager:
             managed_dept_ids = [dept.id for dept in current_user.managed_departments]
             if current_user.department_id:
                 managed_dept_ids.append(current_user.department_id)
             expenses = db.session.query(Expense).join(User, Expense.user_id == User.id)\
                 .filter(User.department_id.in_(managed_dept_ids))\
+                .options(
+                    joinedload(Expense.submitter),
+                    joinedload(Expense.subcategory).joinedload(Subcategory.category).joinedload(Category.department),
+                    joinedload(Expense.supplier),
+                    joinedload(Expense.handler),
+                    joinedload(Expense.credit_card)
+                )\
                 .order_by(Expense.date.desc()).all()
         else:
             expenses = Expense.query.filter_by(user_id=current_user.id)\
+                .options(
+                    joinedload(Expense.submitter),
+                    joinedload(Expense.subcategory).joinedload(Subcategory.category).joinedload(Category.department),
+                    joinedload(Expense.supplier),
+                    joinedload(Expense.handler),
+                    joinedload(Expense.credit_card)
+                )\
                 .order_by(Expense.date.desc()).all()
 
         # Apply filters

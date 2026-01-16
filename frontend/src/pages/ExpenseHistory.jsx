@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Card, Button, Badge, Input, Select, SearchableSelect, TomSelectInput, Skeleton, EmptyState, Modal, useToast, FilePreviewButton } from '../components/ui'
 import MoveExpenseToYearModal from '../components/MoveExpenseToYearModal'
@@ -397,7 +397,8 @@ function ExpenseHistory({ user, setUser }) {
     fetchExpenses()
   }
 
-  const getStatusVariant = (status) => {
+  // Memoize helper functions to prevent recreation on every render
+  const getStatusVariant = useCallback((status) => {
     const variants = {
       pending: 'warning',
       approved: 'success',
@@ -405,32 +406,32 @@ function ExpenseHistory({ user, setUser }) {
       paid: 'info'
     }
     return variants[status] || 'default'
-  }
+  }, [])
 
-  const getPaymentStatusVariant = (status) => {
+  const getPaymentStatusVariant = useCallback((status) => {
     const variants = {
       pending: 'warning',
       paid: 'success',
       cancelled: 'danger'
     }
     return variants[status] || 'default'
-  }
+  }, [])
 
-  const formatDate = (dateString) => {
+  const formatDate = useCallback((dateString) => {
     if (!dateString) return '-'
     const date = new Date(dateString)
     const day = String(date.getDate()).padStart(2, '0')
     const month = String(date.getMonth() + 1).padStart(2, '0')
     const year = date.getFullYear()
     return `${day}/${month}/${year}`
-  }
+  }, [])
 
-  const formatCurrency = (amount, currency) => {
+  const formatCurrency = useCallback((amount, currency) => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: currency || 'ILS'
     }).format(amount)
-  }
+  }, [])
 
   const hasActiveFilters = Object.entries(filters).some(([key, val]) =>
     val !== '' && !['sort_by', 'sort_order'].includes(key)

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Card, Button, Input, Select, TomSelectInput, Modal, Badge, Skeleton, useToast } from '../components/ui'
 import { useScrollToItem } from '../hooks/useScrollToItem'
@@ -221,20 +221,21 @@ function UserManagement({ user, setUser }) {
     }
   }
 
-  const getRoleBadges = (u) => {
+  // Memoize helper functions to prevent recreation on every render
+  const getRoleBadges = useCallback((u) => {
     const badges = []
     if (u.is_admin) badges.push(<Badge key="admin" variant="warning">Admin</Badge>)
     if (u.is_manager) badges.push(<Badge key="manager" variant="info">Manager</Badge>)
     if (u.is_accounting) badges.push(<Badge key="accounting" variant="success">Accounting</Badge>)
     if (badges.length === 0) badges.push(<Badge key="employee" variant="default">Employee</Badge>)
     return badges
-  }
+  }, [])
 
-  const getStatusVariant = (status) => {
+  const getStatusVariant = useCallback((status) => {
     if (status === 'active') return 'success'
     if (status === 'inactive') return 'danger'
     return 'warning'
-  }
+  }, [])
 
   if (!user?.is_admin) {
     return null

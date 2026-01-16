@@ -25,14 +25,22 @@ def upgrade():
     op.create_index('idx_expenses_supplier_id', 'expenses', ['supplier_id'], unique=False)
     op.create_index('idx_expenses_credit_card_id', 'expenses', ['credit_card_id'], unique=False)
 
+    # Add missing indexes for manager and payment workflows
+    op.create_index('idx_expenses_manager_id', 'expenses', ['manager_id'], unique=False)
+    op.create_index('idx_expenses_paid_by_id', 'expenses', ['paid_by_id'], unique=False)
+    op.create_index('idx_expenses_payment_status', 'expenses', ['payment_status'], unique=False)
+
     # Add composite index for common query patterns
     op.create_index('idx_expenses_user_status', 'expenses', ['user_id', 'status'], unique=False)
     op.create_index('idx_expenses_status_date', 'expenses', ['status', 'date'], unique=False)
+    op.create_index('idx_expenses_manager_status', 'expenses', ['manager_id', 'status'], unique=False)
+    op.create_index('idx_expenses_payment_status_date', 'expenses', ['payment_status', 'date'], unique=False)
 
     # Add indexes for foreign key relationships
     op.create_index('idx_users_department_id', 'users', ['department_id'], unique=False)
     op.create_index('idx_subcategories_category_id', 'subcategories', ['category_id'], unique=False)
     op.create_index('idx_categories_department_id', 'categories', ['department_id'], unique=False)
+    op.create_index('idx_department_year_id', 'department', ['year_id'], unique=False)
 
     # Add indexes for search queries
     op.create_index('idx_users_username', 'users', ['username'], unique=False)
@@ -46,13 +54,19 @@ def downgrade():
     op.drop_index('idx_users_email', table_name='users')
     op.drop_index('idx_users_username', table_name='users')
 
+    op.drop_index('idx_department_year_id', table_name='department')
     op.drop_index('idx_categories_department_id', table_name='categories')
     op.drop_index('idx_subcategories_category_id', table_name='subcategories')
     op.drop_index('idx_users_department_id', table_name='users')
 
+    op.drop_index('idx_expenses_payment_status_date', table_name='expenses')
+    op.drop_index('idx_expenses_manager_status', table_name='expenses')
     op.drop_index('idx_expenses_status_date', table_name='expenses')
     op.drop_index('idx_expenses_user_status', table_name='expenses')
 
+    op.drop_index('idx_expenses_payment_status', table_name='expenses')
+    op.drop_index('idx_expenses_paid_by_id', table_name='expenses')
+    op.drop_index('idx_expenses_manager_id', table_name='expenses')
     op.drop_index('idx_expenses_credit_card_id', table_name='expenses')
     op.drop_index('idx_expenses_supplier_id', table_name='expenses')
     op.drop_index('idx_expenses_subcategory_id', table_name='expenses')

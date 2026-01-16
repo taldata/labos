@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   LineChart, Line, BarChart, Bar, PieChart, Pie, Cell,
@@ -41,6 +41,22 @@ function AdminDashboard({ user, setUser }) {
       setLoading(false)
     }
   }
+
+  // Memoize chart formatters to prevent recreation on every render
+  const currencyFormatter = useCallback((value) => {
+    const symbol = stats?.currency === 'USD' ? '$' : '₪'
+    return `${symbol}${value.toLocaleString()}`
+  }, [stats?.currency])
+
+  const budgetTooltipFormatter = useCallback((value, name) => {
+    if (name === 'usage_percent') return `${value.toFixed(1)}%`
+    const symbol = stats?.currency === 'USD' ? '$' : '₪'
+    return `${symbol}${value.toLocaleString()}`
+  }, [stats?.currency])
+
+  const pieChartLabel = useCallback(({ name, percent }) => {
+    return `${name} ${(percent * 100).toFixed(0)}%`
+  }, [])
 
   if (!user?.is_admin) {
     return null
@@ -161,9 +177,7 @@ function AdminDashboard({ user, setUser }) {
                         <CartesianGrid strokeDasharray="3 3" />
                         <XAxis dataKey="period" />
                         <YAxis />
-                        <Tooltip
-                          formatter={(value) => `${stats.currency === 'USD' ? '$' : '₪'}${value.toLocaleString()}`}
-                        />
+                        <Tooltip formatter={currencyFormatter} />
                         <Legend />
                         <Line
                           type="monotone"
@@ -188,9 +202,7 @@ function AdminDashboard({ user, setUser }) {
                         <CartesianGrid strokeDasharray="3 3" />
                         <XAxis dataKey="name" />
                         <YAxis />
-                        <Tooltip
-                          formatter={(value) => `${stats.currency === 'USD' ? '$' : '₪'}${value.toLocaleString()}`}
-                        />
+                        <Tooltip formatter={currencyFormatter} />
                         <Legend />
                         <Bar dataKey="amount" fill="#764ba2" name="Amount" />
                       </BarChart>
@@ -211,7 +223,7 @@ function AdminDashboard({ user, setUser }) {
                           cx="50%"
                           cy="50%"
                           labelLine={false}
-                          label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                          label={pieChartLabel}
                           outerRadius={80}
                           fill="#8884d8"
                           dataKey="amount"
@@ -220,9 +232,7 @@ function AdminDashboard({ user, setUser }) {
                             <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                           ))}
                         </Pie>
-                        <Tooltip
-                          formatter={(value) => `${stats.currency === 'USD' ? '$' : '₪'}${value.toLocaleString()}`}
-                        />
+                        <Tooltip formatter={currencyFormatter} />
                       </PieChart>
                     </ResponsiveContainer>
                   </Card.Body>
@@ -267,9 +277,7 @@ function AdminDashboard({ user, setUser }) {
                         <CartesianGrid strokeDasharray="3 3" />
                         <XAxis type="number" />
                         <YAxis dataKey="name" type="category" width={100} />
-                        <Tooltip
-                          formatter={(value) => `${stats.currency === 'USD' ? '$' : '₪'}${value.toLocaleString()}`}
-                        />
+                        <Tooltip formatter={currencyFormatter} />
                         <Legend />
                         <Bar dataKey="amount" fill="#43e97b" name="Amount" />
                       </BarChart>
@@ -288,12 +296,7 @@ function AdminDashboard({ user, setUser }) {
                         <CartesianGrid strokeDasharray="3 3" />
                         <XAxis dataKey="name" />
                         <YAxis />
-                        <Tooltip
-                          formatter={(value, name) => {
-                            if (name === 'usage_percent') return `${value.toFixed(1)}%`
-                            return `${stats.currency === 'USD' ? '$' : '₪'}${value.toLocaleString()}`
-                          }}
-                        />
+                        <Tooltip formatter={budgetTooltipFormatter} />
                         <Legend />
                         <Bar dataKey="spent" fill="#fa709a" name="Spent" />
                         <Bar dataKey="budget" fill="#4facfe" name="Budget" />
