@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Modal, Select, Button } from './ui'
+import logger from '../utils/logger'
 import './MoveExpenseToYearModal.css'
 
 function MoveExpenseToYearModal({ isOpen, onClose, expense, onSuccess }) {
@@ -38,7 +39,7 @@ function MoveExpenseToYearModal({ isOpen, onClose, expense, onSuccess }) {
       }
     } catch (err) {
       setError('Error loading budget years')
-      console.error(err)
+      logger.error('Error loading budget years', { error: err.message })
     }
   }
 
@@ -68,7 +69,7 @@ function MoveExpenseToYearModal({ isOpen, onClose, expense, onSuccess }) {
       }
     } catch (err) {
       setError('Error loading move options')
-      console.error(err)
+      logger.error('Error loading move options', { yearId: selectedYearId, error: err.message })
     } finally {
       setLoadingOptions(false)
     }
@@ -106,7 +107,7 @@ function MoveExpenseToYearModal({ isOpen, onClose, expense, onSuccess }) {
       }
     } catch (err) {
       setError('Error moving expense')
-      console.error(err)
+      logger.error('Error moving expense', { expenseId: expense?.id, yearId: selectedYearId, error: err.message })
     } finally {
       setLoading(false)
     }

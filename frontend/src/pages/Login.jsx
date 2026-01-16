@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Card, Button } from '../components/ui'
+import logger from '../utils/logger'
 import './Login.css'
 
 function Login({ setUser }) {
@@ -8,25 +9,34 @@ function Login({ setUser }) {
   const [error, setError] = useState('')
   const navigate = useNavigate()
 
-  useEffect(() => {
-    const checkAuth = async () => {
-      try {
-        const response = await fetch('/api/v1/auth/me', {
-          credentials: 'include'
-        })
-        if (response.ok) {
-          const data = await response.json()
-          if (data.user) {
-            setUser(data.user)
-            navigate('/dashboard')
-          }
+  const checkAuth = useCallback(async () => {
+    const abortController = new AbortController()
+
+    try {
+      const response = await fetch('/api/v1/auth/me', {
+        credentials: 'include',
+        signal: abortController.signal
+      })
+      if (response.ok) {
+        const data = await response.json()
+        if (data.user) {
+          setUser(data.user)
+          navigate('/dashboard')
         }
-      } catch (error) {
-        console.error('Auth check failed:', error)
       }
+    } catch (error) {
+      // Ignore abort errors
+      if (error.name === 'AbortError') return
+      logger.error('Auth check failed', { error: error.message })
     }
-    checkAuth()
+
+    return () => abortController.abort()
   }, [navigate, setUser])
+
+  useEffect(() => {
+    const cleanup = checkAuth()
+    return cleanup
+  }, [checkAuth])
 
   const handleAzureLogin = async () => {
     setLoading(true)

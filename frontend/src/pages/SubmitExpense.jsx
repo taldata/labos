@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Card, Button, Input, Select, SearchableSelect, TomSelectInput, Textarea, FileUpload, useToast } from '../components/ui'
+import logger from '../utils/logger'
 import './SubmitExpense.css'
 
 // Helper functions for DD/MM/YYYY date format
@@ -131,7 +132,7 @@ function SubmitExpense({ user, setUser }) {
         setCreditCards(data.credit_cards)
       }
     } catch (err) {
-      console.error('Failed to fetch form data:', err)
+      logger.error('Failed to fetch form data', { error: err.message })
     }
   }
 
@@ -150,7 +151,7 @@ function SubmitExpense({ user, setUser }) {
         setSubcategories(data.subcategories)
       }
     } catch (err) {
-      console.error('Failed to fetch subcategories:', err)
+      logger.error('Failed to fetch subcategories', { categoryId, error: err.message })
     }
   }
 
@@ -233,10 +234,10 @@ function SubmitExpense({ user, setUser }) {
             }
           } else {
             const errorData = await response.json()
-            console.error('OCR processing failed:', errorData)
+            logger.error('OCR processing failed', { error: errorData })
           }
         } catch (error) {
-          console.error('Error processing invoice:', error)
+          logger.error('Error processing invoice', { error: error.message })
         } finally {
           setOcrProcessing(false)
         }
@@ -302,7 +303,7 @@ function SubmitExpense({ user, setUser }) {
       }
     } catch (err) {
       showError('An error occurred while submitting the expense')
-      console.error('Submission error:', err)
+      logger.error('Submission error', { error: err.message })
     } finally {
       setLoading(false)
     }

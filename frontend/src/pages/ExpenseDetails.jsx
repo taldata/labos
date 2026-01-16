@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { Card, Button, Badge, Modal, Skeleton, Textarea, useToast, FilePreviewButton } from '../components/ui'
 import BudgetImpactWidget from '../components/BudgetImpactWidget'
+import logger from '../utils/logger'
 import './ExpenseDetails.css'
 
 function ExpenseDetails({ user, setUser }) {
@@ -41,7 +42,7 @@ function ExpenseDetails({ user, setUser }) {
       }
     } catch (err) {
       showError('An error occurred while fetching expense details')
-      console.error('Fetch error:', err)
+      logger.error('Fetch error', { expenseId: id, error: err.message })
     } finally {
       setLoading(false)
     }
@@ -77,7 +78,7 @@ function ExpenseDetails({ user, setUser }) {
       }
     } catch (err) {
       showError('An error occurred while approving the expense')
-      console.error('Approve error:', err)
+      logger.error('Approve error', { expenseId: id, error: err.message })
     } finally {
       setProcessing(false)
     }
@@ -105,7 +106,7 @@ function ExpenseDetails({ user, setUser }) {
       }
     } catch (err) {
       showError('An error occurred while rejecting the expense')
-      console.error('Reject error:', err)
+      logger.error('Reject error', { expenseId: id, error: err.message })
     } finally {
       setProcessing(false)
     }

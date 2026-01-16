@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Card, Button, Badge, Modal, Skeleton, EmptyState, Textarea, useToast } from '../components/ui'
 import BudgetImpactWidget from '../components/BudgetImpactWidget'
+import logger from '../utils/logger'
 import './Approvals.css'
 
 function Approvals({ user, setUser }) {
@@ -37,7 +38,7 @@ function Approvals({ user, setUser }) {
       }
     } catch (err) {
       showError('An error occurred while fetching pending approvals')
-      console.error('Fetch error:', err)
+      logger.error('Fetch error', { error: err.message })
     } finally {
       setLoading(false)
     }
@@ -77,7 +78,7 @@ function Approvals({ user, setUser }) {
       }
     } catch (err) {
       showError('An error occurred while approving the expense')
-      console.error('Approve error:', err)
+      logger.error('Approve error', { error: err.message })
     } finally {
       setProcessing(false)
     }
@@ -107,7 +108,7 @@ function Approvals({ user, setUser }) {
       }
     } catch (err) {
       showError('An error occurred while rejecting the expense')
-      console.error('Reject error:', err)
+      logger.error('Reject error', { error: err.message })
     } finally {
       setProcessing(false)
     }

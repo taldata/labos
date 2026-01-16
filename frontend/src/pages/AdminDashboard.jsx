@@ -5,6 +5,7 @@ import {
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
 } from 'recharts'
 import { Card, Select, Skeleton } from '../components/ui'
+import logger from '../utils/logger'
 import './AdminDashboard.css'
 
 const COLORS = ['#667eea', '#764ba2', '#f093fb', '#4facfe', '#00f2fe', '#43e97b', '#fa709a']
@@ -33,10 +34,10 @@ function AdminDashboard({ user, setUser }) {
         const data = await response.json()
         setStats(data)
       } else {
-        console.error('Failed to fetch admin stats')
+        logger.error('Failed to fetch admin stats', { timePeriod })
       }
     } catch (error) {
-      console.error('Error fetching admin stats:', error)
+      logger.error('Error fetching admin stats', { timePeriod, error: error.message })
     } finally {
       setLoading(false)
     }

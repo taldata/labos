@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Card, Badge, Skeleton, Button } from '../components/ui'
+import logger from '../utils/logger'
 import './Dashboard.css'
 
 function Dashboard({ user, setUser }) {
@@ -9,39 +10,60 @@ function Dashboard({ user, setUser }) {
   const [summary, setSummary] = useState(null)
   const [budget, setBudget] = useState(null)
   const [recentExpenses, setRecentExpenses] = useState([])
+  const isMountedRef = useRef(true)
 
-  useEffect(() => {
-    fetchDashboardData()
-  }, [])
+  const fetchDashboardData = useCallback(async () => {
+    const abortController = new AbortController()
 
-  const fetchDashboardData = async () => {
     try {
       setLoading(true)
 
       // Fetch summary
       const summaryRes = await fetch('/api/v1/expenses/summary', {
-        credentials: 'include'
+        credentials: 'include',
+        signal: abortController.signal
       })
       if (summaryRes.ok) {
         const data = await summaryRes.json()
-        setSummary(data.summary)
-        setBudget(data.budget)
+        if (isMountedRef.current) {
+          setSummary(data.summary)
+          setBudget(data.budget)
+        }
       }
 
       // Fetch recent expenses
       const recentRes = await fetch('/api/v1/expenses/recent?limit=5', {
-        credentials: 'include'
+        credentials: 'include',
+        signal: abortController.signal
       })
       if (recentRes.ok) {
         const data = await recentRes.json()
-        setRecentExpenses(data.expenses)
+        if (isMountedRef.current) {
+          setRecentExpenses(data.expenses)
+        }
       }
     } catch (error) {
-      console.error('Failed to fetch dashboard data:', error)
+      // Ignore abort errors
+      if (error.name === 'AbortError') return
+      logger.error('Failed to fetch dashboard data', { error: error.message })
     } finally {
-      setLoading(false)
+      if (isMountedRef.current) {
+        setLoading(false)
+      }
     }
-  }
+
+    return () => abortController.abort()
+  }, [])
+
+  useEffect(() => {
+    isMountedRef.current = true
+    const cleanup = fetchDashboardData()
+
+    return () => {
+      isMountedRef.current = false
+      cleanup?.then(fn => fn?.())
+    }
+  }, [fetchDashboardData])
 
   const getStatusVariant = (status) => {
     const variants = {

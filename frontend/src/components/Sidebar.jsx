@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
+import logger from '../utils/logger'
 import './Sidebar.css'
 
 function Sidebar({ user, setUser, isOpen, onToggle }) {
@@ -23,7 +24,7 @@ function Sidebar({ user, setUser, isOpen, onToggle }) {
         setPendingCount(data.count || 0)
       }
     } catch (err) {
-      console.error('Failed to fetch pending count')
+      logger.error('Failed to fetch pending count')
     }
   }
 
@@ -36,7 +37,7 @@ function Sidebar({ user, setUser, isOpen, onToggle }) {
       setUser(null)
       navigate('/login')
     } catch (error) {
-      console.error('Logout failed:', error)
+      logger.error('Logout failed', { error: error.message })
     }
   }
 
@@ -52,7 +53,7 @@ function Sidebar({ user, setUser, isOpen, onToggle }) {
       })
       window.location.href = '/'
     } catch (error) {
-      console.error('Failed to switch version:', error)
+      logger.error('Failed to switch version', { error: error.message })
       window.location.href = '/'
     }
   }

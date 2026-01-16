@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Card, Button, Input, Select, TomSelectInput, Modal, Badge, Skeleton, useToast } from '../components/ui'
 import { useScrollToItem } from '../hooks/useScrollToItem'
+import logger from '../utils/logger'
 import './UserManagement.css'
 
 function UserManagement({ user, setUser }) {
@@ -70,7 +71,7 @@ function UserManagement({ user, setUser }) {
         setDepartments(data.structure)
       }
     } catch (err) {
-      console.error('Failed to load departments', err)
+      logger.error('Failed to load departments', { error: err.message })
     }
   }
 
@@ -95,7 +96,7 @@ function UserManagement({ user, setUser }) {
       }
     } catch (err) {
       showError('Failed to load users')
-      console.error(err)
+      logger.error('Failed to load users', { error: err.message })
     } finally {
       setLoading(false)
     }
@@ -193,7 +194,7 @@ function UserManagement({ user, setUser }) {
       }
     } catch (err) {
       setFormError('An error occurred')
-      console.error(err)
+      logger.error('User save operation failed', { error: err.message })
     }
   }
 
@@ -217,7 +218,7 @@ function UserManagement({ user, setUser }) {
       }
     } catch (err) {
       showError('An error occurred')
-      console.error(err)
+      logger.error('User delete operation failed', { userId: userToDelete?.id, error: err.message })
     }
   }
 
