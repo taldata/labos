@@ -307,7 +307,7 @@ function UserManagement({ user, setUser }) {
                           <div className="user-avatar">
                             {(u.first_name?.[0] || u.username[0]).toUpperCase()}
                           </div>
-                          <div className="user-info">
+                          <div className="user-details-info">
                             <span className="user-name">{u.first_name} {u.last_name}</span>
                             <span className="user-username">@{u.username}</span>
                           </div>
