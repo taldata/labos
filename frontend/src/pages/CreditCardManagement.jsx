@@ -133,7 +133,7 @@ function CreditCardManagement({ user, setUser }) {
   }
 
   const handleDelete = async (card) => {
-    if (!window.confirm(`Delete credit card ending in ${card.last_four_digits}?`)) return
+    if (!window.confirm(`Are you sure you want to delete credit card ending in ${card.last_four_digits}?`)) return
 
     try {
       const res = await fetch(`/api/v1/admin/credit-cards/${card.id}`, {
