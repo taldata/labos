@@ -331,10 +331,15 @@
   margin-top: 0.25rem;
   position: absolute !important;
   z-index: 9999 !important;
+  min-width: 100%;
+  width: max-content;
+  max-width: 400px;
 }
 
 .ts-dropdown .ts-dropdown-content {
   max-height: 300px;
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
 .ts-dropdown .option {
@@ -342,6 +347,9 @@
   font-size: 1rem;
   color: #0f172a;
   transition: background-color 0.15s ease;
+  white-space: normal;
+  word-break: break-word;
+  overflow-wrap: break-word;
 }
 
 .ts-dropdown .option:hover {
