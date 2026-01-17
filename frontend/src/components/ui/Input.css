@@ -362,27 +362,38 @@
   font-weight: 500;
 }
 
-.ts-wrapper.single .ts-control::after {
-  border-color: #0f172a transparent transparent transparent !important;
-  border-width: 6px 6px 0 6px !important;
-  margin-top: -3px;
-}
-
-.ts-wrapper.single.focus .ts-control::after {
-  border-color: transparent transparent #0f172a transparent !important;
-  border-width: 0 6px 6px 6px !important;
-  margin-top: -9px;
-}
-
 /* Ensure Tom Select text is black like other fields */
 .ts-wrapper .ts-control,
 .ts-wrapper .ts-control input,
 .ts-wrapper .ts-control .item {
-  color: #0f172a !important;
+  color: #000000 !important;
 }
 
 .ts-wrapper .ts-control input::placeholder {
   color: #94a3b8 !important;
+}
+
+/* Custom Arrow for Tom Select */
+.ts-wrapper.single .ts-control::after {
+  content: '\f078'; /* Font Awesome chevron-down */
+  font-family: 'Font Awesome 6 Free';
+  font-weight: 900;
+  border: none !important;
+  margin-top: 0 !important;
+  position: absolute;
+  right: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #64748b;
+  font-size: 0.75rem;
+  pointer-events: none;
+  width: auto !important;
+  height: auto !important;
+}
+
+.ts-wrapper.single.focus .ts-control::after {
+  /* No change needed for content, maybe rotate? */
+  transform: translateY(-50%) rotate(180deg);
 }
 
 .ts-wrapper.single .ts-control.error {
