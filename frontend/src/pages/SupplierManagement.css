@@ -57,6 +57,7 @@
   align-items: center;
   padding: 1.5rem 2rem;
   direction: ltr;
+  justify-content: flex-start;
 }
 
 .search-box {
