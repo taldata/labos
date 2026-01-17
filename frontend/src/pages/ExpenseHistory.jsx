@@ -640,17 +640,17 @@ function ExpenseHistory({ user, setUser }) {
                 <table>
                   <thead>
                     <tr>
-                      <th>Date</th>
-                      <th>Employee</th>
-                      <th>Department</th>
-                      <th>Description</th>
-                      <th>Category</th>
-                      <th>Supplier</th>
-                      <th>Amount</th>
-                      <th>Status</th>
-                      <th>Payment</th>
-                      <th>Files</th>
-                      <th>Actions</th>
+                      <th className="th-date">Date</th>
+                      <th className="th-employee">Employee</th>
+                      <th className="th-department">Department</th>
+                      <th className="th-description">Description</th>
+                      <th className="th-category">Category</th>
+                      <th className="th-supplier">Supplier</th>
+                      <th className="th-amount">Amount</th>
+                      <th className="th-status">Status</th>
+                      <th className="th-payment">Payment</th>
+                      <th className="th-files">Files</th>
+                      <th className="th-actions">Actions</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -692,12 +692,12 @@ function ExpenseHistory({ user, setUser }) {
                         <td className="amount-cell">
                           {formatCurrency(expense.amount, expense.currency)}
                         </td>
-                        <td>
+                        <td className="status-cell">
                           <Badge variant={getStatusVariant(expense.status)} size="small" rounded>
                             {expense.status ? expense.status.charAt(0).toUpperCase() + expense.status.slice(1) : '-'}
                           </Badge>
                         </td>
-                        <td>
+                        <td className="payment-cell">
                           {expense.payment_status ? (
                             <Badge variant={getPaymentStatusVariant(expense.payment_status)} size="small">
                               {expense.payment_status}

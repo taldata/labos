@@ -159,6 +159,33 @@
   white-space: nowrap;
 }
 
+.th-date { min-width: 100px; }
+.th-employee { min-width: 200px; }
+.th-department { min-width: 120px; }
+.th-description { min-width: 250px; }
+.th-category { min-width: 150px; }
+.th-supplier { min-width: 150px; }
+.th-amount { 
+  min-width: 100px;
+  text-align: right !important; 
+}
+.th-status { 
+  min-width: 100px;
+  text-align: center !important; 
+}
+.th-payment { 
+  min-width: 100px;
+  text-align: center !important; 
+}
+.th-files { 
+  min-width: 80px;
+  text-align: center !important; 
+}
+.th-actions { 
+  min-width: 140px;
+  text-align: center !important; 
+}
+
 .expenses-table tbody tr {
   border-bottom: 1px solid #f1f5f9;
   transition: all 0.2s ease;
@@ -243,6 +270,7 @@
 /* Files Cell */
 .files-cell {
   white-space: nowrap;
+  text-align: center;
 }
 
 .file-icons {
@@ -257,6 +285,12 @@
 /* Actions Cell */
 .actions-cell {
   white-space: nowrap;
+  text-align: center;
+}
+
+.status-cell,
+.payment-cell {
+  text-align: center;
 }
 
 .actions-buttons {
