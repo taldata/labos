@@ -4,7 +4,7 @@ import {
   LineChart, Line, BarChart, Bar, PieChart, Pie, Cell,
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
 } from 'recharts'
-import { Card, Select, Skeleton } from '../components/ui'
+import { Card, Select, Skeleton, Input, Button } from '../components/ui'
 import logger from '../utils/logger'
 import './AdminDashboard.css'
 
@@ -15,19 +15,31 @@ function AdminDashboard({ user, setUser }) {
   const [loading, setLoading] = useState(true)
   const [stats, setStats] = useState(null)
   const [timePeriod, setTimePeriod] = useState('this_month')
+  const [startDate, setStartDate] = useState('')
+  const [endDate, setEndDate] = useState('')
 
   useEffect(() => {
     if (!user?.is_admin) {
       navigate('/dashboard')
       return
     }
-    fetchAdminStats()
+    // Only fetch if not custom, or if custom and both dates are set
+    if (timePeriod !== 'custom' || (startDate && endDate)) {
+      fetchAdminStats()
+    }
   }, [timePeriod])
 
   const fetchAdminStats = async () => {
     try {
       setLoading(true)
-      const response = await fetch(`/api/v1/admin/stats?period=${timePeriod}`, {
+      let url = `/api/v1/admin/stats?period=${timePeriod}`
+      
+      // Add custom date range parameters
+      if (timePeriod === 'custom' && startDate && endDate) {
+        url += `&start_date=${startDate}&end_date=${endDate}`
+      }
+      
+      const response = await fetch(url, {
         credentials: 'include'
       })
       if (response.ok) {
@@ -43,6 +55,21 @@ function AdminDashboard({ user, setUser }) {
     }
   }
 
+  const handleApplyDateRange = () => {
+    if (startDate && endDate) {
+      fetchAdminStats()
+    }
+  }
+
+  const formatDateForDisplay = (dateStr) => {
+    if (!dateStr) return ''
+    const date = new Date(dateStr)
+    const day = String(date.getDate()).padStart(2, '0')
+    const month = String(date.getMonth() + 1).padStart(2, '0')
+    const year = date.getFullYear()
+    return `${day}/${month}/${year}`
+  }
+
   if (!user?.is_admin) {
     return null
   }
@@ -56,20 +83,51 @@ function AdminDashboard({ user, setUser }) {
             <h1>Admin Analytics Dashboard</h1>
             <p className="subtitle">Comprehensive insights into expense management</p>
           </div>
-          <div className="period-selector">
-            <Select
-              label="Time Period:"
-              value={timePeriod}
-              onChange={(e) => setTimePeriod(e.target.value)}
-            >
-              <option value="this_month">This Month</option>
-              <option value="last_month">Last Month</option>
-              <option value="this_quarter">This Quarter</option>
-              <option value="this_year">This Year</option>
-              <option value="last_6_months">Last 6 Months</option>
-            </Select>
+          <div className="filters-section">
+            <div className="period-selector">
+              <Select
+                label="Time Period:"
+                value={timePeriod}
+                onChange={(e) => setTimePeriod(e.target.value)}
+              >
+                <option value="this_month">This Month</option>
+                <option value="last_month">Last Month</option>
+                <option value="this_quarter">This Quarter</option>
+                <option value="this_year">This Year</option>
+                <option value="last_year">Last Year</option>
+                <option value="last_6_months">Last 6 Months</option>
+                <option value="custom">Custom Date Range</option>
+              </Select>
+            </div>
+            
+            {timePeriod === 'custom' && (
+              <div className="date-range-filter">
+                <div className="date-inputs">
+                  <Input
+                    type="date"
+                    label="Start Date"
+                    value={startDate}
+                    onChange={(e) => setStartDate(e.target.value)}
+                  />
+                  <Input
+                    type="date"
+                    label="End Date"
+                    value={endDate}
+                    onChange={(e) => setEndDate(e.target.value)}
+                  />
+                </div>
+                <Button 
+                  variant="primary" 
+                  onClick={handleApplyDateRange}
+                  disabled={!startDate || !endDate}
+                >
+                  Apply
+                </Button>
+              </div>
+            )}
           </div>
         </div>
+
 
         {loading ? (
           <div className="loading-state">

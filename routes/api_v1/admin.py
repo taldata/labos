@@ -18,10 +18,23 @@ def allowed_file(filename):
     ALLOWED_EXTENSIONS = {'pdf', 'png', 'jpg', 'jpeg', 'gif'}
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
-def get_date_range(period):
-    """Get start and end dates based on period"""
+def get_date_range(period, custom_start=None, custom_end=None):
+    """Get start and end dates based on period or custom range"""
     today = datetime.now()
     end_date = today
+    
+    # Handle custom date range
+    if period == 'custom' and custom_start and custom_end:
+        try:
+            start_date = datetime.strptime(custom_start, '%Y-%m-%d')
+            end_date = datetime.strptime(custom_end, '%Y-%m-%d')
+            # Set end_date to end of day
+            end_date = end_date.replace(hour=23, minute=59, second=59)
+            return start_date, end_date
+        except ValueError:
+            # Fall back to this_month if invalid dates
+            start_date = datetime(today.year, today.month, 1)
+            return start_date, end_date
     
     if period == 'this_month':
         start_date = datetime(today.year, today.month, 1)
@@ -37,6 +50,9 @@ def get_date_range(period):
         start_date = datetime(today.year, (current_quarter - 1) * 3 + 1, 1)
     elif period == 'this_year':
         start_date = datetime(today.year, 1, 1)
+    elif period == 'last_year':
+        start_date = datetime(today.year - 1, 1, 1)
+        end_date = datetime(today.year - 1, 12, 31, 23, 59, 59)
     elif period == 'last_6_months':
         start_date = today - relativedelta(months=6)
     else:
@@ -53,7 +69,9 @@ def get_admin_stats():
     
     try:
         period = request.args.get('period', 'this_month')
-        start_date, end_date = get_date_range(period)
+        custom_start = request.args.get('start_date')
+        custom_end = request.args.get('end_date')
+        start_date, end_date = get_date_range(period, custom_start, custom_end)
         
         # Status breakdown - use a single query instead of multiple
         status_query = db.session.query(

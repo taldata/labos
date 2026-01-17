@@ -265,27 +265,7 @@ function UserManagement({ user, setUser }) {
                 icon="fas fa-search"
               />
             </div>
-            <div className="filter-group">
-              <Select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
-                <option value="all">All Status</option>
-                <option value="active">Active</option>
-                <option value="inactive">Inactive</option>
-                <option value="pending">Pending</option>
-              </Select>
-              <Select value={roleFilter} onChange={(e) => setRoleFilter(e.target.value)}>
-                <option value="all">All Roles</option>
-                <option value="admin">Admins</option>
-                <option value="manager">Managers</option>
-                <option value="accounting">Accounting</option>
-                <option value="employee">Employees Only</option>
-              </Select>
-              <Select value={departmentFilter} onChange={(e) => setDepartmentFilter(e.target.value)}>
-                <option value="all">All Departments</option>
-                {departments.map(dept => (
-                  <option key={dept.id} value={dept.id}>{dept.name}</option>
-                ))}
-              </Select>
-            </div>
+
           </Card.Body>
         </Card>
 

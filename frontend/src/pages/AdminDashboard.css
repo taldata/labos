@@ -40,6 +40,13 @@
 }
 
 /* Period Selector - Glassmorphic */
+.filters-section {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  align-items: flex-end;
+}
+
 .period-selector {
   display: flex;
   align-items: center;
@@ -57,6 +64,50 @@
   font-weight: 600;
   color: #64748b;
   font-size: 0.9rem;
+}
+
+/* Date Range Filter */
+.date-range-filter {
+  display: flex;
+  align-items: flex-end;
+  gap: 1rem;
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  padding: 1rem 1.25rem;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+  animation: fadeIn 0.3s ease-out;
+}
+
+.date-range-filter .date-inputs {
+  display: flex;
+  gap: 1rem;
+}
+
+.date-range-filter .form-group {
+  margin-bottom: 0;
+}
+
+.date-range-filter input[type="date"] {
+  min-width: 150px;
+  padding: 0.5rem 0.75rem;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  font-size: 0.9rem;
+  color: #1e293b;
+  background: white;
+}
+
+.date-range-filter input[type="date"]:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.15);
+}
+
+.date-range-filter .button {
+  white-space: nowrap;
 }
 
 /* Stats Grid */
@@ -263,16 +314,10 @@
   padding: 1.5rem 1.5rem 1rem;
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 0.75rem;
   border-bottom: none;
-}
-
-.chart-card .card-header::before {
-  content: '';
-  width: 4px;
-  height: 20px;
-  background: linear-gradient(135deg, #667eea, #764ba2);
-  border-radius: 2px;
+  text-align: center;
 }
 
 .chart-card .card-body {
@@ -405,9 +450,28 @@
     font-size: 1.75rem;
   }
 
+  .filters-section {
+    width: 100%;
+    align-items: stretch;
+  }
+
   .period-selector {
     width: 100%;
     justify-content: space-between;
+  }
+
+  .date-range-filter {
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .date-range-filter .date-inputs {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .date-range-filter .button {
+    width: 100%;
   }
 
   .stats-grid {
