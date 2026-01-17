@@ -304,8 +304,16 @@ function UserManagement({ user, setUser }) {
                     >
                       <td>
                         <div className="user-cell">
-                          <div className="user-avatar">
-                            {(u.first_name?.[0] || u.username[0]).toUpperCase()}
+                          <div className="user-avatar" style={u.profile_pic ? { padding: 0, overflow: 'hidden' } : {}}>
+                            {u.profile_pic ? (
+                                <img 
+                                src={u.profile_pic} 
+                                alt={`${u.first_name} ${u.last_name}`} 
+                                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                />
+                            ) : (
+                                (u.first_name?.[0] || u.username[0]).toUpperCase()
+                            )}
                           </div>
                           <div className="user-details-info">
                             <span className="user-name">{u.first_name} {u.last_name}</span>

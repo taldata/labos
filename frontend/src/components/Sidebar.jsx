@@ -169,8 +169,16 @@ function Sidebar({ user, setUser, isOpen, onToggle }) {
         {/* User Section at Bottom */}
         <div className="sidebar-footer">
           <div className="user-section">
-            <div className="user-avatar">
-              {user?.first_name?.[0]}{user?.last_name?.[0]}
+            <div className="user-avatar" style={user?.profile_pic ? { padding: 0, overflow: 'hidden' } : {}}>
+              {user?.profile_pic ? (
+                <img 
+                  src={user.profile_pic} 
+                  alt={`${user.first_name} ${user.last_name}`} 
+                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                />
+              ) : (
+                <>{user?.first_name?.[0]}{user?.last_name?.[0]}</>
+              )}
             </div>
             {isOpen && (
               <div className="user-info">

@@ -40,7 +40,8 @@ def get_current_user():
                 'is_accounting': current_user.is_accounting,
                 'can_use_modern_version': current_user.can_use_modern_version,
                 'preferred_version': current_user.preferred_version,
-                'department_id': current_user.department_id
+                'department_id': current_user.department_id,
+                'profile_pic': current_user.profile_pic
             }
         }), 200
     return jsonify({'error': 'Not authenticated'}), 401
@@ -206,6 +207,43 @@ def auth_callback():
             # Update user info from Azure AD
             user.first_name = graph_data.get('givenName', user.first_name)
             user.last_name = graph_data.get('surname', user.last_name)
+
+            # Try to fetch profile photo
+            try:
+                photo_response = requests.get(
+                    'https://graph.microsoft.com/v1.0/me/photos/96x96/$value',
+                    headers={'Authorization': f"Bearer {result['access_token']}"}
+                )
+                if photo_response.ok:
+                    # Create profiles directory if not exists
+                    # Assuming we want to save it in frontend/public for React serving during dev
+                    # In production we might want a different strategy, but let's stick to plan
+                    # We need to find where frontend/public is relative to app root
+                    
+                    # NOTE: In deployed environment, we might not have write access to frontend build dir
+                    # But for now let's save to UPLOAD_FOLDER or a specific static folder served by Flask
+                    # Then frontend checks that URL. 
+                    # Let's save to 'static/profiles' which Flask serves automatically
+                    
+                    profiles_dir = os.path.join(app.root_path, 'static', 'profiles')
+                    if not os.path.exists(profiles_dir):
+                        os.makedirs(profiles_dir)
+                    
+                    filename = f"{user.id}.jpg"
+                    filepath = os.path.join(profiles_dir, filename)
+                    
+                    with open(filepath, 'wb') as f:
+                        f.write(photo_response.content)
+                    
+                    # Update user profile pic path - relative to Flask static serving
+                    # Frontend can load from /static/profiles/ID.jpg
+                    user.profile_pic = f"/static/profiles/{filename}"
+                    logging.info(f"Updated profile picture for user {user.username}")
+                else:
+                    logging.info(f"No profile picture found for user {user.username}: {photo_response.status_code}")
+            except Exception as e:
+                logging.error(f"Error fetching profile picture: {str(e)}")
+
             db.session.commit()
             logging.info(f"Existing user updated: {user.username}")
 

@@ -59,7 +59,6 @@ class User(UserMixin, db.Model):
     is_manager = db.Column(db.Boolean, default=False)
     is_admin = db.Column(db.Boolean, default=False)
     is_accounting = db.Column(db.Boolean, default=False)
-    profile_pic = db.Column(db.String(255), nullable=True)
     status = db.Column(db.String(20), default='active')  # active, inactive, pending
     # Version preference for parallel frontend versions
     can_use_modern_version = db.Column(db.Boolean, default=False)  # Admin grants access
