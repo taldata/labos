@@ -192,15 +192,29 @@ function SubmitExpense({ user, setUser }) {
         [name]: file
       }))
 
-      // Process invoice through OCR to extract amount
-      if (name === 'invoice') {
+      // Define OCR endpoints for each document type
+      const ocrEndpoints = {
+        invoice: '/api/expense/process-expense',
+        receipt: '/api/expense/process-receipt',
+        quote: '/api/expense/process-quote'
+      }
+
+      // Define Hebrew labels for each document type
+      const documentLabels = {
+        invoice: 'חשבונית',
+        receipt: 'קבלה',
+        quote: 'הצעת מחיר'
+      }
+
+      // Process document through OCR to extract amount (for invoice, receipt, and quote)
+      if (ocrEndpoints[name]) {
         setOcrProcessing(true)
         setOcrData(null)
         try {
           const formData = new FormData()
           formData.append('document', file)
 
-          const response = await fetch('/api/expense/process-expense', {
+          const response = await fetch(ocrEndpoints[name], {
             method: 'POST',
             credentials: 'include',
             body: formData
@@ -228,16 +242,16 @@ function SubmitExpense({ user, setUser }) {
               setDateError('')
             }
             if (ocrResult.amount || ocrResult.purchase_date) {
-              showSuccess('נתונים חולצו מהחשבונית בהצלחה')
+              showSuccess(`נתונים חולצו מה${documentLabels[name]} בהצלחה`)
             } else {
-              showSuccess('החשבונית עובדה, אך לא נמצאו נתונים לחילוץ')
+              showSuccess(`ה${documentLabels[name]} עובדה, אך לא נמצאו נתונים לחילוץ`)
             }
           } else {
             const errorData = await response.json()
             logger.error('OCR processing failed', { error: errorData })
           }
         } catch (error) {
-          logger.error('Error processing invoice', { error: error.message })
+          logger.error(`Error processing ${name}`, { error: error.message })
         } finally {
           setOcrProcessing(false)
         }
