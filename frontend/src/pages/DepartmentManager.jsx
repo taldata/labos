@@ -262,6 +262,10 @@ const DepartmentManager = ({ user, setUser }) => {
         return Math.min((spent / total) * 100, 100);
     };
 
+    const getCurrencyLabel = (currency) => {
+        return currency === 'ILS' ? 'ש״ח' : currency;
+    };
+
     if (!user?.is_admin) {
         return null;
     }
@@ -335,7 +339,8 @@ const DepartmentManager = ({ user, setUser }) => {
                                 <div className="dept-icon">🏢</div>
                                 <span className="dept-name">{dept.name}</span>
                                 <div className="budget-info">
-                                    <span className="dept-budget">תקציב: {dept.budget.toLocaleString()} {dept.currency}</span>
+                                    <span className="dept-budget">תקציב: {dept.budget.toLocaleString()} {getCurrencyLabel(dept.currency)}</span>
+                                    <span className="dept-remaining">יתרת תקציב לניצול: {(dept.budget - (dept.spent || 0)).toLocaleString()} {getCurrencyLabel(dept.currency)}</span>
                                     <span
                                         className="dept-spent clickable"
                                         onClick={(e) => {
@@ -344,7 +349,7 @@ const DepartmentManager = ({ user, setUser }) => {
                                         }}
                                         title="לחץ לצפייה בפירוט ההוצאות"
                                     >
-                                        הוצאות בפועל: {(dept.spent || 0).toLocaleString()} {dept.currency}
+                                        הוצאות בפועל: {(dept.spent || 0).toLocaleString()} {getCurrencyLabel(dept.currency)}
                                     </span>
                                 </div>
                             </div>
@@ -361,7 +366,7 @@ const DepartmentManager = ({ user, setUser }) => {
                                 <div className="budget-progress">
                                     <div className="budget-progress-label">
                                         <span>Budget Usage</span>
-                                        <span>{dept.spent?.toLocaleString() || 0} / {dept.budget.toLocaleString()} {dept.currency}</span>
+                                        <span>{dept.spent?.toLocaleString() || 0} / {dept.budget.toLocaleString()} {getCurrencyLabel(dept.currency)}</span>
                                     </div>
                                     <div className="budget-progress-bar">
                                         <div
@@ -381,7 +386,8 @@ const DepartmentManager = ({ user, setUser }) => {
                                                     <div className="category-icon">📁</div>
                                                     <span className="category-name">{cat.name}</span>
                                                     <div className="budget-info">
-                                                        <span className="dept-budget">תקציב: {cat.budget.toLocaleString()} {dept.currency}</span>
+                                                        <span className="dept-budget">תקציב: {cat.budget.toLocaleString()} {getCurrencyLabel(dept.currency)}</span>
+                                                        <span className="dept-remaining">יתרת תקציב לניצול: {(cat.budget - (cat.spent || 0)).toLocaleString()} {getCurrencyLabel(dept.currency)}</span>
                                                         <span
                                                             className="dept-spent clickable"
                                                             onClick={(e) => {
@@ -390,7 +396,7 @@ const DepartmentManager = ({ user, setUser }) => {
                                                             }}
                                                             title="לחץ לצפייה בפירוט ההוצאות"
                                                         >
-                                                            הוצאות: {(cat.spent || 0).toLocaleString()} {dept.currency}
+                                                            הוצאות: {(cat.spent || 0).toLocaleString()} {getCurrencyLabel(dept.currency)}
                                                         </span>
                                                     </div>
                                                 </div>
@@ -410,7 +416,8 @@ const DepartmentManager = ({ user, setUser }) => {
                                                                 <div className="subcategory-icon">📄</div>
                                                                 <span className="subcategory-name">{sub.name}</span>
                                                                 <div className="budget-info">
-                                                                    <span className="dept-budget">תקציב: {sub.budget.toLocaleString()} {dept.currency}</span>
+                                                                    <span className="dept-budget">תקציב: {sub.budget.toLocaleString()} {getCurrencyLabel(dept.currency)}</span>
+                                                                    <span className="dept-remaining">יתרת תקציב לניצול: {(sub.budget - (sub.spent || 0)).toLocaleString()} {getCurrencyLabel(dept.currency)}</span>
                                                                     <span
                                                                         className="dept-spent clickable"
                                                                         onClick={(e) => {
@@ -419,7 +426,7 @@ const DepartmentManager = ({ user, setUser }) => {
                                                                         }}
                                                                         title="לחץ לצפייה בפירוט ההוצאות"
                                                                     >
-                                                                        הוצאות: {(sub.spent || 0).toLocaleString()} {dept.currency}
+                                                                        הוצאות: {(sub.spent || 0).toLocaleString()} {getCurrencyLabel(dept.currency)}
                                                                     </span>
                                                                 </div>
                                                             </div>

@@ -144,6 +144,19 @@
   box-shadow: 0 2px 8px rgba(102, 126, 234, 0.15);
 }
 
+.dept-remaining {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #166534;
+  background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%);
+  padding: 0.4rem 1rem;
+  border-radius: 2rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  box-shadow: 0 2px 8px rgba(22, 163, 74, 0.15);
+}
+
 .dept-spent {
   font-size: 0.9rem;
   font-weight: 600;
