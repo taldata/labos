@@ -1,188 +1,89 @@
-import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { Card, Button, Badge, Input, Select, SearchableSelect, TomSelectInput, Skeleton, EmptyState, Modal, useToast, FilePreviewButton } from '../components/ui'
+import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useNavigate, useSearchParams } from 'react-router-dom'
+import { Card, Button, Badge, Input, Select, TomSelectInput, Skeleton, EmptyState, Modal, useToast, FilePreviewButton } from '../components/ui'
 import MoveExpenseToYearModal from '../components/MoveExpenseToYearModal'
 import logger from '../utils/logger'
 import './ExpenseHistory.css'
 
-function ExpenseHistory({ user, setUser }) {
-  const navigate = useNavigate()
-  const { success, error: showError } = useToast()
+// ============================================================================
+// Custom Hook: useExpenseFilters
+// ============================================================================
+function useExpenseFilters() {
+  const [searchParams, setSearchParams] = useSearchParams()
+  
+  const getInitialFilters = useCallback(() => ({
+    status: searchParams.get('status') || '',
+    department_id: searchParams.get('department_id') || '',
+    user_id: searchParams.get('user_id') || '',
+    category_id: searchParams.get('category_id') || '',
+    subcategory_id: searchParams.get('subcategory_id') || '',
+    supplier_id: searchParams.get('supplier_id') || '',
+    payment_method: searchParams.get('payment_method') || '',
+    search: searchParams.get('search') || '',
+    start_date: searchParams.get('start_date') || '',
+    end_date: searchParams.get('end_date') || '',
+    sort_by: searchParams.get('sort_by') || 'date',
+    sort_order: searchParams.get('sort_order') || 'desc'
+  }), [searchParams])
+
+  const [filters, setFilters] = useState(getInitialFilters)
+  const [selectedCategoryOption, setSelectedCategoryOption] = useState('')
+
+  const updateFilter = useCallback((name, value) => {
+    setFilters(prev => ({ ...prev, [name]: value }))
+  }, [])
+
+  const clearFilters = useCallback(() => {
+    setFilters({
+      status: '',
+      department_id: '',
+      user_id: '',
+      category_id: '',
+      subcategory_id: '',
+      supplier_id: '',
+      payment_method: '',
+      search: '',
+      start_date: '',
+      end_date: '',
+      sort_by: 'date',
+      sort_order: 'desc'
+    })
+    setSelectedCategoryOption('')
+  }, [])
+
+  const hasActiveFilters = useMemo(() => 
+    Object.entries(filters).some(([key, val]) => 
+      val !== '' && !['sort_by', 'sort_order'].includes(key)
+    ), [filters]
+  )
+
+  const activeFilterCount = useMemo(() => 
+    Object.entries(filters).filter(([k, v]) => v && !['sort_by', 'sort_order'].includes(k)).length
+  , [filters])
+
+  return {
+    filters,
+    setFilters,
+    updateFilter,
+    clearFilters,
+    hasActiveFilters,
+    activeFilterCount,
+    selectedCategoryOption,
+    setSelectedCategoryOption
+  }
+}
+
+// ============================================================================
+// Custom Hook: useExpenseData
+// ============================================================================
+function useExpenseData(filters, currentPage) {
   const [expenses, setExpenses] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
-
-  // Pagination
-  const [currentPage, setCurrentPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
   const [totalExpenses, setTotalExpenses] = useState(0)
 
-  // Filters
-  const [filters, setFilters] = useState({
-    status: '',
-    department_id: '',
-    user_id: '',
-    category_id: '',
-    subcategory_id: '',
-    supplier_id: '',
-    payment_method: '',
-    search: '',
-    start_date: '',
-    end_date: '',
-    sort_by: 'date',
-    sort_order: 'desc'
-  })
-
-  // Selected category option for display in SearchableSelect
-  const [selectedCategoryOption, setSelectedCategoryOption] = useState('')
-
-  // Filter options
-  const [departments, setDepartments] = useState([])
-  const [users, setUsers] = useState([])
-  const [categories, setCategories] = useState([])
-  const [categoryOptions, setCategoryOptions] = useState([]) // Flattened list for SearchableSelect
-  const [suppliers, setSuppliers] = useState([])
-  const [showFilters, setShowFilters] = useState(true)
-
-  // Edit modal
-  const [editModalOpen, setEditModalOpen] = useState(false)
-  const [currentExpense, setCurrentExpense] = useState(null)
-  const [editFormData, setEditFormData] = useState({
-    status: '',
-    payment_status: '',
-    amount: '',
-    currency: 'ILS',
-    description: '',
-    reason: '',
-    type: '',
-    subcategory_id: '',
-    supplier_id: '',
-    credit_card_id: '',
-    payment_method: '',
-    invoice_date: '',
-    rejection_reason: ''
-  })
-  const [editFiles, setEditFiles] = useState({
-    quote: null,
-    invoice: null,
-    receipt: null
-  })
-  const [deleteFiles, setDeleteFiles] = useState({
-    quote: false,
-    invoice: false,
-    receipt: false
-  })
-  const [creditCards, setCreditCards] = useState([])
-  const [subcategories, setSubcategories] = useState([])
-
-  // Delete confirmation
-  const [deleteModalOpen, setDeleteModalOpen] = useState(false)
-  const [expenseToDelete, setExpenseToDelete] = useState(null)
-
-  // Move to year modal
-  const [moveModalOpen, setMoveModalOpen] = useState(false)
-  const [expenseToMove, setExpenseToMove] = useState(null)
-
-  useEffect(() => {
-    if (!user?.is_admin) {
-      navigate('/dashboard')
-      return
-    }
-    fetchFilterOptions()
-
-    // Check for URL parameters and set filters accordingly
-    const urlParams = new URLSearchParams(window.location.search)
-    const newFilters = { ...filters }
-
-    if (urlParams.get('department_id')) {
-      newFilters.department_id = urlParams.get('department_id')
-    }
-    if (urlParams.get('category_id')) {
-      newFilters.category_id = urlParams.get('category_id')
-    }
-    if (urlParams.get('user_id')) {
-      newFilters.user_id = urlParams.get('user_id')
-    }
-
-    setFilters(newFilters)
-  }, [])
-
-  useEffect(() => {
-    if (user?.is_admin) {
-      fetchExpenses()
-    }
-  }, [currentPage, filters])
-
-  const fetchFilterOptions = async () => {
-    try {
-      const [deptRes, userRes, catRes, suppRes, ccRes, subcatRes] = await Promise.all([
-        fetch('/api/v1/form-data/departments', { credentials: 'include' }),
-        fetch('/api/v1/admin/users', { credentials: 'include' }),
-        fetch('/api/v1/form-data/categories?all=true&include_subcategories=true', { credentials: 'include' }),
-        fetch('/api/v1/form-data/suppliers', { credentials: 'include' }),
-        fetch('/api/v1/form-data/credit-cards', { credentials: 'include' }),
-        fetch('/api/v1/form-data/subcategories?all=true', { credentials: 'include' })
-      ])
-
-      if (deptRes.ok) {
-        const data = await deptRes.json()
-        setDepartments(data.departments || [])
-      }
-      if (userRes.ok) {
-        const data = await userRes.json()
-        setUsers(data.users || [])
-      }
-      if (catRes.ok) {
-        const data = await catRes.json()
-        const categoriesData = data.categories || []
-        setCategories(categoriesData)
-
-        // Create flattened list with categories and subcategories for SearchableSelect
-        const flattenedOptions = []
-        categoriesData.forEach(cat => {
-          // Add category as a header/group item
-          flattenedOptions.push({
-            id: `cat_${cat.id}`,
-            name: cat.department_name ? `${cat.department_name} > ${cat.name}` : cat.name,
-            type: 'category',
-            category_id: cat.id,
-            isHeader: true
-          })
-          // Add subcategories under the category
-          if (cat.subcategories && cat.subcategories.length > 0) {
-            cat.subcategories.forEach(sub => {
-              flattenedOptions.push({
-                id: `sub_${sub.id}`,
-                name: cat.department_name
-                  ? `${cat.department_name} > ${cat.name} > ${sub.name}`
-                  : `${cat.name} > ${sub.name}`,
-                type: 'subcategory',
-                category_id: cat.id,
-                subcategory_id: sub.id
-              })
-            })
-          }
-        })
-        setCategoryOptions(flattenedOptions)
-      }
-      if (suppRes.ok) {
-        const data = await suppRes.json()
-        setSuppliers(data.suppliers || [])
-      }
-      if (ccRes.ok) {
-        const data = await ccRes.json()
-        setCreditCards(data.credit_cards || [])
-      }
-      if (subcatRes.ok) {
-        const data = await subcatRes.json()
-        setSubcategories(data.subcategories || [])
-      }
-    } catch (err) {
-      logger.error('Failed to fetch filter options', { error: err.message })
-    }
-  }
-
-  const fetchExpenses = async () => {
+  const fetchExpenses = useCallback(async () => {
     try {
       setLoading(true)
       setError('')
@@ -213,191 +114,323 @@ function ExpenseHistory({ user, setUser }) {
     } finally {
       setLoading(false)
     }
+  }, [filters, currentPage])
+
+  return {
+    expenses,
+    loading,
+    error,
+    totalPages,
+    totalExpenses,
+    fetchExpenses,
+    setExpenses
   }
+}
+
+// ============================================================================
+// Custom Hook: useFilterOptions
+// ============================================================================
+function useFilterOptions() {
+  const [departments, setDepartments] = useState([])
+  const [users, setUsers] = useState([])
+  const [categories, setCategories] = useState([])
+  const [categoryOptions, setCategoryOptions] = useState([])
+  const [suppliers, setSuppliers] = useState([])
+  const [creditCards, setCreditCards] = useState([])
+  const [subcategories, setSubcategories] = useState([])
+
+  const fetchFilterOptions = useCallback(async () => {
+    try {
+      const [deptRes, userRes, catRes, suppRes, ccRes, subcatRes] = await Promise.all([
+        fetch('/api/v1/form-data/departments', { credentials: 'include' }),
+        fetch('/api/v1/admin/users', { credentials: 'include' }),
+        fetch('/api/v1/form-data/categories?all=true&include_subcategories=true', { credentials: 'include' }),
+        fetch('/api/v1/form-data/suppliers', { credentials: 'include' }),
+        fetch('/api/v1/form-data/credit-cards', { credentials: 'include' }),
+        fetch('/api/v1/form-data/subcategories?all=true', { credentials: 'include' })
+      ])
+
+      if (deptRes.ok) {
+        const data = await deptRes.json()
+        setDepartments(data.departments || [])
+      }
+      if (userRes.ok) {
+        const data = await userRes.json()
+        setUsers(data.users || [])
+      }
+      if (catRes.ok) {
+        const data = await catRes.json()
+        const categoriesData = data.categories || []
+        setCategories(categoriesData)
+
+        const flattenedOptions = []
+        categoriesData.forEach(cat => {
+          flattenedOptions.push({
+            id: `cat_${cat.id}`,
+            name: cat.department_name ? `${cat.department_name} > ${cat.name}` : cat.name,
+            type: 'category',
+            category_id: cat.id,
+            isHeader: true
+          })
+          if (cat.subcategories?.length > 0) {
+            cat.subcategories.forEach(sub => {
+              flattenedOptions.push({
+                id: `sub_${sub.id}`,
+                name: cat.department_name
+                  ? `${cat.department_name} > ${cat.name} > ${sub.name}`
+                  : `${cat.name} > ${sub.name}`,
+                type: 'subcategory',
+                category_id: cat.id,
+                subcategory_id: sub.id
+              })
+            })
+          }
+        })
+        setCategoryOptions(flattenedOptions)
+      }
+      if (suppRes.ok) {
+        const data = await suppRes.json()
+        setSuppliers(data.suppliers || [])
+      }
+      if (ccRes.ok) {
+        const data = await ccRes.json()
+        setCreditCards(data.credit_cards || [])
+      }
+      if (subcatRes.ok) {
+        const data = await subcatRes.json()
+        setSubcategories(data.subcategories || [])
+      }
+    } catch (err) {
+      logger.error('Failed to fetch filter options', { error: err.message })
+    }
+  }, [])
+
+  return {
+    departments,
+    users,
+    categories,
+    categoryOptions,
+    suppliers,
+    creditCards,
+    subcategories,
+    fetchFilterOptions
+  }
+}
+
+// ============================================================================
+// Component: ExpenseHistoryHeader
+// ============================================================================
+function ExpenseHistoryHeader({ totalExpenses, filters }) {
+  const handleExport = () => {
+    const params = new URLSearchParams(
+      Object.fromEntries(Object.entries(filters).filter(([_, v]) => v !== ''))
+    )
+    window.open('/api/v1/expenses/export?' + params.toString(), '_blank')
+  }
+
+  return (
+    <header className="eh-header">
+      <div className="eh-header__content">
+        <h1 className="eh-header__title">Expense History</h1>
+        <p className="eh-header__subtitle">
+          <span className="eh-header__count">{totalExpenses.toLocaleString()}</span> total expenses
+        </p>
+      </div>
+      <div className="eh-header__actions">
+        <Button
+          variant="secondary"
+          icon="fas fa-download"
+          onClick={handleExport}
+        >
+          Export CSV
+        </Button>
+      </div>
+    </header>
+  )
+}
+
+// ============================================================================
+// Component: ExpenseHistoryFilters
+// ============================================================================
+function ExpenseHistoryFilters({
+  filters,
+  updateFilter,
+  clearFilters,
+  hasActiveFilters,
+  activeFilterCount,
+  departments,
+  users,
+  categoryOptions,
+  suppliers,
+  selectedCategoryOption,
+  onCategorySelect
+}) {
+  const [isExpanded, setIsExpanded] = useState(true)
 
   const handleFilterChange = (e) => {
     const { name, value } = e.target
-    setFilters(prev => ({ ...prev, [name]: value }))
-    setCurrentPage(1)
+    updateFilter(name, value)
   }
 
-  const clearFilters = () => {
-    setFilters({
-      status: '',
-      department_id: '',
-      user_id: '',
-      category_id: '',
-      subcategory_id: '',
-      supplier_id: '',
-      payment_method: '',
-      search: '',
-      start_date: '',
-      end_date: '',
-      sort_by: 'date',
-      sort_order: 'desc'
-    })
-    setSelectedCategoryOption('')
-    setCurrentPage(1)
-  }
+  return (
+    <Card className="eh-filters">
+      <button 
+        className="eh-filters__header"
+        onClick={() => setIsExpanded(!isExpanded)}
+        aria-expanded={isExpanded}
+      >
+        <div className="eh-filters__title">
+          <i className="fas fa-sliders-h" />
+          <span>Filters & Search</span>
+          {hasActiveFilters && (
+            <Badge variant="primary" size="small">
+              {activeFilterCount} active
+            </Badge>
+          )}
+        </div>
+        <i className={`fas fa-chevron-${isExpanded ? 'up' : 'down'} eh-filters__toggle`} />
+      </button>
 
-  // Handle category/subcategory selection from SearchableSelect
-  const handleCategorySelect = (e) => {
-    const selectedId = e.target.value
-    setSelectedCategoryOption(selectedId)
+      {isExpanded && (
+        <div className="eh-filters__body">
+          {/* Row 1: Search, Status, Department, Employee */}
+          <div className="eh-filters__row">
+            <Input
+              label="Search"
+              name="search"
+              value={filters.search}
+              onChange={handleFilterChange}
+              placeholder="Description, reason, employee, supplier..."
+              icon="fas fa-search"
+            />
+            <Select
+              label="Status"
+              name="status"
+              value={filters.status}
+              onChange={handleFilterChange}
+            >
+              <option value="">All Statuses</option>
+              <option value="pending">Pending</option>
+              <option value="approved">Approved</option>
+              <option value="rejected">Rejected</option>
+            </Select>
+            <TomSelectInput
+              label="Department"
+              name="department_id"
+              value={filters.department_id}
+              onChange={handleFilterChange}
+              options={departments}
+              displayKey="name"
+              valueKey="id"
+              placeholder="All Departments"
+            />
+            <TomSelectInput
+              label="Employee"
+              name="user_id"
+              value={filters.user_id}
+              onChange={handleFilterChange}
+              options={users.map(u => ({
+                id: u.id,
+                name: `${u.first_name} ${u.last_name}`
+              }))}
+              displayKey="name"
+              valueKey="id"
+              placeholder="All Employees"
+            />
+          </div>
 
-    if (!selectedId) {
-      setFilters(prev => ({ ...prev, category_id: '', subcategory_id: '' }))
-      setCurrentPage(1)
-      return
-    }
+          {/* Row 2: Category, Supplier, Payment Method, Start Date */}
+          <div className="eh-filters__row">
+            <TomSelectInput
+              label="Category"
+              name="category_id"
+              value={selectedCategoryOption}
+              onChange={onCategorySelect}
+              options={categoryOptions}
+              placeholder="All Categories"
+              displayKey="name"
+              valueKey="id"
+            />
+            <TomSelectInput
+              label="Supplier"
+              name="supplier_id"
+              value={filters.supplier_id}
+              onChange={handleFilterChange}
+              options={suppliers}
+              placeholder="All Suppliers"
+              displayKey="name"
+              valueKey="id"
+            />
+            <Select
+              label="Payment Method"
+              name="payment_method"
+              value={filters.payment_method}
+              onChange={handleFilterChange}
+            >
+              <option value="">All Methods</option>
+              <option value="credit_card">Credit Card</option>
+              <option value="bank_transfer">Bank Transfer</option>
+              <option value="cash">Cash</option>
+              <option value="standing_order">Standing Order</option>
+            </Select>
+            <Input
+              type="date"
+              label="Start Date"
+              name="start_date"
+              value={filters.start_date}
+              onChange={handleFilterChange}
+            />
+          </div>
 
-    const selectedOption = categoryOptions.find(opt => opt.id === selectedId)
-    if (selectedOption) {
-      if (selectedOption.type === 'category') {
-        setFilters(prev => ({
-          ...prev,
-          category_id: selectedOption.category_id,
-          subcategory_id: ''
-        }))
-      } else {
-        setFilters(prev => ({
-          ...prev,
-          category_id: selectedOption.category_id,
-          subcategory_id: selectedOption.subcategory_id
-        }))
-      }
-      setCurrentPage(1)
-    }
-  }
+          {/* Row 3: End Date, Sort By, Order, Clear */}
+          <div className="eh-filters__row">
+            <Input
+              type="date"
+              label="End Date"
+              name="end_date"
+              value={filters.end_date}
+              onChange={handleFilterChange}
+            />
+            <Select
+              label="Sort By"
+              name="sort_by"
+              value={filters.sort_by}
+              onChange={handleFilterChange}
+            >
+              <option value="date">Date</option>
+              <option value="amount">Amount</option>
+              <option value="status">Status</option>
+            </Select>
+            <Select
+              label="Order"
+              name="sort_order"
+              value={filters.sort_order}
+              onChange={handleFilterChange}
+            >
+              <option value="desc">Descending</option>
+              <option value="asc">Ascending</option>
+            </Select>
+            <div className="eh-filters__actions">
+              <Button 
+                variant="secondary" 
+                icon="fas fa-times" 
+                onClick={clearFilters}
+                disabled={!hasActiveFilters}
+              >
+                Clear
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+    </Card>
+  )
+}
 
-  const openEditModal = (expense) => {
-    setCurrentExpense(expense)
-    setEditFormData({
-      status: expense.status || '',
-      payment_status: expense.payment_status || '',
-      amount: expense.amount || '',
-      currency: expense.currency || 'ILS',
-      description: expense.description || '',
-      reason: expense.reason || '',
-      type: expense.type || 'needs_approval',
-      subcategory_id: expense.subcategory?.id || '',
-      supplier_id: expense.supplier?.id || '',
-      credit_card_id: expense.credit_card_id || '',
-      payment_method: expense.payment_method || '',
-      invoice_date: expense.invoice_date ? expense.invoice_date.split('T')[0] : '',
-      rejection_reason: expense.rejection_reason || ''
-    })
-    setEditFiles({ quote: null, invoice: null, receipt: null })
-    setDeleteFiles({ quote: false, invoice: false, receipt: false })
-    setEditModalOpen(true)
-  }
-
-  const handleEditSubmit = async (e) => {
-    e.preventDefault()
-    try {
-      const formData = new FormData()
-
-      // Add all form fields
-      Object.entries(editFormData).forEach(([key, value]) => {
-        if (value !== null && value !== undefined && value !== '') {
-          formData.append(key, value)
-        }
-      })
-
-      // Add files if selected
-      if (editFiles.quote) {
-        formData.append('quote', editFiles.quote)
-      }
-      if (editFiles.invoice) {
-        formData.append('invoice', editFiles.invoice)
-      }
-      if (editFiles.receipt) {
-        formData.append('receipt', editFiles.receipt)
-      }
-
-      // Add delete file flags
-      if (deleteFiles.quote) {
-        formData.append('delete_quote', 'true')
-      }
-      if (deleteFiles.invoice) {
-        formData.append('delete_invoice', 'true')
-      }
-      if (deleteFiles.receipt) {
-        formData.append('delete_receipt', 'true')
-      }
-
-      const res = await fetch(`/api/v1/admin/expenses/${currentExpense.id}`, {
-        method: 'PUT',
-        credentials: 'include',
-        body: formData
-      })
-
-      if (res.ok) {
-        success('Expense updated successfully')
-        setEditModalOpen(false)
-        setEditFiles({ quote: null, invoice: null, receipt: null })
-        setDeleteFiles({ quote: false, invoice: false, receipt: false })
-        fetchExpenses()
-      } else {
-        const data = await res.json()
-        showError(data.error || 'Failed to update expense')
-      }
-    } catch (err) {
-      showError('An error occurred')
-    }
-  }
-
-  const handleFileChange = (e, fileType) => {
-    const file = e.target.files[0]
-    if (file) {
-      setEditFiles(prev => ({ ...prev, [fileType]: file }))
-      setDeleteFiles(prev => ({ ...prev, [fileType]: false }))
-    }
-  }
-
-  const handleDeleteFile = (fileType) => {
-    setDeleteFiles(prev => ({ ...prev, [fileType]: true }))
-    setEditFiles(prev => ({ ...prev, [fileType]: null }))
-  }
-
-  const openDeleteModal = (expense) => {
-    setExpenseToDelete(expense)
-    setDeleteModalOpen(true)
-  }
-
-  const handleDelete = async () => {
-    try {
-      const res = await fetch(`/api/v1/admin/expenses/${expenseToDelete.id}`, {
-        method: 'DELETE',
-        credentials: 'include'
-      })
-
-      if (res.ok) {
-        success('Expense deleted successfully')
-        setDeleteModalOpen(false)
-        setExpenseToDelete(null)
-        fetchExpenses()
-      } else {
-        const data = await res.json()
-        showError(data.error || 'Failed to delete expense')
-      }
-    } catch (err) {
-      showError('An error occurred')
-    }
-  }
-
-  const openMoveModal = (expense) => {
-    setExpenseToMove(expense)
-    setMoveModalOpen(true)
-  }
-
-  const handleMoveSuccess = (data) => {
-    success(`Expense moved successfully from year ${data.old_year} to ${data.new_year}`)
-    setMoveModalOpen(false)
-    setExpenseToMove(null)
-    fetchExpenses()
-  }
-
+// ============================================================================
+// Component: ExpenseRow
+// ============================================================================
+function ExpenseRow({ expense, onView, onEdit, onMove, onDelete, formatDate, formatCurrency }) {
   const getStatusVariant = (status) => {
     const variants = {
       pending: 'warning',
@@ -417,6 +450,136 @@ function ExpenseHistory({ user, setUser }) {
     return variants[status] || 'default'
   }
 
+  return (
+    <tr className="eh-table__row">
+      <td className="eh-table__cell eh-table__cell--date">
+        {formatDate(expense.date)}
+      </td>
+      <td className="eh-table__cell eh-table__cell--employee">
+        <div className="eh-employee">
+          <div className="eh-employee__avatar">
+            {expense.user?.name?.[0]?.toUpperCase() || '?'}
+          </div>
+          <span className="eh-employee__name">{expense.user?.name || 'Unknown'}</span>
+        </div>
+      </td>
+      <td className="eh-table__cell eh-table__cell--department">
+        <Badge variant="default" size="small">
+          {expense.user?.department || '-'}
+        </Badge>
+      </td>
+      <td className="eh-table__cell eh-table__cell--description">
+        <div className="eh-description">
+          <strong>{expense.description || 'No description'}</strong>
+          {expense.reason && (
+            <span className="eh-description__reason">{expense.reason}</span>
+          )}
+        </div>
+      </td>
+      <td className="eh-table__cell eh-table__cell--category">
+        <div className="eh-category">
+          {expense.category?.name && (
+            <Badge variant="primary-solid" size="small">{expense.category.name}</Badge>
+          )}
+          {expense.subcategory?.name && (
+            <span className="eh-category__sub">{expense.subcategory.name}</span>
+          )}
+        </div>
+      </td>
+      <td className="eh-table__cell eh-table__cell--supplier">
+        {expense.supplier?.name || '-'}
+      </td>
+      <td className="eh-table__cell eh-table__cell--amount">
+        {formatCurrency(expense.amount, expense.currency)}
+      </td>
+      <td className="eh-table__cell eh-table__cell--status">
+        <Badge variant={getStatusVariant(expense.status)} size="small" rounded>
+          {expense.status ? expense.status.charAt(0).toUpperCase() + expense.status.slice(1) : '-'}
+        </Badge>
+      </td>
+      <td className="eh-table__cell eh-table__cell--payment">
+        {expense.payment_status ? (
+          <Badge variant={getPaymentStatusVariant(expense.payment_status)} size="small">
+            {expense.payment_status}
+          </Badge>
+        ) : (
+          <span className="eh-muted">-</span>
+        )}
+      </td>
+      <td className="eh-table__cell eh-table__cell--files">
+        {(expense.invoice_filename || expense.receipt_filename || expense.quote_filename) ? (
+          <div className="eh-files">
+            {expense.invoice_filename && (
+              <FilePreviewButton
+                fileUrl={`/download/${expense.invoice_filename}`}
+                fileName={expense.invoice_filename}
+                icon="fas fa-file-invoice"
+                title="Preview Invoice"
+              />
+            )}
+            {expense.receipt_filename && (
+              <FilePreviewButton
+                fileUrl={`/download/${expense.receipt_filename}`}
+                fileName={expense.receipt_filename}
+                icon="fas fa-receipt"
+                title="Preview Receipt"
+              />
+            )}
+            {expense.quote_filename && (
+              <FilePreviewButton
+                fileUrl={`/download/${expense.quote_filename}`}
+                fileName={expense.quote_filename}
+                icon="fas fa-file-alt"
+                title="Preview Quote"
+              />
+            )}
+          </div>
+        ) : (
+          <span className="eh-muted">-</span>
+        )}
+      </td>
+      <td className="eh-table__cell eh-table__cell--actions">
+        <div className="eh-actions">
+          <Button
+            variant="ghost"
+            size="small"
+            icon="fas fa-eye"
+            onClick={() => onView(expense.id)}
+            title="View Details"
+          />
+          <Button
+            variant="ghost"
+            size="small"
+            icon="fas fa-edit"
+            onClick={() => onEdit(expense)}
+            title="Edit"
+          />
+          <Button
+            variant="ghost"
+            size="small"
+            icon="fas fa-calendar-alt"
+            onClick={() => onMove(expense)}
+            title="Move to Different Year"
+            className="eh-actions__move"
+          />
+          <Button
+            variant="ghost"
+            size="small"
+            icon="fas fa-trash"
+            onClick={() => onDelete(expense)}
+            title="Delete"
+            className="eh-actions__delete"
+          />
+        </div>
+      </td>
+    </tr>
+  )
+}
+
+// ============================================================================
+// Component: ExpenseTable
+// ============================================================================
+function ExpenseTable({ expenses, loading, error, hasActiveFilters, onView, onEdit, onMove, onDelete }) {
   const formatDate = (dateString) => {
     if (!dateString) return '-'
     const date = new Date(dateString)
@@ -433,729 +596,658 @@ function ExpenseHistory({ user, setUser }) {
     }).format(amount)
   }
 
-  const hasActiveFilters = Object.entries(filters).some(([key, val]) =>
-    val !== '' && !['sort_by', 'sort_order'].includes(key)
+  if (error) {
+    return (
+      <div className="eh-error">
+        <i className="fas fa-exclamation-circle" />
+        <span>{error}</span>
+      </div>
+    )
+  }
+
+  if (loading) {
+    return (
+      <div className="eh-loading">
+        <Skeleton.Table rows={8} columns={11} />
+      </div>
+    )
+  }
+
+  if (expenses.length === 0) {
+    return (
+      <EmptyState
+        icon="fas fa-receipt"
+        title="No expenses found"
+        description={hasActiveFilters
+          ? "Try adjusting your filters to find what you're looking for"
+          : "No expenses have been submitted yet."}
+      />
+    )
+  }
+
+  return (
+    <div className="eh-table-wrapper">
+      <table className="eh-table">
+        <thead className="eh-table__head">
+          <tr>
+            <th className="eh-table__header eh-table__header--date">Date</th>
+            <th className="eh-table__header eh-table__header--employee">Employee</th>
+            <th className="eh-table__header eh-table__header--department">Department</th>
+            <th className="eh-table__header eh-table__header--description">Description</th>
+            <th className="eh-table__header eh-table__header--category">Category</th>
+            <th className="eh-table__header eh-table__header--supplier">Supplier</th>
+            <th className="eh-table__header eh-table__header--amount">Amount</th>
+            <th className="eh-table__header eh-table__header--status">Status</th>
+            <th className="eh-table__header eh-table__header--payment">Payment</th>
+            <th className="eh-table__header eh-table__header--files">Files</th>
+            <th className="eh-table__header eh-table__header--actions">Actions</th>
+          </tr>
+        </thead>
+        <tbody className="eh-table__body">
+          {expenses.map(expense => (
+            <ExpenseRow
+              key={expense.id}
+              expense={expense}
+              onView={onView}
+              onEdit={onEdit}
+              onMove={onMove}
+              onDelete={onDelete}
+              formatDate={formatDate}
+              formatCurrency={formatCurrency}
+            />
+          ))}
+        </tbody>
+      </table>
+    </div>
   )
+}
+
+// ============================================================================
+// Component: ExpensePagination
+// ============================================================================
+function ExpensePagination({ currentPage, totalPages, onPageChange }) {
+  if (totalPages <= 1) return null
+
+  return (
+    <div className="eh-pagination">
+      <Button
+        variant="secondary"
+        size="small"
+        icon="fas fa-chevron-left"
+        onClick={() => onPageChange(Math.max(1, currentPage - 1))}
+        disabled={currentPage === 1}
+      >
+        Previous
+      </Button>
+      <span className="eh-pagination__info">
+        Page <strong>{currentPage}</strong> of <strong>{totalPages}</strong>
+      </span>
+      <Button
+        variant="secondary"
+        size="small"
+        iconPosition="right"
+        icon="fas fa-chevron-right"
+        onClick={() => onPageChange(Math.min(totalPages, currentPage + 1))}
+        disabled={currentPage === totalPages}
+      >
+        Next
+      </Button>
+    </div>
+  )
+}
+
+// ============================================================================
+// Component: ExpenseEditModal
+// ============================================================================
+function ExpenseEditModal({ isOpen, onClose, expense, onSuccess, subcategories, suppliers, creditCards }) {
+  const { success, error: showError } = useToast()
+  const [formData, setFormData] = useState({})
+  const [editFiles, setEditFiles] = useState({ quote: null, invoice: null, receipt: null })
+  const [deleteFiles, setDeleteFiles] = useState({ quote: false, invoice: false, receipt: false })
+
+  useEffect(() => {
+    if (expense) {
+      setFormData({
+        status: expense.status || '',
+        payment_status: expense.payment_status || '',
+        amount: expense.amount || '',
+        currency: expense.currency || 'ILS',
+        description: expense.description || '',
+        reason: expense.reason || '',
+        type: expense.type || 'needs_approval',
+        subcategory_id: expense.subcategory?.id || '',
+        supplier_id: expense.supplier?.id || '',
+        credit_card_id: expense.credit_card_id || '',
+        payment_method: expense.payment_method || '',
+        invoice_date: expense.invoice_date ? expense.invoice_date.split('T')[0] : '',
+        rejection_reason: expense.rejection_reason || ''
+      })
+      setEditFiles({ quote: null, invoice: null, receipt: null })
+      setDeleteFiles({ quote: false, invoice: false, receipt: false })
+    }
+  }, [expense])
+
+  const handleInputChange = (field, value) => {
+    setFormData(prev => ({ ...prev, [field]: value }))
+  }
+
+  const handleFileChange = (e, fileType) => {
+    const file = e.target.files[0]
+    if (file) {
+      setEditFiles(prev => ({ ...prev, [fileType]: file }))
+      setDeleteFiles(prev => ({ ...prev, [fileType]: false }))
+    }
+  }
+
+  const handleDeleteFile = (fileType) => {
+    setDeleteFiles(prev => ({ ...prev, [fileType]: true }))
+    setEditFiles(prev => ({ ...prev, [fileType]: null }))
+  }
+
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+    try {
+      const formDataToSend = new FormData()
+
+      Object.entries(formData).forEach(([key, value]) => {
+        if (value !== null && value !== undefined && value !== '') {
+          formDataToSend.append(key, value)
+        }
+      })
+
+      if (editFiles.quote) formDataToSend.append('quote', editFiles.quote)
+      if (editFiles.invoice) formDataToSend.append('invoice', editFiles.invoice)
+      if (editFiles.receipt) formDataToSend.append('receipt', editFiles.receipt)
+
+      if (deleteFiles.quote) formDataToSend.append('delete_quote', 'true')
+      if (deleteFiles.invoice) formDataToSend.append('delete_invoice', 'true')
+      if (deleteFiles.receipt) formDataToSend.append('delete_receipt', 'true')
+
+      const res = await fetch(`/api/v1/admin/expenses/${expense.id}`, {
+        method: 'PUT',
+        credentials: 'include',
+        body: formDataToSend
+      })
+
+      if (res.ok) {
+        success('Expense updated successfully')
+        onSuccess()
+        onClose()
+      } else {
+        const data = await res.json()
+        showError(data.error || 'Failed to update expense')
+      }
+    } catch (err) {
+      showError('An error occurred')
+    }
+  }
+
+  const formatCurrency = (amount, currency) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: currency || 'ILS'
+    }).format(amount)
+  }
+
+  return (
+    <Modal isOpen={isOpen} onClose={onClose} title="Edit Expense" size="large">
+      <form onSubmit={handleSubmit} className="eh-edit-form">
+        {expense && (
+          <div className="eh-edit-form__summary">
+            <p><strong>Employee:</strong> {expense.user?.name}</p>
+            <p><strong>Original Amount:</strong> {formatCurrency(expense.amount, expense.currency)}</p>
+          </div>
+        )}
+
+        {/* Basic Information */}
+        <div className="eh-edit-form__section">
+          <h4 className="eh-edit-form__section-title">
+            <i className="fas fa-info-circle" /> Basic Information
+          </h4>
+          <div className="eh-edit-form__row">
+            <Input
+              type="number"
+              label="Amount"
+              name="amount"
+              value={formData.amount}
+              onChange={(e) => handleInputChange('amount', e.target.value)}
+              step="0.01"
+              min="0"
+            />
+            <Select
+              label="Currency"
+              name="currency"
+              value={formData.currency}
+              onChange={(e) => handleInputChange('currency', e.target.value)}
+            >
+              <option value="ILS">ILS (₪)</option>
+              <option value="USD">USD ($)</option>
+              <option value="EUR">EUR (€)</option>
+            </Select>
+          </div>
+          <Input
+            label="Description"
+            name="description"
+            value={formData.description}
+            onChange={(e) => handleInputChange('description', e.target.value)}
+          />
+          <Input
+            label="Business Reason"
+            name="reason"
+            value={formData.reason}
+            onChange={(e) => handleInputChange('reason', e.target.value)}
+          />
+          <div className="eh-edit-form__row">
+            <Select
+              label="Type"
+              name="type"
+              value={formData.type}
+              onChange={(e) => handleInputChange('type', e.target.value)}
+            >
+              <option value="needs_approval">Needs Approval</option>
+              <option value="pre_approved">Pre-approved</option>
+              <option value="reimbursement">Reimbursement</option>
+            </Select>
+            <Select
+              label="Subcategory"
+              name="subcategory_id"
+              value={formData.subcategory_id}
+              onChange={(e) => handleInputChange('subcategory_id', e.target.value)}
+            >
+              <option value="">Select Subcategory</option>
+              {subcategories.map(sub => (
+                <option key={sub.id} value={sub.id}>
+                  {sub.department_name} &gt; {sub.category_name} &gt; {sub.name}
+                </option>
+              ))}
+            </Select>
+          </div>
+        </div>
+
+        {/* Status & Payment */}
+        <div className="eh-edit-form__section">
+          <h4 className="eh-edit-form__section-title">
+            <i className="fas fa-check-circle" /> Status & Payment
+          </h4>
+          <div className="eh-edit-form__row">
+            <Select
+              label="Status"
+              name="status"
+              value={formData.status}
+              onChange={(e) => handleInputChange('status', e.target.value)}
+            >
+              <option value="pending">Pending</option>
+              <option value="approved">Approved</option>
+              <option value="rejected">Rejected</option>
+            </Select>
+            <Select
+              label="Payment Status"
+              name="payment_status"
+              value={formData.payment_status}
+              onChange={(e) => handleInputChange('payment_status', e.target.value)}
+            >
+              <option value="">Not Set</option>
+              <option value="pending_attention">Pending Attention</option>
+              <option value="pending_payment">Pending Payment</option>
+              <option value="paid">Paid</option>
+            </Select>
+          </div>
+          {formData.status === 'rejected' && (
+            <Input
+              label="Rejection Reason"
+              name="rejection_reason"
+              value={formData.rejection_reason}
+              onChange={(e) => handleInputChange('rejection_reason', e.target.value)}
+              placeholder="Enter reason for rejection..."
+            />
+          )}
+          <div className="eh-edit-form__row">
+            <Select
+              label="Payment Method"
+              name="payment_method"
+              value={formData.payment_method}
+              onChange={(e) => handleInputChange('payment_method', e.target.value)}
+            >
+              <option value="">Select Method</option>
+              <option value="credit">Credit Card</option>
+              <option value="transfer">Bank Transfer</option>
+              <option value="standing_order">Standing Order</option>
+            </Select>
+            {formData.payment_method === 'credit' && (
+              <Select
+                label="Credit Card"
+                name="credit_card_id"
+                value={formData.credit_card_id}
+                onChange={(e) => handleInputChange('credit_card_id', e.target.value)}
+              >
+                <option value="">Select Card</option>
+                {creditCards.map(card => (
+                  <option key={card.id} value={card.id}>
+                    {card.name} (*{card.last_four_digits})
+                  </option>
+                ))}
+              </Select>
+            )}
+          </div>
+        </div>
+
+        {/* Supplier & Date */}
+        <div className="eh-edit-form__section">
+          <h4 className="eh-edit-form__section-title">
+            <i className="fas fa-store" /> Supplier & Date
+          </h4>
+          <div className="eh-edit-form__row">
+            <Select
+              label="Supplier"
+              name="supplier_id"
+              value={formData.supplier_id}
+              onChange={(e) => handleInputChange('supplier_id', e.target.value)}
+            >
+              <option value="">Select Supplier</option>
+              {suppliers.map(sup => (
+                <option key={sup.id} value={sup.id}>{sup.name}</option>
+              ))}
+            </Select>
+            <Input
+              type="date"
+              label="Invoice Date"
+              name="invoice_date"
+              value={formData.invoice_date}
+              onChange={(e) => handleInputChange('invoice_date', e.target.value)}
+            />
+          </div>
+        </div>
+
+        {/* Attachments */}
+        <div className="eh-edit-form__section">
+          <h4 className="eh-edit-form__section-title">
+            <i className="fas fa-paperclip" /> Attachments
+          </h4>
+          <div className="eh-edit-form__files">
+            {['quote', 'invoice', 'receipt'].map(fileType => (
+              <div key={fileType} className="eh-file-upload">
+                <label className="eh-file-upload__label">
+                  {fileType.charAt(0).toUpperCase() + fileType.slice(1)}
+                </label>
+                {expense?.[`${fileType}_filename`] && !deleteFiles[fileType] && !editFiles[fileType] ? (
+                  <div className="eh-file-upload__existing">
+                    <a href={`/download/${expense[`${fileType}_filename`]}`} target="_blank" rel="noopener noreferrer">
+                      <i className={`fas fa-file-${fileType === 'invoice' ? 'invoice' : fileType === 'receipt' ? 'receipt' : 'alt'}`} />
+                      View {fileType.charAt(0).toUpperCase() + fileType.slice(1)}
+                    </a>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="small"
+                      icon="fas fa-trash"
+                      onClick={() => handleDeleteFile(fileType)}
+                      title={`Delete ${fileType}`}
+                    />
+                  </div>
+                ) : deleteFiles[fileType] ? (
+                  <div className="eh-file-upload__deleted">
+                    <span><i className="fas fa-times-circle" /> Will be deleted</span>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="small"
+                      onClick={() => setDeleteFiles(prev => ({ ...prev, [fileType]: false }))}
+                    >
+                      Undo
+                    </Button>
+                  </div>
+                ) : null}
+                <input
+                  type="file"
+                  accept=".pdf,.png,.jpg,.jpeg"
+                  onChange={(e) => handleFileChange(e, fileType)}
+                  className="eh-file-upload__input"
+                />
+                {editFiles[fileType] && (
+                  <span className="eh-file-upload__new">
+                    <i className="fas fa-check" /> {editFiles[fileType].name}
+                  </span>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="eh-edit-form__actions">
+          <Button type="button" variant="secondary" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button type="submit" variant="primary">
+            Save Changes
+          </Button>
+        </div>
+      </form>
+    </Modal>
+  )
+}
+
+// ============================================================================
+// Component: ExpenseDeleteModal
+// ============================================================================
+function ExpenseDeleteModal({ isOpen, onClose, expense, onSuccess }) {
+  const { success, error: showError } = useToast()
+
+  const handleDelete = async () => {
+    try {
+      const res = await fetch(`/api/v1/admin/expenses/${expense.id}`, {
+        method: 'DELETE',
+        credentials: 'include'
+      })
+
+      if (res.ok) {
+        success('Expense deleted successfully')
+        onSuccess()
+        onClose()
+      } else {
+        const data = await res.json()
+        showError(data.error || 'Failed to delete expense')
+      }
+    } catch (err) {
+      showError('An error occurred')
+    }
+  }
+
+  const formatCurrency = (amount, currency) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: currency || 'ILS'
+    }).format(amount)
+  }
+
+  return (
+    <Modal isOpen={isOpen} onClose={onClose} title="Delete Expense" size="small">
+      <div className="eh-delete-modal">
+        <div className="eh-delete-modal__icon">
+          <i className="fas fa-exclamation-triangle" />
+        </div>
+        <p className="eh-delete-modal__message">Are you sure you want to delete this expense?</p>
+        {expense && (
+          <div className="eh-delete-modal__summary">
+            <p><strong>Employee:</strong> {expense.user?.name}</p>
+            <p><strong>Amount:</strong> {formatCurrency(expense.amount, expense.currency)}</p>
+            <p><strong>Description:</strong> {expense.description}</p>
+          </div>
+        )}
+        <p className="eh-delete-modal__warning">This action cannot be undone.</p>
+      </div>
+      <div className="eh-delete-modal__actions">
+        <Button type="button" variant="secondary" onClick={onClose}>
+          Cancel
+        </Button>
+        <Button type="button" variant="danger" onClick={handleDelete}>
+          Delete
+        </Button>
+      </div>
+    </Modal>
+  )
+}
+
+// ============================================================================
+// Main Component: ExpenseHistory
+// ============================================================================
+function ExpenseHistory({ user }) {
+  const navigate = useNavigate()
+  const [currentPage, setCurrentPage] = useState(1)
+
+  // Custom hooks
+  const filterHook = useExpenseFilters()
+  const dataHook = useExpenseData(filterHook.filters, currentPage)
+  const optionsHook = useFilterOptions()
+
+  // Modal states
+  const [editModalOpen, setEditModalOpen] = useState(false)
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false)
+  const [moveModalOpen, setMoveModalOpen] = useState(false)
+  const [selectedExpense, setSelectedExpense] = useState(null)
+  const { success } = useToast()
+
+  // Initialize
+  useEffect(() => {
+    if (!user?.is_admin) {
+      navigate('/dashboard')
+      return
+    }
+    optionsHook.fetchFilterOptions()
+  }, [])
+
+  // Fetch expenses when filters or page change
+  useEffect(() => {
+    if (user?.is_admin) {
+      dataHook.fetchExpenses()
+    }
+  }, [currentPage, filterHook.filters])
+
+  // Reset page when filters change
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [filterHook.filters])
+
+  // Handlers
+  const handleCategorySelect = (e) => {
+    const selectedId = e.target.value
+    filterHook.setSelectedCategoryOption(selectedId)
+
+    if (!selectedId) {
+      filterHook.setFilters(prev => ({ ...prev, category_id: '', subcategory_id: '' }))
+      return
+    }
+
+    const selectedOption = optionsHook.categoryOptions.find(opt => opt.id === selectedId)
+    if (selectedOption) {
+      if (selectedOption.type === 'category') {
+        filterHook.setFilters(prev => ({
+          ...prev,
+          category_id: selectedOption.category_id,
+          subcategory_id: ''
+        }))
+      } else {
+        filterHook.setFilters(prev => ({
+          ...prev,
+          category_id: selectedOption.category_id,
+          subcategory_id: selectedOption.subcategory_id
+        }))
+      }
+    }
+  }
+
+  const handleView = (expenseId) => {
+    navigate(`/expenses/${expenseId}`)
+  }
+
+  const handleEdit = (expense) => {
+    setSelectedExpense(expense)
+    setEditModalOpen(true)
+  }
+
+  const handleMove = (expense) => {
+    setSelectedExpense(expense)
+    setMoveModalOpen(true)
+  }
+
+  const handleDelete = (expense) => {
+    setSelectedExpense(expense)
+    setDeleteModalOpen(true)
+  }
+
+  const handleMoveSuccess = (data) => {
+    success(`Expense moved successfully from year ${data.old_year} to ${data.new_year}`)
+    setMoveModalOpen(false)
+    setSelectedExpense(null)
+    dataHook.fetchExpenses()
+  }
 
   if (!user?.is_admin) return null
 
   return (
-    <div className="expense-history-container">
+    <div className="eh-container">
+      <main className="eh-main">
+        <ExpenseHistoryHeader 
+          totalExpenses={dataHook.totalExpenses} 
+          filters={filterHook.filters}
+        />
 
-      <main className="expense-history-main">
-        <div className="page-header-section">
-          <div>
-            <h1>Expense History</h1>
-            <p className="subtitle">{totalExpenses} total expenses</p>
-          </div>
-          <div className="header-actions">
-            <Button
-              variant="secondary"
-              icon="fas fa-download"
-              onClick={() => window.open('/api/v1/expenses/export?' + new URLSearchParams(
-                Object.fromEntries(Object.entries(filters).filter(([_, v]) => v !== ''))
-              ).toString(), '_blank')}
-            >
-              Export CSV
-            </Button>
-          </div>
-        </div>
+        <ExpenseHistoryFilters
+          filters={filterHook.filters}
+          updateFilter={filterHook.updateFilter}
+          clearFilters={filterHook.clearFilters}
+          hasActiveFilters={filterHook.hasActiveFilters}
+          activeFilterCount={filterHook.activeFilterCount}
+          departments={optionsHook.departments}
+          users={optionsHook.users}
+          categoryOptions={optionsHook.categoryOptions}
+          suppliers={optionsHook.suppliers}
+          selectedCategoryOption={filterHook.selectedCategoryOption}
+          onCategorySelect={handleCategorySelect}
+        />
 
-        {/* Filters */}
-        <Card className="filters-section">
-          <div className="filters-header" onClick={() => setShowFilters(!showFilters)}>
-            <div className="filters-title">
-              <i className="fas fa-filter"></i>
-              <span>Filters & Search</span>
-              {hasActiveFilters && (
-                <Badge variant="primary" size="small">
-                  {Object.entries(filters).filter(([k, v]) => v && !['sort_by', 'sort_order'].includes(k)).length} active
-                </Badge>
-              )}
-            </div>
-            <Button variant="ghost" size="small">
-              <i className={`fas fa-chevron-${showFilters ? 'up' : 'down'}`}></i>
-            </Button>
-          </div>
-
-          {showFilters && (
-            <div className="filters-body">
-              <div className="filter-row">
-                <Input
-                  label="Search"
-                  name="search"
-                  value={filters.search}
-                  onChange={handleFilterChange}
-                  placeholder="Search description, reason, employee, supplier, or amount..."
-                  icon="fas fa-search"
-                />
-
-                <Select
-                  label="Status"
-                  name="status"
-                  value={filters.status}
-                  onChange={handleFilterChange}
-                >
-                  <option value="">All Statuses</option>
-                  <option value="pending">Pending</option>
-                  <option value="approved">Approved</option>
-                  <option value="rejected">Rejected</option>
-                </Select>
-
-                <TomSelectInput
-                  label="Department"
-                  name="department_id"
-                  value={filters.department_id}
-                  onChange={handleFilterChange}
-                  options={departments}
-                  displayKey="name"
-                  valueKey="id"
-                  placeholder="All Departments"
-                />
-
-                <TomSelectInput
-                  label="Employee"
-                  name="user_id"
-                  value={filters.user_id}
-                  onChange={handleFilterChange}
-                  options={users.map(u => ({
-                    id: u.id,
-                    name: `${u.first_name} ${u.last_name}`
-                  }))}
-                  displayKey="name"
-                  valueKey="id"
-                  placeholder="All Employees"
-                />
-              </div>
-
-              <div className="filter-row">
-                <TomSelectInput
-                  label="Category"
-                  name="category_id"
-                  value={selectedCategoryOption}
-                  onChange={handleCategorySelect}
-                  options={categoryOptions}
-                  placeholder="All Categories"
-                  displayKey="name"
-                  valueKey="id"
-                />
-
-                <TomSelectInput
-                  label="Supplier"
-                  name="supplier_id"
-                  value={filters.supplier_id}
-                  onChange={handleFilterChange}
-                  options={suppliers}
-                  placeholder="All Suppliers"
-                  displayKey="name"
-                  valueKey="id"
-                />
-
-                <Select
-                  label="Payment Method"
-                  name="payment_method"
-                  value={filters.payment_method}
-                  onChange={handleFilterChange}
-                >
-                  <option value="">All Methods</option>
-                  <option value="credit_card">Credit Card</option>
-                  <option value="bank_transfer">Bank Transfer</option>
-                  <option value="cash">Cash</option>
-                  <option value="standing_order">Standing Order</option>
-                </Select>
-
-                <Input
-                  type="date"
-                  label="Start Date"
-                  name="start_date"
-                  value={filters.start_date}
-                  onChange={handleFilterChange}
-                />
-              </div>
-
-              <div className="filter-row">
-                <Input
-                  type="date"
-                  label="End Date"
-                  name="end_date"
-                  value={filters.end_date}
-                  onChange={handleFilterChange}
-                />
-
-                <Select
-                  label="Sort By"
-                  name="sort_by"
-                  value={filters.sort_by}
-                  onChange={handleFilterChange}
-                >
-                  <option value="date">Date</option>
-                  <option value="amount">Amount</option>
-                  <option value="status">Status</option>
-                </Select>
-
-                <Select
-                  label="Order"
-                  name="sort_order"
-                  value={filters.sort_order}
-                  onChange={handleFilterChange}
-                >
-                  <option value="desc">Descending</option>
-                  <option value="asc">Ascending</option>
-                </Select>
-
-                <div className="filter-actions-inline">
-                  <Button variant="secondary" icon="fas fa-times" onClick={clearFilters}>
-                    Clear
-                  </Button>
-                </div>
-              </div>
-            </div>
-          )}
-        </Card>
-
-        {/* Expenses Table */}
-        <Card className="expenses-list-card">
-          {error && (
-            <div className="error-alert">
-              <i className="fas fa-exclamation-circle"></i>
-              {error}
-            </div>
-          )}
-
-          {loading ? (
-            <div className="loading-state">
-              <Skeleton.Table rows={8} columns={11} />
-            </div>
-          ) : expenses.length === 0 ? (
-            <EmptyState
-              icon="fas fa-receipt"
-              title="No expenses found"
-              description={hasActiveFilters
-                ? "Try adjusting your filters to find what you're looking for"
-                : "No expenses have been submitted yet."}
-            />
-          ) : (
-            <>
-              <div className="expenses-table">
-                <table>
-                  <thead>
-                    <tr>
-                      <th className="th-date">Date</th>
-                      <th className="th-employee">Employee</th>
-                      <th className="th-department">Department</th>
-                      <th className="th-description">Description</th>
-                      <th className="th-category">Category</th>
-                      <th className="th-supplier">Supplier</th>
-                      <th className="th-amount">Amount</th>
-                      <th className="th-status">Status</th>
-                      <th className="th-payment">Payment</th>
-                      <th className="th-files">Files</th>
-                      <th className="th-actions">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {expenses.map(expense => (
-                      <tr key={expense.id} className="expense-row">
-                        <td className="date-cell">{formatDate(expense.date)}</td>
-                        <td className="employee-cell">
-                          <div className="employee-info">
-                            <div className="employee-avatar">
-                              {expense.user?.name?.[0]?.toUpperCase() || '?'}
-                            </div>
-                            <span>{expense.user?.name || 'Unknown'}</span>
-                          </div>
-                        </td>
-                        <td className="department-cell">
-                          <Badge variant="default" size="small">
-                            {expense.user?.department || '-'}
-                          </Badge>
-                        </td>
-                        <td className="description-cell">
-                          <div className="expense-description">
-                            <strong>{expense.description || 'No description'}</strong>
-                            {expense.reason && (
-                              <span className="expense-reason">{expense.reason}</span>
-                            )}
-                          </div>
-                        </td>
-                        <td className="category-cell">
-                          <div className="category-info">
-                            {expense.category?.name && (
-                              <Badge variant="primary-solid" size="small">{expense.category.name}</Badge>
-                            )}
-                            {expense.subcategory?.name && (
-                              <span className="subcategory-text">{expense.subcategory.name}</span>
-                            )}
-                          </div>
-                        </td>
-                        <td className="supplier-cell">{expense.supplier?.name || '-'}</td>
-                        <td className="amount-cell">
-                          {formatCurrency(expense.amount, expense.currency)}
-                        </td>
-                        <td className="status-cell">
-                          <Badge variant={getStatusVariant(expense.status)} size="small" rounded>
-                            {expense.status ? expense.status.charAt(0).toUpperCase() + expense.status.slice(1) : '-'}
-                          </Badge>
-                        </td>
-                        <td className="payment-cell">
-                          {expense.payment_status ? (
-                            <Badge variant={getPaymentStatusVariant(expense.payment_status)} size="small">
-                              {expense.payment_status}
-                            </Badge>
-                          ) : (
-                            <span className="text-muted">-</span>
-                          )}
-                        </td>
-                        <td className="files-cell">
-                          {(expense.invoice_filename || expense.receipt_filename || expense.quote_filename) ? (
-                            <div className="file-icons">
-                              {expense.invoice_filename && (
-                                <FilePreviewButton
-                                  fileUrl={`/download/${expense.invoice_filename}`}
-                                  fileName={expense.invoice_filename}
-                                  icon="fas fa-file-invoice"
-                                  title="Preview Invoice"
-                                />
-                              )}
-                              {expense.receipt_filename && (
-                                <FilePreviewButton
-                                  fileUrl={`/download/${expense.receipt_filename}`}
-                                  fileName={expense.receipt_filename}
-                                  icon="fas fa-receipt"
-                                  title="Preview Receipt"
-                                />
-                              )}
-                              {expense.quote_filename && (
-                                <FilePreviewButton
-                                  fileUrl={`/download/${expense.quote_filename}`}
-                                  fileName={expense.quote_filename}
-                                  icon="fas fa-file-alt"
-                                  title="Preview Quote"
-                                />
-                              )}
-                            </div>
-                          ) : (
-                            <span className="text-muted">-</span>
-                          )}
-                        </td>
-                        <td className="actions-cell">
-                          <div className="actions-buttons">
-                            <Button
-                              variant="ghost"
-                              size="small"
-                              icon="fas fa-eye"
-                              onClick={() => navigate(`/expenses/${expense.id}`)}
-                              title="View Details"
-                            />
-                            <Button
-                              variant="ghost"
-                              size="small"
-                              icon="fas fa-edit"
-                              onClick={() => openEditModal(expense)}
-                              title="Edit"
-                            />
-                            <Button
-                              variant="ghost"
-                              size="small"
-                              icon="fas fa-calendar-alt"
-                              onClick={() => openMoveModal(expense)}
-                              title="Move to Different Year"
-                              className="btn-move-year"
-                            />
-                            <Button
-                              variant="ghost"
-                              size="small"
-                              icon="fas fa-trash"
-                              onClick={() => openDeleteModal(expense)}
-                              title="Delete"
-                              className="btn-delete"
-                            />
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-
-              {/* Pagination */}
-              {totalPages > 1 && (
-                <div className="pagination">
-                  <Button
-                    variant="secondary"
-                    size="small"
-                    icon="fas fa-chevron-left"
-                    onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-                    disabled={currentPage === 1}
-                  >
-                    Previous
-                  </Button>
-
-                  <span className="pagination-info">
-                    Page {currentPage} of {totalPages}
-                  </span>
-
-                  <Button
-                    variant="secondary"
-                    size="small"
-                    iconPosition="right"
-                    icon="fas fa-chevron-right"
-                    onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-                    disabled={currentPage === totalPages}
-                  >
-                    Next
-                  </Button>
-                </div>
-              )}
-            </>
-          )}
+        <Card className="eh-content">
+          <ExpenseTable
+            expenses={dataHook.expenses}
+            loading={dataHook.loading}
+            error={dataHook.error}
+            hasActiveFilters={filterHook.hasActiveFilters}
+            onView={handleView}
+            onEdit={handleEdit}
+            onMove={handleMove}
+            onDelete={handleDelete}
+          />
+          <ExpensePagination
+            currentPage={currentPage}
+            totalPages={dataHook.totalPages}
+            onPageChange={setCurrentPage}
+          />
         </Card>
       </main>
 
-      {/* Edit Modal */}
-      <Modal
+      {/* Modals */}
+      <ExpenseEditModal
         isOpen={editModalOpen}
         onClose={() => setEditModalOpen(false)}
-        title="Edit Expense"
-        size="large"
-      >
-        <form onSubmit={handleEditSubmit} className="edit-form">
-          {currentExpense && (
-            <div className="expense-summary">
-              <p><strong>Employee:</strong> {currentExpense.user?.name}</p>
-              <p><strong>Original Amount:</strong> {formatCurrency(currentExpense.amount, currentExpense.currency)}</p>
-            </div>
-          )}
+        expense={selectedExpense}
+        onSuccess={dataHook.fetchExpenses}
+        subcategories={optionsHook.subcategories}
+        suppliers={optionsHook.suppliers}
+        creditCards={optionsHook.creditCards}
+      />
 
-          <div className="form-section">
-            <h4 className="section-title"><i className="fas fa-info-circle"></i> Basic Information</h4>
-            <div className="form-row">
-              <Input
-                type="number"
-                label="Amount"
-                name="amount"
-                value={editFormData.amount}
-                onChange={(e) => setEditFormData(prev => ({ ...prev, amount: e.target.value }))}
-                step="0.01"
-                min="0"
-              />
-              <Select
-                label="Currency"
-                name="currency"
-                value={editFormData.currency}
-                onChange={(e) => setEditFormData(prev => ({ ...prev, currency: e.target.value }))}
-              >
-                <option value="ILS">ILS (₪)</option>
-                <option value="USD">USD ($)</option>
-                <option value="EUR">EUR (€)</option>
-              </Select>
-            </div>
-
-            <Input
-              label="Description"
-              name="description"
-              value={editFormData.description}
-              onChange={(e) => setEditFormData(prev => ({ ...prev, description: e.target.value }))}
-            />
-
-            <Input
-              label="Business Reason"
-              name="reason"
-              value={editFormData.reason}
-              onChange={(e) => setEditFormData(prev => ({ ...prev, reason: e.target.value }))}
-            />
-
-            <div className="form-row">
-              <Select
-                label="Type"
-                name="type"
-                value={editFormData.type}
-                onChange={(e) => setEditFormData(prev => ({ ...prev, type: e.target.value }))}
-              >
-                <option value="needs_approval">Needs Approval</option>
-                <option value="pre_approved">Pre-approved</option>
-                <option value="reimbursement">Reimbursement</option>
-              </Select>
-              <Select
-                label="Subcategory"
-                name="subcategory_id"
-                value={editFormData.subcategory_id}
-                onChange={(e) => setEditFormData(prev => ({ ...prev, subcategory_id: e.target.value }))}
-              >
-                <option value="">Select Subcategory</option>
-                {subcategories.map(sub => (
-                  <option key={sub.id} value={sub.id}>
-                    {sub.department_name} &gt; {sub.category_name} &gt; {sub.name}
-                  </option>
-                ))}
-              </Select>
-            </div>
-          </div>
-
-          <div className="form-section">
-            <h4 className="section-title"><i className="fas fa-check-circle"></i> Status & Payment</h4>
-            <div className="form-row">
-              <Select
-                label="Status"
-                name="status"
-                value={editFormData.status}
-                onChange={(e) => setEditFormData(prev => ({ ...prev, status: e.target.value }))}
-              >
-                <option value="pending">Pending</option>
-                <option value="approved">Approved</option>
-                <option value="rejected">Rejected</option>
-              </Select>
-              <Select
-                label="Payment Status"
-                name="payment_status"
-                value={editFormData.payment_status}
-                onChange={(e) => setEditFormData(prev => ({ ...prev, payment_status: e.target.value }))}
-              >
-                <option value="">Not Set</option>
-                <option value="pending_attention">Pending Attention</option>
-                <option value="pending_payment">Pending Payment</option>
-                <option value="paid">Paid</option>
-              </Select>
-            </div>
-
-            {editFormData.status === 'rejected' && (
-              <Input
-                label="Rejection Reason"
-                name="rejection_reason"
-                value={editFormData.rejection_reason}
-                onChange={(e) => setEditFormData(prev => ({ ...prev, rejection_reason: e.target.value }))}
-                placeholder="Enter reason for rejection..."
-              />
-            )}
-
-            <div className="form-row">
-              <Select
-                label="Payment Method"
-                name="payment_method"
-                value={editFormData.payment_method}
-                onChange={(e) => setEditFormData(prev => ({ ...prev, payment_method: e.target.value }))}
-              >
-                <option value="">Select Method</option>
-                <option value="credit">Credit Card</option>
-                <option value="transfer">Bank Transfer</option>
-                <option value="standing_order">Standing Order</option>
-              </Select>
-              {editFormData.payment_method === 'credit' && (
-                <Select
-                  label="Credit Card"
-                  name="credit_card_id"
-                  value={editFormData.credit_card_id}
-                  onChange={(e) => setEditFormData(prev => ({ ...prev, credit_card_id: e.target.value }))}
-                >
-                  <option value="">Select Card</option>
-                  {creditCards.map(card => (
-                    <option key={card.id} value={card.id}>
-                      {card.name} (*{card.last_four_digits})
-                    </option>
-                  ))}
-                </Select>
-              )}
-            </div>
-          </div>
-
-          <div className="form-section">
-            <h4 className="section-title"><i className="fas fa-store"></i> Supplier & Date</h4>
-            <div className="form-row">
-              <Select
-                label="Supplier"
-                name="supplier_id"
-                value={editFormData.supplier_id}
-                onChange={(e) => setEditFormData(prev => ({ ...prev, supplier_id: e.target.value }))}
-              >
-                <option value="">Select Supplier</option>
-                {suppliers.map(sup => (
-                  <option key={sup.id} value={sup.id}>{sup.name}</option>
-                ))}
-              </Select>
-              <Input
-                type="date"
-                label="Invoice Date"
-                name="invoice_date"
-                value={editFormData.invoice_date}
-                onChange={(e) => setEditFormData(prev => ({ ...prev, invoice_date: e.target.value }))}
-              />
-            </div>
-          </div>
-
-          <div className="form-section">
-            <h4 className="section-title"><i className="fas fa-paperclip"></i> Attachments</h4>
-
-            <div className="file-upload-grid">
-              <div className="file-upload-item">
-                <label className="file-label">Quote</label>
-                {currentExpense?.quote_filename && !deleteFiles.quote && !editFiles.quote ? (
-                  <div className="existing-file">
-                    <a href={`/download/${currentExpense.quote_filename}`} target="_blank" rel="noopener noreferrer">
-                      <i className="fas fa-file-alt"></i> View Quote
-                    </a>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="small"
-                      icon="fas fa-trash"
-                      onClick={() => handleDeleteFile('quote')}
-                      title="Delete Quote"
-                    />
-                  </div>
-                ) : deleteFiles.quote ? (
-                  <div className="file-deleted">
-                    <span><i className="fas fa-times-circle"></i> Will be deleted</span>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="small"
-                      onClick={() => setDeleteFiles(prev => ({ ...prev, quote: false }))}
-                    >
-                      Undo
-                    </Button>
-                  </div>
-                ) : null}
-                <input
-                  type="file"
-                  accept=".pdf,.png,.jpg,.jpeg"
-                  onChange={(e) => handleFileChange(e, 'quote')}
-                  className="file-input"
-                />
-                {editFiles.quote && (
-                  <span className="new-file-name"><i className="fas fa-check"></i> {editFiles.quote.name}</span>
-                )}
-              </div>
-
-              <div className="file-upload-item">
-                <label className="file-label">Invoice</label>
-                {currentExpense?.invoice_filename && !deleteFiles.invoice && !editFiles.invoice ? (
-                  <div className="existing-file">
-                    <a href={`/download/${currentExpense.invoice_filename}`} target="_blank" rel="noopener noreferrer">
-                      <i className="fas fa-file-invoice"></i> View Invoice
-                    </a>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="small"
-                      icon="fas fa-trash"
-                      onClick={() => handleDeleteFile('invoice')}
-                      title="Delete Invoice"
-                    />
-                  </div>
-                ) : deleteFiles.invoice ? (
-                  <div className="file-deleted">
-                    <span><i className="fas fa-times-circle"></i> Will be deleted</span>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="small"
-                      onClick={() => setDeleteFiles(prev => ({ ...prev, invoice: false }))}
-                    >
-                      Undo
-                    </Button>
-                  </div>
-                ) : null}
-                <input
-                  type="file"
-                  accept=".pdf,.png,.jpg,.jpeg"
-                  onChange={(e) => handleFileChange(e, 'invoice')}
-                  className="file-input"
-                />
-                {editFiles.invoice && (
-                  <span className="new-file-name"><i className="fas fa-check"></i> {editFiles.invoice.name}</span>
-                )}
-              </div>
-
-              <div className="file-upload-item">
-                <label className="file-label">Receipt</label>
-                {currentExpense?.receipt_filename && !deleteFiles.receipt && !editFiles.receipt ? (
-                  <div className="existing-file">
-                    <a href={`/download/${currentExpense.receipt_filename}`} target="_blank" rel="noopener noreferrer">
-                      <i className="fas fa-receipt"></i> View Receipt
-                    </a>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="small"
-                      icon="fas fa-trash"
-                      onClick={() => handleDeleteFile('receipt')}
-                      title="Delete Receipt"
-                    />
-                  </div>
-                ) : deleteFiles.receipt ? (
-                  <div className="file-deleted">
-                    <span><i className="fas fa-times-circle"></i> Will be deleted</span>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="small"
-                      onClick={() => setDeleteFiles(prev => ({ ...prev, receipt: false }))}
-                    >
-                      Undo
-                    </Button>
-                  </div>
-                ) : null}
-                <input
-                  type="file"
-                  accept=".pdf,.png,.jpg,.jpeg"
-                  onChange={(e) => handleFileChange(e, 'receipt')}
-                  className="file-input"
-                />
-                {editFiles.receipt && (
-                  <span className="new-file-name"><i className="fas fa-check"></i> {editFiles.receipt.name}</span>
-                )}
-              </div>
-            </div>
-          </div>
-
-          <div className="modal-actions">
-            <Button type="button" variant="secondary" onClick={() => setEditModalOpen(false)}>
-              Cancel
-            </Button>
-            <Button type="submit" variant="primary">
-              Save Changes
-            </Button>
-          </div>
-        </form>
-      </Modal>
-
-      {/* Move to Year Modal */}
       <MoveExpenseToYearModal
         isOpen={moveModalOpen}
         onClose={() => setMoveModalOpen(false)}
-        expense={expenseToMove}
+        expense={selectedExpense}
         onSuccess={handleMoveSuccess}
       />
 
-      {/* Delete Confirmation Modal */}
-      <Modal
+      <ExpenseDeleteModal
         isOpen={deleteModalOpen}
         onClose={() => setDeleteModalOpen(false)}
-        title="Delete Expense"
-        size="small"
-      >
-        <div className="delete-confirmation">
-          <i className="fas fa-exclamation-triangle warning-icon"></i>
-          <p>Are you sure you want to delete this expense?</p>
-          {expenseToDelete && (
-            <div className="expense-summary">
-              <p><strong>Employee:</strong> {expenseToDelete.user?.name}</p>
-              <p><strong>Amount:</strong> {formatCurrency(expenseToDelete.amount, expenseToDelete.currency)}</p>
-              <p><strong>Description:</strong> {expenseToDelete.description}</p>
-            </div>
-          )}
-          <p className="warning-text">This action cannot be undone.</p>
-        </div>
-
-        <div className="modal-actions">
-          <Button type="button" variant="secondary" onClick={() => setDeleteModalOpen(false)}>
-            Cancel
-          </Button>
-          <Button type="button" variant="danger" onClick={handleDelete}>
-            Delete
-          </Button>
-        </div>
-      </Modal>
+        expense={selectedExpense}
+        onSuccess={dataHook.fetchExpenses}
+      />
     </div>
   )
 }
