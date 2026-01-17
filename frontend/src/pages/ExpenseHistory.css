@@ -256,13 +256,17 @@
 
 /* Actions Cell */
 .actions-cell {
+  white-space: nowrap;
+}
+
+.actions-buttons {
   display: flex;
   gap: 0.25rem;
   opacity: 0.6;
   transition: opacity 0.2s ease;
 }
 
-.expenses-table tbody tr:hover .actions-cell {
+.expenses-table tbody tr:hover .actions-buttons {
   opacity: 1;
 }
 

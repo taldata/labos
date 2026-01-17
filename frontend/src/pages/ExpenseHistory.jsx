@@ -739,36 +739,38 @@ function ExpenseHistory({ user, setUser }) {
                           )}
                         </td>
                         <td className="actions-cell">
-                          <Button
-                            variant="ghost"
-                            size="small"
-                            icon="fas fa-eye"
-                            onClick={() => navigate(`/expenses/${expense.id}`)}
-                            title="View Details"
-                          />
-                          <Button
-                            variant="ghost"
-                            size="small"
-                            icon="fas fa-edit"
-                            onClick={() => openEditModal(expense)}
-                            title="Edit"
-                          />
-                          <Button
-                            variant="ghost"
-                            size="small"
-                            icon="fas fa-calendar-alt"
-                            onClick={() => openMoveModal(expense)}
-                            title="Move to Different Year"
-                            className="btn-move-year"
-                          />
-                          <Button
-                            variant="ghost"
-                            size="small"
-                            icon="fas fa-trash"
-                            onClick={() => openDeleteModal(expense)}
-                            title="Delete"
-                            className="btn-delete"
-                          />
+                          <div className="actions-buttons">
+                            <Button
+                              variant="ghost"
+                              size="small"
+                              icon="fas fa-eye"
+                              onClick={() => navigate(`/expenses/${expense.id}`)}
+                              title="View Details"
+                            />
+                            <Button
+                              variant="ghost"
+                              size="small"
+                              icon="fas fa-edit"
+                              onClick={() => openEditModal(expense)}
+                              title="Edit"
+                            />
+                            <Button
+                              variant="ghost"
+                              size="small"
+                              icon="fas fa-calendar-alt"
+                              onClick={() => openMoveModal(expense)}
+                              title="Move to Different Year"
+                              className="btn-move-year"
+                            />
+                            <Button
+                              variant="ghost"
+                              size="small"
+                              icon="fas fa-trash"
+                              onClick={() => openDeleteModal(expense)}
+                              title="Delete"
+                              className="btn-delete"
+                            />
+                          </div>
                         </td>
                       </tr>
                     ))}
