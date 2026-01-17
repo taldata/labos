@@ -286,6 +286,7 @@
   border-radius: 1rem;
   max-width: 90vw;
   max-height: 90vh;
+  height: 90vh;
   width: 100%;
   display: flex;
   flex-direction: column;
@@ -364,13 +365,13 @@
 
 .file-preview-content {
   flex: 1;
+  height: 0;
   overflow: auto;
   padding: 1rem;
   display: flex;
   align-items: center;
   justify-content: center;
   min-height: 300px;
-  max-height: calc(90vh - 80px);
 }
 
 .file-preview-image {
