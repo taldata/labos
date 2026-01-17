@@ -15,8 +15,30 @@ function AdminDashboard({ user, setUser }) {
   const [loading, setLoading] = useState(true)
   const [stats, setStats] = useState(null)
   const [timePeriod, setTimePeriod] = useState('this_month')
-  const [startDate, setStartDate] = useState('')
-  const [endDate, setEndDate] = useState('')
+  const [startDate, setStartDate] = useState('') // DD/MM/YYYY format
+  const [endDate, setEndDate] = useState('') // DD/MM/YYYY format
+
+  // Convert DD/MM/YYYY to YYYY-MM-DD for API
+  const convertToAPIFormat = (dateStr) => {
+    if (!dateStr || !dateStr.match(/^\d{2}\/\d{2}\/\d{4}$/)) return null
+    const [day, month, year] = dateStr.split('/')
+    return `${year}-${month}-${day}`
+  }
+
+  // Validate DD/MM/YYYY format
+  const isValidDateFormat = (dateStr) => {
+    if (!dateStr) return false
+    if (!dateStr.match(/^\d{2}\/\d{2}\/\d{4}$/)) return false
+
+    const [day, month, year] = dateStr.split('/').map(Number)
+    if (month < 1 || month > 12) return false
+    if (day < 1 || day > 31) return false
+    if (year < 1900 || year > 2100) return false
+
+    // Check if date is valid
+    const date = new Date(year, month - 1, day)
+    return date.getDate() === day && date.getMonth() === month - 1 && date.getFullYear() === year
+  }
 
   useEffect(() => {
     if (!user?.is_admin) {
@@ -33,12 +55,21 @@ function AdminDashboard({ user, setUser }) {
     try {
       setLoading(true)
       let url = `/api/v1/admin/stats?period=${timePeriod}`
-      
+
       // Add custom date range parameters
       if (timePeriod === 'custom' && startDate && endDate) {
-        url += `&start_date=${startDate}&end_date=${endDate}`
+        const apiStartDate = convertToAPIFormat(startDate)
+        const apiEndDate = convertToAPIFormat(endDate)
+
+        if (!apiStartDate || !apiEndDate) {
+          logger.error('Invalid date format', { startDate, endDate })
+          setLoading(false)
+          return
+        }
+
+        url += `&start_date=${apiStartDate}&end_date=${apiEndDate}`
       }
-      
+
       const response = await fetch(url, {
         credentials: 'include'
       })
@@ -56,8 +87,10 @@ function AdminDashboard({ user, setUser }) {
   }
 
   const handleApplyDateRange = () => {
-    if (startDate && endDate) {
+    if (startDate && endDate && isValidDateFormat(startDate) && isValidDateFormat(endDate)) {
       fetchAdminStats()
+    } else {
+      logger.error('Invalid date format. Please use DD/MM/YYYY', { startDate, endDate })
     }
   }
 
@@ -104,22 +137,26 @@ function AdminDashboard({ user, setUser }) {
               <div className="date-range-filter">
                 <div className="date-inputs">
                   <Input
-                    type="date"
+                    type="text"
                     label="Start Date"
+                    placeholder="DD/MM/YYYY"
                     value={startDate}
                     onChange={(e) => setStartDate(e.target.value)}
+                    pattern="\d{2}/\d{2}/\d{4}"
                   />
                   <Input
-                    type="date"
+                    type="text"
                     label="End Date"
+                    placeholder="DD/MM/YYYY"
                     value={endDate}
                     onChange={(e) => setEndDate(e.target.value)}
+                    pattern="\d{2}/\d{2}/\d{4}"
                   />
                 </div>
-                <Button 
-                  variant="primary" 
+                <Button
+                  variant="primary"
                   onClick={handleApplyDateRange}
-                  disabled={!startDate || !endDate}
+                  disabled={!startDate || !endDate || !isValidDateFormat(startDate) || !isValidDateFormat(endDate)}
                 >
                   Apply
                 </Button>
