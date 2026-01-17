@@ -398,7 +398,7 @@ function MyExpenses({ user, setUser }) {
                             {expense.status}
                           </Badge>
                         </td>
-                        <td className="attachments-cell">
+                        <td className="attachments-cell" onClick={(e) => e.stopPropagation()}>
                           {expense.invoice_filename && (
                             <FilePreviewButton
                               fileUrl={`/download/${expense.invoice_filename}`}
