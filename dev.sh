@@ -36,7 +36,11 @@ trap cleanup SIGINT SIGTERM
 # Start Flask backend (serves both legacy templates and API)
 echo -e "${GREEN}[1/2]${NC} Starting Flask backend on port 5000..."
 cd /Users/talsabag/labos
-source venv/bin/activate
+if [ -d ".venv" ]; then
+    source .venv/bin/activate
+else
+    source venv/bin/activate
+fi
 export FLASK_APP=app.py
 export FLASK_ENV=development
 python app.py &

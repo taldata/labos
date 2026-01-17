@@ -113,9 +113,10 @@ def login():
 def login_azure():
     """Initiate Azure AD login flow"""
     try:
-        # Get the full URL for the callback - use modern frontend callback
-        redirect_uri = url_for('api_v1.auth_callback', _external=True, _scheme='https')
-        logging.info(f"API Azure Login - Redirect URI: {redirect_uri}")
+        # Use the legacy redirect URI (/auth/callback) to satisfy Azure AD requirements
+        # without adding new URLs to the Azure portal.
+        redirect_uri = url_for('auth_callback', _external=True, _scheme='https')
+        logging.info(f"API Azure Login - Redirecting to legacy callback: {redirect_uri}")
 
         # Initialize MSAL flow
         msal_app = _build_msal_app()

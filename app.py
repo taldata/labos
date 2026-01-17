@@ -68,7 +68,31 @@ def allowed_file(filename):
 
 # Initialize database
 with app.app_context():
-    db.create_all()  # Only create tables if they don't exist
+    # Log the database being used (sanitized)
+    db_uri = app.config.get('SQLALCHEMY_DATABASE_URI', '')
+    if '@' in db_uri:
+        safe_uri = db_uri.split('@')[-1]
+        logging.info(f"Connecting to database: {safe_uri}")
+    else:
+        logging.info(f"Connecting to database: {db_uri}")
+
+    try:
+        # Verify connection and engine type
+        from sqlalchemy import text
+        engine_name = db.engine.name
+        logging.info(f"Database engine: {engine_name}")
+        
+        # Test the connection
+        db.session.execute(text('SELECT 1'))
+        logging.info("Database connection verified successfully.")
+        
+        db.create_all()  # Only create tables if they don't exist
+    except Exception as e:
+        logging.error(f"CRITICAL: Failed to connect to database: {str(e)}")
+        # In development, we might want to continue to see other errors, 
+        # but in production this should probably be fatal.
+        if os.getenv('FLASK_ENV') != 'development':
+            raise
 
     try:
         # Create departments if they don't exist
@@ -147,6 +171,8 @@ def index():
             else:
                 return redirect('/modern/dashboard')
 
+        if current_user.is_accounting:
+            return redirect(url_for('accounting_dashboard'))
         # Admins and managers go to the manager dashboard
         if current_user.is_admin or current_user.is_manager:
             return redirect(url_for('manager_dashboard'))
@@ -175,35 +201,23 @@ def login():
     if current_user.is_authenticated:
         return redirect(url_for('index'))
 
-    # Check if this is an Azure AD login request
-    if request.args.get('sso'):
-        try:
-            # Get the full URL for the callback
-            redirect_uri = url_for('auth_callback', _external=True, _scheme='https')
-            logging.info(f"Redirect URI: {redirect_uri}")
-            
-            # Initialize MSAL flow with only the required Graph API scope
-            msal_app = _build_msal_app()
-            flow = msal_app.initiate_auth_code_flow(
-                scopes=['https://graph.microsoft.com/User.Read'],
-                redirect_uri=redirect_uri
-            )
-            logging.info(f"MSAL Flow initiated")
-            
-            session["flow"] = flow
-            return redirect(flow["auth_uri"])
-            
-        except Exception as e:
-            logging.error(f"Error initiating Azure AD flow: {str(e)}", exc_info=True)
-            flash('Error initiating login. Please try again.')
-            return redirect(url_for('login'))
-
-    # Disable traditional username/password login – SSO only
-    if request.method == 'POST':
-        flash('Password login is disabled. Please sign in with Microsoft.', 'error')
-        return render_template('login.html')
+    # Serve the modern React login page instead of the legacy template
+    frontend_dist = os.path.join(app.config['BASE_DIR'], 'frontend', 'dist')
     
-    return render_template('login.html')
+    # In development, if dist doesn't exist, we can't serve it directly.
+    # However, since the user is running dev.sh, we mostly care about production/built-state behavior here.
+    # If dist is missing, we fallback to a helpful message.
+    if not os.path.exists(frontend_dist):
+        if os.getenv('FLASK_ENV') == 'development':
+            return redirect('http://localhost:3000/login')
+        else:
+            return "Modern login UI not built. Please run 'npm run build'.", 503
+
+    try:
+        return send_from_directory(frontend_dist, 'index.html')
+    except Exception as e:
+        logging.error(f"Error serving modern login: {str(e)}")
+        return f"Error loading login page: {str(e)}", 500
 
 @app.route('/auth/callback')
 def auth_callback():
@@ -257,18 +271,29 @@ def auth_callback():
         
         if not user:
             logging.info(f"Creating new user for email: {email}")
+            # Get department (default to first department if exists)
+            from models import Department
+            default_dept = Department.query.first()
+
             # Create new user with Azure AD details
             user = User(
                 username=email.split('@')[0],
                 email=email,
-                password=None,  # No password for SSO users
-                is_manager=False,
-                is_admin=False,
-                status='active'
+                first_name=graph_data.get('givenName', ''),
+                last_name=graph_data.get('surname', ''),
+                department_id=default_dept.id if default_dept else None,
+                status='active',
+                can_use_modern_version=False,  # Admin must grant access
+                preferred_version='legacy'
             )
             db.session.add(user)
             db.session.commit()
             logging.info(f"New user created with ID: {user.id}")
+        else:
+            # Update user info if it changed in Azure AD
+            user.first_name = graph_data.get('givenName', user.first_name)
+            user.last_name = graph_data.get('surname', user.last_name)
+            db.session.commit()
 
         if user.status == 'inactive':
             logging.warning(f"Inactive user attempted login: {email}")
@@ -279,11 +304,7 @@ def auth_callback():
         session['token_cache'] = result.get('token_cache')
         logging.info(f"User {email} logged in successfully")
         
-        if user.is_accounting:
-            return redirect(url_for('accounting_dashboard'))
-        # Admins (and managers) should land on the manager dashboard
-        if user.is_admin or user.is_manager:
-            return redirect(url_for('manager_dashboard'))
+        # Centralize all post-login redirection in the index route
         return redirect(url_for('index'))
         
     except Exception as e:
@@ -722,29 +743,43 @@ def download_file(filename):
 
     try:
         # Basic validation for filename
-        if not filename or filename == 'None':
+        if not filename or filename == 'None' or filename == '':
+            logging.warning("Download attempt with empty or 'None' filename")
             return return_error('No file associated with this record or filename is invalid.')
 
         # Ensure the filename is secure and not trying to access directories
         if '..' in filename or filename.startswith('/'):
+            logging.warning(f"Malicious filename attempt: {filename}")
             return return_error('Invalid filename.')
 
-        logging.info(f"Attempting to download: Original filename from DB: '{filename}'")
         upload_folder = app.config.get('UPLOAD_FOLDER')
-        logging.info(f"UPLOAD_FOLDER is: '{upload_folder}'")
-        
         if not upload_folder:
-            logging.error("UPLOAD_FOLDER is not configured.")
+            logging.error("UPLOAD_FOLDER is not configured in app.config")
             return return_error('Server configuration error: Upload directory not set.', 500)
             
-        filepath = os.path.join(upload_folder, filename)
-        logging.info(f"Constructed filepath for download: '{filepath}'")
+        # Ensure upload_folder is an absolute path
+        abs_upload_folder = os.path.abspath(upload_folder)
+        filepath = os.path.abspath(os.path.join(abs_upload_folder, filename))
+        
+        # Security check: ensure the resulting path is within the upload folder
+        if not filepath.startswith(abs_upload_folder):
+            logging.warning(f"Path traversal attempt: {filename} resolved to {filepath}")
+            return return_error('Invalid filename or path.')
+
+        logging.info(f"Attempting to download file: {filename}")
+        logging.debug(f"Full resolved filepath: {filepath}")
 
         if not os.path.exists(filepath):
-            logging.error(f"File not found at path: {filepath}. UPLOAD_FOLDER: {upload_folder}, Filename: {filename}")
+            # Log directory contents to help debug missing files
+            try:
+                dir_list = os.listdir(abs_upload_folder)
+                logging.error(f"File not found: {filepath}. Directory '{abs_upload_folder}' contains: {dir_list}")
+            except Exception as e:
+                logging.error(f"File not found: {filepath}. Could not list directory {abs_upload_folder}: {str(e)}")
+            
             return return_error('File not found. The file may have been deleted or moved.')
         
-        # Check all document type fields for the file
+        # Check database record to verify the file belongs to an expense and current user has access
         expense = Expense.query.filter(
             db.or_(
                 Expense.quote_filename == filename,
@@ -754,20 +789,23 @@ def download_file(filename):
         ).first()
         
         if not expense:
+            logging.warning(f"File {filename} exists on disk but no database record was found.")
             return return_error('File record not found in database.', 404)
         
-        # Check permissions for the specific user role
+        # Check permissions
         if current_user.is_admin or current_user.is_manager or current_user.is_accounting or expense.user_id == current_user.id:
             try:
-                return send_file(filepath, as_attachment=False)
+                # Use send_from_directory for better security and handling
+                return send_from_directory(abs_upload_folder, filename, as_attachment=False)
             except Exception as e:
-                logging.error(f"Error downloading file {filename}: {str(e)}")
+                logging.error(f"Error sending file {filename}: {str(e)}")
                 return return_error('Error loading file. Please try again.', 500)
 
+        logging.warning(f"Unauthorized access attempt to file {filename} by user {current_user.id}")
         return return_error('Unauthorized access', 403)
 
     except Exception as e:
-        logging.error(f"Error downloading file: {str(e)}")
+        logging.error(f"Unexpected error in download_file: {str(e)}", exc_info=True)
         return return_error('Error loading file. Please try again.', 500)
 
 @app.route('/manager/dashboard')

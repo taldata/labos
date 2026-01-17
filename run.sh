@@ -19,7 +19,14 @@ lsof -ti:5000 | xargs kill -9 2>/dev/null || true
 
 # Activate virtual environment and run Flask
 echo "🌐 Activating virtual environment..."
-source venv/bin/activate
+if [ -d ".venv" ]; then
+    source .venv/bin/activate
+elif [ -d "venv" ]; then
+    source venv/bin/activate
+else
+    echo "❌ Virtual environment not found (.venv or venv). Please create one first."
+    exit 1
+fi
 
 # Set environment variables
 echo "⚙️ Configuring environment variables..."
@@ -31,4 +38,11 @@ echo "🌟 Starting Flask application..."
 echo "Access the application at https://localhost:5000"
 echo "Press Ctrl+C to stop the server"
 echo "----------------------------------------"
-flask run --cert=ssl/cert.pem --key=ssl/key.pem
+
+# Check if SSL certificates exist, otherwise run without SSL
+if [ -f "ssl/cert.pem" ] && [ -f "ssl/key.pem" ]; then
+    flask run --host=0.0.0.0 --port=5000 --cert=ssl/cert.pem --key=ssl/key.pem
+else
+    echo "⚠️  SSL certificates not found in ssl/ directory. Running on HTTP..."
+    flask run --host=0.0.0.0 --port=5000
+fi

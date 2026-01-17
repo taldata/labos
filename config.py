@@ -25,20 +25,32 @@ class Config:
     PREFERRED_URL_SCHEME = 'https'  # Changed from 'http' to 'https'
     
     # Database configuration
-    # If DATABASE_URL is provided (Render), use it directly
-    # Otherwise, construct from individual components
-    SQLALCHEMY_DATABASE_URI = os.getenv('DATABASE_URL', '').replace('postgres://', 'postgresql://') or \
-        f"postgresql://{os.getenv('DB_USER', 'postgres')}:{os.getenv('DB_PASSWORD', '')}@{os.getenv('DB_HOST', 'localhost')}:{os.getenv('DB_PORT', '5432')}/{os.getenv('DB_NAME', 'expense_manager')}"
+    # Force use of DATABASE_URL if present, otherwise fall back to local settings
+    _db_url = os.getenv('DATABASE_URL')
+    if _db_url:
+        # Standardize postgres scheme for SQLAlchemy 1.4+
+        if _db_url.startswith('postgres://'):
+            _db_url = _db_url.replace('postgres://', 'postgresql://', 1)
+        SQLALCHEMY_DATABASE_URI = _db_url
+    else:
+        # Construct from individual components if DATABASE_URL is missing
+        db_user = os.getenv('DB_USER', 'postgres')
+        db_pass = os.getenv('DB_PASSWORD', '')
+        db_host = os.getenv('DB_HOST', 'localhost')
+        db_port = os.getenv('DB_PORT', '5432')
+        db_name = os.getenv('DB_NAME', 'expense_manager')
+        SQLALCHEMY_DATABASE_URI = f"postgresql://{db_user}:{db_pass}@{db_host}:{db_port}/{db_name}"
+    
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     
     # Upload configuration
     if os.getenv('RENDER') == 'true':
         # For Render deployment with a persistent disk mounted at /var/data
         RENDER_DISK_PATH = '/var/data' 
-        UPLOAD_FOLDER = os.path.join(RENDER_DISK_PATH, 'uploads')
+        UPLOAD_FOLDER = os.path.abspath(os.path.join(RENDER_DISK_PATH, 'uploads'))
     else:
         # For local development
-        UPLOAD_FOLDER = os.path.join(BASE_DIR, 'uploads')
+        UPLOAD_FOLDER = os.path.abspath(os.path.join(BASE_DIR, 'uploads'))
         
     MAX_CONTENT_LENGTH = 16 * 1024 * 1024  # 16MB max file size
 

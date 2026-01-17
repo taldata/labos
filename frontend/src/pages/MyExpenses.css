@@ -219,6 +219,7 @@
   width: 100%;
   border-collapse: collapse;
   min-width: 800px;
+  table-layout: fixed; /* Ensures headers and cells align perfectly with fixed widths */
 }
 
 /* Table Header */
@@ -246,6 +247,17 @@
   text-transform: uppercase;
   letter-spacing: 0.06em;
   white-space: nowrap;
+}
+
+/* Match header alignment with content cells */
+.me-table__header--amount {
+  text-align: right !important;
+}
+
+.me-table__header--status,
+.me-table__header--files,
+.me-table__header--actions {
+  text-align: center !important;
 }
 
 /* Column Widths - Auto sizing with minimum widths */
