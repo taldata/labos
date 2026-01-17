@@ -338,12 +338,18 @@ def create_department():
             current_year = BudgetYear.query.filter_by(is_current=True).first()
             year_id = current_year.id if current_year else None
         
-        department = Department(
-            name=data['name'],
-            budget=float(data.get('budget', 0.0)),
-            currency=data.get('currency', 'ILS'),
-            year_id=year_id
-        )
+            budget_val = data.get('budget')
+            if budget_val == '' or budget_val is None:
+                budget_val = 0.0
+            else:
+                budget_val = float(budget_val)
+            
+            department = Department(
+                name=data['name'],
+                budget=budget_val,
+                currency=data.get('currency', 'ILS'),
+                year_id=year_id
+            )
         
         db.session.add(department)
         db.session.commit()
@@ -382,7 +388,11 @@ def update_department(dept_id):
         if 'name' in data:
             department.name = data['name']
         if 'budget' in data:
-            department.budget = float(data['budget'])
+            budget_val = data['budget']
+            if budget_val == '' or budget_val is None:
+                department.budget = 0.0
+            else:
+                department.budget = float(budget_val)
         if 'currency' in data:
             department.currency = data['currency']
             
@@ -447,9 +457,15 @@ def create_category():
         if not data or 'name' not in data or 'department_id' not in data:
             return jsonify({'error': 'Missing required fields'}), 400
 
+        budget_val = data.get('budget')
+        if budget_val == '' or budget_val is None:
+            budget_val = 0.0
+        else:
+            budget_val = float(budget_val)
+
         category = Category(
             name=data['name'],
-            budget=float(data.get('budget', 0.0)),
+            budget=budget_val,
             department_id=int(data['department_id'])
         )
         
@@ -490,7 +506,11 @@ def update_category(cat_id):
         if 'name' in data:
             category.name = data['name']
         if 'budget' in data:
-            category.budget = float(data['budget'])
+            budget_val = data['budget']
+            if budget_val == '' or budget_val is None:
+                category.budget = 0.0
+            else:
+                category.budget = float(budget_val)
             
         db.session.commit()
         
@@ -553,9 +573,15 @@ def create_subcategory():
         if not data or 'name' not in data or 'category_id' not in data:
             return jsonify({'error': 'Missing required fields'}), 400
 
+        budget_val = data.get('budget')
+        if budget_val == '' or budget_val is None:
+            budget_val = 0.0
+        else:
+            budget_val = float(budget_val)
+
         subcategory = Subcategory(
             name=data['name'],
-            budget=float(data.get('budget', 0.0)),
+            budget=budget_val,
             category_id=int(data['category_id'])
         )
         
@@ -596,7 +622,11 @@ def update_subcategory(sub_id):
         if 'name' in data:
             subcategory.name = data['name']
         if 'budget' in data:
-            subcategory.budget = float(data['budget'])
+            budget_val = data['budget']
+            if budget_val == '' or budget_val is None:
+                subcategory.budget = 0.0
+            else:
+                subcategory.budget = float(budget_val)
             
         db.session.commit()
         
