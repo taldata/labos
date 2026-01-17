@@ -140,7 +140,8 @@
 .expenses-table table {
   width: 100%;
   border-collapse: collapse;
-  min-width: 1200px;
+  min-width: 1500px;
+  table-layout: fixed;
 }
 
 .expenses-table thead {
@@ -159,31 +160,46 @@
   white-space: nowrap;
 }
 
-.th-date { min-width: 100px; }
-.th-employee { min-width: 200px; }
-.th-department { min-width: 120px; }
-.th-description { min-width: 250px; }
-.th-category { min-width: 150px; }
-.th-supplier { min-width: 150px; }
+.th-date { width: 120px; }
+.th-employee { width: 200px; }
+.th-department { width: 140px; }
+.th-description { width: 250px; }
+.th-category { width: 160px; }
+.th-supplier { width: 160px; }
 .th-amount { 
-  min-width: 100px;
+  width: 120px;
   text-align: right !important; 
 }
 .th-status { 
-  min-width: 100px;
+  width: 120px;
   text-align: center !important; 
 }
 .th-payment { 
-  min-width: 100px;
+  width: 120px;
   text-align: center !important; 
 }
 .th-files { 
-  min-width: 80px;
+  width: 100px;
   text-align: center !important; 
 }
 .th-actions { 
-  min-width: 140px;
+  width: 140px;
   text-align: center !important; 
+}
+
+/* Ensure content doesn't break layout */
+.date-cell,
+.employee-cell,
+.department-cell,
+.description-cell,
+.category-cell,
+.supplier-cell,
+.amount-cell,
+.status-cell,
+.payment-cell {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .expenses-table tbody tr {

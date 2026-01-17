@@ -656,8 +656,8 @@ function ExpenseHistory({ user, setUser }) {
                   <tbody>
                     {expenses.map(expense => (
                       <tr key={expense.id} className="expense-row">
-                        <td>{formatDate(expense.date)}</td>
-                        <td>
+                        <td className="date-cell">{formatDate(expense.date)}</td>
+                        <td className="employee-cell">
                           <div className="employee-info">
                             <div className="employee-avatar">
                               {expense.user?.name?.[0]?.toUpperCase() || '?'}
@@ -665,12 +665,12 @@ function ExpenseHistory({ user, setUser }) {
                             <span>{expense.user?.name || 'Unknown'}</span>
                           </div>
                         </td>
-                        <td>
+                        <td className="department-cell">
                           <Badge variant="default" size="small">
                             {expense.user?.department || '-'}
                           </Badge>
                         </td>
-                        <td>
+                        <td className="description-cell">
                           <div className="expense-description">
                             <strong>{expense.description || 'No description'}</strong>
                             {expense.reason && (
@@ -678,7 +678,7 @@ function ExpenseHistory({ user, setUser }) {
                             )}
                           </div>
                         </td>
-                        <td>
+                        <td className="category-cell">
                           <div className="category-info">
                             {expense.category?.name && (
                               <Badge variant="primary-solid" size="small">{expense.category.name}</Badge>
@@ -688,7 +688,7 @@ function ExpenseHistory({ user, setUser }) {
                             )}
                           </div>
                         </td>
-                        <td>{expense.supplier?.name || '-'}</td>
+                        <td className="supplier-cell">{expense.supplier?.name || '-'}</td>
                         <td className="amount-cell">
                           {formatCurrency(expense.amount, expense.currency)}
                         </td>
