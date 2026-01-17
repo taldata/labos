@@ -271,6 +271,13 @@ function SubmitExpense({ user, setUser }) {
         return
       }
 
+      // Validate credit card selection when payment method is credit
+      if (formData.payment_method === 'credit' && !formData.credit_card_id) {
+        showError('יש לבחור כרטיס אשראי')
+        setLoading(false)
+        return
+      }
+
       // Validate date format
       if (!isValidDate(formData.date)) {
         showError('תאריך לא תקין (DD/MM/YYYY)')
@@ -543,6 +550,7 @@ function SubmitExpense({ user, setUser }) {
                     name="credit_card_id"
                     value={formData.credit_card_id}
                     onChange={handleInputChange}
+                    required
                   >
                     <option value="">Select a credit card</option>
                     {creditCards.map(card => (
