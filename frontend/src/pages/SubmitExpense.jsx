@@ -202,9 +202,9 @@ function SubmitExpense({ user, setUser }) {
 
       // Define Hebrew labels for each document type
       const documentLabels = {
-        invoice: 'חשבונית',
-        receipt: 'קבלה',
-        quote: 'הצעת מחיר'
+        invoice: 'invoice',
+        receipt: 'receipt',
+        quote: 'quote'
       }
 
       // Process document through OCR to extract amount (for invoice, receipt, and quote)
@@ -254,9 +254,9 @@ function SubmitExpense({ user, setUser }) {
             setOcrDataLoading(false)
             
             if (ocrResult.amount || ocrResult.purchase_date) {
-              showSuccess(`נתונים חולצו מה${documentLabels[name]} בהצלחה`)
+              showSuccess(`Data extracted from ${documentLabels[name]} successfully`)
             } else {
-              showSuccess(`ה${documentLabels[name]} עובדה, אך לא נמצאו נתונים לחילוץ`)
+              showSuccess(`The ${documentLabels[name]} was processed, but no data was found to extract`)
             }
           } else {
             const errorData = await response.json()
@@ -365,7 +365,7 @@ function SubmitExpense({ user, setUser }) {
             </Card.Header>
             <Card.Body>
               <p className="section-hint" style={{ marginBottom: '1rem', color: '#666', fontSize: '0.9rem' }}>
-                העלה חשבונית והמערכת תחלץ אוטומטית את הסכום כולל מע"מ
+                Upload an invoice and the system will automatically extract the total amount including VAT
               </p>
               <div className="form-row file-upload-row">
                 <FileUpload
@@ -395,19 +395,19 @@ function SubmitExpense({ user, setUser }) {
               {ocrProcessing && (
                 <div className="ocr-processing" style={{ marginTop: '1rem', padding: '1rem', backgroundColor: '#f0f7ff', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                   <i className="fas fa-spinner fa-spin"></i>
-                  <span>מעבד את המסמך וחולץ נתונים...</span>
+                  <span>Processing document and extracting data...</span>
                 </div>
               )}
               {ocrDataLoading && !ocrProcessing && (
                 <div className="ocr-loading" style={{ marginTop: '1rem', padding: '1rem', backgroundColor: '#fff3e0', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                   <i className="fas fa-sync fa-spin" style={{ color: '#ff9800' }}></i>
-                  <span style={{ color: '#e65100' }}>טוען נתונים לטופס...</span>
+                  <span style={{ color: '#e65100' }}>Loading data into form...</span>
                 </div>
               )}
               {ocrData && !ocrProcessing && !ocrDataLoading && (
                 <div className="ocr-result" style={{ marginTop: '1rem', padding: '1rem', backgroundColor: '#e8f5e9', borderRadius: '8px' }}>
                   <i className="fas fa-check-circle" style={{ color: '#4caf50', marginRight: '0.5rem' }}></i>
-                  <span>נתונים חולצו בהצלחה: סכום {ocrData.amount} ₪</span>
+                  <span>Data extracted successfully: Amount {ocrData.amount} ₪</span>
                 </div>
               )}
             </Card.Body>
