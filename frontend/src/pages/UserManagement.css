@@ -143,16 +143,20 @@
 .user-info {
   display: flex;
   flex-direction: column;
+  gap: 0.125rem;
+  line-height: 1.4;
 }
 
 .user-name {
   font-weight: 500;
   color: #1e293b;
+  line-height: 1.2;
 }
 
 .user-username {
   font-size: 0.8rem;
   color: #94a3b8;
+  line-height: 1.2;
 }
 
 .no-dept {
