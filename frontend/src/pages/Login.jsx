@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Card, Button } from '../components/ui'
 import logger from '../utils/logger'
@@ -8,35 +8,38 @@ function Login({ setUser }) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const navigate = useNavigate()
+  const isMountedRef = useRef(true)
 
-  const checkAuth = useCallback(async () => {
-    const abortController = new AbortController()
-
+  const checkAuth = useCallback(async (signal) => {
     try {
       const response = await fetch('/api/v1/auth/me', {
         credentials: 'include',
-        signal: abortController.signal
+        signal
       })
       if (response.ok) {
         const data = await response.json()
-        if (data.user) {
+        if (data.user && isMountedRef.current) {
           setUser(data.user)
           navigate('/dashboard')
         }
       }
     } catch (error) {
-      // Ignore abort errors
       if (error.name === 'AbortError') return
       logger.error('Auth check failed', { error: error.message })
     }
-
-    return () => abortController.abort()
   }, [navigate, setUser])
 
   useEffect(() => {
-    const cleanup = checkAuth()
-    return cleanup
+    isMountedRef.current = true
+    const abortController = new AbortController()
+    checkAuth(abortController.signal)
+    
+    return () => {
+      isMountedRef.current = false
+      abortController.abort()
+    }
   }, [checkAuth])
+
 
   const handleAzureLogin = async () => {
     setLoading(true)
