@@ -181,13 +181,13 @@
 }
 
 .expenses-table th {
-  padding: 1.125rem 1.25rem;
+  padding: 1rem 1.25rem;
   text-align: left;
   font-weight: 600;
   color: #ffffff;
   font-size: 0.8rem;
   text-transform: uppercase;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.05em;
   white-space: nowrap;
 }
 
@@ -237,7 +237,7 @@
 }
 
 .expenses-table td {
-  padding: 1.125rem 1.25rem;
+  padding: 1rem 1.25rem;
   color: var(--text-primary);
   vertical-align: middle;
 }
@@ -289,10 +289,11 @@
 
 .amount-cell {
   font-weight: 700;
-  font-size: 1.05rem;
+  font-size: 1rem;
   color: #1e293b;
   font-variant-numeric: tabular-nums;
   letter-spacing: -0.01em;
+  text-align: right;
 }
 
 .status-badge {
