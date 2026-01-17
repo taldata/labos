@@ -337,19 +337,19 @@ def create_department():
         if not year_id:
             current_year = BudgetYear.query.filter_by(is_current=True).first()
             year_id = current_year.id if current_year else None
-        
-            budget_val = data.get('budget')
-            if budget_val == '' or budget_val is None:
-                budget_val = 0.0
-            else:
-                budget_val = float(budget_val)
-            
-            department = Department(
-                name=data['name'],
-                budget=budget_val,
-                currency=data.get('currency', 'ILS'),
-                year_id=year_id
-            )
+
+        budget_val = data.get('budget')
+        if budget_val == '' or budget_val is None:
+            budget_val = 0.0
+        else:
+            budget_val = float(budget_val)
+
+        department = Department(
+            name=data['name'],
+            budget=budget_val,
+            currency=data.get('currency', 'ILS'),
+            year_id=year_id
+        )
         
         db.session.add(department)
         db.session.commit()
