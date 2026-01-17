@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { Card, Button, Input, Select, Modal, Skeleton, useToast } from '../components/ui';
+import { useScrollToItem } from '../hooks/useScrollToItem';
 import './DepartmentManager.css';
 
 const api = axios.create({
@@ -44,6 +45,10 @@ const DepartmentManager = ({ user, setUser }) => {
     // Copy Year Modal
     const [showCopyModal, setShowCopyModal] = useState(false);
     const [sourceYearId, setSourceYearId] = useState(null);
+
+    // Auto-scroll and highlight for new items
+    const [newDepartmentId, setNewDepartmentId] = useState(null);
+    const { getItemRef } = useScrollToItem(structure, newDepartmentId, () => setNewDepartmentId(null));
 
     useEffect(() => {
         if (!user?.is_admin) {
@@ -195,9 +200,20 @@ const DepartmentManager = ({ user, setUser }) => {
                 if (modalMode === 'create') data.category_id = parentId;
             }
 
-            await api[method](url, data);
+            const response = await api[method](url, data);
             success(modalMode === 'create' ? `${modalType} created successfully` : `${modalType} updated successfully`);
             await fetchStructure(selectedYear?.id);
+
+            // Auto-scroll and highlight newly created department
+            if (modalMode === 'create' && modalType === 'department' && response.data) {
+                const newDeptId = response.data.id || response.data.department?.id;
+                if (newDeptId) {
+                    setNewDepartmentId(newDeptId);
+                    // Auto-expand the newly created department
+                    setExpandedDepts(prev => ({ ...prev, [newDeptId]: true }));
+                }
+            }
+
             closeModal();
         } catch (err) {
             showError(err.response?.data?.error || 'An error occurred');
@@ -312,7 +328,7 @@ const DepartmentManager = ({ user, setUser }) => {
                     </div>
                 )}
                 {filteredStructure.map(dept => (
-                    <div key={dept.id} className="dept-card">
+                    <div key={dept.id} className="dept-card" ref={getItemRef(dept.id)}>
                         <div className="dept-header" onClick={() => toggleDept(dept.id)}>
                             <div className="dept-info">
                                 <i className={`fas fa-chevron-down expand-icon ${expandedDepts[dept.id] ? 'expanded' : ''}`}></i>
