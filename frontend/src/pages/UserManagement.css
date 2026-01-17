@@ -57,6 +57,43 @@
 .users-table {
   width: 100%;
   border-collapse: collapse;
+  table-layout: fixed;
+}
+
+.users-table th:nth-child(1),
+.users-table td:nth-child(1) {
+  width: 22%;
+}
+
+.users-table th:nth-child(2),
+.users-table td:nth-child(2) {
+  width: 20%;
+}
+
+.users-table th:nth-child(3),
+.users-table td:nth-child(3) {
+  width: 15%;
+}
+
+.users-table th:nth-child(4),
+.users-table td:nth-child(4) {
+  width: 18%;
+}
+
+.users-table th:nth-child(5),
+.users-table td:nth-child(5) {
+  width: 10%;
+}
+
+.users-table th:nth-child(6),
+.users-table td:nth-child(6) {
+  width: 8%;
+  text-align: center;
+}
+
+.users-table th:nth-child(7),
+.users-table td:nth-child(7) {
+  width: 7%;
 }
 
 .users-table th {
