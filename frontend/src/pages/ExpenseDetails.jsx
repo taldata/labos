@@ -349,14 +349,15 @@ function ExpenseDetails({ user, setUser }) {
                       <span className="attachment-name">Invoice</span>
                       <span className="attachment-filename">{expense.invoice_filename}</span>
                     </div>
-                    <Button
-                      variant="secondary"
-                      size="small"
-                      icon="fas fa-download"
-                      onClick={() => window.open(`/download/${expense.invoice_filename}`, '_blank')}
+                    <FilePreviewButton
+                      fileUrl={`/download/${expense.invoice_filename}`}
+                      fileName={expense.invoice_filename}
+                      icon="fas fa-eye"
+                      title="Preview invoice"
+                      className="attachment-preview-btn"
                     >
-                      Download
-                    </Button>
+                      Preview
+                    </FilePreviewButton>
                   </div>
                 )}
                 {expense.receipt_filename && (
@@ -372,14 +373,15 @@ function ExpenseDetails({ user, setUser }) {
                       <span className="attachment-name">Receipt</span>
                       <span className="attachment-filename">{expense.receipt_filename}</span>
                     </div>
-                    <Button
-                      variant="secondary"
-                      size="small"
-                      icon="fas fa-download"
-                      onClick={() => window.open(`/download/${expense.receipt_filename}`, '_blank')}
+                    <FilePreviewButton
+                      fileUrl={`/download/${expense.receipt_filename}`}
+                      fileName={expense.receipt_filename}
+                      icon="fas fa-eye"
+                      title="Preview receipt"
+                      className="attachment-preview-btn"
                     >
-                      Download
-                    </Button>
+                      Preview
+                    </FilePreviewButton>
                   </div>
                 )}
                 {expense.quote_filename && (
@@ -395,14 +397,15 @@ function ExpenseDetails({ user, setUser }) {
                       <span className="attachment-name">Quote</span>
                       <span className="attachment-filename">{expense.quote_filename}</span>
                     </div>
-                    <Button
-                      variant="secondary"
-                      size="small"
-                      icon="fas fa-download"
-                      onClick={() => window.open(`/download/${expense.quote_filename}`, '_blank')}
+                    <FilePreviewButton
+                      fileUrl={`/download/${expense.quote_filename}`}
+                      fileName={expense.quote_filename}
+                      icon="fas fa-eye"
+                      title="Preview quote"
+                      className="attachment-preview-btn"
                     >
-                      Download
-                    </Button>
+                      Preview
+                    </FilePreviewButton>
                   </div>
                 )}
               </div>
