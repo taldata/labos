@@ -665,24 +665,69 @@ def submit_expense():
 @app.route('/download/<filename>')
 @login_required
 def download_file(filename):
-    # Determine the appropriate redirect URL based on user role
-    if current_user.is_accounting:
-        redirect_url = 'accounting_dashboard'
-    elif current_user.is_admin:
-        redirect_url = 'admin_dashboard'
-    else:
-        redirect_url = 'employee_dashboard'
+    # Check if request is for preview (iframe) or direct browser access
+    # Sec-Fetch-Dest: iframe indicates it's being loaded in an iframe
+    is_preview_request = request.headers.get('Sec-Fetch-Dest') == 'iframe'
+    
+    # Helper function to return error for preview requests
+    def return_error(message, status_code=404):
+        if is_preview_request:
+            # Return an HTML page with error message for iframe display
+            error_html = f'''
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <style>
+                    body {{
+                        display: flex;
+                        flex-direction: column;
+                        align-items: center;
+                        justify-content: center;
+                        height: 100vh;
+                        margin: 0;
+                        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                        background: #f8fafc;
+                        color: #475569;
+                    }}
+                    .error-icon {{
+                        font-size: 4rem;
+                        color: #94a3b8;
+                        margin-bottom: 1rem;
+                    }}
+                    .error-message {{
+                        font-size: 1.125rem;
+                        text-align: center;
+                        max-width: 400px;
+                        padding: 0 1rem;
+                    }}
+                </style>
+            </head>
+            <body>
+                <div class="error-icon">📄</div>
+                <p class="error-message">{message}</p>
+            </body>
+            </html>
+            '''
+            return error_html, status_code, {'Content-Type': 'text/html'}
+        else:
+            # For direct browser access, redirect as before
+            if current_user.is_accounting:
+                redirect_url = 'accounting_dashboard'
+            elif current_user.is_admin:
+                redirect_url = 'admin_dashboard'
+            else:
+                redirect_url = 'employee_dashboard'
+            flash(message, 'error')
+            return redirect(url_for(redirect_url))
 
     try:
         # Basic validation for filename
-        if not filename or filename == 'None': # Handles if filename is None or string 'None'
-            flash('No file associated with this record or filename is invalid.', 'error')
-            return redirect(url_for(redirect_url))
+        if not filename or filename == 'None':
+            return return_error('No file associated with this record or filename is invalid.')
 
         # Ensure the filename is secure and not trying to access directories
         if '..' in filename or filename.startswith('/'):
-            flash('Invalid filename.', 'error')
-            return redirect(url_for(redirect_url))
+            return return_error('Invalid filename.')
 
         logging.info(f"Attempting to download: Original filename from DB: '{filename}'")
         upload_folder = app.config.get('UPLOAD_FOLDER')
@@ -690,16 +735,14 @@ def download_file(filename):
         
         if not upload_folder:
             logging.error("UPLOAD_FOLDER is not configured.")
-            flash('Server configuration error: Upload directory not set.', 'error')
-            return redirect(url_for(redirect_url))
+            return return_error('Server configuration error: Upload directory not set.', 500)
             
         filepath = os.path.join(upload_folder, filename)
         logging.info(f"Constructed filepath for download: '{filepath}'")
 
         if not os.path.exists(filepath):
             logging.error(f"File not found at path: {filepath}. UPLOAD_FOLDER: {upload_folder}, Filename: {filename}")
-            flash('File not found', 'error')
-            return redirect(url_for(redirect_url))
+            return return_error('File not found. The file may have been deleted or moved.')
         
         # Check all document type fields for the file
         expense = Expense.query.filter(
@@ -708,7 +751,10 @@ def download_file(filename):
                 Expense.invoice_filename == filename,
                 Expense.receipt_filename == filename
             )
-        ).first_or_404() # If file not found in DB, this will raise a 404
+        ).first()
+        
+        if not expense:
+            return return_error('File record not found in database.', 404)
         
         # Check permissions for the specific user role
         if current_user.is_admin or current_user.is_manager or current_user.is_accounting or expense.user_id == current_user.id:
@@ -716,16 +762,13 @@ def download_file(filename):
                 return send_file(filepath, as_attachment=False)
             except Exception as e:
                 logging.error(f"Error downloading file {filename}: {str(e)}")
-                flash('Error downloading file', 'error')
-                return redirect(url_for(redirect_url))
+                return return_error('Error loading file. Please try again.', 500)
 
-        flash('Unauthorized access', 'error') # Added 'error' category for consistency
-        return redirect(url_for(redirect_url))
+        return return_error('Unauthorized access', 403)
 
     except Exception as e:
         logging.error(f"Error downloading file: {str(e)}")
-        flash('Error downloading file', 'error')
-        return redirect(url_for(redirect_url))
+        return return_error('Error loading file. Please try again.', 500)
 
 @app.route('/manager/dashboard')
 @login_required
