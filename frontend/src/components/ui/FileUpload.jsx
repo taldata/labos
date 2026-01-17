@@ -1,5 +1,5 @@
-import React, { useState, useRef } from 'react';
-import './FileUpload.css';
+import React, { useState, useRef } from "react";
+import "./FileUpload.css";
 
 const FileUpload = ({
   label,
@@ -12,7 +12,7 @@ const FileUpload = ({
   error,
   helperText,
   required = false,
-  disabled = false
+  disabled = false,
 }) => {
   const [dragActive, setDragActive] = useState(false);
   const [files, setFiles] = useState(value);
@@ -24,9 +24,9 @@ const FileUpload = ({
   const handleDrag = (e) => {
     e.preventDefault();
     e.stopPropagation();
-    if (e.type === 'dragenter' || e.type === 'dragover') {
+    if (e.type === "dragenter" || e.type === "dragover") {
       setDragActive(true);
-    } else if (e.type === 'dragleave') {
+    } else if (e.type === "dragleave") {
       setDragActive(false);
     }
   };
@@ -36,16 +36,16 @@ const FileUpload = ({
       return `File ${file.name} exceeds maximum size of ${(maxSize / 1024 / 1024).toFixed(1)}MB`;
     }
     if (accept) {
-      const acceptedTypes = accept.split(',').map(type => type.trim());
-      const fileExtension = '.' + file.name.split('.').pop();
+      const acceptedTypes = accept.split(",").map((type) => type.trim());
+      const fileExtension = "." + file.name.split(".").pop();
       const mimeType = file.type;
 
-      const isAccepted = acceptedTypes.some(type => {
-        if (type.startsWith('.')) {
+      const isAccepted = acceptedTypes.some((type) => {
+        if (type.startsWith(".")) {
           return fileExtension.toLowerCase() === type.toLowerCase();
         }
-        if (type.endsWith('/*')) {
-          return mimeType.startsWith(type.replace('/*', ''));
+        if (type.endsWith("/*")) {
+          return mimeType.startsWith(type.replace("/*", ""));
         }
         return mimeType === type;
       });
@@ -62,7 +62,7 @@ const FileUpload = ({
     const fileArray = Array.from(newFiles);
 
     if (!multiple && fileArray.length > 1) {
-      setUploadError('Only one file is allowed');
+      setUploadError("Only one file is allowed");
       return;
     }
 
@@ -116,49 +116,51 @@ const FileUpload = ({
   };
 
   const formatFileSize = (bytes) => {
-    if (bytes === 0) return '0 Bytes';
+    if (bytes === 0) return "0 Bytes";
     const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const sizes = ["Bytes", "KB", "MB", "GB"];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+    return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + " " + sizes[i];
   };
 
   const getFileIcon = (fileName) => {
-    const extension = fileName.split('.').pop().toLowerCase();
+    const extension = fileName.split(".").pop().toLowerCase();
     const iconMap = {
-      pdf: 'fa-file-pdf',
-      doc: 'fa-file-word',
-      docx: 'fa-file-word',
-      xls: 'fa-file-excel',
-      xlsx: 'fa-file-excel',
-      ppt: 'fa-file-powerpoint',
-      pptx: 'fa-file-powerpoint',
-      jpg: 'fa-file-image',
-      jpeg: 'fa-file-image',
-      png: 'fa-file-image',
-      gif: 'fa-file-image',
-      zip: 'fa-file-archive',
-      rar: 'fa-file-archive',
-      txt: 'fa-file-alt',
-      csv: 'fa-file-csv'
+      pdf: "fa-file-pdf",
+      doc: "fa-file-word",
+      docx: "fa-file-word",
+      xls: "fa-file-excel",
+      xlsx: "fa-file-excel",
+      ppt: "fa-file-powerpoint",
+      pptx: "fa-file-powerpoint",
+      jpg: "fa-file-image",
+      jpeg: "fa-file-image",
+      png: "fa-file-image",
+      gif: "fa-file-image",
+      zip: "fa-file-archive",
+      rar: "fa-file-archive",
+      txt: "fa-file-alt",
+      csv: "fa-file-csv",
     };
-    return iconMap[extension] || 'fa-file';
+    return iconMap[extension] || "fa-file";
   };
 
   const isPreviewable = (fileName) => {
-    const extension = fileName.split('.').pop().toLowerCase();
-    return ['jpg', 'jpeg', 'png', 'gif', 'pdf', 'webp', 'bmp'].includes(extension);
+    const extension = fileName.split(".").pop().toLowerCase();
+    return ["jpg", "jpeg", "png", "gif", "pdf", "webp", "bmp"].includes(
+      extension,
+    );
   };
 
   const isImage = (fileName) => {
-    const extension = fileName.split('.').pop().toLowerCase();
-    return ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp'].includes(extension);
+    const extension = fileName.split(".").pop().toLowerCase();
+    return ["jpg", "jpeg", "png", "gif", "webp", "bmp"].includes(extension);
   };
 
   const handlePreview = (file, e) => {
     e.stopPropagation();
     if (!isPreviewable(file.name)) return;
-    
+
     const url = URL.createObjectURL(file);
     setPreviewFile(file);
     setPreviewUrl(url);
@@ -175,7 +177,7 @@ const FileUpload = ({
   const handleDownload = (file, e) => {
     e.stopPropagation();
     const url = URL.createObjectURL(file);
-    const link = document.createElement('a');
+    const link = document.createElement("a");
     link.href = url;
     link.download = file.name;
     document.body.appendChild(link);
@@ -194,7 +196,7 @@ const FileUpload = ({
       )}
 
       <div
-        className={`file-upload-dropzone ${dragActive ? 'file-upload-drag-active' : ''} ${disabled ? 'file-upload-disabled' : ''}`}
+        className={`file-upload-dropzone ${dragActive ? "file-upload-drag-active" : ""} ${disabled ? "file-upload-disabled" : ""}`}
         onDragEnter={handleDrag}
         onDragLeave={handleDrag}
         onDragOver={handleDrag}
@@ -214,12 +216,13 @@ const FileUpload = ({
         <div className="file-upload-content">
           <i className="fas fa-cloud-upload-alt file-upload-icon"></i>
           <p className="file-upload-text">
-            <span className="file-upload-text-primary">Click to upload</span> or drag and drop
+            <span className="file-upload-text-primary">Click to upload</span> or
+            drag and drop
           </p>
           {helperText && <p className="file-upload-helper">{helperText}</p>}
           {accept && (
             <p className="file-upload-hint">
-              Accepted formats: {accept.replace(/\./g, '').replace(/,/g, ', ')}
+              Accepted formats: {accept.replace(/\./g, "").replace(/,/g, ", ")}
             </p>
           )}
           {maxSize && (
@@ -243,17 +246,36 @@ const FileUpload = ({
             <div key={index} className="file-upload-item">
               <button
                 type="button"
-                className={`file-upload-item-icon-btn ${isPreviewable(file.name) ? 'previewable' : ''}`}
+                className={`file-upload-item-icon-btn ${isPreviewable(file.name) ? "previewable" : ""}`}
                 onClick={(e) => handlePreview(file, e)}
-                title={isPreviewable(file.name) ? 'Click to preview' : 'Preview not available'}
+                title={
+                  isPreviewable(file.name)
+                    ? "Click to preview"
+                    : "Preview not available"
+                }
               >
-                <i className={`fas ${getFileIcon(file.name)} file-upload-item-icon`}></i>
+                <i
+                  className={`fas ${getFileIcon(file.name)} file-upload-item-icon`}
+                ></i>
               </button>
               <div className="file-upload-item-info">
                 <span className="file-upload-item-name">{file.name}</span>
-                <span className="file-upload-item-size">{formatFileSize(file.size)}</span>
+                <span className="file-upload-item-size">
+                  {formatFileSize(file.size)}
+                </span>
               </div>
               <div className="file-upload-item-actions">
+                {isPreviewable(file.name) && (
+                  <button
+                    type="button"
+                    className="file-upload-item-preview"
+                    onClick={(e) => handlePreview(file, e)}
+                    aria-label="Preview file"
+                    title="Preview"
+                  >
+                    <i className="fas fa-eye"></i>
+                  </button>
+                )}
                 <button
                   type="button"
                   className="file-upload-item-download"
@@ -286,7 +308,10 @@ const FileUpload = ({
       {/* Preview Modal */}
       {previewFile && previewUrl && (
         <div className="file-preview-overlay" onClick={handleClosePreview}>
-          <div className="file-preview-modal" onClick={(e) => e.stopPropagation()}>
+          <div
+            className="file-preview-modal"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="file-preview-header">
               <span className="file-preview-title">{previewFile.name}</span>
               <div className="file-preview-actions">
@@ -310,7 +335,11 @@ const FileUpload = ({
             </div>
             <div className="file-preview-content">
               {isImage(previewFile.name) ? (
-                <img src={previewUrl} alt={previewFile.name} className="file-preview-image" />
+                <img
+                  src={previewUrl}
+                  alt={previewFile.name}
+                  className="file-preview-image"
+                />
               ) : (
                 <iframe
                   src={previewUrl}

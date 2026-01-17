@@ -341,7 +341,6 @@ function SubmitExpense({ user, setUser }) {
                   onChange={(files) => handleFileChange('invoice', files)}
                   accept=".pdf,.jpg,.jpeg,.png"
                   file={files.invoice}
-                  required
                 />
 
                 <FileUpload

@@ -237,6 +237,24 @@
   color: #4f46e5;
 }
 
+.file-upload-item-preview {
+  background: transparent;
+  border: none;
+  color: #667eea;
+  cursor: pointer;
+  padding: 0.375rem;
+  border-radius: 0.25rem;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.file-upload-item-preview:hover {
+  background: #f0f4ff;
+  color: #4f46e5;
+}
+
 /* Preview Modal Overlay */
 .file-preview-overlay {
   position: fixed;
@@ -255,8 +273,12 @@
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 .file-preview-modal {
@@ -445,4 +467,3 @@
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
 }
-
