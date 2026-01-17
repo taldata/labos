@@ -510,9 +510,10 @@ function SubmitExpense({ user, setUser }) {
                   options={subcategories}
                   displayKey="name"
                   valueKey="id"
-                  placeholder="Select a subcategory"
+                  placeholder={selectedCategory ? "Select a subcategory" : "Select a category first"}
                   required
                   allowClear={false}
+                  disabled={!selectedCategory}
                 />
               </div>
 

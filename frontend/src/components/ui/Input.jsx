@@ -325,6 +325,7 @@ export const TomSelectInput = forwardRef(({
   error,
   helperText,
   required = false,
+  disabled = false,
   fullWidth = false,
   className = '',
   options = [],
@@ -398,13 +399,14 @@ export const TomSelectInput = forwardRef(({
 
   // Update Tom Select when options change
   useEffect(() => {
-    if (tomSelectRef.current && options.length > 0) {
+    if (tomSelectRef.current) {
       tomSelectRef.current.clearOptions();
       const tomOptions = options.map(option => ({
         value: option[valueKey]?.toString() || '',
         text: option[displayKey] || ''
       }));
       tomSelectRef.current.addOptions(tomOptions);
+      tomSelectRef.current.refreshOptions(false);
 
       // Re-set the value if it exists
       if (value) {
@@ -412,6 +414,17 @@ export const TomSelectInput = forwardRef(({
       }
     }
   }, [options, displayKey, valueKey]);
+
+  // Update disabled state
+  useEffect(() => {
+    if (tomSelectRef.current) {
+      if (disabled) {
+        tomSelectRef.current.disable();
+      } else {
+        tomSelectRef.current.enable();
+      }
+    }
+  }, [disabled]);
 
   // Update Tom Select when value changes externally
   useEffect(() => {
@@ -437,6 +450,7 @@ export const TomSelectInput = forwardRef(({
           ref={selectRef}
           name={name}
           required={required}
+          disabled={disabled}
           className={`tom-select-field ${className}`}
           {...props}
         >
