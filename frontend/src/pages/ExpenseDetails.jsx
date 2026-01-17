@@ -181,16 +181,18 @@ function ExpenseDetails({ user, setUser }) {
     <div className="expense-details-container">
 
       <div className="expense-details-content">
-        {/* Page Title Section */}
+        {/* Page Header */}
         <div className="page-title-section">
           <div>
             <Button variant="ghost" icon="fas fa-arrow-left" onClick={() => navigate(-1)}>
-              Back
+              Back to Expenses
             </Button>
             <h1>Expense Details</h1>
-            <p className="subtitle">ID: #{expense.id}</p>
+            <p className="subtitle">Reference ID: #{expense.id}</p>
           </div>
-          <Badge variant={getStatusVariant(expense.status)}>{expense.status}</Badge>
+          <Badge variant={getStatusVariant(expense.status)} className="status-badge-large">
+            {expense.status.charAt(0).toUpperCase() + expense.status.slice(1)}
+          </Badge>
         </div>
         {/* Amount Card */}
         <Card className="amount-card">
