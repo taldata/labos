@@ -3,6 +3,7 @@ name = "labos-expense-management"
 version = "1.0.0"
 description = "Labos Expense Management System"
 authors = ["Labos Team"]
+package-mode = false
 
 
 
