@@ -182,14 +182,14 @@ function MyExpenses({ user, setUser }) {
     }
   }
 
-  const getStatusVariant = (status) => {
-    const variants = {
-      pending: 'warning',
-      approved: 'success',
-      rejected: 'danger',
-      paid: 'info'
+  const getStatusClass = (status) => {
+    const classes = {
+      pending: 'me-status--pending',
+      approved: 'me-status--approved',
+      rejected: 'me-status--rejected',
+      paid: 'me-status--paid'
     }
-    return variants[status] || 'default'
+    return classes[status] || ''
   }
 
   const formatDate = (dateString) => {
@@ -209,38 +209,42 @@ function MyExpenses({ user, setUser }) {
   }
 
   const hasActiveFilters = filters.status || filters.category_id || filters.search || filters.start_date || filters.end_date
+  const activeFilterCount = [filters.status, filters.category_id, filters.search, filters.start_date, filters.end_date].filter(Boolean).length
 
   return (
-    <div className="my-expenses-container">
-
-      <div className="page-content">
-        {/* Page Header */}
-        <div className="page-title-section">
-          <div>
-            <h1>My Expenses</h1>
-            <p className="subtitle">{totalExpenses} total expenses</p>
+    <div className="me-container">
+      <main className="me-main">
+        {/* Header */}
+        <header className="me-header">
+          <div className="me-header__content">
+            <h1 className="me-header__title">My Expenses</h1>
+            <p className="me-header__subtitle">
+              <span className="me-header__count">{totalExpenses}</span> total expenses
+            </p>
           </div>
-          <Button variant="primary" icon="fas fa-plus" onClick={() => navigate('/submit-expense')}>
-            New Expense
-          </Button>
-        </div>
+          <div className="me-header__actions">
+            <Button variant="primary" icon="fas fa-plus" onClick={() => navigate('/submit-expense')}>
+              New Expense
+            </Button>
+          </div>
+        </header>
 
         {/* Filters */}
-        <Card className="filters-section">
-          <div className="filters-header" onClick={() => setShowFilters(!showFilters)}>
-            <div className="filters-title">
+        <Card className="me-filters">
+          <div className="me-filters__header" onClick={() => setShowFilters(!showFilters)}>
+            <div className="me-filters__title">
               <i className="fas fa-filter"></i>
               <span>Filters & Search</span>
-              {hasActiveFilters && <Badge variant="primary" size="small">{Object.values(filters).filter(v => v).length - 2} active</Badge>}
+              {hasActiveFilters && <Badge variant="primary" size="small">{activeFilterCount} active</Badge>}
             </div>
-            <Button variant="ghost" size="small">
+            <span className="me-filters__toggle">
               <i className={`fas fa-chevron-${showFilters ? 'up' : 'down'}`}></i>
-            </Button>
+            </span>
           </div>
 
           {showFilters && (
-            <div className="filters-body">
-              <div className="filter-row">
+            <div className="me-filters__body">
+              <div className="me-filters__row">
                 <Input
                   label="Search"
                   name="search"
@@ -274,9 +278,20 @@ function MyExpenses({ user, setUser }) {
                     <option key={cat.id} value={cat.id}>{cat.name}</option>
                   ))}
                 </Select>
+
+                <Select
+                  label="Sort By"
+                  name="sort_by"
+                  value={filters.sort_by}
+                  onChange={handleFilterChange}
+                >
+                  <option value="date">Date</option>
+                  <option value="amount">Amount</option>
+                  <option value="status">Status</option>
+                </Select>
               </div>
 
-              <div className="filter-row">
+              <div className="me-filters__row">
                 <Input
                   type="date"
                   label="Start Date"
@@ -294,17 +309,6 @@ function MyExpenses({ user, setUser }) {
                 />
 
                 <Select
-                  label="Sort By"
-                  name="sort_by"
-                  value={filters.sort_by}
-                  onChange={handleFilterChange}
-                >
-                  <option value="date">Date</option>
-                  <option value="amount">Amount</option>
-                  <option value="status">Status</option>
-                </Select>
-
-                <Select
                   label="Order"
                   name="sort_order"
                   value={filters.sort_order}
@@ -313,9 +317,11 @@ function MyExpenses({ user, setUser }) {
                   <option value="desc">Descending</option>
                   <option value="asc">Ascending</option>
                 </Select>
+
+                <div></div>
               </div>
 
-              <div className="filter-actions">
+              <div className="me-filters__actions">
                 <Button variant="secondary" icon="fas fa-times" onClick={clearFilters}>
                   Clear Filters
                 </Button>
@@ -324,17 +330,17 @@ function MyExpenses({ user, setUser }) {
           )}
         </Card>
 
-        {/* Expenses List */}
-        <Card className="expenses-list-card">
+        {/* Content Card */}
+        <Card className="me-content">
           {error && (
-            <div className="error-alert">
+            <div className="me-error">
               <i className="fas fa-exclamation-circle"></i>
               {error}
             </div>
           )}
 
           {loading ? (
-            <div className="loading-state">
+            <div className="me-loading">
               <Skeleton.Table rows={5} columns={6} />
             </div>
           ) : expenses.length === 0 ? (
@@ -349,84 +355,96 @@ function MyExpenses({ user, setUser }) {
             />
           ) : (
             <>
-              <div className="expenses-table">
-                <table>
-                  <thead>
+              <div className="me-table-wrapper">
+                <table className="me-table">
+                  <thead className="me-table__head">
                     <tr>
-                      <th>Date</th>
-                      <th>Description</th>
-                      <th>Category</th>
-                      <th>Amount</th>
-                      <th>Status</th>
-                      <th>Attachments</th>
-                      {(user?.is_manager || user?.is_admin) && <th>Actions</th>}
+                      <th className="me-table__header me-table__header--date">Date</th>
+                      <th className="me-table__header me-table__header--description">Description</th>
+                      <th className="me-table__header me-table__header--category">Category</th>
+                      <th className="me-table__header me-table__header--amount">Amount</th>
+                      <th className="me-table__header me-table__header--status">Status</th>
+                      <th className="me-table__header me-table__header--files">Files</th>
+                      {(user?.is_manager || user?.is_admin) && (
+                        <th className="me-table__header me-table__header--actions">Actions</th>
+                      )}
                     </tr>
                   </thead>
-                  <tbody>
+                  <tbody className="me-table__body">
                     {expenses.map(expense => (
                       <tr
                         key={expense.id}
                         ref={getItemRef(expense.id)}
                         data-item-id={expense.id}
-                        className="expense-row"
+                        className="me-table__row"
                         onClick={() => navigate(`/expenses/${expense.id}`)}
                       >
-                        <td>{formatDate(expense.date)}</td>
-                        <td>
-                          <div className="expense-description">
-                            <strong>{expense.description || 'No description'}</strong>
+                        <td className="me-table__cell me-table__cell--date" data-label="Date">
+                          {formatDate(expense.date)}
+                        </td>
+                        <td className="me-table__cell me-table__cell--description" data-label="Description">
+                          <div className="me-description">
+                            <span className="me-description__title">
+                              {expense.description || 'No description'}
+                            </span>
                             {expense.reason && (
-                              <span className="expense-reason">{expense.reason}</span>
+                              <span className="me-description__reason">{expense.reason}</span>
                             )}
                           </div>
                         </td>
-                        <td>
-                          <div className="category-info">
+                        <td className="me-table__cell me-table__cell--category" data-label="Category">
+                          <div className="me-category">
                             {expense.category?.name && (
                               <Badge variant="default" size="small">{expense.category.name}</Badge>
                             )}
                             {expense.subcategory?.name && (
-                              <span className="subcategory-text">{expense.subcategory.name}</span>
+                              <span className="me-category__sub">{expense.subcategory.name}</span>
                             )}
                           </div>
                         </td>
-                        <td className="amount-cell">
+                        <td className="me-table__cell me-table__cell--amount" data-label="Amount">
                           {formatCurrency(expense.amount, expense.currency)}
                         </td>
-                        <td>
-                          <Badge variant={getStatusVariant(expense.status)} size="small">
+                        <td className="me-table__cell me-table__cell--status" data-label="Status">
+                          <span className={`me-status ${getStatusClass(expense.status)}`}>
                             {expense.status}
-                          </Badge>
+                          </span>
                         </td>
-                        <td className="attachments-cell" onClick={(e) => e.stopPropagation()}>
-                          {expense.invoice_filename && (
-                            <FilePreviewButton
-                              fileUrl={`/download/${expense.invoice_filename}`}
-                              fileName={expense.invoice_filename}
-                              icon="fas fa-file-invoice"
-                              title="Preview invoice"
-                            />
-                          )}
-                          {expense.receipt_filename && (
-                            <FilePreviewButton
-                              fileUrl={`/download/${expense.receipt_filename}`}
-                              fileName={expense.receipt_filename}
-                              icon="fas fa-receipt"
-                              title="Preview receipt"
-                            />
-                          )}
-                          {!expense.invoice_filename && !expense.receipt_filename && <span className="no-attachments">-</span>}
+                        <td className="me-table__cell me-table__cell--files" data-label="Files" onClick={(e) => e.stopPropagation()}>
+                          <div className="me-files">
+                            {expense.invoice_filename && (
+                              <FilePreviewButton
+                                fileUrl={`/download/${expense.invoice_filename}`}
+                                fileName={expense.invoice_filename}
+                                icon="fas fa-file-invoice"
+                                title="Preview invoice"
+                              />
+                            )}
+                            {expense.receipt_filename && (
+                              <FilePreviewButton
+                                fileUrl={`/download/${expense.receipt_filename}`}
+                                fileName={expense.receipt_filename}
+                                icon="fas fa-receipt"
+                                title="Preview receipt"
+                              />
+                            )}
+                            {!expense.invoice_filename && !expense.receipt_filename && (
+                              <span className="me-files__empty">-</span>
+                            )}
+                          </div>
                         </td>
                         {(user?.is_manager || user?.is_admin) && (
-                          <td className="actions-cell" onClick={(e) => e.stopPropagation()}>
-                            <Button
-                              variant="ghost"
-                              size="small"
-                              icon="fas fa-trash"
-                              onClick={(e) => openDeleteModal(e, expense)}
-                              title="Delete"
-                              className="btn-delete"
-                            />
+                          <td className="me-table__cell me-table__cell--actions" data-label="Actions" onClick={(e) => e.stopPropagation()}>
+                            <div className="me-actions">
+                              <Button
+                                variant="ghost"
+                                size="small"
+                                icon="fas fa-trash"
+                                onClick={(e) => openDeleteModal(e, expense)}
+                                title="Delete"
+                                className="me-actions__delete"
+                              />
+                            </div>
                           </td>
                         )}
                       </tr>
@@ -437,7 +455,7 @@ function MyExpenses({ user, setUser }) {
 
               {/* Pagination */}
               {totalPages > 1 && (
-                <div className="pagination">
+                <div className="me-pagination">
                   <Button
                     variant="secondary"
                     size="small"
@@ -448,8 +466,8 @@ function MyExpenses({ user, setUser }) {
                     Previous
                   </Button>
 
-                  <span className="pagination-info">
-                    Page {currentPage} of {totalPages}
+                  <span className="me-pagination__info">
+                    Page <strong>{currentPage}</strong> of <strong>{totalPages}</strong>
                   </span>
 
                   <Button
@@ -467,7 +485,7 @@ function MyExpenses({ user, setUser }) {
             </>
           )}
         </Card>
-      </div>
+      </main>
 
       {/* Delete Confirmation Modal */}
       <Modal
@@ -476,16 +494,17 @@ function MyExpenses({ user, setUser }) {
         title="Delete Expense"
         size="small"
       >
-        <div className="delete-confirmation">
-          <p>Are you sure you want to delete this expense?</p>
+        <div className="me-delete-modal">
+          <i className="fas fa-exclamation-triangle me-delete-modal__icon"></i>
+          <p className="me-delete-modal__message">Are you sure you want to delete this expense?</p>
           {expenseToDelete && (
-            <div className="expense-details">
+            <div className="me-delete-modal__summary">
               <strong>{expenseToDelete.description || 'No description'}</strong>
               <span>{formatCurrency(expenseToDelete.amount, expenseToDelete.currency)}</span>
             </div>
           )}
         </div>
-        <div className="modal-actions">
+        <div className="me-delete-modal__actions">
           <Button type="button" variant="secondary" onClick={() => setDeleteModalOpen(false)}>
             Cancel
           </Button>
