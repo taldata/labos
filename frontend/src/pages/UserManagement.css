@@ -34,7 +34,7 @@
   align-items: center;
   padding: 1rem 1.5rem;
   direction: ltr;
-  justify-content: flex-start;
+  justify-content: flex-start !important;
 }
 
 .search-box {
@@ -42,6 +42,7 @@
   align-items: center;
   min-width: 300px;
   gap: 0.5rem;
+  margin-right: auto;
 }
 
 .filter-group {
