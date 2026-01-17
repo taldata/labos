@@ -179,121 +179,188 @@ function ExpenseDetails({ user, setUser }) {
 
   return (
     <div className="expense-details-container">
-
       <div className="expense-details-content">
-        {/* Page Title Section */}
-        <div className="page-title-section">
-          <div>
-            <Button variant="ghost" icon="fas fa-arrow-left" onClick={() => navigate(-1)}>
+        {/* Enhanced Header Section */}
+        <div className="page-header">
+          <div className="header-top">
+            <Button variant="ghost" icon="fas fa-arrow-left" onClick={() => navigate(-1)} className="back-button">
               Back
             </Button>
-            <h1>Expense Details</h1>
-            <p className="subtitle">ID: #{expense.id}</p>
+            <Badge variant={getStatusVariant(expense.status)} className="status-badge-large">
+              <i className={`fas fa-${expense.status === 'approved' ? 'check-circle' : expense.status === 'rejected' ? 'times-circle' : expense.status === 'paid' ? 'money-check-alt' : 'clock'}`}></i>
+              {expense.status}
+            </Badge>
           </div>
-          <Badge variant={getStatusVariant(expense.status)}>{expense.status}</Badge>
+          <div className="header-content">
+            <div className="header-info">
+              <h1 className="page-title">Expense Report</h1>
+              <p className="expense-id">Reference: #{expense.id.toString().padStart(6, '0')}</p>
+            </div>
+          </div>
         </div>
-        {/* Amount Card */}
-        <Card className="amount-card">
-          <Card.Body>
-            <div className="amount-label">Total Amount</div>
-            <div className="amount-value">
-              {formatCurrency(expense.amount, expense.currency)}
+
+        {/* Modern Amount Card with Gradient */}
+        <div className="amount-card-modern">
+          <div className="amount-card-gradient"></div>
+          <div className="amount-card-content">
+            <div className="amount-section">
+              <div className="amount-label">Total Amount</div>
+              <div className="amount-value">
+                {formatCurrency(expense.amount, expense.currency)}
+              </div>
             </div>
-            <div className="amount-meta">
-              <span><i className="fas fa-calendar"></i> {formatDate(expense.date)}</span>
-              <span><i className="fas fa-clock"></i> Submitted {formatDate(expense.created_at)}</span>
+            <div className="amount-divider"></div>
+            <div className="amount-meta-section">
+              <div className="meta-item">
+                <i className="fas fa-calendar-alt"></i>
+                <div className="meta-content">
+                  <span className="meta-label">Expense Date</span>
+                  <span className="meta-value">{formatDate(expense.date)}</span>
+                </div>
+              </div>
+              <div className="meta-item">
+                <i className="fas fa-paper-plane"></i>
+                <div className="meta-content">
+                  <span className="meta-label">Submitted</span>
+                  <span className="meta-value">{formatDate(expense.created_at)}</span>
+                </div>
+              </div>
+              <div className="meta-item">
+                <i className="fas fa-user-circle"></i>
+                <div className="meta-content">
+                  <span className="meta-label">Submitted by</span>
+                  <span className="meta-value">{expense.submitter.name}</span>
+                </div>
+              </div>
             </div>
-          </Card.Body>
-        </Card>
+          </div>
+        </div>
 
-        {/* Details Grid */}
-        <div className="details-grid">
-          {/* Submitter Information */}
-          <Card className="detail-card">
-            <Card.Header>
-              <i className="fas fa-user"></i> Submitter
-            </Card.Header>
-            <Card.Body>
-              <div className="detail-row">
-                <span className="detail-label">Name:</span>
-                <span className="detail-value">{expense.submitter.name}</span>
-              </div>
-              <div className="detail-row">
-                <span className="detail-label">Email:</span>
-                <span className="detail-value">{expense.submitter.email}</span>
-              </div>
-              <div className="detail-row">
-                <span className="detail-label">Username:</span>
-                <span className="detail-value">{expense.submitter.username}</span>
-              </div>
-            </Card.Body>
-          </Card>
+        {/* Modern Details Section */}
+        <div className="details-section">
+          <h2 className="section-title">
+            <i className="fas fa-info-circle"></i>
+            Expense Information
+          </h2>
 
-          {/* Expense Information */}
-          <Card className="detail-card">
-            <Card.Header>
-              <i className="fas fa-info-circle"></i> Expense Information
-            </Card.Header>
-            <Card.Body>
-              <div className="detail-row">
-                <span className="detail-label">Type:</span>
-                <span className="detail-value">{expense.type || '-'}</span>
-              </div>
-              <div className="detail-row">
-                <span className="detail-label">Category:</span>
-                <span className="detail-value">
-                  {expense.category?.name || '-'}
-                  {expense.subcategory && ` / ${expense.subcategory.name}`}
-                </span>
-              </div>
-              <div className="detail-row">
-                <span className="detail-label">Payment Method:</span>
-                <span className="detail-value">{expense.payment_method || '-'}</span>
-              </div>
-              {expense.credit_card && (
-                <div className="detail-row">
-                  <span className="detail-label">Credit Card:</span>
-                  <span className="detail-value">
-                    **** {expense.credit_card.last_four_digits}
-                    {expense.credit_card.description && ` (${expense.credit_card.description})`}
-                  </span>
-                </div>
-              )}
-              {expense.payment_due_date && (
-                <div className="detail-row">
-                  <span className="detail-label">Payment Due:</span>
-                  <span className="detail-value">{expense.payment_due_date}</span>
-                </div>
-              )}
-            </Card.Body>
-          </Card>
-
-          {/* Supplier Information */}
-          {expense.supplier && (
-            <Card className="detail-card">
-              <Card.Header>
-                <i className="fas fa-building"></i> Supplier
-              </Card.Header>
+          <div className="details-grid-modern">
+            {/* Submitter Card */}
+            <Card className="info-card submitter-card" variant="elevated">
               <Card.Body>
-                <div className="detail-row">
-                  <span className="detail-label">Name:</span>
-                  <span className="detail-value">{expense.supplier.name}</span>
+                <div className="info-card-header">
+                  <div className="info-icon-wrapper submitter-icon">
+                    <i className="fas fa-user"></i>
+                  </div>
+                  <h3 className="info-card-title">Submitted By</h3>
                 </div>
-                {expense.supplier.email && (
-                  <div className="detail-row">
-                    <span className="detail-label">Email:</span>
-                    <span className="detail-value">{expense.supplier.email}</span>
+                <div className="info-card-content">
+                  <div className="info-item">
+                    <i className="fas fa-id-badge"></i>
+                    <span className="info-value">{expense.submitter.name}</span>
                   </div>
-                )}
-                {expense.supplier.phone && (
-                  <div className="detail-row">
-                    <span className="detail-label">Phone:</span>
-                    <span className="detail-value">{expense.supplier.phone}</span>
+                  <div className="info-item">
+                    <i className="fas fa-envelope"></i>
+                    <span className="info-value">{expense.submitter.email}</span>
                   </div>
-                )}
+                  <div className="info-item">
+                    <i className="fas fa-at"></i>
+                    <span className="info-value">{expense.submitter.username}</span>
+                  </div>
+                </div>
               </Card.Body>
             </Card>
-          )}
+
+            {/* Expense Details Card */}
+            <Card className="info-card expense-info-card" variant="elevated">
+              <Card.Body>
+                <div className="info-card-header">
+                  <div className="info-icon-wrapper expense-icon">
+                    <i className="fas fa-receipt"></i>
+                  </div>
+                  <h3 className="info-card-title">Expense Details</h3>
+                </div>
+                <div className="info-card-content">
+                  <div className="info-item">
+                    <i className="fas fa-tag"></i>
+                    <div className="info-value-group">
+                      <span className="info-label">Type</span>
+                      <span className="info-value">{expense.type || '-'}</span>
+                    </div>
+                  </div>
+                  <div className="info-item">
+                    <i className="fas fa-layer-group"></i>
+                    <div className="info-value-group">
+                      <span className="info-label">Category</span>
+                      <span className="info-value">
+                        {expense.category?.name || '-'}
+                        {expense.subcategory && ` / ${expense.subcategory.name}`}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="info-item">
+                    <i className="fas fa-credit-card"></i>
+                    <div className="info-value-group">
+                      <span className="info-label">Payment Method</span>
+                      <span className="info-value">{expense.payment_method || '-'}</span>
+                    </div>
+                  </div>
+                  {expense.credit_card && (
+                    <div className="info-item">
+                      <i className="fas fa-wallet"></i>
+                      <div className="info-value-group">
+                        <span className="info-label">Card</span>
+                        <span className="info-value">
+                          **** {expense.credit_card.last_four_digits}
+                          {expense.credit_card.description && ` (${expense.credit_card.description})`}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                  {expense.payment_due_date && (
+                    <div className="info-item">
+                      <i className="fas fa-calendar-check"></i>
+                      <div className="info-value-group">
+                        <span className="info-label">Payment Due</span>
+                        <span className="info-value">{expense.payment_due_date}</span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </Card.Body>
+            </Card>
+
+            {/* Supplier Card */}
+            {expense.supplier && (
+              <Card className="info-card supplier-card" variant="elevated">
+                <Card.Body>
+                  <div className="info-card-header">
+                    <div className="info-icon-wrapper supplier-icon">
+                      <i className="fas fa-building"></i>
+                    </div>
+                    <h3 className="info-card-title">Supplier Information</h3>
+                  </div>
+                  <div className="info-card-content">
+                    <div className="info-item">
+                      <i className="fas fa-store"></i>
+                      <span className="info-value">{expense.supplier.name}</span>
+                    </div>
+                    {expense.supplier.email && (
+                      <div className="info-item">
+                        <i className="fas fa-envelope"></i>
+                        <span className="info-value">{expense.supplier.email}</span>
+                      </div>
+                    )}
+                    {expense.supplier.phone && (
+                      <div className="info-item">
+                        <i className="fas fa-phone"></i>
+                        <span className="info-value">{expense.supplier.phone}</span>
+                      </div>
+                    )}
+                  </div>
+                </Card.Body>
+              </Card>
+            )}
+          </div>
         </div>
 
         {/* Budget Impact Widget */}
@@ -307,141 +374,178 @@ function ExpenseDetails({ user, setUser }) {
 
         {/* Description & Reason */}
         {(expense.description || expense.reason) && (
-          <Card className="description-card">
-            <Card.Header>
-              <i className="fas fa-align-left"></i> Description & Reason
-            </Card.Header>
-            <Card.Body>
-              {expense.description && (
-                <div className="description-section">
-                  <h4>Description</h4>
-                  <p>{expense.description}</p>
-                </div>
-              )}
-              {expense.reason && (
-                <div className="description-section">
-                  <h4>Business Reason</h4>
-                  <p>{expense.reason}</p>
-                </div>
-              )}
-            </Card.Body>
-          </Card>
+          <div className="description-section-wrapper">
+            <h2 className="section-title">
+              <i className="fas fa-align-left"></i>
+              Description & Justification
+            </h2>
+            <Card className="description-card-modern" variant="elevated">
+              <Card.Body>
+                {expense.description && (
+                  <div className="description-block">
+                    <div className="description-header">
+                      <i className="fas fa-file-alt"></i>
+                      <h4>Description</h4>
+                    </div>
+                    <p className="description-text">{expense.description}</p>
+                  </div>
+                )}
+                {expense.reason && (
+                  <div className="description-block">
+                    <div className="description-header">
+                      <i className="fas fa-lightbulb"></i>
+                      <h4>Business Justification</h4>
+                    </div>
+                    <p className="description-text">{expense.reason}</p>
+                  </div>
+                )}
+              </Card.Body>
+            </Card>
+          </div>
         )}
 
         {/* Attachments */}
         {(expense.invoice_filename || expense.receipt_filename || expense.quote_filename) && (
-          <Card className="attachments-card">
-            <Card.Header>
-              <i className="fas fa-paperclip"></i> Attachments
-            </Card.Header>
-            <Card.Body>
-              <div className="attachments-grid">
-                {expense.invoice_filename && (
-                  <div className="attachment-item">
-                    <FilePreviewButton
-                      fileUrl={`/download/${expense.invoice_filename}`}
-                      fileName={expense.invoice_filename}
-                      icon="fas fa-file-invoice"
-                      title="Click to preview invoice"
-                      className="attachment-icon-btn"
-                    />
-                    <div className="attachment-info">
-                      <span className="attachment-name">Invoice</span>
-                      <span className="attachment-filename">{expense.invoice_filename}</span>
+          <div className="attachments-section-wrapper">
+            <h2 className="section-title">
+              <i className="fas fa-paperclip"></i>
+              Attachments
+            </h2>
+            <div className="attachments-grid-modern">
+              {expense.invoice_filename && (
+                <Card className="attachment-card invoice-attachment" variant="elevated">
+                  <Card.Body>
+                    <div className="attachment-header">
+                      <div className="attachment-icon-circle invoice">
+                        <i className="fas fa-file-invoice"></i>
+                      </div>
+                      <div className="attachment-title-section">
+                        <h4 className="attachment-type">Invoice</h4>
+                        <p className="attachment-filename-small">{expense.invoice_filename}</p>
+                      </div>
                     </div>
                     <FilePreviewButton
                       fileUrl={`/download/${expense.invoice_filename}`}
                       fileName={expense.invoice_filename}
                       icon="fas fa-eye"
                       title="Preview invoice"
-                      className="attachment-preview-btn"
+                      className="attachment-preview-button"
                     >
+                      <i className="fas fa-eye"></i>
                       Preview
                     </FilePreviewButton>
-                  </div>
-                )}
-                {expense.receipt_filename && (
-                  <div className="attachment-item">
-                    <FilePreviewButton
-                      fileUrl={`/download/${expense.receipt_filename}`}
-                      fileName={expense.receipt_filename}
-                      icon="fas fa-receipt"
-                      title="Click to preview receipt"
-                      className="attachment-icon-btn"
-                    />
-                    <div className="attachment-info">
-                      <span className="attachment-name">Receipt</span>
-                      <span className="attachment-filename">{expense.receipt_filename}</span>
+                  </Card.Body>
+                </Card>
+              )}
+              {expense.receipt_filename && (
+                <Card className="attachment-card receipt-attachment" variant="elevated">
+                  <Card.Body>
+                    <div className="attachment-header">
+                      <div className="attachment-icon-circle receipt">
+                        <i className="fas fa-receipt"></i>
+                      </div>
+                      <div className="attachment-title-section">
+                        <h4 className="attachment-type">Receipt</h4>
+                        <p className="attachment-filename-small">{expense.receipt_filename}</p>
+                      </div>
                     </div>
                     <FilePreviewButton
                       fileUrl={`/download/${expense.receipt_filename}`}
                       fileName={expense.receipt_filename}
                       icon="fas fa-eye"
                       title="Preview receipt"
-                      className="attachment-preview-btn"
+                      className="attachment-preview-button"
                     >
+                      <i className="fas fa-eye"></i>
                       Preview
                     </FilePreviewButton>
-                  </div>
-                )}
-                {expense.quote_filename && (
-                  <div className="attachment-item">
-                    <FilePreviewButton
-                      fileUrl={`/download/${expense.quote_filename}`}
-                      fileName={expense.quote_filename}
-                      icon="fas fa-file-alt"
-                      title="Click to preview quote"
-                      className="attachment-icon-btn"
-                    />
-                    <div className="attachment-info">
-                      <span className="attachment-name">Quote</span>
-                      <span className="attachment-filename">{expense.quote_filename}</span>
+                  </Card.Body>
+                </Card>
+              )}
+              {expense.quote_filename && (
+                <Card className="attachment-card quote-attachment" variant="elevated">
+                  <Card.Body>
+                    <div className="attachment-header">
+                      <div className="attachment-icon-circle quote">
+                        <i className="fas fa-file-alt"></i>
+                      </div>
+                      <div className="attachment-title-section">
+                        <h4 className="attachment-type">Quote</h4>
+                        <p className="attachment-filename-small">{expense.quote_filename}</p>
+                      </div>
                     </div>
                     <FilePreviewButton
                       fileUrl={`/download/${expense.quote_filename}`}
                       fileName={expense.quote_filename}
                       icon="fas fa-eye"
                       title="Preview quote"
-                      className="attachment-preview-btn"
+                      className="attachment-preview-button"
                     >
+                      <i className="fas fa-eye"></i>
                       Preview
                     </FilePreviewButton>
-                  </div>
-                )}
-              </div>
-            </Card.Body>
-          </Card>
+                  </Card.Body>
+                </Card>
+              )}
+            </div>
+          </div>
         )}
 
         {/* Accounting Notes */}
         {expense.accounting_notes && (
-          <Card className="notes-card">
-            <Card.Header>
-              <i className="fas fa-sticky-note"></i> Accounting Notes
-            </Card.Header>
-            <Card.Body>
-              <p>{expense.accounting_notes}</p>
-            </Card.Body>
-          </Card>
+          <div className="notes-section-wrapper">
+            <h2 className="section-title">
+              <i className="fas fa-clipboard-list"></i>
+              Accounting Notes
+            </h2>
+            <Card className="notes-card-modern" variant="elevated">
+              <Card.Body>
+                <div className="notes-content">
+                  <i className="fas fa-sticky-note"></i>
+                  <p>{expense.accounting_notes}</p>
+                </div>
+              </Card.Body>
+            </Card>
+          </div>
         )}
 
         {/* Manager Actions */}
         {canManageExpense() && (
-          <Card className="actions-card">
-            <Card.Header>
-              <i className="fas fa-tasks"></i> Manager Actions
-            </Card.Header>
-            <Card.Body>
-              <div className="action-buttons">
-                <Button variant="success" icon="fas fa-check" onClick={() => openApprovalModal('approve')}>
-                  Approve Expense
-                </Button>
-                <Button variant="danger" icon="fas fa-times" onClick={() => openApprovalModal('reject')}>
-                  Reject Expense
-                </Button>
-              </div>
-            </Card.Body>
-          </Card>
+          <div className="actions-section-wrapper">
+            <Card className="actions-card-modern" variant="elevated">
+              <Card.Body>
+                <div className="actions-header">
+                  <div className="actions-icon-wrapper">
+                    <i className="fas fa-tasks"></i>
+                  </div>
+                  <div className="actions-text">
+                    <h3>Manager Actions Required</h3>
+                    <p>Review and approve or reject this expense</p>
+                  </div>
+                </div>
+                <div className="action-buttons-modern">
+                  <Button
+                    variant="success"
+                    icon="fas fa-check-circle"
+                    onClick={() => openApprovalModal('approve')}
+                    size="large"
+                    className="approve-button"
+                  >
+                    Approve Expense
+                  </Button>
+                  <Button
+                    variant="danger"
+                    icon="fas fa-times-circle"
+                    onClick={() => openApprovalModal('reject')}
+                    size="large"
+                    className="reject-button"
+                  >
+                    Reject Expense
+                  </Button>
+                </div>
+              </Card.Body>
+            </Card>
+          </div>
         )}
       </div>
 
