@@ -173,25 +173,26 @@
 
 .actions-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 1.5rem;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1rem;
 }
 
 .action-card .card-body {
   display: flex;
   align-items: center;
-  gap: 1.25rem;
+  gap: 1rem;
+  padding: 1rem !important;
 }
 
 .action-icon {
-  width: 50px;
-  height: 50px;
+  width: 40px;
+  height: 40px;
   border-radius: 0.5rem;
   display: flex;
   align-items: center;
   justify-content: center;
   color: white;
-  font-size: 1.5rem;
+  font-size: 1.2rem;
   flex-shrink: 0;
 }
 
@@ -211,14 +212,14 @@
 }
 
 .action-content h4 {
-  font-size: 1rem;
+  font-size: 0.95rem;
   color: var(--text-primary);
-  margin: 0 0 0.25rem;
+  margin: 0 0 0.15rem;
   font-weight: 600;
 }
 
 .action-content p {
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   color: var(--text-secondary);
   margin: 0;
 }
