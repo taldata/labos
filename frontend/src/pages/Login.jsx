@@ -102,12 +102,7 @@ function Login({ setUser }) {
             </Button>
           </div>
 
-          <div className="login-footer">
-            <a href="/" className="back-link">
-              <i className="fas fa-arrow-left"></i>
-              <span>Back to legacy version</span>
-            </a>
-          </div>
+
         </Card.Body>
       </Card>
 
