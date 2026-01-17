@@ -15,15 +15,19 @@ def get_budget_years():
     try:
         if not current_user.is_admin and not current_user.is_manager:
             return jsonify({'error': 'Not authorized'}), 403
-        
+
         years = BudgetYear.query.order_by(BudgetYear.year.desc()).all()
+
+        # Get the actual current year from system
+        current_year = datetime.now().year
+
         return jsonify({
             'years': [{
                 'id': y.id,
                 'year': y.year,
                 'name': y.name or str(y.year),
                 'is_active': y.is_active,
-                'is_current': y.is_current,
+                'is_current': y.year == current_year,  # Calculate based on actual current year
                 'created_at': y.created_at.isoformat() if y.created_at else None
             } for y in years]
         }), 200
