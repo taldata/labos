@@ -66,8 +66,9 @@ const DepartmentManager = ({ user, setUser }) => {
             const yearsData = response.data.years || [];
             setYears(yearsData);
             
-            // Select current year or first available
-            const currentYear = yearsData.find(y => y.is_current) || yearsData[0];
+            // Select year matching actual current calendar year, or fallback to is_current flag, or first available
+            const actualCurrentYear = new Date().getFullYear();
+            const currentYear = yearsData.find(y => y.year === actualCurrentYear) || yearsData.find(y => y.is_current) || yearsData[0];
             if (currentYear) {
                 setSelectedYear(currentYear);
             } else {
