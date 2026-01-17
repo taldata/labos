@@ -95,6 +95,7 @@ function SubmitExpense({ user, setUser }) {
   // OCR state
   const [ocrProcessing, setOcrProcessing] = useState(false)
   const [ocrData, setOcrData] = useState(null)
+  const [ocrDataLoading, setOcrDataLoading] = useState(false)
 
   // UI state
   const [loading, setLoading] = useState(false)
@@ -225,6 +226,13 @@ function SubmitExpense({ user, setUser }) {
             // Extract the actual OCR data from the response - data is inside extracted_data
             const ocrResult = data.extracted_data || data
             setOcrData(ocrResult)
+            
+            // Show loading state while data is being applied
+            setOcrDataLoading(true)
+            
+            // Small delay to show loading animation before populating form
+            await new Promise(resolve => setTimeout(resolve, 800))
+            
             // Auto-fill the form with extracted data
             if (ocrResult.amount) {
               setFormData(prev => ({
@@ -241,6 +249,10 @@ function SubmitExpense({ user, setUser }) {
               }))
               setDateError('')
             }
+            
+            // Hide loading state after data is applied
+            setOcrDataLoading(false)
+            
             if (ocrResult.amount || ocrResult.purchase_date) {
               showSuccess(`נתונים חולצו מה${documentLabels[name]} בהצלחה`)
             } else {
@@ -383,10 +395,16 @@ function SubmitExpense({ user, setUser }) {
               {ocrProcessing && (
                 <div className="ocr-processing" style={{ marginTop: '1rem', padding: '1rem', backgroundColor: '#f0f7ff', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                   <i className="fas fa-spinner fa-spin"></i>
-                  <span>מעבד את החשבונית וחולץ נתונים...</span>
+                  <span>מעבד את המסמך וחולץ נתונים...</span>
                 </div>
               )}
-              {ocrData && !ocrProcessing && (
+              {ocrDataLoading && !ocrProcessing && (
+                <div className="ocr-loading" style={{ marginTop: '1rem', padding: '1rem', backgroundColor: '#fff3e0', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <i className="fas fa-sync fa-spin" style={{ color: '#ff9800' }}></i>
+                  <span style={{ color: '#e65100' }}>טוען נתונים לטופס...</span>
+                </div>
+              )}
+              {ocrData && !ocrProcessing && !ocrDataLoading && (
                 <div className="ocr-result" style={{ marginTop: '1rem', padding: '1rem', backgroundColor: '#e8f5e9', borderRadius: '8px' }}>
                   <i className="fas fa-check-circle" style={{ color: '#4caf50', marginRight: '0.5rem' }}></i>
                   <span>נתונים חולצו בהצלחה: סכום {ocrData.amount} ₪</span>
