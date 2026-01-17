@@ -201,23 +201,8 @@ def login():
     if current_user.is_authenticated:
         return redirect(url_for('index'))
 
-    # Serve the modern React login page instead of the legacy template
-    frontend_dist = os.path.join(app.config['BASE_DIR'], 'frontend', 'dist')
-    
-    # In development, if dist doesn't exist, we can't serve it directly.
-    # However, since the user is running dev.sh, we mostly care about production/built-state behavior here.
-    # If dist is missing, we fallback to a helpful message.
-    if not os.path.exists(frontend_dist):
-        if os.getenv('FLASK_ENV') == 'development':
-            return redirect('http://localhost:3000/login')
-        else:
-            return "Modern login UI not built. Please run 'npm run build'.", 503
-
-    try:
-        return send_from_directory(frontend_dist, 'index.html')
-    except Exception as e:
-        logging.error(f"Error serving modern login: {str(e)}")
-        return f"Error loading login page: {str(e)}", 500
+    # Redirect to the modern app's login route to match React Router basename and Vite base
+    return redirect('/modern/login')
 
 @app.route('/auth/callback')
 def auth_callback():
