@@ -53,6 +53,11 @@
   width: auto !important;
 }
 
+.search-box .input-wrapper {
+  width: 100% !important;
+  flex: 1;
+}
+
 .filter-group {
   display: flex;
   gap: 0.75rem;

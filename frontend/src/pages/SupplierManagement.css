@@ -75,6 +75,11 @@
   min-width: 200px;
 }
 
+.search-box .input-wrapper {
+  width: 100% !important;
+  flex: 1;
+}
+
 .filter-label {
   color: #64748b;
   font-size: 0.95rem;
