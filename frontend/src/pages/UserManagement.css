@@ -44,7 +44,7 @@
 .search-box {
   display: flex;
   align-items: center;
-  min-width: 400px;
+  min-width: 600px;
   flex: 0 1 auto;
   gap: 0.5rem;
 }

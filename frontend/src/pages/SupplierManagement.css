@@ -65,7 +65,7 @@
 .search-box {
   display: flex;
   align-items: center;
-  min-width: 400px;
+  min-width: 600px;
   flex: 0 1 auto;
   gap: 1rem;
 }
@@ -73,6 +73,54 @@
 .filters-section .input-wrapper {
   width: auto !important;
   min-width: 200px;
+}
+
+.filter-label {
+  color: #64748b;
+  font-size: 0.95rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.filter-label i {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  box-shadow: 0 4px 12px -2px rgba(102, 126, 234, 0.4);
+  font-size: 0.9rem;
+}
+
+.filter-buttons {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.filter-buttons button {
+  border-radius: 20px !important;
+  padding: 0.5rem 1.25rem !important;
+  font-weight: 500 !important;
+  transition: all 0.3s ease !important;
+}
+
+.filter-buttons button[class*="primary"] {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+  box-shadow: 0 4px 12px -2px rgba(102, 126, 234, 0.4);
+}
+
+.filter-buttons button:not([class*="primary"]) {
+  background: rgba(102, 126, 234, 0.08) !important;
+  color: #667eea !important;
+}
+
+.filter-buttons button:hover:not([class*="primary"]) {
+  background: rgba(102, 126, 234, 0.15) !important;
 }
 
 /* Suppliers Grid */

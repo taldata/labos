@@ -218,11 +218,32 @@ function SupplierManagement({ user, setUser }) {
                 icon="fas fa-search"
               />
             </div>
-            <Select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
-              <option value="all">All Status</option>
-              <option value="active">Active</option>
-              <option value="inactive">Inactive</option>
-            </Select>
+            <div className="filter-label">
+              <i className="fas fa-filter"></i> Filter by status:
+            </div>
+            <div className="filter-buttons">
+              <Button
+                variant={statusFilter === 'all' ? 'primary' : 'ghost'}
+                size="small"
+                onClick={() => setStatusFilter('all')}
+              >
+                All
+              </Button>
+              <Button
+                variant={statusFilter === 'active' ? 'primary' : 'ghost'}
+                size="small"
+                onClick={() => setStatusFilter('active')}
+              >
+                Active
+              </Button>
+              <Button
+                variant={statusFilter === 'inactive' ? 'primary' : 'ghost'}
+                size="small"
+                onClick={() => setStatusFilter('inactive')}
+              >
+                Inactive
+              </Button>
+            </div>
           </Card.Body>
         </Card>
 
