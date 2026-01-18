@@ -68,11 +68,16 @@
 
 .filters-section .card-body {
   display: flex;
+  flex-wrap: wrap;
   gap: 1.5rem;
   align-items: center;
   padding: 1.25rem 1.75rem;
   justify-content: flex-start;
   direction: ltr;
+}
+
+.filters-section .input-wrapper {
+  width: auto !important;
 }
 
 .filter-label {

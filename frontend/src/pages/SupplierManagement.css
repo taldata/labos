@@ -54,23 +54,25 @@
 
 .filters-section .card-body {
   display: flex;
+  flex-wrap: wrap;
   gap: 1.5rem;
   align-items: center;
   padding: 1.5rem 2rem;
   direction: ltr;
-  flex-wrap: wrap;
-}
-
-.filters-section select {
-  min-width: 200px;
-  width: auto;
+  justify-content: flex-start !important;
 }
 
 .search-box {
   display: flex;
   align-items: center;
   min-width: 400px;
+  flex: 0 1 auto;
   gap: 1rem;
+}
+
+.filters-section .input-wrapper {
+  width: auto !important;
+  min-width: 200px;
 }
 
 /* Suppliers Grid */
