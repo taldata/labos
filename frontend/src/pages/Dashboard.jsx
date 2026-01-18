@@ -84,15 +84,46 @@ function Dashboard({ user, setUser }) {
     return `${day}/${month}/${year}`
   }
 
+  const getGreeting = () => {
+    const hour = new Date().getHours()
+    if (hour < 12) return 'Good morning'
+    if (hour < 17) return 'Good afternoon'
+    return 'Good evening'
+  }
+
+  const getCurrentDate = () => {
+    return new Date().toLocaleDateString('en-US', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    })
+  }
+
   return (
     <div className="dashboard-container">
 
       <main className="dashboard-main">
-        <div className="welcome-section">
-          <h2>Welcome back, {user?.first_name || user?.username || user?.email?.split('@')[0] || 'User'}!</h2>
-          <p className="welcome-text">
-            Here's your expense overview for this month
-          </p>
+        <div className="welcome-banner">
+          <div className="welcome-banner-content">
+            <div className="welcome-text-container">
+              <span className="welcome-date">{getCurrentDate()}</span>
+              <h2 className="welcome-greeting">
+                {getGreeting()}, <span className="welcome-name">{user?.first_name || user?.username || user?.email?.split('@')[0] || 'User'}</span>!
+              </h2>
+              <p className="welcome-subtitle">
+                Here's your expense overview for this month
+              </p>
+            </div>
+            <div className="welcome-decoration">
+              <div className="welcome-icon-container">
+                <i className="fas fa-chart-pie"></i>
+              </div>
+              <div className="welcome-ring welcome-ring-1"></div>
+              <div className="welcome-ring welcome-ring-2"></div>
+            </div>
+          </div>
+          <div className="welcome-wave"></div>
         </div>
 
         {loading ? (

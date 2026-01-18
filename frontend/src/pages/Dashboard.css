@@ -70,19 +70,196 @@
   margin: 0 auto;
 }
 
-.welcome-section {
+/* Welcome Banner - Premium Design */
+.welcome-banner {
+  position: relative;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+  border-radius: 1.25rem;
+  padding: 2rem 2.5rem;
   margin-bottom: 2rem;
+  overflow: hidden;
+  box-shadow:
+    0 10px 40px rgba(102, 126, 234, 0.3),
+    0 4px 12px rgba(118, 75, 162, 0.2);
+  animation: welcomeFadeIn 0.6s ease-out;
 }
 
-.welcome-section h2 {
-  font-size: 2rem;
+@keyframes welcomeFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.welcome-banner::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background:
+    radial-gradient(circle at 20% 80%, rgba(255, 255, 255, 0.15) 0%, transparent 50%),
+    radial-gradient(circle at 80% 20%, rgba(255, 255, 255, 0.1) 0%, transparent 40%);
+  pointer-events: none;
+}
+
+.welcome-banner-content {
+  position: relative;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  z-index: 2;
+}
+
+.welcome-text-container {
+  flex: 1;
+}
+
+.welcome-date {
+  display: inline-block;
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.85);
+  font-weight: 500;
   margin-bottom: 0.5rem;
-  color: var(--text-primary);
+  padding: 0.35rem 0.85rem;
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(10px);
+  border-radius: 2rem;
+  border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
-.welcome-text {
-  color: var(--text-secondary);
+.welcome-greeting {
+  font-size: 2rem;
+  font-weight: 700;
+  color: white;
+  margin: 0.5rem 0;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.15);
+  letter-spacing: -0.02em;
+}
+
+.welcome-name {
+  background: linear-gradient(90deg, #fff 0%, #e0e7ff 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.welcome-subtitle {
   font-size: 1.1rem;
+  color: rgba(255, 255, 255, 0.9);
+  margin: 0;
+  font-weight: 400;
+}
+
+/* Welcome Decoration */
+.welcome-decoration {
+  position: relative;
+  width: 100px;
+  height: 100px;
+  flex-shrink: 0;
+  margin-left: 2rem;
+}
+
+.welcome-icon-container {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 60px;
+  height: 60px;
+  background: rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(10px);
+  border-radius: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  z-index: 2;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+}
+
+.welcome-icon-container i {
+  font-size: 1.75rem;
+  color: white;
+}
+
+.welcome-ring {
+  position: absolute;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+}
+
+.welcome-ring-1 {
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  animation: welcomeRingPulse 3s ease-in-out infinite;
+}
+
+.welcome-ring-2 {
+  top: -15px;
+  left: -15px;
+  right: -15px;
+  bottom: -15px;
+  animation: welcomeRingPulse 3s ease-in-out infinite 0.5s;
+  opacity: 0.5;
+}
+
+@keyframes welcomeRingPulse {
+
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.6;
+  }
+
+  50% {
+    transform: scale(1.05);
+    opacity: 0.3;
+  }
+}
+
+/* Welcome Wave */
+.welcome-wave {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 40px;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 120' preserveAspectRatio='none'%3E%3Cpath d='M321.39,56.44c58-10.79,114.16-30.13,172-41.86,82.39-16.72,168.19-17.73,250.45-.39C823.78,31,906.67,72,985.66,92.83c70.05,18.48,146.53,26.09,214.34,3V120H0V95.8C59.71,87.05,121.43,69.32,184.09,60.65,242.12,52.88,299.01,54.55,321.39,56.44Z' fill='rgba(255,255,255,0.08)'/%3E%3C/svg%3E");
+  background-size: cover;
+  z-index: 1;
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+  .welcome-banner {
+    padding: 1.5rem;
+  }
+
+  .welcome-banner-content {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .welcome-greeting {
+    font-size: 1.5rem;
+  }
+
+  .welcome-subtitle {
+    font-size: 1rem;
+  }
+
+  .welcome-decoration {
+    display: none;
+  }
 }
 
 .stats-grid {
@@ -196,16 +373,45 @@
   flex-shrink: 0;
 }
 
-.action-icon-submit { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
-.action-icon-list { background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%); }
-.action-icon-reports { background: linear-gradient(135deg, #10b981 0%, #059669 100%); }
-.action-icon-approvals { background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); }
-.action-icon-org { background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%); }
-.action-icon-users { background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%); }
-.action-icon-analytics { background: linear-gradient(135deg, #ec4899 0%, #db2777 100%); }
-.action-icon-suppliers { background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%); }
-.action-icon-cards { background: linear-gradient(135deg, #14b8a6 0%, #0d9488 100%); }
-.action-icon-history { background: linear-gradient(135deg, #f97316 0%, #ea580c 100%); }
+.action-icon-submit {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.action-icon-list {
+  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+}
+
+.action-icon-reports {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+}
+
+.action-icon-approvals {
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+}
+
+.action-icon-org {
+  background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+}
+
+.action-icon-users {
+  background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%);
+}
+
+.action-icon-analytics {
+  background: linear-gradient(135deg, #ec4899 0%, #db2777 100%);
+}
+
+.action-icon-suppliers {
+  background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+}
+
+.action-icon-cards {
+  background: linear-gradient(135deg, #14b8a6 0%, #0d9488 100%);
+}
+
+.action-icon-history {
+  background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+}
 
 .action-content {
   flex: 1;
