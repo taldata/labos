@@ -11,27 +11,27 @@
   --eh-warning: #f59e0b;
   --eh-danger: #ef4444;
   --eh-info: #3b82f6;
-  
+
   --eh-text-primary: #1e293b;
   --eh-text-secondary: #64748b;
   --eh-text-muted: #94a3b8;
-  
+
   --eh-bg-primary: #f8fafc;
   --eh-bg-secondary: #f1f5f9;
   --eh-bg-card: #ffffff;
-  
+
   --eh-border: #e2e8f0;
   --eh-border-light: #f1f5f9;
-  
+
   --eh-radius-sm: 8px;
   --eh-radius-md: 12px;
   --eh-radius-lg: 16px;
   --eh-radius-xl: 20px;
-  
+
   --eh-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
   --eh-shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
   --eh-shadow-lg: 0 10px 30px -10px rgba(0, 0, 0, 0.08);
-  
+
   --eh-transition: 0.2s ease;
 }
 
@@ -238,49 +238,61 @@
 
 /* Column Widths */
 .eh-table__header--date,
-.eh-table__cell--date { width: 100px; }
+.eh-table__cell--date {
+  width: 130px;
+}
 
 .eh-table__header--employee,
-.eh-table__cell--employee { width: 180px; }
+.eh-table__cell--employee {
+  width: 180px;
+}
 
 .eh-table__header--department,
-.eh-table__cell--department { width: 120px; }
+.eh-table__cell--department {
+  width: 120px;
+}
 
 .eh-table__header--description,
-.eh-table__cell--description { width: 240px; }
+.eh-table__cell--description {
+  width: 240px;
+}
 
 .eh-table__header--category,
-.eh-table__cell--category { width: 150px; }
+.eh-table__cell--category {
+  width: 150px;
+}
 
 .eh-table__header--supplier,
-.eh-table__cell--supplier { width: 140px; }
+.eh-table__cell--supplier {
+  width: 140px;
+}
 
 .eh-table__header--amount,
-.eh-table__cell--amount { 
+.eh-table__cell--amount {
   width: 110px;
   text-align: right !important;
 }
 
 .eh-table__header--status,
-.eh-table__cell--status { 
+.eh-table__cell--status {
   width: 100px;
   text-align: center !important;
 }
 
 .eh-table__header--payment,
-.eh-table__cell--payment { 
+.eh-table__cell--payment {
   width: 100px;
   text-align: center !important;
 }
 
 .eh-table__header--files,
-.eh-table__cell--files { 
+.eh-table__cell--files {
   width: 90px;
   text-align: center !important;
 }
 
 .eh-table__header--actions,
-.eh-table__cell--actions { 
+.eh-table__cell--actions {
   width: 150px;
   text-align: center !important;
 }
@@ -478,8 +490,13 @@
   font-size: 0.95rem;
 }
 
-.eh-edit-form__summary p:first-child { margin-top: 0; }
-.eh-edit-form__summary p:last-child { margin-bottom: 0; }
+.eh-edit-form__summary p:first-child {
+  margin-top: 0;
+}
+
+.eh-edit-form__summary p:last-child {
+  margin-bottom: 0;
+}
 
 .eh-edit-form__summary strong {
   color: var(--eh-text-primary);
@@ -697,6 +714,7 @@
     opacity: 0;
     transform: translateY(-20px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -707,6 +725,7 @@
   from {
     opacity: 0;
   }
+
   to {
     opacity: 1;
   }
