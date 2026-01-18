@@ -124,61 +124,109 @@
   margin-right: auto;
 }
 
-.budget-info {
+/* New Stats Design */
+.stats-container {
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+  margin-right: 2rem;
+  padding-right: 2rem;
+  border-right: 1px solid #e2e8f0;
+}
+
+.stat-item {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
-  margin-right: 1rem;
+  gap: 0.25rem;
 }
 
-.dept-budget {
-  font-size: 0.9rem;
-  font-weight: 600;
+.stat-label {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
   color: #64748b;
-  background: linear-gradient(135deg, #e0e7ff 0%, #ddd6fe 100%);
-  padding: 0.4rem 1rem;
-  border-radius: 2rem;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.15);
-}
-
-.dept-remaining {
-  font-size: 0.9rem;
   font-weight: 600;
-  color: #166534;
-  background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%);
-  padding: 0.4rem 1rem;
-  border-radius: 2rem;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  box-shadow: 0 2px 8px rgba(22, 163, 74, 0.15);
 }
 
-.dept-spent {
-  font-size: 0.9rem;
-  font-weight: 600;
-  color: #475569;
-  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
-  padding: 0.4rem 1rem;
-  border-radius: 2rem;
+.stat-value {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #1e293b;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
   display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  box-shadow: 0 2px 8px rgba(251, 191, 36, 0.15);
-  transition: all 0.3s ease;
+  align-items: baseline;
+  gap: 0.25rem;
 }
 
-.dept-spent.clickable {
+.stat-currency {
+  font-size: 0.85rem;
+  color: #94a3b8;
+  font-weight: 500;
+}
+
+/* Status variants for values */
+.stat-value.positive {
+  color: #059669;
+}
+
+.stat-value.neutral {
+  color: #1e293b;
+}
+
+.stat-item.actionable {
   cursor: pointer;
+  transition: all 0.2s ease;
+  padding: 0.5rem 0.75rem;
+  margin: -0.5rem -0.75rem;
+  border-radius: 0.5rem;
 }
 
-.dept-spent.clickable:hover {
-  background: linear-gradient(135deg, #fde047 0%, #facc15 100%);
-  box-shadow: 0 4px 12px rgba(251, 191, 36, 0.25);
-  transform: translateY(-2px);
+.stat-item.actionable:hover {
+  background-color: #f1f5f9;
+}
+
+.stat-item.actionable .stat-value {
+  color: #3b82f6;
+  text-decoration-line: underline;
+  text-decoration-style: dotted;
+  text-underline-offset: 4px;
+}
+
+.stat-item.actionable:hover .stat-value {
+  color: #2563eb;
+}
+
+/* Responsive adjustments */
+@media (max-width: 1024px) {
+  .stats-container {
+    margin-right: 1rem;
+    padding-right: 1rem;
+    gap: 1.5rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .dept-info {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .stats-container {
+    margin-top: 1rem;
+    margin-right: 0;
+    padding-right: 0;
+    border-right: none;
+    border-top: 1px solid #e2e8f0;
+    padding-top: 1rem;
+    width: 100%;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+
+  .dept-name {
+    margin-bottom: 0.5rem;
+  }
 }
 
 .budget-progress {
