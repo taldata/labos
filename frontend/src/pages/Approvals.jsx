@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Card, Button, Badge, Modal, Skeleton, EmptyState, Textarea, useToast } from '../components/ui'
+import { Card, Button, Badge, Modal, Skeleton, EmptyState, Textarea, useToast, PageHeader } from '../components/ui'
 import BudgetImpactWidget from '../components/BudgetImpactWidget'
 import logger from '../utils/logger'
 import './Approvals.css'
@@ -154,15 +154,17 @@ function Approvals({ user, setUser }) {
     <div className="approvals-container">
 
       <div className="approvals-content">
-        <div className="page-title-section">
-          <div>
-            <h1>Pending Approvals</h1>
-            <p className="subtitle">{expenses.length} expenses awaiting approval</p>
-          </div>
-          <Button variant="secondary" icon="fas fa-sync-alt" onClick={fetchPendingApprovals} disabled={loading}>
-            Refresh
-          </Button>
-        </div>
+        <PageHeader
+          title="Pending Approvals"
+          subtitle={`${expenses.length} expenses awaiting approval`}
+          icon="fas fa-clipboard-check"
+          variant="orange"
+          actions={
+            <Button variant="secondary" icon="fas fa-sync-alt" onClick={fetchPendingApprovals} disabled={loading}>
+              Refresh
+            </Button>
+          }
+        />
 
         {/* Expenses List */}
         <div className="approvals-list">

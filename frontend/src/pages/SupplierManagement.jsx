@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Card, Button, Input, Select, Textarea, Modal, Badge, Skeleton, useToast } from '../components/ui'
+import { Card, Button, Input, Select, Textarea, Modal, Badge, Skeleton, useToast, PageHeader } from '../components/ui'
 import { useScrollToItem } from '../hooks/useScrollToItem'
 import './SupplierManagement.css'
 
@@ -195,15 +195,17 @@ function SupplierManagement({ user, setUser }) {
     <div className="supplier-management-container">
 
       <main className="supplier-management-main">
-        <div className="page-header-section">
-          <div>
-            <h1>Supplier Management</h1>
-            <p className="subtitle">Manage vendors and suppliers</p>
-          </div>
-          <Button variant="primary" icon="fas fa-plus" onClick={() => openModal('create')}>
-            Add Supplier
-          </Button>
-        </div>
+        <PageHeader
+          title="Supplier Management"
+          subtitle="Manage vendors and suppliers"
+          icon="fas fa-building"
+          variant="purple"
+          actions={
+            <Button variant="primary" icon="fas fa-plus" onClick={() => openModal('create')}>
+              Add Supplier
+            </Button>
+          }
+        />
 
         {/* Filters */}
         <Card className="filters-section">

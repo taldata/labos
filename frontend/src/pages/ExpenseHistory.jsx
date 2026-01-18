@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { Card, Button, Badge, Input, Select, TomSelectInput, Skeleton, EmptyState, Modal, useToast, FilePreviewButton } from '../components/ui'
+import { Card, Button, Badge, Input, Select, TomSelectInput, Skeleton, EmptyState, Modal, useToast, FilePreviewButton, PageHeader } from '../components/ui'
 import MoveExpenseToYearModal from '../components/MoveExpenseToYearModal'
 import logger from '../utils/logger'
 import './ExpenseHistory.css'
@@ -229,14 +229,12 @@ function ExpenseHistoryHeader({ totalExpenses, filters }) {
   }
 
   return (
-    <header className="eh-header">
-      <div className="eh-header__content">
-        <h1 className="eh-header__title">Expense History</h1>
-        <p className="eh-header__subtitle">
-          <span className="eh-header__count">{totalExpenses.toLocaleString()}</span> total expenses
-        </p>
-      </div>
-      <div className="eh-header__actions">
+    <PageHeader
+      title="Expense History"
+      subtitle={`${totalExpenses.toLocaleString()} total expenses`}
+      icon="fas fa-history"
+      variant="blue"
+      actions={
         <Button
           variant="secondary"
           icon="fas fa-download"
@@ -244,8 +242,8 @@ function ExpenseHistoryHeader({ totalExpenses, filters }) {
         >
           Export CSV
         </Button>
-      </div>
-    </header>
+      }
+    />
   )
 }
 

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Card, Button, Input, Select, Modal, Badge, Skeleton, useToast } from '../components/ui'
+import { Card, Button, Input, Select, Modal, Badge, Skeleton, useToast, PageHeader } from '../components/ui'
 import { useScrollToItem } from '../hooks/useScrollToItem'
 import './CreditCardManagement.css'
 
@@ -159,15 +159,17 @@ function CreditCardManagement({ user, setUser }) {
     <div className="credit-card-management-container">
 
       <main className="credit-card-management-main">
-        <div className="page-header-section">
-          <div>
-            <h1>Credit Card Management</h1>
-            <p className="subtitle">Manage company credit cards</p>
-          </div>
-          <Button variant="primary" icon="fas fa-plus" onClick={() => openModal('create')}>
-            Add Card
-          </Button>
-        </div>
+        <PageHeader
+          title="Credit Card Management"
+          subtitle="Manage company credit cards"
+          icon="fas fa-credit-card"
+          variant="green"
+          actions={
+            <Button variant="primary" icon="fas fa-plus" onClick={() => openModal('create')}>
+              Add Card
+            </Button>
+          }
+        />
 
         {/* Filters */}
         <Card className="filters-section">

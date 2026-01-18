@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Card, Button, Input, Select, SearchableSelect, TomSelectInput, Textarea, FileUpload, useToast } from '../components/ui'
+import { Card, Button, Input, Select, SearchableSelect, TomSelectInput, Textarea, FileUpload, useToast, PageHeader } from '../components/ui'
 import logger from '../utils/logger'
 import './SubmitExpense.css'
 
@@ -226,13 +226,13 @@ function SubmitExpense({ user, setUser }) {
             // Extract the actual OCR data from the response - data is inside extracted_data
             const ocrResult = data.extracted_data || data
             setOcrData(ocrResult)
-            
+
             // Show loading state while data is being applied
             setOcrDataLoading(true)
-            
+
             // Small delay to show loading animation before populating form
             await new Promise(resolve => setTimeout(resolve, 800))
-            
+
             // Auto-fill the form with extracted data
             if (ocrResult.amount) {
               setFormData(prev => ({
@@ -249,10 +249,10 @@ function SubmitExpense({ user, setUser }) {
               }))
               setDateError('')
             }
-            
+
             // Hide loading state after data is applied
             setOcrDataLoading(false)
-            
+
             if (ocrResult.amount || ocrResult.purchase_date) {
               showSuccess(`Data extracted from ${documentLabels[name]} successfully`)
             } else {
@@ -346,16 +346,18 @@ function SubmitExpense({ user, setUser }) {
     <div className="submit-expense-container">
 
       <div className="submit-expense-content">
-        {/* Page Title Section */}
-        <div className="page-title-section">
-          <div>
-            <Button variant="ghost" icon="fas fa-arrow-left" onClick={() => navigate('/dashboard')}>
+        {/* Page Header */}
+        <PageHeader
+          title="Submit New Expense"
+          subtitle="Fill in the details to submit an expense for approval"
+          icon="fas fa-plus-circle"
+          variant="purple"
+          actions={
+            <Button variant="ghost" icon="fas fa-arrow-left" onClick={() => navigate('/dashboard')} style={{ color: 'white' }}>
               Back
             </Button>
-            <h1>Submit New Expense</h1>
-            <p className="subtitle">Fill in the details to submit an expense for approval</p>
-          </div>
-        </div>
+          }
+        />
 
         <form onSubmit={handleSubmit} className="expense-form">
           {/* File Uploads - First Section */}

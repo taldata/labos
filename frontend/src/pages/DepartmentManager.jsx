@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { Card, Button, Input, Select, Modal, Skeleton, useToast } from '../components/ui';
+import { Card, Button, Input, Select, Modal, Skeleton, useToast, PageHeader } from '../components/ui';
 import { useScrollToItem } from '../hooks/useScrollToItem';
 import './DepartmentManager.css';
 
@@ -280,39 +280,43 @@ const DepartmentManager = ({ user, setUser }) => {
                 </div>
             ) : (
                 <main className="department-manager">
-                    <div className="manager-header">
-                        <h1>Organization Structure</h1>
-                        <div className="header-actions" style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-                            {/* Year Selector */}
-                            <div className="year-selector" style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                                <label style={{ fontWeight: 500, color: '#4a5568' }}>שנת תקציב:</label>
-                                <Select
-                                    value={selectedYear?.id || ''}
-                                    onChange={(e) => {
-                                        const yearObj = years.find(y => y.id === parseInt(e.target.value));
-                                        setSelectedYear(yearObj);
-                                    }}
-                                    style={{ minWidth: '120px' }}
-                                >
-                                    {years.map(y => (
-                                        <option key={y.id} value={y.id}>
-                                            {y.name} {y.is_current ? '(נוכחית)' : ''}
-                                        </option>
-                                    ))}
-                                </Select>
-                                <Button
-                                    variant="ghost"
-                                    size="small"
-                                    icon="fas fa-calendar-plus"
-                                    onClick={() => openModal('year', 'create')}
-                                    title="הוסף שנה חדשה"
-                                />
+                    <PageHeader
+                        title="Organization Structure"
+                        subtitle="Manage departments, categories, and budgets"
+                        icon="fas fa-sitemap"
+                        variant="purple"
+                        actions={
+                            <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                                <div className="year-selector" style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                                    <label style={{ fontWeight: 500, color: 'rgba(255,255,255,0.9)' }}>שנת תקציב:</label>
+                                    <Select
+                                        value={selectedYear?.id || ''}
+                                        onChange={(e) => {
+                                            const yearObj = years.find(y => y.id === parseInt(e.target.value));
+                                            setSelectedYear(yearObj);
+                                        }}
+                                        style={{ minWidth: '120px' }}
+                                    >
+                                        {years.map(y => (
+                                            <option key={y.id} value={y.id}>
+                                                {y.name} {y.is_current ? '(נוכחית)' : ''}
+                                            </option>
+                                        ))}
+                                    </Select>
+                                    <Button
+                                        variant="ghost"
+                                        size="small"
+                                        icon="fas fa-calendar-plus"
+                                        onClick={() => openModal('year', 'create')}
+                                        title="הוסף שנה חדשה"
+                                    />
+                                </div>
+                                <Button variant="secondary" icon="fas fa-plus" onClick={() => openModal('department', 'create')}>
+                                    Add Department
+                                </Button>
                             </div>
-                            <Button variant="primary" icon="fas fa-plus" onClick={() => openModal('department', 'create')}>
-                                Add Department
-                            </Button>
-                        </div>
-                    </div>
+                        }
+                    />
 
                     {/* Search Bar */}
                     <div className="search-container">

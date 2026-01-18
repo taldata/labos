@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Card, Button, Input, Select, TomSelectInput, Modal, Badge, Skeleton, useToast } from '../components/ui'
+import { Card, Button, Input, Select, TomSelectInput, Modal, Badge, Skeleton, useToast, PageHeader } from '../components/ui'
 import { useScrollToItem } from '../hooks/useScrollToItem'
 import logger from '../utils/logger'
 import './UserManagement.css'
@@ -245,12 +245,12 @@ function UserManagement({ user, setUser }) {
     <div className="user-management-container">
 
       <main className="user-management-main">
-        <div className="page-header-section">
-          <div>
-            <h1>User Management</h1>
-            <p className="subtitle">Manage user accounts and permissions</p>
-          </div>
-        </div>
+        <PageHeader
+          title="User Management"
+          subtitle="Manage user accounts and permissions"
+          icon="fas fa-users"
+          variant="teal"
+        />
 
         {/* Filters */}
         <Card className="filters-section">
@@ -306,13 +306,13 @@ function UserManagement({ user, setUser }) {
                         <div className="user-cell">
                           <div className="user-avatar" style={u.profile_pic ? { padding: 0, overflow: 'hidden' } : {}}>
                             {u.profile_pic ? (
-                                <img 
-                                src={u.profile_pic} 
-                                alt={`${u.first_name} ${u.last_name}`} 
+                              <img
+                                src={u.profile_pic}
+                                alt={`${u.first_name} ${u.last_name}`}
                                 style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                                />
+                              />
                             ) : (
-                                (u.first_name?.[0] || u.username[0]).toUpperCase()
+                              (u.first_name?.[0] || u.username[0]).toUpperCase()
                             )}
                           </div>
                           <div className="user-details-info">

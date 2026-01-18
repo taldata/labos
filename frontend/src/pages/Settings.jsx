@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Card, Button, Input, Badge, useToast } from '../components/ui'
+import { Card, Button, Input, Badge, useToast, PageHeader } from '../components/ui'
 import './Settings.css'
 
 function Settings({ user, setUser }) {
@@ -129,10 +129,12 @@ function Settings({ user, setUser }) {
     <div className="settings-container">
 
       <main className="settings-main">
-        <div className="page-header">
-          <h1>Settings</h1>
-          <p className="subtitle">Manage your account settings and preferences</p>
-        </div>
+        <PageHeader
+          title="Settings"
+          subtitle="Manage your account settings and preferences"
+          icon="fas fa-cog"
+          variant="teal"
+        />
 
         <div className="settings-grid">
           {/* Profile Section */}

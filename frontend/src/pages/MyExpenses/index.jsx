@@ -1,7 +1,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
-import { Button, Modal, useToast } from '../../components/ui'
+import { Button, Modal, useToast, PageHeader } from '../../components/ui'
 import { useScrollToItem } from '../../hooks/useScrollToItem'
 import logger from '../../utils/logger'
 import ExpenseStats from './components/ExpenseStats'
@@ -13,13 +13,13 @@ function MyExpenses({ user, setUser }) {
   const navigate = useNavigate()
   const location = useLocation()
   const { success, error: showError } = useToast()
-  
+
   // Data State
   const [expenses, setExpenses] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [categories, setCategories] = useState([])
-  
+
   // Pagination State
   const [currentPage, setCurrentPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
@@ -174,10 +174,10 @@ function MyExpenses({ user, setUser }) {
   }
 
   const activeFilterCount = [
-    filters.status, 
-    filters.category_id, 
-    filters.search, 
-    filters.start_date, 
+    filters.status,
+    filters.category_id,
+    filters.search,
+    filters.start_date,
     filters.end_date
   ].filter(Boolean).length
 
@@ -190,28 +190,29 @@ function MyExpenses({ user, setUser }) {
   return (
     <div className="me-container">
       {/* Header */}
-      <header className="me-header">
-        <div className="me-header__title">
-          <h1>My Expenses</h1>
-          <p className="me-header__subtitle">Manage and track your expense submissions</p>
-        </div>
-        <Button 
-            variant="primary" 
-            icon="fas fa-plus" 
+      <PageHeader
+        title="My Expenses"
+        subtitle="Manage and track your expense submissions"
+        icon="fas fa-list"
+        variant="blue"
+        actions={
+          <Button
+            variant="primary"
+            icon="fas fa-plus"
             onClick={() => navigate('/submit-expense')}
-            className="shadow-lg hover:shadow-xl transition-all"
-        >
-          New Expense
-        </Button>
-      </header>
+          >
+            New Expense
+          </Button>
+        }
+      />
 
       {/* Stats */}
       <ExpenseStats totalExpenses={totalExpenses} loading={loading} />
 
       {/* Filters */}
-      <ExpenseFilters 
-        filters={filters} 
-        setFilters={setFilters} 
+      <ExpenseFilters
+        filters={filters}
+        setFilters={setFilters}
         categories={categories}
         onClearFilters={handleClearFilters}
         isOpen={showFilters}
@@ -220,7 +221,7 @@ function MyExpenses({ user, setUser }) {
       />
 
       {/* Main List */}
-      <ExpenseList 
+      <ExpenseList
         expenses={expenses}
         loading={loading}
         error={error}
@@ -244,10 +245,10 @@ function MyExpenses({ user, setUser }) {
             Are you sure you want to delete this expense?
           </p>
           {expenseToDelete && (
-            <div style={{ 
-              background: 'var(--me-bg-page)', 
-              padding: '1rem', 
-              borderRadius: 'var(--me-radius)', 
+            <div style={{
+              background: 'var(--me-bg-page)',
+              padding: '1rem',
+              borderRadius: 'var(--me-radius)',
               marginTop: '1rem',
               border: '1px solid var(--me-border)'
             }}>

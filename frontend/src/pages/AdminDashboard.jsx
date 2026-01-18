@@ -4,7 +4,7 @@ import {
   LineChart, Line, BarChart, Bar, PieChart, Pie, Cell,
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
 } from 'recharts'
-import { Card, Select, Skeleton, Input, Button } from '../components/ui'
+import { Card, Select, Skeleton, Input, Button, PageHeader } from '../components/ui'
 import logger from '../utils/logger'
 import './AdminDashboard.css'
 
@@ -109,50 +109,53 @@ function AdminDashboard({ user, setUser }) {
 
   return (
     <div className="admin-dashboard-container">
-      
+
       <main className="admin-dashboard-main">
-        <div className="page-header-section">
-          <div>
-            <h1>Admin Analytics Dashboard</h1>
-            <p className="subtitle">Comprehensive insights into expense management</p>
-          </div>
-          <div className="filters-section">
-            <div className="period-selector">
-              <Select
-                label="Time Period:"
-                value={timePeriod}
-                onChange={(e) => setTimePeriod(e.target.value)}
-              >
-                <option value="this_month">This Month</option>
-                <option value="last_month">Last Month</option>
-                <option value="this_quarter">This Quarter</option>
-                <option value="this_year">This Year</option>
-                <option value="last_year">Last Year</option>
-                <option value="last_6_months">Last 6 Months</option>
-                <option value="custom">Custom Date Range</option>
-              </Select>
-            </div>
-            
+        <PageHeader
+          title="Admin Analytics Dashboard"
+          subtitle="Comprehensive insights into expense management"
+          icon="fas fa-chart-line"
+          variant="pink"
+        />
+
+        {/* Filters Section */}
+        <Card className="filters-card" style={{ marginBottom: '1.5rem' }}>
+          <Card.Body style={{ display: 'flex', gap: '1rem', alignItems: 'flex-end', flexWrap: 'wrap' }}>
+            <Select
+              label="Time Period"
+              value={timePeriod}
+              onChange={(e) => setTimePeriod(e.target.value)}
+              style={{ minWidth: '180px' }}
+            >
+              <option value="this_month">This Month</option>
+              <option value="last_month">Last Month</option>
+              <option value="this_quarter">This Quarter</option>
+              <option value="this_year">This Year</option>
+              <option value="last_year">Last Year</option>
+              <option value="last_6_months">Last 6 Months</option>
+              <option value="custom">Custom Date Range</option>
+            </Select>
+
             {timePeriod === 'custom' && (
-              <div className="date-range-filter">
-                <div className="date-inputs">
-                  <Input
-                    type="text"
-                    label="Start Date"
-                    placeholder="DD/MM/YYYY"
-                    value={startDate}
-                    onChange={(e) => setStartDate(e.target.value)}
-                    pattern="\d{2}/\d{2}/\d{4}"
-                  />
-                  <Input
-                    type="text"
-                    label="End Date"
-                    placeholder="DD/MM/YYYY"
-                    value={endDate}
-                    onChange={(e) => setEndDate(e.target.value)}
-                    pattern="\d{2}/\d{2}/\d{4}"
-                  />
-                </div>
+              <>
+                <Input
+                  type="text"
+                  label="Start Date"
+                  placeholder="DD/MM/YYYY"
+                  value={startDate}
+                  onChange={(e) => setStartDate(e.target.value)}
+                  pattern="\d{2}/\d{2}/\d{4}"
+                  style={{ maxWidth: '150px' }}
+                />
+                <Input
+                  type="text"
+                  label="End Date"
+                  placeholder="DD/MM/YYYY"
+                  value={endDate}
+                  onChange={(e) => setEndDate(e.target.value)}
+                  pattern="\d{2}/\d{2}/\d{4}"
+                  style={{ maxWidth: '150px' }}
+                />
                 <Button
                   variant="primary"
                   onClick={handleApplyDateRange}
@@ -160,10 +163,10 @@ function AdminDashboard({ user, setUser }) {
                 >
                   Apply
                 </Button>
-              </div>
+              </>
             )}
-          </div>
-        </div>
+          </Card.Body>
+        </Card>
 
 
         {loading ? (
