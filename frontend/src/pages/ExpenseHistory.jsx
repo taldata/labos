@@ -10,7 +10,7 @@ import './ExpenseHistory.css'
 // ============================================================================
 function useExpenseFilters() {
   const [searchParams, setSearchParams] = useSearchParams()
-  
+
   const getInitialFilters = useCallback(() => ({
     status: searchParams.get('status') || '',
     department_id: searchParams.get('department_id') || '',
@@ -51,15 +51,15 @@ function useExpenseFilters() {
     setSelectedCategoryOption('')
   }, [])
 
-  const hasActiveFilters = useMemo(() => 
-    Object.entries(filters).some(([key, val]) => 
+  const hasActiveFilters = useMemo(() =>
+    Object.entries(filters).some(([key, val]) =>
       val !== '' && !['sort_by', 'sort_order'].includes(key)
     ), [filters]
   )
 
-  const activeFilterCount = useMemo(() => 
+  const activeFilterCount = useMemo(() =>
     Object.entries(filters).filter(([k, v]) => v && !['sort_by', 'sort_order'].includes(k)).length
-  , [filters])
+    , [filters])
 
   return {
     filters,
@@ -274,7 +274,7 @@ function ExpenseHistoryFilters({
 
   return (
     <Card className="eh-filters">
-      <button 
+      <button
         className="eh-filters__header"
         onClick={() => setIsExpanded(!isExpanded)}
         aria-expanded={isExpanded}
@@ -411,9 +411,9 @@ function ExpenseHistoryFilters({
               <option value="asc">Ascending</option>
             </Select>
             <div className="eh-filters__actions">
-              <Button 
-                variant="secondary" 
-                icon="fas fa-times" 
+              <Button
+                variant="secondary"
+                icon="fas fa-times"
                 onClick={clearFilters}
                 disabled={!hasActiveFilters}
               >
@@ -1127,6 +1127,32 @@ function ExpenseHistory({ user }) {
     setCurrentPage(1)
   }, [filterHook.filters])
 
+  // Sync selectedCategoryOption with filters
+  useEffect(() => {
+    const { category_id, subcategory_id } = filterHook.filters
+    const { categoryOptions } = optionsHook
+
+    if (!categoryOptions.length) return
+
+    let targetOptionId = ''
+
+    if (subcategory_id) {
+      const option = categoryOptions.find(opt =>
+        opt.type === 'subcategory' && String(opt.subcategory_id) === String(subcategory_id)
+      )
+      if (option) targetOptionId = option.id
+    } else if (category_id) {
+      const option = categoryOptions.find(opt =>
+        opt.type === 'category' && String(opt.category_id) === String(category_id)
+      )
+      if (option) targetOptionId = option.id
+    }
+
+    if (targetOptionId !== filterHook.selectedCategoryOption) {
+      filterHook.setSelectedCategoryOption(targetOptionId)
+    }
+  }, [filterHook.filters.category_id, filterHook.filters.subcategory_id, optionsHook.categoryOptions])
+
   // Handlers
   const handleCategorySelect = (e) => {
     const selectedId = e.target.value
@@ -1186,8 +1212,8 @@ function ExpenseHistory({ user }) {
   return (
     <div className="eh-container">
       <main className="eh-main">
-        <ExpenseHistoryHeader 
-          totalExpenses={dataHook.totalExpenses} 
+        <ExpenseHistoryHeader
+          totalExpenses={dataHook.totalExpenses}
           filters={filterHook.filters}
         />
 
