@@ -7,7 +7,7 @@ authors = ["Labos Team"]
 
 
 [tool.poetry.dependencies]
-python = "^3.12"
+python = "^3.13"
 flask = {extras = ["async"], version = "*"}
 flask-sqlalchemy = "*"
 flask-login = "*"
