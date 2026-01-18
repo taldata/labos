@@ -58,7 +58,12 @@
   align-items: center;
   padding: 1.5rem 2rem;
   direction: ltr;
-  justify-content: flex-start !important;
+  flex-wrap: wrap;
+}
+
+.filters-section select {
+  min-width: 200px;
+  width: auto;
 }
 
 .search-box {
