@@ -27,6 +27,10 @@
   margin: 0.25rem 0 0 0;
 }
 
+.filters-section {
+  align-items: flex-start !important;
+}
+
 .filters-section .card-body {
   display: flex;
   flex-wrap: wrap;
@@ -40,7 +44,7 @@
 .search-box {
   display: flex;
   align-items: center;
-  min-width: 300px;
+  min-width: 400px;
   gap: 0.5rem;
 }
 

@@ -49,6 +49,7 @@
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03) !important;
   margin-bottom: 2rem;
   animation: fadeIn 0.8s ease-out;
+  align-items: flex-start !important;
 }
 
 .filters-section .card-body {
@@ -63,7 +64,7 @@
 .search-box {
   display: flex;
   align-items: center;
-  min-width: 300px;
+  min-width: 400px;
   gap: 1rem;
 }
 
