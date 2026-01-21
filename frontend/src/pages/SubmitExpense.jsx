@@ -268,6 +268,15 @@ function SubmitExpense({ user, setUser }) {
           setOcrProcessing(false)
         }
       }
+    } else {
+      // Clear OCR data and states when file is removed
+      setOcrData(null)
+      setOcrProcessing(false)
+      setOcrDataLoading(false)
+      setFiles(prev => ({
+        ...prev,
+        [name]: null
+      }))
     }
   }
 
