@@ -277,6 +277,13 @@ function SubmitExpense({ user, setUser }) {
         ...prev,
         [name]: null
       }))
+      // Clear the form fields that were populated by OCR
+      setFormData(prev => ({
+        ...prev,
+        amount: '',
+        date: todayFormatted
+      }))
+      setDateError('')
     }
   }
 
