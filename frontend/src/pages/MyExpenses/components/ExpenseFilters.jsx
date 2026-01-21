@@ -83,18 +83,22 @@ const ExpenseFilters = ({
 
           <div className="me-filters-grid" style={{ marginTop: '1.5rem' }}>
              <Input
-               type="date"
+               type="text"
                label="Start Date"
                name="start_date"
                value={filters.start_date}
                onChange={handleChange}
+               placeholder="DD/MM/YYYY"
+               pattern="\d{2}/\d{2}/\d{4}"
              />
              <Input
-               type="date"
+               type="text"
                label="End Date"
                name="end_date"
                value={filters.end_date}
                onChange={handleChange}
+               placeholder="DD/MM/YYYY"
+               pattern="\d{2}/\d{2}/\d{4}"
              />
              <Select
                label="Order"
