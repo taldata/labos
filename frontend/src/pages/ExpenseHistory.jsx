@@ -547,7 +547,7 @@ function ExpenseRow({ expense, onView, onEdit, onMove, onDelete, formatDate, for
               <FilePreviewButton
                 fileUrl={`/download/${expense.invoice_filename}`}
                 fileName={expense.invoice_filename}
-                icon="fas fa-file-invoice"
+                icon="fas fa-file-invoice-dollar"
                 title="Preview Invoice"
               />
             )}
@@ -1006,7 +1006,7 @@ function ExpenseEditModal({ isOpen, onClose, expense, onSuccess, subcategories, 
                 {expense?.[`${fileType}_filename`] && !deleteFiles[fileType] && !editFiles[fileType] ? (
                   <div className="eh-file-upload__existing">
                     <a href={`/download/${expense[`${fileType}_filename`]}`} target="_blank" rel="noopener noreferrer">
-                      <i className={`fas fa-file-${fileType === 'invoice' ? 'invoice' : fileType === 'receipt' ? 'receipt' : 'alt'}`} />
+                      <i className={`fas ${fileType === 'invoice' ? 'fa-file-invoice-dollar' : fileType === 'receipt' ? 'fa-receipt' : 'fa-file-alt'}`} />
                       View {fileType.charAt(0).toUpperCase() + fileType.slice(1)}
                     </a>
                     <Button

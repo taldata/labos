@@ -113,7 +113,7 @@ const ExpenseList = ({
                        <FilePreviewButton
                          fileUrl={`/download/${expense.invoice_filename}`}
                          fileName={expense.invoice_filename}
-                         icon="fas fa-file-invoice"
+                         icon="fas fa-file-invoice-dollar"
                          title="Preview invoice"
                          variant="ghost"
                        />

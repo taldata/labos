@@ -343,7 +343,7 @@ function ExpenseDetails({ user, setUser }) {
                     <FilePreviewButton
                       fileUrl={`/download/${expense.invoice_filename}`}
                       fileName={expense.invoice_filename}
-                      icon="fas fa-file-invoice"
+                      icon="fas fa-file-invoice-dollar"
                       title="Click to preview invoice"
                       className="attachment-icon-btn"
                     />
