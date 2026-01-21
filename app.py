@@ -803,19 +803,36 @@ def download_file(filename):
         ).first()
         
         if not expense:
-            logging.warning(f"File {filename} exists on disk but no database record was found.")
+            logging.warning(f"[File Download] File {filename} exists on disk but no database record was found.")
             return return_error('File record not found in database.', 404)
         
+        # Log detailed permission information
+        logging.info(f"[File Download] Expense found: ID={expense.id}, Submitter={expense.user_id}")
+        logging.info(f"[File Download] Current user: ID={current_user.id}, Username={current_user.username}")
+        logging.info(f"[File Download] User roles: is_admin={current_user.is_admin}, is_manager={current_user.is_manager}, is_accounting={current_user.is_accounting}")
+        logging.info(f"[File Download] Is expense owner: {expense.user_id == current_user.id}")
+        
         # Check permissions
-        if current_user.is_admin or current_user.is_manager or current_user.is_accounting or expense.user_id == current_user.id:
+        has_permission = (
+            current_user.is_admin or 
+            current_user.is_manager or 
+            current_user.is_accounting or 
+            expense.user_id == current_user.id
+        )
+        
+        logging.info(f"[File Download] Permission check result: {has_permission}")
+        
+        if has_permission:
             try:
+                logging.info(f"[File Download] Sending file: {filename}")
                 # Use send_from_directory for better security and handling
                 return send_from_directory(abs_upload_folder, filename, as_attachment=False)
             except Exception as e:
                 logging.error(f"Error sending file {filename}: {str(e)}")
                 return return_error('Error loading file. Please try again.', 500)
 
-        logging.warning(f"Unauthorized access attempt to file {filename} by user {current_user.id}")
+        logging.warning(f"[File Download] Unauthorized access attempt to file {filename} by user {current_user.id} ({current_user.username})")
+        logging.warning(f"[File Download] User roles: is_admin={current_user.is_admin}, is_manager={current_user.is_manager}")
         return return_error('Unauthorized access', 403)
 
     except Exception as e:
