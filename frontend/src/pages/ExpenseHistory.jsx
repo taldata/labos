@@ -272,10 +272,10 @@ function ExpenseHistoryHeader({ totalExpenses, filters }) {
       actions={
         <Button
           variant="secondary"
-          icon="fas fa-download"
+          icon="fas fa-file-excel"
           onClick={handleExport}
         >
-          Export CSV
+          Export Excel
         </Button>
       }
     />
