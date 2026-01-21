@@ -109,7 +109,7 @@
   box-shadow: var(--eh-shadow-md) !important;
   margin-bottom: 1.5rem;
   padding: 0 !important;
-  overflow: hidden;
+  overflow: visible;
   animation: eh-fadeIn 0.6s ease-out;
 }
 
