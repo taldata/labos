@@ -163,6 +163,7 @@
 .eh-filters__actions {
   display: flex;
   align-items: flex-end;
+  gap: 0.5rem;
   padding-bottom: 2px;
 }
 

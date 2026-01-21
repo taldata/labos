@@ -305,6 +305,27 @@ function ExpenseHistoryFilters({
     updateFilter(name, value)
   }
 
+  // Add "Select All" option to each filter dropdown
+  const departmentOptionsWithAll = useMemo(() => [
+    { id: '', name: '✓ Select All Departments' },
+    ...departments
+  ], [departments])
+
+  const userOptionsWithAll = useMemo(() => [
+    { id: '', name: '✓ Select All Employees' },
+    ...userOptions
+  ], [userOptions])
+
+  const categoryOptionsWithAll = useMemo(() => [
+    { id: '', name: '✓ Select All Categories' },
+    ...categoryOptions
+  ], [categoryOptions])
+
+  const supplierOptionsWithAll = useMemo(() => [
+    { id: '', name: '✓ Select All Suppliers' },
+    ...suppliers
+  ], [suppliers])
+
   return (
     <Card className="eh-filters">
       <button
@@ -352,20 +373,22 @@ function ExpenseHistoryFilters({
               name="department_id"
               value={filters.department_id}
               onChange={handleFilterChange}
-              options={departments}
+              options={departmentOptionsWithAll}
               displayKey="name"
               valueKey="id"
               placeholder="All Departments"
+              allowClear={false}
             />
             <TomSelectInput
               label="Employee"
               name="user_id"
               value={filters.user_id}
               onChange={handleFilterChange}
-              options={userOptions}
+              options={userOptionsWithAll}
               displayKey="name"
               valueKey="id"
               placeholder="All Employees"
+              allowClear={false}
             />
           </div>
 
@@ -376,20 +399,22 @@ function ExpenseHistoryFilters({
               name="category_id"
               value={selectedCategoryOption}
               onChange={onCategorySelect}
-              options={categoryOptions}
+              options={categoryOptionsWithAll}
               placeholder="All Categories"
               displayKey="name"
               valueKey="id"
+              allowClear={false}
             />
             <TomSelectInput
               label="Supplier"
               name="supplier_id"
               value={filters.supplier_id}
               onChange={handleFilterChange}
-              options={suppliers}
+              options={supplierOptionsWithAll}
               placeholder="All Suppliers"
               displayKey="name"
               valueKey="id"
+              allowClear={false}
             />
             <Select
               label="Payment Method"
