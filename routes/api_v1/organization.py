@@ -1,7 +1,7 @@
 from flask import jsonify, request
 from flask_login import login_required, current_user
 from models import db, Department, Category, Subcategory, Expense, BudgetYear
-from sqlalchemy import func, case
+from sqlalchemy import func, case, or_
 from . import api_v1
 import logging
 from datetime import datetime
@@ -208,9 +208,29 @@ def get_organization_structure():
         
         # For managers (non-admins), filter to only their managed departments
         if current_user.is_manager and not current_user.is_admin:
-            managed_dept_ids = [d.id for d in current_user.managed_departments]
-            if managed_dept_ids:
-                query = query.filter(Department.id.in_(managed_dept_ids))
+            managed_depts = list(current_user.managed_departments)
+            managed_dept_ids = [d.id for d in managed_depts]
+            managed_dept_names = [d.name for d in managed_depts]
+            
+            # Also include the manager's home department as a fallback
+            if current_user.department_id:
+                if current_user.department_id not in managed_dept_ids:
+                    managed_dept_ids.append(current_user.department_id)
+                # Get the home department name for cross-year matching
+                home_dept = Department.query.get(current_user.department_id)
+                if home_dept and home_dept.name not in managed_dept_names:
+                    managed_dept_names.append(home_dept.name)
+            
+            if managed_dept_ids or managed_dept_names:
+                # Build filter conditions
+                conditions = []
+                if managed_dept_ids:
+                    conditions.append(Department.id.in_(managed_dept_ids))
+                if managed_dept_names:
+                    conditions.append(Department.name.in_(managed_dept_names))
+                
+                # Filter by name OR id to support both same-year and cross-year access
+                query = query.filter(or_(*conditions))
             else:
                 # Manager has no assigned departments - return empty
                 return jsonify({'structure': [], 'view_only': True}), 200
