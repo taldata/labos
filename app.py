@@ -1424,17 +1424,32 @@ def add_user():
             return redirect(url_for('manage_users'))
         
         
-        # Create new user
+        # Create new user - ensure only one role is set
         new_user = User(
             username=username,
             email=email,
             password=password,
             department_id=department_id if department_id else None,
-            is_manager=role == 'manager',
-            is_admin=role == 'admin',
-            is_accounting=role == 'accounting',
+            is_manager=(role == 'manager'),
+            is_admin=(role == 'admin'),
+            is_accounting=(role == 'accounting'),
             status=status
         )
+        
+        # Explicitly ensure only one role is True
+        if role == 'manager':
+            new_user.is_admin = False
+            new_user.is_accounting = False
+        elif role == 'admin':
+            new_user.is_manager = False
+            new_user.is_accounting = False
+        elif role == 'accounting':
+            new_user.is_manager = False
+            new_user.is_admin = False
+        else:  # regular user
+            new_user.is_manager = False
+            new_user.is_admin = False
+            new_user.is_accounting = False
         
         # If user is a manager, assign managed departments
         if role == 'manager' and managed_department_ids:
@@ -2341,9 +2356,23 @@ def edit_user(user_id):
         if is_self_admin and role != 'admin':
             return jsonify({'error': 'Admin users cannot change their role to non-admin'}), 400
             
-        user.is_admin = role == 'admin'
-        user.is_manager = role == 'manager'
-        user.is_accounting = role == 'accounting'
+        # Ensure only one role is set at a time
+        if role == 'admin':
+            user.is_admin = True
+            user.is_manager = False
+            user.is_accounting = False
+        elif role == 'manager':
+            user.is_admin = False
+            user.is_manager = True
+            user.is_accounting = False
+        elif role == 'accounting':
+            user.is_admin = False
+            user.is_manager = False
+            user.is_accounting = True
+        else:  # regular user
+            user.is_admin = False
+            user.is_manager = False
+            user.is_accounting = False
         
         # Update managed departments if user is a manager
         if role == 'manager':
