@@ -9,6 +9,16 @@ import ExpenseFilters from './components/ExpenseFilters'
 import ExpenseList from './components/ExpenseList'
 import './styles.css'
 
+// ============================================================================
+// Date Conversion Helpers
+// ============================================================================
+// Convert dd/mm/yyyy to yyyy-mm-dd
+const convertToISODate = (displayDate) => {
+  if (!displayDate || !/^\d{2}\/\d{2}\/\d{4}$/.test(displayDate)) return ''
+  const [day, month, year] = displayDate.split('/')
+  return `${year}-${month}-${day}`
+}
+
 function MyExpenses({ user, setUser }) {
   const navigate = useNavigate()
   const location = useLocation()
@@ -76,11 +86,20 @@ function MyExpenses({ user, setUser }) {
       setLoading(true)
       setError('')
 
+      // Convert display dates to ISO format for API
+      const apiFilters = { ...filters }
+      if (apiFilters.start_date) {
+        apiFilters.start_date = convertToISODate(apiFilters.start_date)
+      }
+      if (apiFilters.end_date) {
+        apiFilters.end_date = convertToISODate(apiFilters.end_date)
+      }
+
       const params = new URLSearchParams({
         page: currentPage,
         per_page: 20,
         ...Object.fromEntries(
-          Object.entries(filters).filter(([_, v]) => v !== '')
+          Object.entries(apiFilters).filter(([_, v]) => v !== '')
         )
       })
 

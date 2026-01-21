@@ -6,6 +6,23 @@ import logger from '../utils/logger'
 import './ExpenseHistory.css'
 
 // ============================================================================
+// Date Conversion Helpers
+// ============================================================================
+// Convert yyyy-mm-dd to dd/mm/yyyy
+const convertToDisplayDate = (isoDate) => {
+  if (!isoDate || !/^\d{4}-\d{2}-\d{2}$/.test(isoDate)) return ''
+  const [year, month, day] = isoDate.split('-')
+  return `${day}/${month}/${year}`
+}
+
+// Convert dd/mm/yyyy to yyyy-mm-dd
+const convertToISODate = (displayDate) => {
+  if (!displayDate || !/^\d{2}\/\d{2}\/\d{4}$/.test(displayDate)) return ''
+  const [day, month, year] = displayDate.split('/')
+  return `${year}-${month}-${day}`
+}
+
+// ============================================================================
 // Custom Hook: useExpenseFilters
 // ============================================================================
 function useExpenseFilters() {
@@ -20,8 +37,8 @@ function useExpenseFilters() {
     supplier_id: searchParams.get('supplier_id') || '',
     payment_method: searchParams.get('payment_method') || '',
     search: searchParams.get('search') || '',
-    start_date: searchParams.get('start_date') || '',
-    end_date: searchParams.get('end_date') || '',
+    start_date: convertToDisplayDate(searchParams.get('start_date') || ''),
+    end_date: convertToDisplayDate(searchParams.get('end_date') || ''),
     sort_by: searchParams.get('sort_by') || 'date',
     sort_order: searchParams.get('sort_order') || 'desc'
   }), [searchParams])
@@ -88,11 +105,20 @@ function useExpenseData(filters, currentPage) {
       setLoading(true)
       setError('')
 
+      // Convert display dates to ISO format for API
+      const apiFilters = { ...filters }
+      if (apiFilters.start_date) {
+        apiFilters.start_date = convertToISODate(apiFilters.start_date)
+      }
+      if (apiFilters.end_date) {
+        apiFilters.end_date = convertToISODate(apiFilters.end_date)
+      }
+
       const params = new URLSearchParams({
         page: currentPage,
         per_page: 25,
         ...Object.fromEntries(
-          Object.entries(filters).filter(([_, v]) => v !== '')
+          Object.entries(apiFilters).filter(([_, v]) => v !== '')
         )
       })
 
@@ -222,8 +248,17 @@ function useFilterOptions() {
 // ============================================================================
 function ExpenseHistoryHeader({ totalExpenses, filters }) {
   const handleExport = () => {
+    // Convert display dates to ISO format for API
+    const apiFilters = { ...filters }
+    if (apiFilters.start_date) {
+      apiFilters.start_date = convertToISODate(apiFilters.start_date)
+    }
+    if (apiFilters.end_date) {
+      apiFilters.end_date = convertToISODate(apiFilters.end_date)
+    }
+
     const params = new URLSearchParams(
-      Object.fromEntries(Object.entries(filters).filter(([_, v]) => v !== ''))
+      Object.fromEntries(Object.entries(apiFilters).filter(([_, v]) => v !== ''))
     )
     window.open('/api/v1/expenses/export?' + params.toString(), '_blank')
   }
@@ -372,22 +407,26 @@ function ExpenseHistoryFilters({
               <option value="standing_order">Standing Order</option>
             </Select>
             <Input
-              type="date"
+              type="text"
               label="Start Date"
               name="start_date"
               value={filters.start_date}
               onChange={handleFilterChange}
+              placeholder="DD/MM/YYYY"
+              pattern="\d{2}/\d{2}/\d{4}"
             />
           </div>
 
           {/* Row 3: End Date, Sort By, Order, Clear */}
           <div className="eh-filters__row">
             <Input
-              type="date"
+              type="text"
               label="End Date"
               name="end_date"
               value={filters.end_date}
               onChange={handleFilterChange}
+              placeholder="DD/MM/YYYY"
+              pattern="\d{2}/\d{2}/\d{4}"
             />
             <Select
               label="Sort By"
