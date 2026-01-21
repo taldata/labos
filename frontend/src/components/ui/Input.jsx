@@ -408,10 +408,8 @@ export const TomSelectInput = forwardRef(({
       tomSelectRef.current.addOptions(tomOptions);
       tomSelectRef.current.refreshOptions(false);
 
-      // Re-set the value if it exists
-      if (value) {
-        tomSelectRef.current.setValue(value.toString(), true);
-      }
+      // Re-set the value (even if empty)
+      tomSelectRef.current.setValue(value?.toString() || '', true);
     }
   }, [options, displayKey, valueKey]);
 
