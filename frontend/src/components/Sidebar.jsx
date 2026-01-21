@@ -73,6 +73,7 @@ function Sidebar({ user, setUser, isOpen, onToggle }) {
       label: 'Approvals',
       badge: pendingCount > 0 ? pendingCount : null 
     },
+    { path: '/admin/departments', icon: 'fa-sitemap', label: 'My Departments' },
   ]
 
   const adminItems = [

@@ -28,6 +28,11 @@ def _build_msal_app(cache=None):
 def get_current_user():
     """Get current authenticated user"""
     if current_user.is_authenticated:
+        # Get managed department IDs for managers
+        managed_department_ids = []
+        if current_user.is_manager:
+            managed_department_ids = [d.id for d in current_user.managed_departments]
+        
         return jsonify({
             'user': {
                 'id': current_user.id,
@@ -41,7 +46,8 @@ def get_current_user():
                 'can_use_modern_version': current_user.can_use_modern_version,
                 'preferred_version': current_user.preferred_version,
                 'department_id': current_user.department_id,
-                'profile_pic': current_user.profile_pic
+                'profile_pic': current_user.profile_pic,
+                'managed_department_ids': managed_department_ids
             }
         }), 200
     return jsonify({'error': 'Not authenticated'}), 401
@@ -89,6 +95,11 @@ def login():
         login_user(user)
         logging.info(f"User {username} logged in successfully via username/password")
 
+        # Get managed department IDs for managers
+        managed_department_ids = []
+        if user.is_manager:
+            managed_department_ids = [d.id for d in user.managed_departments]
+        
         return jsonify({
             'message': 'Login successful',
             'user': {
@@ -102,7 +113,8 @@ def login():
                 'is_accounting': user.is_accounting,
                 'can_use_modern_version': user.can_use_modern_version,
                 'preferred_version': user.preferred_version,
-                'department_id': user.department_id
+                'department_id': user.department_id,
+                'managed_department_ids': managed_department_ids
             }
         }), 200
 

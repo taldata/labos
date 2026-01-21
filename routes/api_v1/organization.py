@@ -206,6 +206,15 @@ def get_organization_structure():
             if current_year:
                 query = query.filter_by(year_id=current_year.id)
         
+        # For managers (non-admins), filter to only their managed departments
+        if current_user.is_manager and not current_user.is_admin:
+            managed_dept_ids = [d.id for d in current_user.managed_departments]
+            if managed_dept_ids:
+                query = query.filter(Department.id.in_(managed_dept_ids))
+            else:
+                # Manager has no assigned departments - return empty
+                return jsonify({'structure': [], 'view_only': True}), 200
+        
         departments = query.order_by(Department.name).all()
 
         # Pre-calculate all budget usage in 3 queries instead of N*M*K queries
@@ -316,7 +325,12 @@ def get_organization_structure():
 
             structure.append(dept_data)
 
-        return jsonify({'structure': structure}), 200
+        # Include view_only flag for managers (non-admins)
+        response_data = {'structure': structure}
+        if current_user.is_manager and not current_user.is_admin:
+            response_data['view_only'] = True
+        
+        return jsonify(response_data), 200
 
     except Exception as e:
         logging.error(f"Error getting organization structure: {str(e)}")

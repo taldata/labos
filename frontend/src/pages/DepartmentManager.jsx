@@ -14,6 +14,7 @@ const DepartmentManager = ({ user, setUser }) => {
     const { success, error: showError } = useToast();
     const [structure, setStructure] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [viewOnly, setViewOnly] = useState(false); // View-only mode for managers
 
     // Year State
     const [years, setYears] = useState([]);
@@ -50,10 +51,18 @@ const DepartmentManager = ({ user, setUser }) => {
     const [newDepartmentId, setNewDepartmentId] = useState(null);
     const { getItemRef } = useScrollToItem(structure, newDepartmentId, () => setNewDepartmentId(null));
 
+    // Check if user is admin or manager (managers get view-only access to their departments)
+    const isAdmin = user?.is_admin;
+    const isManager = user?.is_manager;
+
     useEffect(() => {
-        if (!user?.is_admin) {
+        if (!isAdmin && !isManager) {
             navigate('/dashboard');
             return;
+        }
+        // Set view-only mode for managers (non-admins)
+        if (isManager && !isAdmin) {
+            setViewOnly(true);
         }
         fetchYears();
     }, []);
@@ -92,6 +101,10 @@ const DepartmentManager = ({ user, setUser }) => {
             setLoading(true);
             const response = await api.get(`/api/v1/organization/structure?year_id=${yearId}`);
             setStructure(response.data.structure);
+            // Update view_only from server response
+            if (response.data.view_only) {
+                setViewOnly(true);
+            }
             setLoading(false);
         } catch (err) {
             showError('Failed to load organization structure');
@@ -266,7 +279,7 @@ const DepartmentManager = ({ user, setUser }) => {
         return currency === 'ILS' ? 'ש״ח' : currency;
     };
 
-    if (!user?.is_admin) {
+    if (!isAdmin && !isManager) {
         return null;
     }
 
@@ -281,8 +294,8 @@ const DepartmentManager = ({ user, setUser }) => {
             ) : (
                 <main className="department-manager">
                     <PageHeader
-                        title="Organization Structure"
-                        subtitle="Manage departments, categories, and budgets"
+                        title={viewOnly ? "My Departments" : "Organization Structure"}
+                        subtitle={viewOnly ? "View your department budgets and categories" : "Manage departments, categories, and budgets"}
                         icon="fas fa-sitemap"
                         variant="purple"
                         actions={
@@ -303,17 +316,21 @@ const DepartmentManager = ({ user, setUser }) => {
                                             </option>
                                         ))}
                                     </Select>
-                                    <Button
-                                        variant="ghost"
-                                        size="small"
-                                        icon="fas fa-calendar-plus"
-                                        onClick={() => openModal('year', 'create')}
-                                        title="הוסף שנה חדשה"
-                                    />
+                                    {!viewOnly && (
+                                        <Button
+                                            variant="ghost"
+                                            size="small"
+                                            icon="fas fa-calendar-plus"
+                                            onClick={() => openModal('year', 'create')}
+                                            title="הוסף שנה חדשה"
+                                        />
+                                    )}
                                 </div>
-                                <Button variant="secondary" icon="fas fa-plus" onClick={() => openModal('department', 'create')}>
-                                    Add Department
-                                </Button>
+                                {!viewOnly && (
+                                    <Button variant="secondary" icon="fas fa-plus" onClick={() => openModal('department', 'create')}>
+                                        Add Department
+                                    </Button>
+                                )}
                             </div>
                         }
                     />
@@ -332,7 +349,11 @@ const DepartmentManager = ({ user, setUser }) => {
                     <div className="org-tree">
                         {filteredStructure.length === 0 && (
                             <div className="empty-state">
-                                {searchQuery ? `No results found for "${searchQuery}"` : 'No departments yet. Click "Add Department" to get started!'}
+                                {searchQuery 
+                                    ? `No results found for "${searchQuery}"` 
+                                    : viewOnly 
+                                        ? 'No departments assigned to you. Please contact an administrator.'
+                                        : 'No departments yet. Click "Add Department" to get started!'}
                             </div>
                         )}
                         {filteredStructure.map(dept => (
@@ -373,11 +394,13 @@ const DepartmentManager = ({ user, setUser }) => {
                                             </div>
                                         </div>
                                     </div>
-                                    <div className="actions" onClick={e => e.stopPropagation()}>
-                                        <Button variant="ghost" size="small" icon="fas fa-edit" onClick={() => openModal('department', 'edit', dept)} title="Edit Department" />
-                                        <Button variant="ghost" size="small" icon="fas fa-plus-circle" onClick={() => openModal('category', 'create', null, dept.id)} title="Add Category" />
-                                        <Button variant="ghost" size="small" icon="fas fa-trash" onClick={() => handleDelete('department', dept.id)} title="Delete Department" className="btn-delete" />
-                                    </div>
+                                    {!viewOnly && (
+                                        <div className="actions" onClick={e => e.stopPropagation()}>
+                                            <Button variant="ghost" size="small" icon="fas fa-edit" onClick={() => openModal('department', 'edit', dept)} title="Edit Department" />
+                                            <Button variant="ghost" size="small" icon="fas fa-plus-circle" onClick={() => openModal('category', 'create', null, dept.id)} title="Add Category" />
+                                            <Button variant="ghost" size="small" icon="fas fa-trash" onClick={() => handleDelete('department', dept.id)} title="Delete Department" className="btn-delete" />
+                                        </div>
+                                    )}
                                 </div>
 
                                 {expandedDepts[dept.id] && (
@@ -436,11 +459,13 @@ const DepartmentManager = ({ user, setUser }) => {
                                                                 </div>
                                                             </div>
                                                         </div>
-                                                        <div className="actions" onClick={e => e.stopPropagation()}>
-                                                            <Button variant="ghost" size="small" icon="fas fa-edit" onClick={() => openModal('category', 'edit', cat)} title="Edit Category" />
-                                                            <Button variant="ghost" size="small" icon="fas fa-plus-circle" onClick={() => openModal('subcategory', 'create', null, cat.id)} title="Add Subcategory" />
-                                                            <Button variant="ghost" size="small" icon="fas fa-trash" onClick={() => handleDelete('category', cat.id)} title="Delete Category" className="btn-delete" />
-                                                        </div>
+                                                        {!viewOnly && (
+                                                            <div className="actions" onClick={e => e.stopPropagation()}>
+                                                                <Button variant="ghost" size="small" icon="fas fa-edit" onClick={() => openModal('category', 'edit', cat)} title="Edit Category" />
+                                                                <Button variant="ghost" size="small" icon="fas fa-plus-circle" onClick={() => openModal('subcategory', 'create', null, cat.id)} title="Add Subcategory" />
+                                                                <Button variant="ghost" size="small" icon="fas fa-trash" onClick={() => handleDelete('category', cat.id)} title="Delete Category" className="btn-delete" />
+                                                            </div>
+                                                        )}
                                                     </div>
 
                                                     {expandedCats[cat.id] && (
@@ -482,10 +507,12 @@ const DepartmentManager = ({ user, setUser }) => {
                                                                             </div>
                                                                         </div>
                                                                     </div>
-                                                                    <div className="actions">
-                                                                        <Button variant="ghost" size="small" icon="fas fa-edit" onClick={() => openModal('subcategory', 'edit', sub)} title="Edit Subcategory" />
-                                                                        <Button variant="ghost" size="small" icon="fas fa-trash" onClick={() => handleDelete('subcategory', sub.id)} title="Delete Subcategory" className="btn-delete" />
-                                                                    </div>
+                                                                    {!viewOnly && (
+                                                                        <div className="actions">
+                                                                            <Button variant="ghost" size="small" icon="fas fa-edit" onClick={() => openModal('subcategory', 'edit', sub)} title="Edit Subcategory" />
+                                                                            <Button variant="ghost" size="small" icon="fas fa-trash" onClick={() => handleDelete('subcategory', sub.id)} title="Delete Subcategory" className="btn-delete" />
+                                                                        </div>
+                                                                    )}
                                                                 </div>
                                                             ))}
                                                         </div>
