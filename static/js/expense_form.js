@@ -1,4 +1,4 @@
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
     console.log('=== expense_form.js loaded and DOMContentLoaded fired ===');
 
     const invoiceInput = document.getElementById('invoice');
@@ -324,9 +324,19 @@ document.addEventListener('DOMContentLoaded', function() {
     // Invoice upload handler
     if (invoiceInput) {
         console.log('Adding event listener to invoice input');
-        invoiceInput.addEventListener('change', function(e) {
-            console.log('Invoice file selected:', e.target.files[0]);
+        invoiceInput.addEventListener('change', function (e) {
             const file = e.target.files[0];
+            console.log('Invoice file selected:', file);
+
+            // If file input is cleared (user clicked X), dismiss OCR preview
+            if (!file) {
+                console.log('Invoice file cleared, dismissing OCR preview');
+                dismissOcrPreview();
+                currentOcrData = null;
+                currentDocumentType = null;
+                return;
+            }
+
             processDocument(file, 'Invoice', '/api/expense/process-expense');
         });
     } else {
@@ -336,9 +346,19 @@ document.addEventListener('DOMContentLoaded', function() {
     // Receipt upload handler
     if (receiptInput) {
         console.log('Adding event listener to receipt input');
-        receiptInput.addEventListener('change', function(e) {
-            console.log('Receipt file selected:', e.target.files[0]);
+        receiptInput.addEventListener('change', function (e) {
             const file = e.target.files[0];
+            console.log('Receipt file selected:', file);
+
+            // If file input is cleared (user clicked X), dismiss OCR preview
+            if (!file) {
+                console.log('Receipt file cleared, dismissing OCR preview');
+                dismissOcrPreview();
+                currentOcrData = null;
+                currentDocumentType = null;
+                return;
+            }
+
             processDocument(file, 'Receipt', '/api/expense/process-receipt');
         });
     } else {
@@ -348,9 +368,19 @@ document.addEventListener('DOMContentLoaded', function() {
     // Quote upload handler
     if (quoteInput) {
         console.log('Adding event listener to quote input');
-        quoteInput.addEventListener('change', function(e) {
-            console.log('Quote file selected:', e.target.files[0]);
+        quoteInput.addEventListener('change', function (e) {
             const file = e.target.files[0];
+            console.log('Quote file selected:', file);
+
+            // If file input is cleared (user clicked X), dismiss OCR preview
+            if (!file) {
+                console.log('Quote file cleared, dismissing OCR preview');
+                dismissOcrPreview();
+                currentOcrData = null;
+                currentDocumentType = null;
+                return;
+            }
+
             processDocument(file, 'Quote', '/api/expense/process-quote');
         });
     } else {
@@ -360,7 +390,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // File input validation
     const fileInputs = document.querySelectorAll('input[type="file"]');
     fileInputs.forEach(input => {
-        input.addEventListener('change', function() {
+        input.addEventListener('change', function () {
             if (this.files && this.files[0]) {
                 const fileSize = this.files[0].size / 1024 / 1024; // in MB
                 if (fileSize > 16) {
@@ -373,7 +403,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     // Form validation
-    form.addEventListener('submit', function(e) {
+    form.addEventListener('submit', function (e) {
         const amount = document.getElementById('amount').value;
         const type = document.getElementById('type').value;
         const description = document.getElementById('description').value;
@@ -405,7 +435,7 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 // Add CSS for OCR preview
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
     const style = document.createElement('style');
     style.textContent = `
         /* OCR Preview Container */

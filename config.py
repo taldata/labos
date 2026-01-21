@@ -77,6 +77,22 @@ class Config:
 
         os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
         
+        # Validate upload folder was created successfully
+        if not os.path.exists(app.config['UPLOAD_FOLDER']):
+            logging.error(f"CRITICAL: Failed to create UPLOAD_FOLDER: {app.config['UPLOAD_FOLDER']}")
+        elif not os.access(app.config['UPLOAD_FOLDER'], os.R_OK | os.W_OK):
+            logging.error(f"CRITICAL: UPLOAD_FOLDER exists but is not readable/writable: {app.config['UPLOAD_FOLDER']}")
+        else:
+            # Log successful creation and check if folder is empty
+            try:
+                file_count = len(os.listdir(app.config['UPLOAD_FOLDER']))
+                logging.info(f"✅ UPLOAD_FOLDER configured: {app.config['UPLOAD_FOLDER']}")
+                logging.info(f"📁 Upload folder contains {file_count} files")
+                if file_count == 0:
+                    logging.warning("⚠️  Upload folder is empty - no files have been uploaded yet or folder was recently cleared")
+            except Exception as e:
+                logging.warning(f"Could not list UPLOAD_FOLDER contents: {e}")
+        
         # Set permissions for UPLOAD_FOLDER
         # On Render, ensure the user running the app has write permissions to /var/data/uploads
         # The chmod might be less critical if Render's disk permissions are already suitable.

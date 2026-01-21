@@ -741,15 +741,33 @@ def download_file(filename):
         if not upload_folder:
             logging.error("UPLOAD_FOLDER is not configured in app.config")
             return return_error('Server configuration error: Upload directory not set.', 500)
+        
+        # Log upload folder configuration for debugging
+        logging.info(f"[File Download] Request for '{filename}' by user {current_user.id} ({current_user.username})")
+        logging.info(f"[File Download] UPLOAD_FOLDER configured as: {upload_folder}")
+        logging.info(f"[File Download] Request type: {'Preview (iframe)' if is_preview_request else 'Direct download'}")
             
         # Ensure upload_folder is an absolute path
         abs_upload_folder = os.path.abspath(upload_folder)
         filepath = os.path.abspath(os.path.join(abs_upload_folder, filename))
         
+        logging.info(f"[File Download] Resolved absolute upload folder: {abs_upload_folder}")
+        logging.info(f"[File Download] Resolved file path: {filepath}")
+        
         # Security check: ensure the resulting path is within the upload folder
         if not filepath.startswith(abs_upload_folder):
             logging.warning(f"Path traversal attempt: {filename} resolved to {filepath}")
             return return_error('Invalid filename or path.')
+
+        # Check if upload folder exists
+        if not os.path.exists(abs_upload_folder):
+            logging.error(f"[File Download] CRITICAL: Upload folder does not exist: {abs_upload_folder}")
+            return return_error('Server configuration error: Upload directory does not exist.', 500)
+        
+        # Check if upload folder is readable
+        if not os.access(abs_upload_folder, os.R_OK):
+            logging.error(f"[File Download] CRITICAL: Upload folder is not readable: {abs_upload_folder}")
+            return return_error('Server configuration error: Upload directory is not accessible.', 500)
 
         logging.info(f"Attempting to download file: {filename}")
         logging.debug(f"Full resolved filepath: {filepath}")
@@ -758,11 +776,22 @@ def download_file(filename):
             # Log directory contents to help debug missing files
             try:
                 dir_list = os.listdir(abs_upload_folder)
-                logging.error(f"File not found: {filepath}. Directory '{abs_upload_folder}' contains: {dir_list}")
+                file_count = len(dir_list)
+                logging.error(f"[File Download] File not found: {filepath}")
+                logging.error(f"[File Download] Upload folder '{abs_upload_folder}' contains {file_count} files")
+                logging.error(f"[File Download] First 10 files in directory: {dir_list[:10]}")
+                
+                # Check if there are similar filenames
+                similar_files = [f for f in dir_list if filename[:20] in f or f[:20] in filename]
+                if similar_files:
+                    logging.error(f"[File Download] Similar filenames found: {similar_files}")
             except Exception as e:
                 logging.error(f"File not found: {filepath}. Could not list directory {abs_upload_folder}: {str(e)}")
             
-            return return_error('File not found. The file may have been deleted or moved.')
+            error_msg = f'File not found: {filename}. The file may have been deleted or moved.'
+            if is_preview_request:
+                error_msg = f'Unable to preview file: {filename}\n\nThe file may have been deleted, moved, or there may be a server configuration issue.\n\nPlease contact your administrator if this problem persists.'
+            return return_error(error_msg)
         
         # Check database record to verify the file belongs to an expense and current user has access
         expense = Expense.query.filter(
@@ -3643,4 +3672,4 @@ def modern_app(path=''):
         return f"Error loading application: {str(e)}", 500
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=True, port=5001)
