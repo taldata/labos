@@ -307,22 +307,22 @@ function ExpenseHistoryFilters({
 
   // Add "Select All" option to each filter dropdown
   const departmentOptionsWithAll = useMemo(() => [
-    { id: '', name: '✓ Select All Departments' },
+    { id: '', name: 'Select All' },
     ...departments
   ], [departments])
 
   const userOptionsWithAll = useMemo(() => [
-    { id: '', name: '✓ Select All Employees' },
+    { id: '', name: 'Select All' },
     ...userOptions
   ], [userOptions])
 
   const categoryOptionsWithAll = useMemo(() => [
-    { id: '', name: '✓ Select All Categories' },
+    { id: '', name: 'Select All' },
     ...categoryOptions
   ], [categoryOptions])
 
   const supplierOptionsWithAll = useMemo(() => [
-    { id: '', name: '✓ Select All Suppliers' },
+    { id: '', name: 'Select All' },
     ...suppliers
   ], [suppliers])
 
