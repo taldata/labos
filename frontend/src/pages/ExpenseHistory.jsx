@@ -292,7 +292,7 @@ function ExpenseHistoryFilters({
   hasActiveFilters,
   activeFilterCount,
   departments,
-  users,
+  userOptions,
   categoryOptions,
   suppliers,
   selectedCategoryOption,
@@ -362,10 +362,7 @@ function ExpenseHistoryFilters({
               name="user_id"
               value={filters.user_id}
               onChange={handleFilterChange}
-              options={users.map(u => ({
-                id: u.id,
-                name: `${u.first_name} ${u.last_name}`
-              }))}
+              options={userOptions}
               displayKey="name"
               valueKey="id"
               placeholder="All Employees"
@@ -1136,6 +1133,15 @@ function ExpenseHistory({ user }) {
   const dataHook = useExpenseData(filterHook.filters, currentPage)
   const optionsHook = useFilterOptions()
 
+  // Memoize user options to prevent infinite re-renders from TomSelectInput
+  const userOptions = useMemo(() =>
+    optionsHook.users.map(u => ({
+      id: u.id,
+      name: `${u.first_name} ${u.last_name}`
+    })),
+    [optionsHook.users]
+  )
+
   // Modal states
   const [editModalOpen, setEditModalOpen] = useState(false)
   const [deleteModalOpen, setDeleteModalOpen] = useState(false)
@@ -1261,7 +1267,7 @@ function ExpenseHistory({ user }) {
           hasActiveFilters={filterHook.hasActiveFilters}
           activeFilterCount={filterHook.activeFilterCount}
           departments={optionsHook.departments}
-          users={optionsHook.users}
+          userOptions={userOptions}
           categoryOptions={optionsHook.categoryOptions}
           suppliers={optionsHook.suppliers}
           selectedCategoryOption={filterHook.selectedCategoryOption}
