@@ -631,6 +631,47 @@ def get_suppliers():
         logging.error(f"Error getting suppliers: {str(e)}")
         return jsonify({'error': 'Failed to fetch suppliers'}), 500
 
+
+@api_v1.route('/form-data/suppliers', methods=['POST'])
+@login_required
+def create_supplier_quick():
+    """Create a new supplier - available to all logged-in users"""
+    try:
+        data = request.get_json()
+        
+        if not data.get('name'):
+            return jsonify({'error': 'Supplier name is required'}), 400
+        
+        # Check if supplier with same name already exists
+        existing = Supplier.query.filter_by(name=data['name']).first()
+        if existing:
+            return jsonify({'error': 'A supplier with this name already exists'}), 400
+        
+        supplier = Supplier(
+            name=data['name'],
+            email=data.get('email'),
+            phone=data.get('phone'),
+            address=data.get('address'),
+            tax_id=data.get('tax_id'),
+            status='active'
+        )
+        
+        db.session.add(supplier)
+        db.session.commit()
+        
+        logging.info(f"Supplier {supplier.name} created by {current_user.username}")
+        
+        return jsonify({
+            'message': 'Supplier created successfully',
+            'supplier': {'id': supplier.id, 'name': supplier.name}
+        }), 201
+        
+    except Exception as e:
+        db.session.rollback()
+        logging.error(f"Error creating supplier: {str(e)}", exc_info=True)
+        return jsonify({'error': 'Failed to create supplier'}), 500
+
+
 @api_v1.route('/form-data/credit-cards', methods=['GET'])
 @login_required
 def get_credit_cards():

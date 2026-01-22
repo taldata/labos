@@ -417,7 +417,7 @@ function SubmitExpense({ user, setUser }) {
 
     setNewSupplierLoading(true)
     try {
-      const response = await fetch('/api/v1/admin/suppliers', {
+      const response = await fetch('/api/v1/form-data/suppliers', {
         method: 'POST',
         credentials: 'include',
         headers: {
@@ -648,14 +648,12 @@ function SubmitExpense({ user, setUser }) {
                   name="supplier_id"
                   value={formData.supplier_id}
                   onChange={handleSupplierChange}
-                  options={[
-                    { id: '__create_new__', name: '+ Create New Supplier' },
-                    ...suppliers
-                  ]}
+                  options={suppliers}
                   placeholder="Select a supplier"
                   displayKey="name"
                   valueKey="id"
                   required
+                  createNewOption={{ id: '__create_new__', name: 'Create New Supplier' }}
                 />
 
                 <Select

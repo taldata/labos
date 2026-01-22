@@ -336,6 +336,7 @@ export const TomSelectInput = forwardRef(({
   displayKey = 'name',
   valueKey = 'id',
   allowClear = true,
+  createNewOption = null,
   ...props
 }, ref) => {
   const selectRef = useRef(null);
@@ -344,11 +345,24 @@ export const TomSelectInput = forwardRef(({
   useEffect(() => {
     if (!selectRef.current) return;
 
-    // Prepare options for Tom Select
-    const tomOptions = options.map(option => ({
-      value: option[valueKey]?.toString() || '',
-      text: option[displayKey] || ''
-    }));
+    // Prepare options for Tom Select - add createNew option first if provided
+    const tomOptions = [];
+    if (createNewOption) {
+      tomOptions.push({
+        value: createNewOption[valueKey]?.toString() || '__create_new__',
+        text: createNewOption[displayKey] || 'Create New',
+        $order: 0 // Keep at top
+      });
+    }
+    
+    // Add regular options with order starting from 1
+    options.forEach((option, index) => {
+      tomOptions.push({
+        value: option[valueKey]?.toString() || '',
+        text: option[displayKey] || '',
+        $order: index + 1
+      });
+    });
 
     // Initialize Tom Select
     const config = {
@@ -358,9 +372,17 @@ export const TomSelectInput = forwardRef(({
       maxOptions: null,
       allowEmptyOption: allowClear,
       create: false,
-      sortField: {
-        field: 'text',
-        direction: 'asc'
+      sortField: [
+        { field: '$order', direction: 'asc' },
+        { field: 'text', direction: 'asc' }
+      ],
+      render: {
+        option: function(data, escape) {
+          if (data.value === '__create_new__') {
+            return '<div class="option create-new-option" data-value="__create_new__"><i class="fas fa-plus"></i> ' + escape(data.text) + '</div>';
+          }
+          return '<div class="option">' + escape(data.text) + '</div>';
+        }
       },
       onItemAdd: function() {
         const selectedValue = this.getValue();
@@ -401,17 +423,33 @@ export const TomSelectInput = forwardRef(({
   useEffect(() => {
     if (tomSelectRef.current) {
       tomSelectRef.current.clearOptions();
-      const tomOptions = options.map(option => ({
-        value: option[valueKey]?.toString() || '',
-        text: option[displayKey] || ''
-      }));
+      
+      // Add createNew option first if provided
+      const tomOptions = [];
+      if (createNewOption) {
+        tomOptions.push({
+          value: createNewOption[valueKey]?.toString() || '__create_new__',
+          text: createNewOption[displayKey] || 'Create New',
+          $order: 0
+        });
+      }
+      
+      // Add regular options
+      options.forEach((option, index) => {
+        tomOptions.push({
+          value: option[valueKey]?.toString() || '',
+          text: option[displayKey] || '',
+          $order: index + 1
+        });
+      });
+      
       tomSelectRef.current.addOptions(tomOptions);
       tomSelectRef.current.refreshOptions(false);
 
       // Re-set the value (even if empty)
       tomSelectRef.current.setValue(value?.toString() || '', true);
     }
-  }, [options, displayKey, valueKey]);
+  }, [options, displayKey, valueKey, createNewOption]);
 
   // Update disabled state
   useEffect(() => {
