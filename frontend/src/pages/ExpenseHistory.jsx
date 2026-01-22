@@ -805,6 +805,13 @@ function ExpenseEditModal({ isOpen, onClose, expense, onSuccess, subcategories, 
 
   const handleSubmit = async (e) => {
     e.preventDefault()
+    
+    // Validate required fields
+    if (!formData.description || !formData.supplier_id) {
+      showError('Description and Supplier are required fields')
+      return
+    }
+    
     try {
       const formDataToSend = new FormData()
 
@@ -889,6 +896,7 @@ function ExpenseEditModal({ isOpen, onClose, expense, onSuccess, subcategories, 
             name="description"
             value={formData.description}
             onChange={(e) => handleInputChange('description', e.target.value)}
+            required
           />
           <Input
             label="Business Reason"
@@ -1001,6 +1009,7 @@ function ExpenseEditModal({ isOpen, onClose, expense, onSuccess, subcategories, 
               name="supplier_id"
               value={formData.supplier_id}
               onChange={(e) => handleInputChange('supplier_id', e.target.value)}
+              required
             >
               <option value="">Select Supplier</option>
               {suppliers.map(sup => (

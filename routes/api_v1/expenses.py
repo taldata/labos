@@ -911,9 +911,9 @@ def submit_expense():
         data = request.form
 
         # Validate required fields
-        required_fields = ['amount', 'subcategory_id', 'expense_type', 'date']
+        required_fields = ['amount', 'subcategory_id', 'expense_type', 'date', 'description', 'supplier_id']
         for field in required_fields:
-            if field not in data:
+            if field not in data or not data[field]:
                 return jsonify({'error': f'Missing required field: {field}'}), 400
 
         # Create expense

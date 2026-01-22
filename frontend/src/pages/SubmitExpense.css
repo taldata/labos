@@ -445,3 +445,22 @@
   border-color: #ef4444 !important;
   box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1) !important;
 }
+
+/* New Supplier Modal Form */
+.new-supplier-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.new-supplier-form .form-row {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+}
+
+@media (max-width: 480px) {
+  .new-supplier-form .form-row {
+    grid-template-columns: 1fr;
+  }
+}

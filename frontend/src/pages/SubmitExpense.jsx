@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Card, Button, Input, Select, SearchableSelect, TomSelectInput, Textarea, FileUpload, useToast, PageHeader } from '../components/ui'
+import { Card, Button, Input, Select, SearchableSelect, TomSelectInput, Textarea, FileUpload, useToast, PageHeader, Modal } from '../components/ui'
 import logger from '../utils/logger'
 import './SubmitExpense.css'
 
@@ -96,9 +96,21 @@ function SubmitExpense({ user, setUser }) {
   const [ocrProcessing, setOcrProcessing] = useState(false)
   const [ocrData, setOcrData] = useState(null)
   const [ocrDataLoading, setOcrDataLoading] = useState(false)
+  const [showOcrSuccess, setShowOcrSuccess] = useState(false)
 
   // UI state
   const [loading, setLoading] = useState(false)
+
+  // New supplier modal state
+  const [showNewSupplierModal, setShowNewSupplierModal] = useState(false)
+  const [newSupplierLoading, setNewSupplierLoading] = useState(false)
+  const [newSupplierData, setNewSupplierData] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    tax_id: '',
+    address: ''
+  })
 
   useEffect(() => {
     fetchFormData()
@@ -211,6 +223,7 @@ function SubmitExpense({ user, setUser }) {
       if (ocrEndpoints[name]) {
         setOcrProcessing(true)
         setOcrData(null)
+        setShowOcrSuccess(false)
         try {
           const formData = new FormData()
           formData.append('document', file)
@@ -255,6 +268,11 @@ function SubmitExpense({ user, setUser }) {
 
             if (ocrResult.amount || ocrResult.purchase_date) {
               showSuccess(`Data extracted from ${documentLabels[name]} successfully`)
+              // Show the success banner and auto-hide after 5 seconds
+              setShowOcrSuccess(true)
+              setTimeout(() => {
+                setShowOcrSuccess(false)
+              }, 5000)
             } else {
               showSuccess(`The ${documentLabels[name]} was processed, but no data was found to extract`)
             }
@@ -273,6 +291,7 @@ function SubmitExpense({ user, setUser }) {
       setOcrData(null)
       setOcrProcessing(false)
       setOcrDataLoading(false)
+      setShowOcrSuccess(false)
       setFiles(prev => ({
         ...prev,
         [name]: null
@@ -293,8 +312,8 @@ function SubmitExpense({ user, setUser }) {
 
     try {
       // Validate required fields
-      if (!formData.amount || !formData.subcategory_id || !formData.date) {
-        showError('Please fill in all required fields')
+      if (!formData.amount || !formData.subcategory_id || !formData.date || !formData.description || !formData.supplier_id) {
+        showError('Please fill in all required fields (Amount, Date, Description, Category, Subcategory, Supplier)')
         setLoading(false)
         return
       }
@@ -355,6 +374,83 @@ function SubmitExpense({ user, setUser }) {
       logger.error('Submission error', { error: err.message })
     } finally {
       setLoading(false)
+    }
+  }
+
+  // Handle supplier selection - check for "create new" option
+  const handleSupplierChange = (e) => {
+    const value = e.target.value
+    if (value === '__create_new__') {
+      // Open the new supplier modal
+      setShowNewSupplierModal(true)
+      // Reset the form data
+      setNewSupplierData({
+        name: '',
+        email: '',
+        phone: '',
+        tax_id: '',
+        address: ''
+      })
+    } else {
+      // Normal selection
+      handleInputChange(e)
+    }
+  }
+
+  // Handle new supplier form input
+  const handleNewSupplierInputChange = (e) => {
+    const { name, value } = e.target
+    setNewSupplierData(prev => ({
+      ...prev,
+      [name]: value
+    }))
+  }
+
+  // Submit new supplier
+  const handleCreateSupplier = async (e) => {
+    e.preventDefault()
+    
+    if (!newSupplierData.name.trim()) {
+      showError('Supplier name is required')
+      return
+    }
+
+    setNewSupplierLoading(true)
+    try {
+      const response = await fetch('/api/v1/admin/suppliers', {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(newSupplierData)
+      })
+
+      const data = await response.json()
+
+      if (response.ok) {
+        showSuccess('Supplier created successfully!')
+        
+        // Add the new supplier to the list
+        const newSupplier = data.supplier
+        setSuppliers(prev => [...prev, newSupplier].sort((a, b) => a.name.localeCompare(b.name)))
+        
+        // Select the new supplier
+        setFormData(prev => ({
+          ...prev,
+          supplier_id: newSupplier.id.toString()
+        }))
+        
+        // Close the modal
+        setShowNewSupplierModal(false)
+      } else {
+        showError(data.error || 'Failed to create supplier')
+      }
+    } catch (err) {
+      showError('An error occurred while creating the supplier')
+      logger.error('Create supplier error', { error: err.message })
+    } finally {
+      setNewSupplierLoading(false)
     }
   }
 
@@ -422,7 +518,7 @@ function SubmitExpense({ user, setUser }) {
                   <span style={{ color: '#e65100' }}>Loading data into form...</span>
                 </div>
               )}
-              {ocrData && !ocrProcessing && !ocrDataLoading && (
+              {showOcrSuccess && ocrData && !ocrProcessing && !ocrDataLoading && (
                 <div className="ocr-result" style={{ marginTop: '1rem', padding: '1rem', backgroundColor: '#e8f5e9', borderRadius: '8px' }}>
                   <i className="fas fa-check-circle" style={{ color: '#4caf50', marginRight: '0.5rem' }}></i>
                   <span>Data extracted successfully: Amount {ocrData.amount} ₪</span>
@@ -483,6 +579,7 @@ function SubmitExpense({ user, setUser }) {
                 value={formData.description}
                 onChange={handleInputChange}
                 placeholder="Brief description of the expense"
+                required
               />
 
               <Textarea
@@ -550,11 +647,15 @@ function SubmitExpense({ user, setUser }) {
                   label="Supplier"
                   name="supplier_id"
                   value={formData.supplier_id}
-                  onChange={handleInputChange}
-                  options={suppliers}
+                  onChange={handleSupplierChange}
+                  options={[
+                    { id: '__create_new__', name: '+ Create New Supplier' },
+                    ...suppliers
+                  ]}
                   placeholder="Select a supplier"
                   displayKey="name"
                   valueKey="id"
+                  required
                 />
 
                 <Select
@@ -621,6 +722,68 @@ function SubmitExpense({ user, setUser }) {
           </div>
         </form>
       </div>
+
+      {/* New Supplier Modal */}
+      <Modal.Form
+        isOpen={showNewSupplierModal}
+        onClose={() => setShowNewSupplierModal(false)}
+        onSubmit={handleCreateSupplier}
+        title="Create New Supplier"
+        submitText="Create Supplier"
+        cancelText="Cancel"
+        loading={newSupplierLoading}
+        size="medium"
+      >
+        <div className="new-supplier-form">
+          <Input
+            type="text"
+            label="Supplier Name"
+            name="name"
+            value={newSupplierData.name}
+            onChange={handleNewSupplierInputChange}
+            required
+            placeholder="Enter supplier name"
+          />
+          
+          <div className="form-row">
+            <Input
+              type="email"
+              label="Email"
+              name="email"
+              value={newSupplierData.email}
+              onChange={handleNewSupplierInputChange}
+              placeholder="supplier@example.com"
+            />
+            
+            <Input
+              type="tel"
+              label="Phone"
+              name="phone"
+              value={newSupplierData.phone}
+              onChange={handleNewSupplierInputChange}
+              placeholder="Phone number"
+            />
+          </div>
+          
+          <Input
+            type="text"
+            label="Tax ID / Business Number"
+            name="tax_id"
+            value={newSupplierData.tax_id}
+            onChange={handleNewSupplierInputChange}
+            placeholder="Tax ID or business number"
+          />
+          
+          <Input
+            type="text"
+            label="Address"
+            name="address"
+            value={newSupplierData.address}
+            onChange={handleNewSupplierInputChange}
+            placeholder="Supplier address"
+          />
+        </div>
+      </Modal.Form>
     </div>
   )
 }

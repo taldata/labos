@@ -415,3 +415,22 @@
     max-height: 250px;
   }
 }
+
+/* Create New option styling in Tom Select */
+.ts-dropdown .option[data-value="__create_new__"] {
+  color: #667eea;
+  font-weight: 600;
+  border-bottom: 1px solid #e2e8f0;
+  background: linear-gradient(to right, rgba(102, 126, 234, 0.05), transparent);
+}
+
+.ts-dropdown .option[data-value="__create_new__"]:hover {
+  background: linear-gradient(to right, rgba(102, 126, 234, 0.15), rgba(102, 126, 234, 0.05));
+}
+
+.ts-dropdown .option[data-value="__create_new__"]::before {
+  content: '\f067'; /* Font Awesome plus icon */
+  font-family: 'Font Awesome 6 Free';
+  font-weight: 900;
+  margin-right: 0.5rem;
+}

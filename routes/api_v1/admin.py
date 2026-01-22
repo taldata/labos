@@ -1010,6 +1010,12 @@ def admin_update_expense(expense_id):
         else:
             data = request.get_json() or {}
 
+        # Validate required fields (description and supplier_id)
+        if 'description' in data and not data['description']:
+            return jsonify({'error': 'Description is required'}), 400
+        if 'supplier_id' in data and not data['supplier_id']:
+            return jsonify({'error': 'Supplier is required'}), 400
+
         # Basic fields
         if 'amount' in data and data['amount']:
             expense.amount = float(data['amount'])
