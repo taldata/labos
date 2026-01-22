@@ -12,6 +12,27 @@
   padding: 2rem;
 }
 
+/* Center the page header */
+.submit-expense-content .page-header__content {
+  flex-direction: column;
+  text-align: center;
+  gap: 1rem;
+}
+
+.submit-expense-content .page-header__right {
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.submit-expense-content .page-header__decoration {
+  display: none;
+}
+
+.submit-expense-content .page-header__actions {
+  width: 100%;
+  justify-content: center;
+}
+
 /* Page Title Section with Gradient Text */
 .page-title-section {
   display: flex;
