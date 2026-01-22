@@ -372,6 +372,7 @@ export const TomSelectInput = forwardRef(({
       maxOptions: null,
       allowEmptyOption: allowClear,
       create: false,
+      plugins: allowClear ? ['clear_button'] : [],
       sortField: [
         { field: '$order', direction: 'asc' },
         { field: 'text', direction: 'asc' }

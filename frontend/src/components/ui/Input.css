@@ -434,3 +434,40 @@
 .ts-dropdown .option.create-new-option i {
   font-size: 0.875rem;
 }
+
+/* Tom Select Clear Button Styling */
+.ts-wrapper .clear-button {
+  opacity: 0;
+  position: absolute;
+  top: 50%;
+  right: 2rem;
+  transform: translateY(-50%);
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #e2e8f0;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 0.75rem;
+  color: #64748b;
+  z-index: 10;
+}
+
+.ts-wrapper:hover .clear-button,
+.ts-wrapper.focus .clear-button {
+  opacity: 1;
+}
+
+.ts-wrapper .clear-button:hover {
+  background: #ef4444;
+  color: white;
+}
+
+/* Adjust control padding when clear button is present */
+.ts-wrapper.plugin-clear_button .ts-control {
+  padding-right: 3.5rem !important;
+}
