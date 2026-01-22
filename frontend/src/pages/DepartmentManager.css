@@ -471,3 +471,392 @@
     font-size: 1.1rem;
   }
 }
+
+/* =========================================
+   MANAGER VIEW - Simplified Dashboard Style
+   ========================================= */
+
+.manager-view .department-manager {
+  max-width: 1200px;
+}
+
+.manager-departments-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+  gap: 2rem;
+}
+
+@media (max-width: 600px) {
+  .manager-departments-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Empty State for Manager */
+.empty-card {
+  padding: 0;
+}
+
+.empty-state-manager {
+  text-align: center;
+  padding: 4rem 2rem;
+  color: #64748b;
+}
+
+.empty-state-manager i {
+  font-size: 4rem;
+  color: #cbd5e1;
+  margin-bottom: 1.5rem;
+  display: block;
+}
+
+.empty-state-manager h3 {
+  font-size: 1.5rem;
+  color: #475569;
+  margin-bottom: 0.5rem;
+}
+
+.empty-state-manager p {
+  font-size: 1rem;
+  color: #94a3b8;
+}
+
+/* Manager Department Card */
+.manager-dept-card {
+  background: white;
+  border-radius: 1.25rem;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+  border: 1px solid #e2e8f0;
+  transition: all 0.3s ease;
+}
+
+.manager-dept-card:hover {
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+  transform: translateY(-2px);
+}
+
+/* Department Header */
+.manager-dept-header {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 1.5rem 2rem;
+  color: white;
+}
+
+.manager-dept-title {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.manager-dept-icon {
+  font-size: 2rem;
+  background: rgba(255, 255, 255, 0.2);
+  width: 3rem;
+  height: 3rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.75rem;
+}
+
+.manager-dept-title h2 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin: 0;
+}
+
+/* Budget Overview */
+.manager-budget-overview {
+  padding: 1.5rem 2rem;
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.manager-budget-stats {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.manager-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.manager-stat-label {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #64748b;
+  font-weight: 600;
+}
+
+.manager-stat-value {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.manager-stat-value.spent {
+  color: #64748b;
+}
+
+.manager-stat-value.positive {
+  color: #059669;
+}
+
+.manager-stat-value.negative {
+  color: #dc2626;
+}
+
+/* Progress Bar */
+.manager-progress-container {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.manager-progress-bar {
+  flex: 1;
+  height: 10px;
+  background: #e2e8f0;
+  border-radius: 5px;
+  overflow: hidden;
+}
+
+.manager-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #10b981 0%, #059669 100%);
+  border-radius: 5px;
+  transition: width 0.6s ease;
+}
+
+.manager-progress-bar.warning .manager-progress-fill {
+  background: linear-gradient(90deg, #f59e0b 0%, #d97706 100%);
+}
+
+.manager-progress-bar.over-budget .manager-progress-fill {
+  background: linear-gradient(90deg, #ef4444 0%, #dc2626 100%);
+}
+
+.manager-progress-text {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #64748b;
+  min-width: 70px;
+  text-align: left;
+}
+
+/* Categories Section */
+.manager-categories {
+  padding: 1.5rem 2rem;
+}
+
+.manager-section-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #475569;
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.manager-section-title i {
+  color: #3b82f6;
+}
+
+.no-categories {
+  color: #94a3b8;
+  font-style: italic;
+  text-align: center;
+  padding: 1rem;
+}
+
+.manager-categories-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+/* Category Item */
+.manager-category-item {
+  background: #f8fafc;
+  border-radius: 0.75rem;
+  padding: 1rem 1.25rem;
+  border: 1px solid #e2e8f0;
+  transition: all 0.2s ease;
+}
+
+.manager-category-item:hover {
+  border-color: #3b82f6;
+  background: #f1f5f9;
+}
+
+.manager-category-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.manager-category-name {
+  font-weight: 600;
+  color: #334155;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.manager-category-name i {
+  color: #60a5fa;
+  font-size: 0.9rem;
+}
+
+.manager-category-expenses-link {
+  color: #94a3b8;
+  cursor: pointer;
+  padding: 0.25rem;
+  border-radius: 0.25rem;
+  transition: all 0.2s ease;
+}
+
+.manager-category-expenses-link:hover {
+  color: #3b82f6;
+  background: #e0e7ff;
+}
+
+.manager-category-stats {
+  font-size: 0.875rem;
+  color: #64748b;
+  margin-bottom: 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.cat-budget {
+  font-weight: 600;
+  color: #475569;
+}
+
+.cat-separator {
+  color: #cbd5e1;
+}
+
+.cat-remaining {
+  color: #059669;
+}
+
+.cat-remaining.negative {
+  color: #dc2626;
+}
+
+.manager-category-progress {
+  height: 4px;
+  background: #e2e8f0;
+  border-radius: 2px;
+  overflow: hidden;
+  margin-bottom: 0.75rem;
+}
+
+.manager-cat-progress-fill {
+  height: 100%;
+  background: #10b981;
+  border-radius: 2px;
+  transition: width 0.4s ease;
+}
+
+.manager-cat-progress-fill.warning {
+  background: #f59e0b;
+}
+
+.manager-cat-progress-fill.over {
+  background: #ef4444;
+}
+
+/* Subcategories */
+.manager-subcategories {
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px dashed #e2e8f0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.manager-subcategory-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 0.75rem;
+  background: white;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+}
+
+.sub-name {
+  color: #475569;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.sub-name i {
+  color: #a78bfa;
+  font-size: 0.75rem;
+}
+
+.sub-stats {
+  color: #64748b;
+  font-size: 0.8rem;
+}
+
+.sub-stats .positive {
+  color: #059669;
+  margin-right: 0.25rem;
+}
+
+.sub-stats .negative {
+  color: #dc2626;
+  margin-right: 0.25rem;
+}
+
+/* Department Actions */
+.manager-dept-actions {
+  padding: 1rem 2rem 1.5rem;
+  border-top: 1px solid #e2e8f0;
+  display: flex;
+  justify-content: center;
+}
+
+.manager-dept-actions button {
+  width: 100%;
+  justify-content: center;
+}
+
+/* Responsive for Manager View */
+@media (max-width: 768px) {
+  .manager-budget-stats {
+    flex-wrap: wrap;
+  }
+
+  .manager-stat {
+    flex: 1;
+    min-width: 80px;
+  }
+
+  .manager-dept-header {
+    padding: 1.25rem 1.5rem;
+  }
+
+  .manager-budget-overview,
+  .manager-categories,
+  .manager-dept-actions {
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+  }
+}

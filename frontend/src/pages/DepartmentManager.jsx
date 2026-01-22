@@ -283,6 +283,199 @@ const DepartmentManager = ({ user, setUser }) => {
         return null;
     }
 
+    // Manager View - Simplified dashboard-style layout
+    if (viewOnly) {
+        return (
+            <div className="department-manager-container manager-view">
+                {loading ? (
+                    <div className="loading-container">
+                        <Skeleton variant="title" width="40%" />
+                        <Skeleton variant="text" count={3} />
+                    </div>
+                ) : (
+                    <main className="department-manager">
+                        <PageHeader
+                            title="המחלקות שלי"
+                            subtitle="סקירת תקציבים וקטגוריות"
+                            icon="fas fa-building"
+                            variant="purple"
+                            actions={
+                                <div className="year-selector" style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                                    <label style={{ fontWeight: 500, color: 'rgba(255,255,255,0.9)' }}>שנה:</label>
+                                    <Select
+                                        value={selectedYear?.id || ''}
+                                        onChange={(e) => {
+                                            const yearObj = years.find(y => y.id === parseInt(e.target.value));
+                                            setSelectedYear(yearObj);
+                                        }}
+                                        style={{ minWidth: '100px' }}
+                                    >
+                                        {years.map(y => (
+                                            <option key={y.id} value={y.id}>
+                                                {y.name}
+                                            </option>
+                                        ))}
+                                    </Select>
+                                </div>
+                            }
+                        />
+
+                        {filteredStructure.length === 0 ? (
+                            <Card className="empty-card">
+                                <div className="empty-state-manager">
+                                    <i className="fas fa-folder-open"></i>
+                                    <h3>אין מחלקות משויכות</h3>
+                                    <p>פנה למנהל המערכת לשיוך מחלקות</p>
+                                </div>
+                            </Card>
+                        ) : (
+                            <div className="manager-departments-grid">
+                                {filteredStructure.map(dept => {
+                                    const remaining = dept.budget - (dept.spent || 0);
+                                    const usagePercent = getBudgetUsage(dept.spent || 0, dept.budget);
+                                    const isOverBudget = remaining < 0;
+                                    const isWarning = usagePercent >= 80 && !isOverBudget;
+
+                                    return (
+                                        <Card key={dept.id} className="manager-dept-card">
+                                            {/* Department Header */}
+                                            <div className="manager-dept-header">
+                                                <div className="manager-dept-title">
+                                                    <span className="manager-dept-icon">🏢</span>
+                                                    <h2>{dept.name}</h2>
+                                                </div>
+                                            </div>
+
+                                            {/* Budget Overview */}
+                                            <div className="manager-budget-overview">
+                                                <div className="manager-budget-stats">
+                                                    <div className="manager-stat">
+                                                        <span className="manager-stat-label">תקציב כולל</span>
+                                                        <span className="manager-stat-value">
+                                                            {dept.budget.toLocaleString()} {getCurrencyLabel(dept.currency)}
+                                                        </span>
+                                                    </div>
+                                                    <div className="manager-stat">
+                                                        <span className="manager-stat-label">נוצל</span>
+                                                        <span className="manager-stat-value spent">
+                                                            {(dept.spent || 0).toLocaleString()} {getCurrencyLabel(dept.currency)}
+                                                        </span>
+                                                    </div>
+                                                    <div className="manager-stat">
+                                                        <span className="manager-stat-label">יתרה</span>
+                                                        <span className={`manager-stat-value ${isOverBudget ? 'negative' : 'positive'}`}>
+                                                            {remaining.toLocaleString()} {getCurrencyLabel(dept.currency)}
+                                                        </span>
+                                                    </div>
+                                                </div>
+
+                                                <div className="manager-progress-container">
+                                                    <div className={`manager-progress-bar ${isOverBudget ? 'over-budget' : isWarning ? 'warning' : ''}`}>
+                                                        <div 
+                                                            className="manager-progress-fill"
+                                                            style={{ width: `${Math.min(usagePercent, 100)}%` }}
+                                                        ></div>
+                                                    </div>
+                                                    <span className="manager-progress-text">{usagePercent.toFixed(0)}% נוצל</span>
+                                                </div>
+                                            </div>
+
+                                            {/* Categories */}
+                                            <div className="manager-categories">
+                                                <h3 className="manager-section-title">
+                                                    <i className="fas fa-folder"></i>
+                                                    קטגוריות ({dept.categories.length})
+                                                </h3>
+                                                
+                                                {dept.categories.length === 0 ? (
+                                                    <p className="no-categories">אין קטגוריות במחלקה זו</p>
+                                                ) : (
+                                                    <div className="manager-categories-list">
+                                                        {dept.categories.map(cat => {
+                                                            const catRemaining = cat.budget - (cat.spent || 0);
+                                                            const catUsage = getBudgetUsage(cat.spent || 0, cat.budget);
+                                                            
+                                                            return (
+                                                                <div key={cat.id} className="manager-category-item">
+                                                                    <div className="manager-category-header">
+                                                                        <span className="manager-category-name">
+                                                                            <i className="fas fa-folder-open"></i>
+                                                                            {cat.name}
+                                                                        </span>
+                                                                        <span 
+                                                                            className="manager-category-expenses-link"
+                                                                            onClick={() => navigate(`/admin/expense-history?category_id=${cat.id}`)}
+                                                                            title="צפה בהוצאות"
+                                                                        >
+                                                                            <i className="fas fa-external-link-alt"></i>
+                                                                        </span>
+                                                                    </div>
+                                                                    <div className="manager-category-stats">
+                                                                        <span className="cat-budget">{cat.budget.toLocaleString()}</span>
+                                                                        <span className="cat-separator">/</span>
+                                                                        <span className={`cat-remaining ${catRemaining < 0 ? 'negative' : ''}`}>
+                                                                            יתרה: {catRemaining.toLocaleString()}
+                                                                        </span>
+                                                                    </div>
+                                                                    <div className="manager-category-progress">
+                                                                        <div 
+                                                                            className={`manager-cat-progress-fill ${catUsage >= 100 ? 'over' : catUsage >= 80 ? 'warning' : ''}`}
+                                                                            style={{ width: `${Math.min(catUsage, 100)}%` }}
+                                                                        ></div>
+                                                                    </div>
+
+                                                                    {/* Subcategories */}
+                                                                    {cat.subcategories.length > 0 && (
+                                                                        <div className="manager-subcategories">
+                                                                            {cat.subcategories.map(sub => {
+                                                                                const subRemaining = sub.budget - (sub.spent || 0);
+                                                                                return (
+                                                                                    <div key={sub.id} className="manager-subcategory-item">
+                                                                                        <span className="sub-name">
+                                                                                            <i className="fas fa-file-alt"></i>
+                                                                                            {sub.name}
+                                                                                        </span>
+                                                                                        <span className="sub-stats">
+                                                                                            {sub.budget.toLocaleString()} | 
+                                                                                            <span className={subRemaining < 0 ? 'negative' : 'positive'}>
+                                                                                                {subRemaining.toLocaleString()}
+                                                                                            </span>
+                                                                                        </span>
+                                                                                    </div>
+                                                                                );
+                                                                            })}
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                )}
+                                            </div>
+
+                                            {/* Quick Action */}
+                                            <div className="manager-dept-actions">
+                                                <Button 
+                                                    variant="ghost" 
+                                                    size="small"
+                                                    icon="fas fa-list"
+                                                    onClick={() => navigate(`/admin/expense-history?department_id=${dept.id}`)}
+                                                >
+                                                    צפה בכל ההוצאות
+                                                </Button>
+                                            </div>
+                                        </Card>
+                                    );
+                                })}
+                            </div>
+                        )}
+                    </main>
+                )}
+            </div>
+        );
+    }
+
+    // Admin View - Full management interface
     return (
         <div className="department-manager-container">
 
@@ -294,8 +487,8 @@ const DepartmentManager = ({ user, setUser }) => {
             ) : (
                 <main className="department-manager">
                     <PageHeader
-                        title={viewOnly ? "My Departments" : "Organization Structure"}
-                        subtitle={viewOnly ? "View your department budgets and categories" : "Manage departments, categories, and budgets"}
+                        title="Organization Structure"
+                        subtitle="Manage departments, categories, and budgets"
                         icon="fas fa-sitemap"
                         variant="purple"
                         actions={
@@ -316,21 +509,17 @@ const DepartmentManager = ({ user, setUser }) => {
                                             </option>
                                         ))}
                                     </Select>
-                                    {!viewOnly && (
-                                        <Button
-                                            variant="ghost"
-                                            size="small"
-                                            icon="fas fa-calendar-plus"
-                                            onClick={() => openModal('year', 'create')}
-                                            title="הוסף שנה חדשה"
-                                        />
-                                    )}
+                                    <Button
+                                        variant="ghost"
+                                        size="small"
+                                        icon="fas fa-calendar-plus"
+                                        onClick={() => openModal('year', 'create')}
+                                        title="הוסף שנה חדשה"
+                                    />
                                 </div>
-                                {!viewOnly && (
-                                    <Button variant="secondary" icon="fas fa-plus" onClick={() => openModal('department', 'create')}>
-                                        Add Department
-                                    </Button>
-                                )}
+                                <Button variant="secondary" icon="fas fa-plus" onClick={() => openModal('department', 'create')}>
+                                    Add Department
+                                </Button>
                             </div>
                         }
                     />
@@ -351,9 +540,7 @@ const DepartmentManager = ({ user, setUser }) => {
                             <div className="empty-state">
                                 {searchQuery 
                                     ? `No results found for "${searchQuery}"` 
-                                    : viewOnly 
-                                        ? 'No departments assigned to you. Please contact an administrator.'
-                                        : 'No departments yet. Click "Add Department" to get started!'}
+                                    : 'No departments yet. Click "Add Department" to get started!'}
                             </div>
                         )}
                         {filteredStructure.map(dept => (
@@ -394,13 +581,11 @@ const DepartmentManager = ({ user, setUser }) => {
                                             </div>
                                         </div>
                                     </div>
-                                    {!viewOnly && (
-                                        <div className="actions" onClick={e => e.stopPropagation()}>
-                                            <Button variant="ghost" size="small" icon="fas fa-edit" onClick={() => openModal('department', 'edit', dept)} title="Edit Department" />
-                                            <Button variant="ghost" size="small" icon="fas fa-plus-circle" onClick={() => openModal('category', 'create', null, dept.id)} title="Add Category" />
-                                            <Button variant="ghost" size="small" icon="fas fa-trash" onClick={() => handleDelete('department', dept.id)} title="Delete Department" className="btn-delete" />
-                                        </div>
-                                    )}
+                                    <div className="actions" onClick={e => e.stopPropagation()}>
+                                        <Button variant="ghost" size="small" icon="fas fa-edit" onClick={() => openModal('department', 'edit', dept)} title="Edit Department" />
+                                        <Button variant="ghost" size="small" icon="fas fa-plus-circle" onClick={() => openModal('category', 'create', null, dept.id)} title="Add Category" />
+                                        <Button variant="ghost" size="small" icon="fas fa-trash" onClick={() => handleDelete('department', dept.id)} title="Delete Department" className="btn-delete" />
+                                    </div>
                                 </div>
 
                                 {expandedDepts[dept.id] && (
@@ -459,13 +644,11 @@ const DepartmentManager = ({ user, setUser }) => {
                                                                 </div>
                                                             </div>
                                                         </div>
-                                                        {!viewOnly && (
-                                                            <div className="actions" onClick={e => e.stopPropagation()}>
-                                                                <Button variant="ghost" size="small" icon="fas fa-edit" onClick={() => openModal('category', 'edit', cat)} title="Edit Category" />
-                                                                <Button variant="ghost" size="small" icon="fas fa-plus-circle" onClick={() => openModal('subcategory', 'create', null, cat.id)} title="Add Subcategory" />
-                                                                <Button variant="ghost" size="small" icon="fas fa-trash" onClick={() => handleDelete('category', cat.id)} title="Delete Category" className="btn-delete" />
-                                                            </div>
-                                                        )}
+                                                        <div className="actions" onClick={e => e.stopPropagation()}>
+                                                            <Button variant="ghost" size="small" icon="fas fa-edit" onClick={() => openModal('category', 'edit', cat)} title="Edit Category" />
+                                                            <Button variant="ghost" size="small" icon="fas fa-plus-circle" onClick={() => openModal('subcategory', 'create', null, cat.id)} title="Add Subcategory" />
+                                                            <Button variant="ghost" size="small" icon="fas fa-trash" onClick={() => handleDelete('category', cat.id)} title="Delete Category" className="btn-delete" />
+                                                        </div>
                                                     </div>
 
                                                     {expandedCats[cat.id] && (
@@ -507,12 +690,10 @@ const DepartmentManager = ({ user, setUser }) => {
                                                                             </div>
                                                                         </div>
                                                                     </div>
-                                                                    {!viewOnly && (
-                                                                        <div className="actions">
-                                                                            <Button variant="ghost" size="small" icon="fas fa-edit" onClick={() => openModal('subcategory', 'edit', sub)} title="Edit Subcategory" />
-                                                                            <Button variant="ghost" size="small" icon="fas fa-trash" onClick={() => handleDelete('subcategory', sub.id)} title="Delete Subcategory" className="btn-delete" />
-                                                                        </div>
-                                                                    )}
+                                                                    <div className="actions">
+                                                                        <Button variant="ghost" size="small" icon="fas fa-edit" onClick={() => openModal('subcategory', 'edit', sub)} title="Edit Subcategory" />
+                                                                        <Button variant="ghost" size="small" icon="fas fa-trash" onClick={() => handleDelete('subcategory', sub.id)} title="Delete Subcategory" className="btn-delete" />
+                                                                    </div>
                                                                 </div>
                                                             ))}
                                                         </div>
