@@ -735,12 +735,27 @@
   margin-bottom: 0.5rem;
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.cat-stat-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.cat-stat-label {
+  font-size: 0.75rem;
+  color: #94a3b8;
+  font-weight: 500;
 }
 
 .cat-budget {
   font-weight: 600;
   color: #475569;
+  direction: ltr;
+  unicode-bidi: embed;
 }
 
 .cat-separator {
@@ -748,6 +763,12 @@
 }
 
 .cat-remaining {
+  font-weight: 600;
+  direction: ltr;
+  unicode-bidi: embed;
+}
+
+.cat-remaining.positive {
   color: #059669;
 }
 
@@ -813,16 +834,46 @@
 .sub-stats {
   color: #64748b;
   font-size: 0.8rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
-.sub-stats .positive {
+.sub-stat-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.sub-stat-label {
+  font-size: 0.7rem;
+  color: #94a3b8;
+  font-weight: 500;
+}
+
+.sub-budget {
+  font-weight: 600;
+  color: #475569;
+  direction: ltr;
+  unicode-bidi: embed;
+}
+
+.sub-separator {
+  color: #cbd5e1;
+}
+
+.sub-remaining {
+  font-weight: 600;
+  direction: ltr;
+  unicode-bidi: embed;
+}
+
+.sub-remaining.positive {
   color: #059669;
-  margin-right: 0.25rem;
 }
 
-.sub-stats .negative {
+.sub-remaining.negative {
   color: #dc2626;
-  margin-right: 0.25rem;
 }
 
 /* Department Actions */
