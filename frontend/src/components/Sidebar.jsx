@@ -104,8 +104,8 @@ function Sidebar({ user, setUser, isOpen, onToggle }) {
             ))}
           </div>
 
-          {/* Manager Section */}
-          {(user?.is_manager || user?.is_admin) && (
+          {/* Manager Section - Only for managers who are not admins */}
+          {(user?.is_manager && !user?.is_admin) && (
             <div className="nav-section">
               {isOpen && <div className="nav-section-title">Management</div>}
               {managerItems.map(item => (
