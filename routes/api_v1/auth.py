@@ -28,10 +28,21 @@ def _build_msal_app(cache=None):
 def get_current_user():
     """Get current authenticated user"""
     if current_user.is_authenticated:
-        # Get managed department IDs for managers
-        managed_department_ids = []
+        # Get managed department info for managers (including names for cross-year matching)
+        managed_departments_info = []
         if current_user.is_manager:
-            managed_department_ids = [d.id for d in current_user.managed_departments]
+            managed_departments_info = [
+                {'id': d.id, 'name': d.name, 'year_id': d.year_id}
+                for d in current_user.managed_departments
+            ]
+        
+        # Get home department name if exists
+        home_department_name = None
+        if current_user.department_id:
+            from models import Department
+            home_dept = Department.query.get(current_user.department_id)
+            if home_dept:
+                home_department_name = home_dept.name
         
         return jsonify({
             'user': {
@@ -46,8 +57,10 @@ def get_current_user():
                 'can_use_modern_version': current_user.can_use_modern_version,
                 'preferred_version': current_user.preferred_version,
                 'department_id': current_user.department_id,
+                'home_department_name': home_department_name,
                 'profile_pic': current_user.profile_pic,
-                'managed_department_ids': managed_department_ids
+                'managed_department_ids': [d['id'] for d in managed_departments_info],
+                'managed_departments': managed_departments_info
             }
         }), 200
     return jsonify({'error': 'Not authenticated'}), 401

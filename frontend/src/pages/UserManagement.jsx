@@ -34,7 +34,8 @@ function UserManagement({ user, setUser }) {
     is_accounting: false,
     status: 'active',
     can_use_modern_version: true,
-    department_id: ''
+    department_id: '',
+    managed_department_ids: []
   })
   const [formError, setFormError] = useState('')
 
@@ -126,7 +127,8 @@ function UserManagement({ user, setUser }) {
         is_accounting: userToEdit.is_accounting,
         status: userToEdit.status,
         can_use_modern_version: userToEdit.can_use_modern_version,
-        department_id: userToEdit.department_id || ''
+        department_id: userToEdit.department_id || '',
+        managed_department_ids: userToEdit.managed_department_ids || []
       })
     } else {
       setFormData({
@@ -139,7 +141,8 @@ function UserManagement({ user, setUser }) {
         is_accounting: false,
         status: 'active',
         can_use_modern_version: true,
-        department_id: ''
+        department_id: '',
+        managed_department_ids: []
       })
     }
     setModalOpen(true)
@@ -188,7 +191,7 @@ function UserManagement({ user, setUser }) {
         if (modalMode === 'create' && data.user?.id) {
           setNewUserId(data.user.id)
         }
-        fetchData()
+        fetchUsers()
       } else {
         setFormError(data.error || 'Operation failed')
       }
@@ -211,7 +214,7 @@ function UserManagement({ user, setUser }) {
 
       if (res.ok) {
         success('User deleted successfully')
-        fetchData()
+        fetchUsers()
       } else {
         const data = await res.json()
         showError(data.error || 'Failed to delete user')
@@ -322,7 +325,16 @@ function UserManagement({ user, setUser }) {
                         </div>
                       </td>
                       <td>{u.email}</td>
-                      <td>{u.department_name || <span className="no-dept">No department</span>}</td>
+                      <td>
+                        <div className="dept-info">
+                          {u.department_name || <span className="no-dept">No department</span>}
+                          {u.is_manager && u.managed_departments && u.managed_departments.length > 0 && (
+                            <div className="managed-depts-info" title={`Manages: ${u.managed_departments.map(d => d.name).join(', ')}`}>
+                              <i className="fas fa-building"></i> {u.managed_departments.length} managed
+                            </div>
+                          )}
+                        </div>
+                      </td>
                       <td><div className="roles-cell">{getRoleBadges(u)}</div></td>
                       <td><Badge variant={getStatusVariant(u.status)}>{u.status}</Badge></td>
                       <td>
@@ -484,6 +496,39 @@ function UserManagement({ user, setUser }) {
               </label>
             </div>
           </div>
+
+          {/* Managed Departments - only shown for managers */}
+          {formData.is_manager && (
+            <div className="form-group">
+              <label className="section-label">
+                <i className="fas fa-building"></i> Managed Departments
+              </label>
+              <p className="field-hint">Select the departments this manager can manage</p>
+              <div className="managed-departments-list">
+                {departments.map(dept => (
+                  <label key={dept.id} className="checkbox-label dept-checkbox">
+                    <input
+                      type="checkbox"
+                      checked={formData.managed_department_ids.includes(dept.id)}
+                      onChange={(e) => {
+                        const checked = e.target.checked
+                        setFormData(prev => ({
+                          ...prev,
+                          managed_department_ids: checked
+                            ? [...prev.managed_department_ids, dept.id]
+                            : prev.managed_department_ids.filter(id => id !== dept.id)
+                        }))
+                      }}
+                    />
+                    <span>{dept.name}</span>
+                  </label>
+                ))}
+                {departments.length === 0 && (
+                  <span className="no-depts-msg">No departments available</span>
+                )}
+              </div>
+            </div>
+          )}
 
           <div className="modal-actions">
             <Button type="button" variant="secondary" onClick={closeModal}>

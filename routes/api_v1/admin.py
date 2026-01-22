@@ -302,6 +302,11 @@ def get_all_users():
 
         users_data = []
         for user in users:
+            # Get managed departments info
+            managed_depts = [
+                {'id': d.id, 'name': d.name, 'year_id': d.year_id}
+                for d in user.managed_departments
+            ]
             users_data.append({
                 'id': user.id,
                 'username': user.username,
@@ -314,7 +319,9 @@ def get_all_users():
                 'status': user.status,
                 'can_use_modern_version': user.can_use_modern_version,
                 'department_id': user.department_id,
-                'department_name': user.home_department.name if user.home_department else None
+                'department_name': user.home_department.name if user.home_department else None,
+                'managed_departments': managed_depts,
+                'managed_department_ids': [d.id for d in user.managed_departments]
             })
 
         return jsonify({'users': users_data}), 200
@@ -361,6 +368,16 @@ def create_user():
             user.password = generate_password_hash(data['password'])
         
         db.session.add(user)
+        db.session.flush()  # Get the user ID before committing
+        
+        # Handle managed departments for managers
+        if user.is_manager and data.get('managed_department_ids'):
+            managed_depts = Department.query.filter(
+                Department.id.in_(data['managed_department_ids'])
+            ).all()
+            user.managed_departments = managed_depts
+            logging.info(f"Assigned managed departments to {user.username}: {[d.name for d in managed_depts]}")
+        
         db.session.commit()
         
         logging.info(f"User {user.username} created by {current_user.username}")
@@ -372,7 +389,8 @@ def create_user():
                 'username': user.username,
                 'email': user.email,
                 'first_name': user.first_name,
-                'last_name': user.last_name
+                'last_name': user.last_name,
+                'managed_department_ids': [d.id for d in user.managed_departments]
             }
         }), 201
         
@@ -418,6 +436,18 @@ def update_user(user_id):
         if data.get('password'):
             user.password = generate_password_hash(data['password'])
         
+        # Handle managed departments for managers
+        if 'managed_department_ids' in data:
+            if user.is_manager and data['managed_department_ids']:
+                managed_depts = Department.query.filter(
+                    Department.id.in_(data['managed_department_ids'])
+                ).all()
+                user.managed_departments = managed_depts
+                logging.info(f"Updated managed departments for {user.username}: {[d.name for d in managed_depts]}")
+            else:
+                # Clear managed departments if not a manager or empty list
+                user.managed_departments = []
+        
         db.session.commit()
         
         logging.info(f"User {user.username} updated by {current_user.username}")
@@ -435,7 +465,8 @@ def update_user(user_id):
                 'is_accounting': user.is_accounting,
                 'status': user.status,
                 'can_use_modern_version': user.can_use_modern_version,
-                'department_id': user.department_id
+                'department_id': user.department_id,
+                'managed_department_ids': [d.id for d in user.managed_departments]
             }
         }), 200
         

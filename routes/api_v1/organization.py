@@ -212,6 +212,8 @@ def get_organization_structure():
             managed_dept_ids = [d.id for d in managed_depts]
             managed_dept_names = [d.name for d in managed_depts]
             
+            logging.info(f"Manager {current_user.username} (id={current_user.id}): managed_dept_ids={managed_dept_ids}, managed_dept_names={managed_dept_names}, department_id={current_user.department_id}")
+            
             # Also include the manager's home department as a fallback
             if current_user.department_id:
                 if current_user.department_id not in managed_dept_ids:
@@ -220,6 +222,7 @@ def get_organization_structure():
                 home_dept = Department.query.get(current_user.department_id)
                 if home_dept and home_dept.name not in managed_dept_names:
                     managed_dept_names.append(home_dept.name)
+                    logging.info(f"Added home department name: {home_dept.name}")
             
             if managed_dept_ids or managed_dept_names:
                 # Build filter conditions
@@ -229,10 +232,13 @@ def get_organization_structure():
                 if managed_dept_names:
                     conditions.append(Department.name.in_(managed_dept_names))
                 
+                logging.info(f"Filtering departments by ids={managed_dept_ids} OR names={managed_dept_names} for year_id={year_id}")
+                
                 # Filter by name OR id to support both same-year and cross-year access
                 query = query.filter(or_(*conditions))
             else:
                 # Manager has no assigned departments - return empty
+                logging.warning(f"Manager {current_user.username} has no assigned departments (managed_dept_ids={managed_dept_ids}, managed_dept_names={managed_dept_names}, department_id={current_user.department_id})")
                 return jsonify({'structure': [], 'view_only': True}), 200
         
         departments = query.order_by(Department.name).all()
