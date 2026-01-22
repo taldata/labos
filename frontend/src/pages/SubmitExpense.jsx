@@ -535,17 +535,7 @@ function SubmitExpense({ user, setUser }) {
                 />
               </div>
 
-              <Select
-                label="Expense Type"
-                name="expense_type"
-                value={formData.expense_type}
-                onChange={handleInputChange}
-                required
-              >
-                <option value="auto_approved">Auto Approved</option>
-                <option value="needs_approval">Needs Approval</option>
-                <option value="future_approval">Future Approval</option>
-              </Select>
+{/* Expense Type dropdown hidden - all expenses are auto-approved */}
             </Card.Body>
           </Card>
 

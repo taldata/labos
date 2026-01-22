@@ -428,7 +428,7 @@ def submit_expense():
             supplier_id=supplier_id,
             credit_card_id=credit_card_id,
             payment_due_date=payment_due_date,  # Add payment due date
-            status='approved' if expense_type == 'auto_approved' else 'pending',
+            status='approved',  # All expenses are auto-approved
             invoice_date=invoice_date,
         )
         

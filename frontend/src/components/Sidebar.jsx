@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useRef } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import logger from '../utils/logger'
 import './Sidebar.css'
@@ -6,27 +6,7 @@ import './Sidebar.css'
 function Sidebar({ user, setUser, isOpen, onToggle }) {
   const navigate = useNavigate()
   const location = useLocation()
-  const [pendingCount, setPendingCount] = useState(0)
-
-  useEffect(() => {
-    if (user?.is_manager || user?.is_admin) {
-      fetchPendingCount()
-    }
-  }, [user])
-
-  const fetchPendingCount = async () => {
-    try {
-      const res = await fetch('/api/v1/expenses/pending-count', {
-        credentials: 'include'
-      })
-      if (res.ok) {
-        const data = await res.json()
-        setPendingCount(data.count || 0)
-      }
-    } catch (err) {
-      logger.error('Failed to fetch pending count')
-    }
-  }
+  // Pending count removed - all expenses are auto-approved
 
   const handleLogout = async () => {
     try {
@@ -67,12 +47,7 @@ function Sidebar({ user, setUser, isOpen, onToggle }) {
   ]
 
   const managerItems = [
-    { 
-      path: '/approvals', 
-      icon: 'fa-clipboard-check', 
-      label: 'Approvals',
-      badge: pendingCount > 0 ? pendingCount : null 
-    },
+    // Approvals tab hidden - all expenses are auto-approved
     { path: '/admin/departments', icon: 'fa-sitemap', label: 'My Departments' },
   ]
 
