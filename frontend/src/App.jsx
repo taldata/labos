@@ -20,6 +20,7 @@ const Settings = lazy(() => import('./pages/Settings'))
 const SupplierManagement = lazy(() => import('./pages/SupplierManagement'))
 const CreditCardManagement = lazy(() => import('./pages/CreditCardManagement'))
 const ExpenseHistory = lazy(() => import('./pages/ExpenseHistory'))
+const NotFound = lazy(() => import('./pages/NotFound'))
 
 // Loading fallback component
 function PageLoader() {
@@ -131,6 +132,7 @@ function App() {
                 element={<AuthenticatedRoute user={user} setUser={setUser}><ExpenseHistory user={user} setUser={setUser} /></AuthenticatedRoute>}
               />
               <Route path="/" element={<Navigate to={user ? "/dashboard" : "/login"} />} />
+              <Route path="*" element={<NotFound />} />
             </Routes>
           </Suspense>
         </Router>
