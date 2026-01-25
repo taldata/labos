@@ -192,6 +192,19 @@ function UserManagement({ user, setUser }) {
           setNewUserId(data.user.id)
         }
         fetchUsers()
+
+        // If we updated the current user's role/permissions, refresh their session
+        if (modalMode === 'edit' && currentUser.id === user?.id) {
+          try {
+            const authRes = await fetch('/api/v1/auth/me', { credentials: 'include' })
+            if (authRes.ok) {
+              const authData = await authRes.json()
+              setUser(authData.user)
+            }
+          } catch (err) {
+            logger.error('Failed to refresh user session', { error: err.message })
+          }
+        }
       } else {
         setFormError(data.error || 'Operation failed')
       }
