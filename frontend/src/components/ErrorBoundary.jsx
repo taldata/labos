@@ -24,7 +24,7 @@ class ErrorBoundary extends Component {
     });
 
     // In production, you could send this to a logging service
-    if (process.env.NODE_ENV === 'production') {
+    if (import.meta.env.MODE !== 'development') {
       // TODO: Send to error tracking service (e.g., Sentry)
       // logErrorToService(error, errorInfo);
     } else {
@@ -60,7 +60,7 @@ class ErrorBoundary extends Component {
                 We're sorry for the inconvenience. An unexpected error occurred.
               </p>
 
-              {process.env.NODE_ENV === 'development' && this.state.error && (
+              {import.meta.env.MODE === 'development' && this.state.error && (
                 <div style={{
                   textAlign: 'left',
                   backgroundColor: '#f3f4f6',

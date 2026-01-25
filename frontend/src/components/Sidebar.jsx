@@ -1,4 +1,4 @@
-import { useRef } from 'react'
+// React hooks not currently needed
 import { useNavigate, useLocation } from 'react-router-dom'
 import logger from '../utils/logger'
 import './Sidebar.css'
