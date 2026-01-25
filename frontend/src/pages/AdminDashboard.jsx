@@ -17,6 +17,9 @@ function AdminDashboard({ user, setUser }) {
   const [timePeriod, setTimePeriod] = useState('this_month')
   const [startDate, setStartDate] = useState('') // DD/MM/YYYY format
   const [endDate, setEndDate] = useState('') // DD/MM/YYYY format
+  const [departmentId, setDepartmentId] = useState('')
+  const [status, setStatus] = useState('')
+  const [departments, setDepartments] = useState([])
 
   // Convert DD/MM/YYYY to YYYY-MM-DD for API
   const convertToAPIFormat = (dateStr) => {
@@ -40,6 +43,24 @@ function AdminDashboard({ user, setUser }) {
     return date.getDate() === day && date.getMonth() === month - 1 && date.getFullYear() === year
   }
 
+  // Fetch departments on mount
+  useEffect(() => {
+    const fetchDepartments = async () => {
+      try {
+        const response = await fetch('/api/v1/form-data/departments', {
+          credentials: 'include'
+        })
+        if (response.ok) {
+          const data = await response.json()
+          setDepartments(data.departments || [])
+        }
+      } catch (error) {
+        logger.error('Failed to fetch departments', { error: error.message })
+      }
+    }
+    fetchDepartments()
+  }, [])
+
   useEffect(() => {
     if (!user?.is_admin) {
       navigate('/dashboard')
@@ -49,7 +70,7 @@ function AdminDashboard({ user, setUser }) {
     if (timePeriod !== 'custom' || (startDate && endDate)) {
       fetchAdminStats()
     }
-  }, [timePeriod])
+  }, [timePeriod, departmentId, status])
 
   const fetchAdminStats = async () => {
     try {
@@ -68,6 +89,16 @@ function AdminDashboard({ user, setUser }) {
         }
 
         url += `&start_date=${apiStartDate}&end_date=${apiEndDate}`
+      }
+
+      // Add department filter
+      if (departmentId) {
+        url += `&department_id=${departmentId}`
+      }
+
+      // Add status filter
+      if (status) {
+        url += `&status=${status}`
       }
 
       const response = await fetch(url, {
@@ -136,6 +167,30 @@ function AdminDashboard({ user, setUser }) {
               <option value="custom">Custom Date Range</option>
             </Select>
 
+            <Select
+              label="Department"
+              value={departmentId}
+              onChange={(e) => setDepartmentId(e.target.value)}
+              style={{ minWidth: '180px' }}
+            >
+              <option value="">All Departments</option>
+              {departments.map(dept => (
+                <option key={dept.id} value={dept.id}>{dept.name}</option>
+              ))}
+            </Select>
+
+            <Select
+              label="Status"
+              value={status}
+              onChange={(e) => setStatus(e.target.value)}
+              style={{ minWidth: '150px' }}
+            >
+              <option value="">All Statuses</option>
+              <option value="pending">Pending</option>
+              <option value="approved">Approved</option>
+              <option value="rejected">Rejected</option>
+            </Select>
+
             {timePeriod === 'custom' && (
               <>
                 <Input
@@ -164,6 +219,19 @@ function AdminDashboard({ user, setUser }) {
                   Apply
                 </Button>
               </>
+            )}
+
+            {(departmentId || status) && (
+              <Button
+                variant="ghost"
+                icon="fas fa-times"
+                onClick={() => {
+                  setDepartmentId('')
+                  setStatus('')
+                }}
+              >
+                Clear Filters
+              </Button>
             )}
           </Card.Body>
         </Card>
