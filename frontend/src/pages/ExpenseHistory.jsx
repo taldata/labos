@@ -510,7 +510,7 @@ function ExpenseRow({ expense, onView, onEdit, onMove, onDelete, formatDate, for
   }
 
   return (
-    <tr className="eh-table__row">
+    <tr className="eh-table__row eh-table__row--clickable" onClick={() => onView(expense.id)} style={{ cursor: 'pointer' }}>
       <td className="eh-table__cell eh-table__cell--date">
         {formatDate(expense.date)}
       </td>
@@ -565,47 +565,49 @@ function ExpenseRow({ expense, onView, onEdit, onMove, onDelete, formatDate, for
           <span className="eh-muted">-</span>
         )}
       </td>
-      <td className="eh-table__cell eh-table__cell--files">
+      <td className="eh-table__cell eh-table__cell--files" onClick={(e) => e.stopPropagation()}>
         {(expense.invoice_filename || expense.receipt_filename || expense.quote_filename) ? (
           <div className="eh-files">
             {expense.invoice_filename && (
-              <FilePreviewButton
-                fileUrl={`/download/${expense.invoice_filename}`}
-                fileName={expense.invoice_filename}
-                icon="fas fa-file-invoice-dollar"
-                title="Preview Invoice"
-              />
+              <div className="eh-file-item">
+                <FilePreviewButton
+                  fileUrl={`/download/${expense.invoice_filename}`}
+                  fileName={expense.invoice_filename}
+                  icon="fas fa-file-invoice-dollar"
+                  title="Preview Invoice"
+                />
+                <span className="eh-file-label">חשבונית</span>
+              </div>
             )}
             {expense.receipt_filename && (
-              <FilePreviewButton
-                fileUrl={`/download/${expense.receipt_filename}`}
-                fileName={expense.receipt_filename}
-                icon="fas fa-receipt"
-                title="Preview Receipt"
-              />
+              <div className="eh-file-item">
+                <FilePreviewButton
+                  fileUrl={`/download/${expense.receipt_filename}`}
+                  fileName={expense.receipt_filename}
+                  icon="fas fa-receipt"
+                  title="Preview Receipt"
+                />
+                <span className="eh-file-label">קבלה</span>
+              </div>
             )}
             {expense.quote_filename && (
-              <FilePreviewButton
-                fileUrl={`/download/${expense.quote_filename}`}
-                fileName={expense.quote_filename}
-                icon="fas fa-file-alt"
-                title="Preview Quote"
-              />
+              <div className="eh-file-item">
+                <FilePreviewButton
+                  fileUrl={`/download/${expense.quote_filename}`}
+                  fileName={expense.quote_filename}
+                  icon="fas fa-file-alt"
+                  title="Preview Quote"
+                />
+                <span className="eh-file-label">הצעת מחיר</span>
+              </div>
             )}
           </div>
         ) : (
           <span className="eh-muted">-</span>
         )}
       </td>
-      <td className="eh-table__cell eh-table__cell--actions">
+      <td className="eh-table__cell eh-table__cell--actions" onClick={(e) => e.stopPropagation()}>
         <div className="eh-actions">
-          <Button
-            variant="ghost"
-            size="small"
-            icon="fas fa-eye"
-            onClick={() => onView(expense.id)}
-            title="View Details"
-          />
           <Button
             variant="ghost"
             size="small"
@@ -915,19 +917,20 @@ function ExpenseEditModal({ isOpen, onClose, expense, onSuccess, subcategories, 
               <option value="pre_approved">Pre-approved</option>
               <option value="reimbursement">Reimbursement</option>
             </Select>
-            <Select
+            <TomSelectInput
               label="Subcategory"
               name="subcategory_id"
               value={formData.subcategory_id}
               onChange={(e) => handleInputChange('subcategory_id', e.target.value)}
-            >
-              <option value="">Select Subcategory</option>
-              {subcategories.map(sub => (
-                <option key={sub.id} value={sub.id}>
-                  {sub.department_name} &gt; {sub.category_name} &gt; {sub.name}
-                </option>
-              ))}
-            </Select>
+              options={subcategories.map(sub => ({
+                id: sub.id,
+                name: `${sub.department_name} > ${sub.category_name} > ${sub.name}`
+              }))}
+              displayKey="name"
+              valueKey="id"
+              placeholder="Select Subcategory"
+              allowClear={true}
+            />
           </div>
         </div>
 
@@ -1004,18 +1007,18 @@ function ExpenseEditModal({ isOpen, onClose, expense, onSuccess, subcategories, 
             <i className="fas fa-store" /> Supplier & Date
           </h4>
           <div className="eh-edit-form__row">
-            <Select
+            <TomSelectInput
               label="Supplier"
               name="supplier_id"
               value={formData.supplier_id}
               onChange={(e) => handleInputChange('supplier_id', e.target.value)}
+              options={suppliers}
+              displayKey="name"
+              valueKey="id"
+              placeholder="Select Supplier"
+              allowClear={false}
               required
-            >
-              <option value="">Select Supplier</option>
-              {suppliers.map(sup => (
-                <option key={sup.id} value={sup.id}>{sup.name}</option>
-              ))}
-            </Select>
+            />
             <Input
               type="date"
               label="Invoice Date"

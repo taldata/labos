@@ -664,7 +664,7 @@ function SubmitExpense({ user, setUser }) {
                 >
                   <option value="credit">Credit Card</option>
                   <option value="bank_transfer">Bank Transfer</option>
-                  <option value="cash">Cash</option>
+                  <option value="standing_order">Standing Order</option>
                   <option value="check">Check</option>
                 </Select>
               </div>
@@ -685,7 +685,11 @@ function SubmitExpense({ user, setUser }) {
                       </option>
                     ))}
                   </Select>
+                </div>
+              )}
 
+              {formData.payment_method === 'bank_transfer' && (
+                <div className="form-row">
                   <Select
                     label="Payment Due"
                     name="payment_due_date"

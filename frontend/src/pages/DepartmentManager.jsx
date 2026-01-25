@@ -573,7 +573,8 @@ const DepartmentManager = ({ user, setUser }) => {
                                             </div>
                                             <div className="stat-item">
                                                 <span className="stat-label">יתרה</span>
-                                                <span className={`stat-value ${(dept.budget - (dept.spent || 0)) > 0 ? 'positive' : ''}`}>
+                                                <span className={`stat-value ${(dept.budget - (dept.spent || 0)) > 0 ? 'positive' : (dept.budget - (dept.spent || 0)) < 0 ? 'negative over-budget' : ''}`}>
+                                                    {(dept.budget - (dept.spent || 0)) < 0 && <i className="fas fa-exclamation-triangle over-budget-icon" title="חריגה מתקציב!"></i>}
                                                     {(dept.budget - (dept.spent || 0)).toLocaleString()}
                                                     <span className="stat-currency">{getCurrencyLabel(dept.currency)}</span>
                                                 </span>
@@ -636,7 +637,8 @@ const DepartmentManager = ({ user, setUser }) => {
                                                                 </div>
                                                                 <div className="stat-item">
                                                                     <span className="stat-label">יתרה</span>
-                                                                    <span className={`stat-value ${(cat.budget - (cat.spent || 0)) > 0 ? 'positive' : ''}`}>
+                                                                    <span className={`stat-value ${(cat.budget - (cat.spent || 0)) > 0 ? 'positive' : (cat.budget - (cat.spent || 0)) < 0 ? 'negative over-budget' : ''}`}>
+                                                                        {(cat.budget - (cat.spent || 0)) < 0 && <i className="fas fa-exclamation-triangle over-budget-icon" title="חריגה מתקציב!"></i>}
                                                                         {(cat.budget - (cat.spent || 0)).toLocaleString()}
                                                                         <span className="stat-currency">{getCurrencyLabel(dept.currency)}</span>
                                                                     </span>
@@ -682,7 +684,8 @@ const DepartmentManager = ({ user, setUser }) => {
                                                                             </div>
                                                                             <div className="stat-item">
                                                                                 <span className="stat-label">יתרה</span>
-                                                                                <span className={`stat-value ${(sub.budget - (sub.spent || 0)) > 0 ? 'positive' : ''}`}>
+                                                                                <span className={`stat-value ${(sub.budget - (sub.spent || 0)) > 0 ? 'positive' : (sub.budget - (sub.spent || 0)) < 0 ? 'negative over-budget' : ''}`}>
+                                                                                    {(sub.budget - (sub.spent || 0)) < 0 && <i className="fas fa-exclamation-triangle over-budget-icon" title="חריגה מתקציב!"></i>}
                                                                                     {(sub.budget - (sub.spent || 0)).toLocaleString()}
                                                                                     <span className="stat-currency">{getCurrencyLabel(dept.currency)}</span>
                                                                                 </span>

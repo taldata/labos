@@ -47,7 +47,7 @@
 }
 
 .eh-main {
-  max-width: 1640px;
+  max-width: 100%;
   margin: 0 auto;
   padding: 2rem;
 }
@@ -211,6 +211,8 @@
    ============================================================================ */
 .eh-table-wrapper {
   overflow-x: auto;
+  overflow-y: auto;
+  max-height: calc(100vh - 320px);
 }
 
 .eh-table {
@@ -224,6 +226,9 @@
 .eh-table__head {
   background: linear-gradient(135deg, var(--eh-bg-primary) 0%, var(--eh-bg-secondary) 100%);
   border-bottom: 2px solid var(--eh-border);
+  position: sticky;
+  top: 0;
+  z-index: 10;
 }
 
 .eh-table__header {
@@ -235,6 +240,9 @@
   text-transform: uppercase;
   letter-spacing: 0.06em;
   white-space: nowrap;
+  background: linear-gradient(135deg, var(--eh-bg-primary) 0%, var(--eh-bg-secondary) 100%);
+  position: sticky;
+  top: 0;
 }
 
 /* Column Widths */
@@ -306,6 +314,14 @@
 
 .eh-table__body .eh-table__row:hover {
   background: linear-gradient(135deg, rgba(248, 250, 252, 0.8) 0%, rgba(241, 245, 249, 0.6) 100%);
+}
+
+.eh-table__body .eh-table__row--clickable {
+  cursor: pointer;
+}
+
+.eh-table__body .eh-table__row--clickable:hover {
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.08) 0%, rgba(118, 75, 162, 0.05) 100%);
 }
 
 .eh-table__cell {
@@ -408,12 +424,25 @@
    ============================================================================ */
 .eh-files {
   display: flex;
-  gap: 0.25rem;
+  gap: 0.5rem;
   justify-content: center;
 }
 
 .eh-files .btn {
   color: var(--eh-primary);
+}
+
+.eh-file-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.125rem;
+}
+
+.eh-file-label {
+  font-size: 0.65rem;
+  color: var(--eh-text-muted);
+  white-space: nowrap;
 }
 
 /* ============================================================================

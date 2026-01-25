@@ -23,6 +23,11 @@ function CreditCardManagement({ user, setUser }) {
   })
   const [formError, setFormError] = useState('')
 
+  // Delete confirmation modal state
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false)
+  const [cardToDelete, setCardToDelete] = useState(null)
+  const [deleting, setDeleting] = useState(false)
+
   // Auto-scroll to newly created credit card
   const { getItemRef } = useScrollToItem(cards, newCardId, () => setNewCardId(null))
 
@@ -132,17 +137,29 @@ function CreditCardManagement({ user, setUser }) {
     }
   }
 
-  const handleDelete = async (card) => {
-    if (!window.confirm(`Are you sure you want to delete credit card ending in ${card.last_four_digits}?`)) return
+  const openDeleteModal = (card) => {
+    setCardToDelete(card)
+    setDeleteModalOpen(true)
+  }
+
+  const closeDeleteModal = () => {
+    setDeleteModalOpen(false)
+    setCardToDelete(null)
+  }
+
+  const handleDelete = async () => {
+    if (!cardToDelete) return
 
     try {
-      const res = await fetch(`/api/v1/admin/credit-cards/${card.id}`, {
+      setDeleting(true)
+      const res = await fetch(`/api/v1/admin/credit-cards/${cardToDelete.id}`, {
         method: 'DELETE',
         credentials: 'include'
       })
 
       if (res.ok) {
         success('Credit card deleted successfully')
+        closeDeleteModal()
         fetchCards()
       } else {
         const data = await res.json()
@@ -150,6 +167,8 @@ function CreditCardManagement({ user, setUser }) {
       }
     } catch (err) {
       showError('An error occurred')
+    } finally {
+      setDeleting(false)
     }
   }
 
@@ -261,7 +280,7 @@ function CreditCardManagement({ user, setUser }) {
 
                   <div className="card-actions">
                     <Button variant="ghost" size="small" icon="fas fa-edit" onClick={() => openModal('edit', card)} title="Edit" />
-                    <Button variant="ghost" size="small" icon="fas fa-trash" onClick={() => handleDelete(card)} title="Delete" className="btn-delete" />
+                    <Button variant="ghost" size="small" icon="fas fa-trash" onClick={() => openDeleteModal(card)} title="Delete" className="btn-delete" />
                   </div>
                 </Card>
               ))
@@ -270,7 +289,7 @@ function CreditCardManagement({ user, setUser }) {
         )}
       </main>
 
-      {/* Modal */}
+      {/* Create/Edit Modal */}
       <Modal
         isOpen={modalOpen}
         onClose={closeModal}
@@ -323,6 +342,48 @@ function CreditCardManagement({ user, setUser }) {
             </Button>
           </div>
         </form>
+      </Modal>
+
+      {/* Delete Confirmation Modal */}
+      <Modal
+        isOpen={deleteModalOpen}
+        onClose={closeDeleteModal}
+        title="Delete Credit Card"
+        size="small"
+      >
+        <div className="delete-modal-content">
+          <div className="delete-modal-icon">
+            <i className="fas fa-exclamation-triangle"></i>
+          </div>
+          <p className="delete-modal-message">
+            Are you sure you want to delete this credit card?
+          </p>
+          {cardToDelete && (
+            <div className="delete-modal-summary">
+              <p><strong>Card:</strong> **** **** **** {cardToDelete.last_four_digits}</p>
+              {cardToDelete.description && (
+                <p><strong>Description:</strong> {cardToDelete.description}</p>
+              )}
+              {cardToDelete.expense_count > 0 && (
+                <p className="delete-modal-warning">
+                  <i className="fas fa-info-circle"></i>
+                  This card has {cardToDelete.expense_count} associated expenses.
+                </p>
+              )}
+            </div>
+          )}
+          <p className="delete-modal-warning-text">
+            This action cannot be undone.
+          </p>
+          <div className="modal-actions">
+            <Button type="button" variant="secondary" onClick={closeDeleteModal} disabled={deleting}>
+              Cancel
+            </Button>
+            <Button type="button" variant="danger" onClick={handleDelete} loading={deleting}>
+              Delete Card
+            </Button>
+          </div>
+        </div>
       </Modal>
     </div>
   )

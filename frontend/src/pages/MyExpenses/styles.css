@@ -16,7 +16,7 @@
 
 .me-container {
   padding: 2rem;
-  max-width: 1400px;
+  max-width: 100%;
   margin: 0 auto;
   font-family: 'Inter', sans-serif;
   color: var(--me-text-main);
@@ -192,6 +192,25 @@
   display: flex;
   gap: 0.5rem;
   justify-content: center;
+}
+
+.me-cell-files {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: center;
+}
+
+.me-file-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.125rem;
+}
+
+.me-file-label {
+  font-size: 0.6rem;
+  color: var(--me-text-sub);
+  white-space: nowrap;
 }
 
 /* Status Badges */

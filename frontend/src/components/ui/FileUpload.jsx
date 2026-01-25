@@ -102,6 +102,8 @@ const FileUpload = ({
 
     if (e.target.files && e.target.files.length > 0) {
       handleFiles(e.target.files);
+      // Reset the input value so the same file can be re-uploaded later if removed
+      e.target.value = '';
     }
   };
 
@@ -109,6 +111,10 @@ const FileUpload = ({
     const updatedFiles = files.filter((_, i) => i !== index);
     setFiles(updatedFiles);
     onChange?.(updatedFiles);
+    // Reset the input value so the same file can be re-uploaded
+    if (inputRef.current) {
+      inputRef.current.value = '';
+    }
   };
 
   const handleButtonClick = () => {

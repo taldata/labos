@@ -108,26 +108,45 @@ const ExpenseList = ({
                   </span>
                 </td>
                 <td onClick={(e) => e.stopPropagation()}>
-                  <div className="me-cell-actions">
-                    {expense.invoice_filename ? (
-                       <FilePreviewButton
-                         fileUrl={`/download/${expense.invoice_filename}`}
-                         fileName={expense.invoice_filename}
-                         icon="fas fa-file-invoice-dollar"
-                         title="Preview invoice"
-                         variant="ghost"
-                       />
-                    ) : (
-                      <span style={{ color: 'var(--me-text-sub)', opacity: 0.3 }}>-</span>
+                  <div className="me-cell-files">
+                    {expense.invoice_filename && (
+                      <div className="me-file-item">
+                        <FilePreviewButton
+                          fileUrl={`/download/${expense.invoice_filename}`}
+                          fileName={expense.invoice_filename}
+                          icon="fas fa-file-invoice-dollar"
+                          title="Invoice"
+                          variant="ghost"
+                        />
+                        <span className="me-file-label">חשבונית</span>
+                      </div>
                     )}
                     {expense.receipt_filename && (
-                       <FilePreviewButton
-                         fileUrl={`/download/${expense.receipt_filename}`}
-                         fileName={expense.receipt_filename}
-                         icon="fas fa-receipt"
-                         title="Preview receipt"
-                         variant="ghost"
-                       />
+                      <div className="me-file-item">
+                        <FilePreviewButton
+                          fileUrl={`/download/${expense.receipt_filename}`}
+                          fileName={expense.receipt_filename}
+                          icon="fas fa-receipt"
+                          title="Receipt"
+                          variant="ghost"
+                        />
+                        <span className="me-file-label">קבלה</span>
+                      </div>
+                    )}
+                    {expense.quote_filename && (
+                      <div className="me-file-item">
+                        <FilePreviewButton
+                          fileUrl={`/download/${expense.quote_filename}`}
+                          fileName={expense.quote_filename}
+                          icon="fas fa-file-alt"
+                          title="Quote"
+                          variant="ghost"
+                        />
+                        <span className="me-file-label">הצעה</span>
+                      </div>
+                    )}
+                    {!expense.invoice_filename && !expense.receipt_filename && !expense.quote_filename && (
+                      <span style={{ color: 'var(--me-text-sub)', opacity: 0.3 }}>-</span>
                     )}
                   </div>
                 </td>

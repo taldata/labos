@@ -536,6 +536,91 @@
   box-shadow: 0 8px 20px -4px rgba(102, 126, 234, 0.5);
 }
 
+/* Delete Confirmation Modal */
+.delete-modal-content {
+  text-align: center;
+}
+
+.delete-modal-icon {
+  width: 64px;
+  height: 64px;
+  margin: 0 auto 1.25rem;
+  background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.delete-modal-icon i {
+  font-size: 1.75rem;
+  color: #dc2626;
+}
+
+.delete-modal-message {
+  font-size: 1.1rem;
+  color: #1e293b;
+  margin-bottom: 1.25rem;
+  font-weight: 500;
+}
+
+.delete-modal-summary {
+  background: #f8fafc;
+  border-radius: 12px;
+  padding: 1rem 1.25rem;
+  margin-bottom: 1rem;
+  text-align: left;
+}
+
+.delete-modal-summary p {
+  margin: 0.5rem 0;
+  font-size: 0.95rem;
+  color: #475569;
+}
+
+.delete-modal-summary p:first-child {
+  margin-top: 0;
+}
+
+.delete-modal-summary p:last-child {
+  margin-bottom: 0;
+}
+
+.delete-modal-warning {
+  color: #b45309 !important;
+  background: #fef3c7;
+  padding: 0.75rem;
+  border-radius: 8px;
+  margin-top: 0.75rem !important;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.delete-modal-warning i {
+  color: #d97706;
+}
+
+.delete-modal-warning-text {
+  font-size: 0.875rem;
+  color: #dc2626;
+  font-weight: 500;
+  margin-bottom: 1.25rem;
+}
+
+.delete-modal-content .modal-actions {
+  justify-content: center;
+}
+
+.delete-modal-content .modal-actions button[class*="danger"] {
+  background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%) !important;
+  box-shadow: 0 4px 12px -2px rgba(220, 38, 38, 0.4);
+}
+
+.delete-modal-content .modal-actions button[class*="danger"]:hover {
+  box-shadow: 0 8px 20px -4px rgba(220, 38, 38, 0.5);
+}
+
 /* Animations */
 @keyframes slideInDown {
   from {
