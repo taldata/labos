@@ -1,6 +1,6 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { useNavigate, useLocation } from 'react-router-dom'
+import { useNavigate, useLocation, useSearchParams } from 'react-router-dom'
 import { Button, Modal, useToast, PageHeader } from '../../components/ui'
 import { useScrollToItem } from '../../hooks/useScrollToItem'
 import logger from '../../utils/logger'
@@ -19,9 +19,17 @@ const convertToISODate = (displayDate) => {
   return `${year}-${month}-${day}`
 }
 
+// Convert yyyy-mm-dd to dd/mm/yyyy
+const convertToDisplayDate = (isoDate) => {
+  if (!isoDate || !/^\d{4}-\d{2}-\d{2}$/.test(isoDate)) return ''
+  const [year, month, day] = isoDate.split('-')
+  return `${day}/${month}/${year}`
+}
+
 function MyExpenses({ user, setUser }) {
   const navigate = useNavigate()
   const location = useLocation()
+  const [searchParams, setSearchParams] = useSearchParams()
   const { success, error: showError } = useToast()
 
   // Data State
@@ -31,20 +39,20 @@ function MyExpenses({ user, setUser }) {
   const [categories, setCategories] = useState([])
 
   // Pagination State
-  const [currentPage, setCurrentPage] = useState(1)
+  const [currentPage, setCurrentPage] = useState(parseInt(searchParams.get('page')) || 1)
   const [totalPages, setTotalPages] = useState(1)
   const [totalExpenses, setTotalExpenses] = useState(0)
 
-  // Filters State
-  const [filters, setFilters] = useState({
-    status: '',
-    category_id: '',
-    search: '',
-    start_date: '',
-    end_date: '',
-    sort_by: 'date',
-    sort_order: 'desc'
-  })
+  // Initialize filters from URL params
+  const [filters, setFilters] = useState(() => ({
+    status: searchParams.get('status') || '',
+    category_id: searchParams.get('category_id') || '',
+    search: searchParams.get('search') || '',
+    start_date: convertToDisplayDate(searchParams.get('start_date') || ''),
+    end_date: convertToDisplayDate(searchParams.get('end_date') || ''),
+    sort_by: searchParams.get('sort_by') || 'date',
+    sort_order: searchParams.get('sort_order') || 'desc'
+  }))
   const [showFilters, setShowFilters] = useState(false)
 
   // Delete State
@@ -152,6 +160,23 @@ function MyExpenses({ user, setUser }) {
     }
   }, [fetchExpenses])
 
+  // Sync filters to URL params (preserves state on navigation)
+  useEffect(() => {
+    const params = new URLSearchParams()
+    if (currentPage > 1) params.set('page', currentPage)
+    Object.entries(filters).forEach(([key, value]) => {
+      if (value && value !== '' && !(key === 'sort_by' && value === 'date') && !(key === 'sort_order' && value === 'desc')) {
+        if ((key === 'start_date' || key === 'end_date') && value) {
+          const isoDate = convertToISODate(value)
+          if (isoDate) params.set(key, isoDate)
+        } else {
+          params.set(key, value)
+        }
+      }
+    })
+    setSearchParams(params, { replace: true })
+  }, [filters, currentPage, setSearchParams])
+
   // Handlers
   const handleClearFilters = () => {
     setFilters({
@@ -164,6 +189,7 @@ function MyExpenses({ user, setUser }) {
       sort_order: 'desc'
     })
     setCurrentPage(1)
+    setSearchParams({}, { replace: true }) // Clear URL params
   }
 
   const handleDeleteClick = (e, expense) => {
