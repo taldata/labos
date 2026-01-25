@@ -238,8 +238,8 @@ function ExpenseDetails({ user, setUser }) {
             </Card.Header>
             <Card.Body>
               <div className="detail-row">
-                <span className="detail-label">Type:</span>
-                <span className="detail-value">{expense.type || '-'}</span>
+                <span className="detail-label">Department:</span>
+                <span className="detail-value">{expense.department?.name || '-'}</span>
               </div>
               <div className="detail-row">
                 <span className="detail-label">Category:</span>
@@ -248,6 +248,12 @@ function ExpenseDetails({ user, setUser }) {
                   {expense.subcategory && ` / ${expense.subcategory.name}`}
                 </span>
               </div>
+              {expense.budget_year && (
+                <div className="detail-row">
+                  <span className="detail-label">Budget Year:</span>
+                  <span className="detail-value">{expense.budget_year}</span>
+                </div>
+              )}
               <div className="detail-row">
                 <span className="detail-label">Payment Method:</span>
                 <span className="detail-value">{expense.payment_method || '-'}</span>

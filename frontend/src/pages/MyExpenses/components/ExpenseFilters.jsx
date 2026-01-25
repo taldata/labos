@@ -40,7 +40,7 @@ const ExpenseFilters = ({
               name="search"
               value={filters.search}
               onChange={handleChange}
-              placeholder="Description..."
+              placeholder="Description, reason, supplier..."
               icon="fas fa-search"
             />
 

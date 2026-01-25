@@ -213,7 +213,7 @@ function SupplierManagement({ user, setUser }) {
             <div className="search-box">
               <Input
                 type="text"
-                placeholder="Search by name, email, or tax ID..."
+                placeholder="Search by name, email, phone, or tax ID..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
