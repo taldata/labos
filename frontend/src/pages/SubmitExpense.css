@@ -466,3 +466,91 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* Budget Year Section */
+.budget-year-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px dashed #e2e8f0;
+}
+
+.budget-year-row .input-wrapper {
+  flex: 0 0 150px;
+}
+
+.budget-year-hint {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  color: #64748b;
+  background: #f8fafc;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  flex: 1;
+  direction: rtl;
+}
+
+.budget-year-hint i {
+  color: #3b82f6;
+  font-size: 1rem;
+}
+
+/* Year Warning Modal */
+.year-warning-modal {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 1rem;
+  direction: rtl;
+}
+
+.year-warning-icon {
+  width: 60px;
+  height: 60px;
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 1.5rem;
+}
+
+.year-warning-icon i {
+  font-size: 1.75rem;
+  color: #d97706;
+}
+
+.year-warning-text {
+  font-size: 1.1rem;
+  color: #1e293b;
+  margin: 0 0 0.75rem 0;
+  line-height: 1.6;
+}
+
+.year-warning-text strong {
+  color: #3b82f6;
+  font-weight: 600;
+}
+
+.year-warning-subtext {
+  font-size: 0.9rem;
+  color: #64748b;
+  margin: 0 0 1.5rem 0;
+  line-height: 1.6;
+}
+
+.year-warning-actions {
+  display: flex;
+  gap: 1rem;
+  width: 100%;
+  justify-content: center;
+}
+
+.year-warning-actions button {
+  min-width: 120px;
+}

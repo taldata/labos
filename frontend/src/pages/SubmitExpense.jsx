@@ -60,6 +60,12 @@ function SubmitExpense({ user, setUser }) {
   const today = new Date()
   const todayFormatted = `${String(today.getDate()).padStart(2, '0')}/${String(today.getMonth() + 1).padStart(2, '0')}/${today.getFullYear()}`
 
+  // Budget year state - default to current year
+  const currentYear = today.getFullYear()
+  const [budgetYear, setBudgetYear] = useState(currentYear)
+  const [showYearWarningModal, setShowYearWarningModal] = useState(false)
+  const [pendingYearChange, setPendingYearChange] = useState(null)
+
   // Form data - date stored in DD/MM/YYYY display format
   const [formData, setFormData] = useState({
     amount: '',
@@ -72,7 +78,8 @@ function SubmitExpense({ user, setUser }) {
     supplier_id: '',
     payment_method: 'credit',
     credit_card_id: '',
-    payment_due_date: 'end_of_month'
+    payment_due_date: 'end_of_month',
+    budget_year: currentYear
   })
 
   // Date validation error
@@ -116,16 +123,34 @@ function SubmitExpense({ user, setUser }) {
     fetchFormData()
   }, [])
 
-  const fetchFormData = async () => {
+  // Re-fetch categories when budget year changes
+  useEffect(() => {
+    fetchCategories()
+  }, [budgetYear])
+
+  const fetchCategories = async () => {
     try {
-      // Fetch categories
-      const catRes = await fetch('/api/v1/form-data/categories', {
+      // Fetch categories with budget year filter
+      const catRes = await fetch(`/api/v1/form-data/categories?budget_year=${budgetYear}`, {
         credentials: 'include'
       })
       if (catRes.ok) {
         const data = await catRes.json()
         setCategories(data.categories)
+        // Clear subcategory selection when budget year changes
+        setSubcategories([])
+        setSelectedCategory('')
+        setFormData(prev => ({ ...prev, subcategory_id: '' }))
       }
+    } catch (err) {
+      logger.error('Failed to fetch categories', { error: err.message })
+    }
+  }
+
+  const fetchFormData = async () => {
+    try {
+      // Fetch categories with budget year filter
+      await fetchCategories()
 
       // Fetch suppliers
       const supRes = await fetch('/api/v1/form-data/suppliers', {
@@ -147,6 +172,31 @@ function SubmitExpense({ user, setUser }) {
     } catch (err) {
       logger.error('Failed to fetch form data', { error: err.message })
     }
+  }
+
+  // Handle budget year change with warning
+  const handleBudgetYearChange = (e) => {
+    const newYear = parseInt(e.target.value)
+    if (newYear !== budgetYear) {
+      setPendingYearChange(newYear)
+      setShowYearWarningModal(true)
+    }
+  }
+
+  // Confirm budget year change
+  const confirmBudgetYearChange = () => {
+    if (pendingYearChange !== null) {
+      setBudgetYear(pendingYearChange)
+      setFormData(prev => ({ ...prev, budget_year: pendingYearChange }))
+      setPendingYearChange(null)
+      setShowYearWarningModal(false)
+    }
+  }
+
+  // Cancel budget year change
+  const cancelBudgetYearChange = () => {
+    setPendingYearChange(null)
+    setShowYearWarningModal(false)
   }
 
   const handleCategoryChange = async (categoryId) => {
@@ -599,6 +649,25 @@ function SubmitExpense({ user, setUser }) {
               <i className="fas fa-tags"></i> Category
             </Card.Header>
             <Card.Body>
+              {/* Budget Year Selection */}
+              <div className="form-row budget-year-row">
+                <Select
+                  label="Budget Year"
+                  name="budget_year"
+                  value={budgetYear}
+                  onChange={handleBudgetYearChange}
+                >
+                  {/* Show current year and previous 2 years */}
+                  {[currentYear + 1, currentYear, currentYear - 1, currentYear - 2].map(year => (
+                    <option key={year} value={year}>{year}</option>
+                  ))}
+                </Select>
+                <div className="budget-year-hint">
+                  <i className="fas fa-info-circle"></i>
+                  <span>בחר את שנת התקציב שאליה שייכת ההוצאה. ברירת המחדל היא השנה הנוכחית.</span>
+                </div>
+              </div>
+
               <div className="form-row">
                 <TomSelectInput
                   label="Category"
@@ -746,7 +815,7 @@ function SubmitExpense({ user, setUser }) {
             required
             placeholder="Enter supplier name"
           />
-          
+
           <div className="form-row">
             <Input
               type="email"
@@ -756,7 +825,7 @@ function SubmitExpense({ user, setUser }) {
               onChange={handleNewSupplierInputChange}
               placeholder="supplier@example.com"
             />
-            
+
             <Input
               type="tel"
               label="Phone"
@@ -766,7 +835,7 @@ function SubmitExpense({ user, setUser }) {
               placeholder="Phone number"
             />
           </div>
-          
+
           <Input
             type="text"
             label="Tax ID / Business Number"
@@ -775,7 +844,7 @@ function SubmitExpense({ user, setUser }) {
             onChange={handleNewSupplierInputChange}
             placeholder="Tax ID or business number"
           />
-          
+
           <Input
             type="text"
             label="Address"
@@ -786,6 +855,34 @@ function SubmitExpense({ user, setUser }) {
           />
         </div>
       </Modal.Form>
+
+      {/* Budget Year Change Warning Modal */}
+      <Modal
+        isOpen={showYearWarningModal}
+        onClose={cancelBudgetYearChange}
+        title="שינוי שנת תקציב"
+        size="small"
+      >
+        <div className="year-warning-modal">
+          <div className="year-warning-icon">
+            <i className="fas fa-exclamation-triangle"></i>
+          </div>
+          <p className="year-warning-text">
+            האם אתה בטוח שברצונך לשנות את שנת התקציב מ-<strong>{budgetYear}</strong> ל-<strong>{pendingYearChange}</strong>?
+          </p>
+          <p className="year-warning-subtext">
+            שינוי שנת התקציב יאפס את בחירת הקטגוריה ותת-הקטגוריה, והרשימות יעודכנו בהתאם לשנה החדשה.
+          </p>
+          <div className="year-warning-actions">
+            <Button variant="secondary" onClick={cancelBudgetYearChange}>
+              ביטול
+            </Button>
+            <Button variant="primary" onClick={confirmBudgetYearChange}>
+              אישור שינוי
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </div>
   )
 }

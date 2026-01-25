@@ -44,14 +44,23 @@ function useExpenseFilters() {
   }), [searchParams])
 
   const [filters, setFilters] = useState(getInitialFilters)
+  const [debouncedFilters, setDebouncedFilters] = useState(getInitialFilters)
   const [selectedCategoryOption, setSelectedCategoryOption] = useState('')
+
+  // Debounce filters for API calls (prevents jumping during typing)
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedFilters(filters)
+    }, 400)
+    return () => clearTimeout(handler)
+  }, [filters])
 
   const updateFilter = useCallback((name, value) => {
     setFilters(prev => ({ ...prev, [name]: value }))
   }, [])
 
   const clearFilters = useCallback(() => {
-    setFilters({
+    const clearedFilters = {
       status: '',
       department_id: '',
       user_id: '',
@@ -64,7 +73,9 @@ function useExpenseFilters() {
       end_date: '',
       sort_by: 'date',
       sort_order: 'desc'
-    })
+    }
+    setFilters(clearedFilters)
+    setDebouncedFilters(clearedFilters) // Immediately clear debounced too
     setSelectedCategoryOption('')
   }, [])
 
@@ -80,6 +91,7 @@ function useExpenseFilters() {
 
   return {
     filters,
+    debouncedFilters,
     setFilters,
     updateFilter,
     clearFilters,
@@ -377,7 +389,7 @@ function ExpenseHistoryFilters({
               displayKey="name"
               valueKey="id"
               placeholder="All Departments"
-              allowClear={false}
+              allowClear={true}
             />
             <TomSelectInput
               label="Employee"
@@ -388,7 +400,7 @@ function ExpenseHistoryFilters({
               displayKey="name"
               valueKey="id"
               placeholder="All Employees"
-              allowClear={false}
+              allowClear={true}
             />
           </div>
 
@@ -403,7 +415,7 @@ function ExpenseHistoryFilters({
               placeholder="All Categories"
               displayKey="name"
               valueKey="id"
-              allowClear={false}
+              allowClear={true}
             />
             <TomSelectInput
               label="Supplier"
@@ -414,7 +426,7 @@ function ExpenseHistoryFilters({
               placeholder="All Suppliers"
               displayKey="name"
               valueKey="id"
-              allowClear={false}
+              allowClear={true}
             />
             <Select
               label="Payment Method"
@@ -1167,7 +1179,7 @@ function ExpenseHistory({ user }) {
 
   // Custom hooks
   const filterHook = useExpenseFilters()
-  const dataHook = useExpenseData(filterHook.filters, currentPage)
+  const dataHook = useExpenseData(filterHook.debouncedFilters, currentPage)
   const optionsHook = useFilterOptions()
 
   // Memoize user options to prevent infinite re-renders from TomSelectInput
@@ -1195,17 +1207,17 @@ function ExpenseHistory({ user }) {
     optionsHook.fetchFilterOptions()
   }, [])
 
-  // Fetch expenses when filters or page change
+  // Fetch expenses when debounced filters or page change
   useEffect(() => {
     if (user?.is_admin) {
       dataHook.fetchExpenses()
     }
-  }, [currentPage, filterHook.filters])
+  }, [currentPage, filterHook.debouncedFilters])
 
-  // Reset page when filters change
+  // Reset page when debounced filters change
   useEffect(() => {
     setCurrentPage(1)
-  }, [filterHook.filters])
+  }, [filterHook.debouncedFilters])
 
   // Sync selectedCategoryOption with filters
   useEffect(() => {

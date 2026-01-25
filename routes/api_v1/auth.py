@@ -135,6 +135,60 @@ def login():
         logging.error(f"Error during login: {str(e)}")
         return jsonify({'error': 'Login failed. Please try again.'}), 500
 
+@api_v1.route('/auth/dev/create-test-user', methods=['POST'])
+def create_test_user():
+    """Create a test user for development (only works in dev mode)"""
+    is_dev_mode = os.getenv('FLASK_ENV') == 'development' or os.getenv('DEV_MODE') == 'true'
+
+    # Always allow in dev for convenience
+    if not is_dev_mode:
+        # Check if we're on localhost
+        if 'localhost' not in request.host and '127.0.0.1' not in request.host:
+            return jsonify({'error': 'This endpoint is only available in development mode'}), 403
+
+    try:
+        # Check if test user already exists
+        test_user = User.query.filter_by(username='testuser').first()
+        if test_user:
+            # Update existing user
+            test_user.password = 'test123'
+            test_user.status = 'active'
+            test_user.is_admin = True
+            test_user.can_use_modern_version = True
+            db.session.commit()
+            return jsonify({
+                'message': 'Test user updated',
+                'username': 'testuser',
+                'password': 'test123'
+            }), 200
+
+        # Create new test user
+        test_user = User(
+            username='testuser',
+            email='testuser@test.com',
+            password='test123',
+            first_name='Test',
+            last_name='User',
+            is_admin=True,
+            is_manager=True,
+            is_accounting=True,
+            can_use_modern_version=True,
+            status='active'
+        )
+        db.session.add(test_user)
+        db.session.commit()
+
+        return jsonify({
+            'message': 'Test user created successfully',
+            'username': 'testuser',
+            'password': 'test123'
+        }), 201
+
+    except Exception as e:
+        logging.error(f"Error creating test user: {str(e)}")
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
 @api_v1.route('/auth/login/azure', methods=['GET'])
 def login_azure():
     """Initiate Azure AD login flow"""
