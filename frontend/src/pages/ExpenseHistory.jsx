@@ -55,6 +55,23 @@ function useExpenseFilters() {
     return () => clearTimeout(handler)
   }, [filters])
 
+  // Sync debounced filters to URL params (preserves state on navigation)
+  useEffect(() => {
+    const params = new URLSearchParams()
+    Object.entries(debouncedFilters).forEach(([key, value]) => {
+      if (value && value !== '' && !(key === 'sort_by' && value === 'date') && !(key === 'sort_order' && value === 'desc')) {
+        // Convert display dates to ISO for URL
+        if ((key === 'start_date' || key === 'end_date') && value) {
+          const isoDate = convertToISODate(value)
+          if (isoDate) params.set(key, isoDate)
+        } else {
+          params.set(key, value)
+        }
+      }
+    })
+    setSearchParams(params, { replace: true })
+  }, [debouncedFilters, setSearchParams])
+
   const updateFilter = useCallback((name, value) => {
     setFilters(prev => ({ ...prev, [name]: value }))
   }, [])
@@ -77,7 +94,8 @@ function useExpenseFilters() {
     setFilters(clearedFilters)
     setDebouncedFilters(clearedFilters) // Immediately clear debounced too
     setSelectedCategoryOption('')
-  }, [])
+    setSearchParams({}, { replace: true }) // Clear URL params too
+  }, [setSearchParams])
 
   const hasActiveFilters = useMemo(() =>
     Object.entries(filters).some(([key, val]) =>
