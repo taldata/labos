@@ -609,7 +609,7 @@ function SubmitExpense({ user, setUser }) {
                 <div className="date-input-wrapper">
                   <Input
                     type="text"
-                    label="Date"
+                    label="Document Date"
                     name="date"
                     value={formData.date}
                     onChange={handleDateChange}
@@ -617,6 +617,7 @@ function SubmitExpense({ user, setUser }) {
                     placeholder="DD/MM/YYYY"
                     maxLength={10}
                     className={dateError ? 'input-error' : ''}
+                    helperText="תאריך החשבונית/קבלה (לא תאריך ההגשה)"
                   />
                   {dateError && <span className="date-error-text">{dateError}</span>}
                 </div>

@@ -202,8 +202,8 @@ function ExpenseDetails({ user, setUser }) {
               {formatCurrency(expense.amount, expense.currency)}
             </div>
             <div className="amount-meta">
-              <span><i className="fas fa-calendar"></i> {formatDate(expense.date)}</span>
-              <span><i className="fas fa-clock"></i> Submitted {formatDate(expense.created_at)}</span>
+              <span><i className="fas fa-calendar"></i> Document: {formatDate(expense.date)}</span>
+              <span><i className="fas fa-clock"></i> Submitted: {formatDate(expense.created_at)}</span>
             </div>
           </Card.Body>
         </Card>
