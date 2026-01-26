@@ -145,19 +145,15 @@ function MyExpenses({ user, setUser }) {
   // Initial Load
   useEffect(() => {
     isMountedRef.current = true
-    const cleanupCategories = fetchCategories()
+    fetchCategories()
     return () => {
-      cleanupCategories.then(fn => fn?.())
       isMountedRef.current = false
     }
   }, [fetchCategories])
 
   // Fetch on changes
   useEffect(() => {
-    const cleanupExpenses = fetchExpenses()
-    return () => {
-      cleanupExpenses.then(fn => fn?.())
-    }
+    fetchExpenses()
   }, [fetchExpenses])
 
   // Sync filters to URL params (preserves state on navigation)

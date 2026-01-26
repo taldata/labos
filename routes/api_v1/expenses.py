@@ -718,10 +718,16 @@ def list_expenses():
             query = query.join(Subcategory).filter(Subcategory.category_id == category_id)
 
         if start_date:
-            query = query.filter(Expense.date >= datetime.fromisoformat(start_date))
+            try:
+                query = query.filter(Expense.date >= datetime.fromisoformat(start_date))
+            except ValueError:
+                return jsonify({'error': 'Invalid start_date format. Use ISO format (YYYY-MM-DD)'}), 400
 
         if end_date:
-            query = query.filter(Expense.date <= datetime.fromisoformat(end_date))
+            try:
+                query = query.filter(Expense.date <= datetime.fromisoformat(end_date))
+            except ValueError:
+                return jsonify({'error': 'Invalid end_date format. Use ISO format (YYYY-MM-DD)'}), 400
 
         if search:
             query = query.filter(

@@ -102,16 +102,20 @@ function Settings({ user, setUser }) {
   const switchToLegacy = async () => {
     setVersionLoading(true)
     try {
-      await fetch('/api/v1/auth/set-version-preference', {
+      const response = await fetch('/api/v1/auth/set-version-preference', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
         body: JSON.stringify({ version: 'legacy' })
       })
-      window.location.href = '/'
+      if (response.ok) {
+        window.location.href = '/'
+      } else {
+        showError('Failed to switch version')
+        setVersionLoading(false)
+      }
     } catch (err) {
       showError('Failed to switch version')
-    } finally {
       setVersionLoading(false)
     }
   }
@@ -319,12 +323,6 @@ function Settings({ user, setUser }) {
                   <i className="fas fa-list"></i>
                   <span>View My Expenses</span>
                 </button>
-                {(user?.is_manager || user?.is_admin) && (
-                  <button className="quick-link" onClick={() => navigate('/approvals')}>
-                    <i className="fas fa-clipboard-check"></i>
-                    <span>Pending Approvals</span>
-                  </button>
-                )}
                 {user?.is_admin && (
                   <button className="quick-link" onClick={() => navigate('/admin')}>
                     <i className="fas fa-chart-line"></i>

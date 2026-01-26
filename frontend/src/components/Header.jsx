@@ -5,7 +5,6 @@ import './Header.css'
 
 function Header({ user, setUser, currentPage = 'dashboard' }) {
   const navigate = useNavigate()
-  const [pendingCount, setPendingCount] = useState(0)
   const [showUserMenu, setShowUserMenu] = useState(false)
   const [showMobileMenu, setShowMobileMenu] = useState(false)
   const userMenuRef = useRef(null)
@@ -27,26 +26,6 @@ function Header({ user, setUser, currentPage = 'dashboard' }) {
     document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
-
-  useEffect(() => {
-    if (user?.is_manager || user?.is_admin) {
-      fetchPendingCount()
-    }
-  }, [user])
-
-  const fetchPendingCount = async () => {
-    try {
-      const res = await fetch('/api/v1/expenses/pending-count', {
-        credentials: 'include'
-      })
-      if (res.ok) {
-        const data = await res.json()
-        setPendingCount(data.count || 0)
-      }
-    } catch (err) {
-      logger.error('Failed to fetch pending count')
-    }
-  }
 
   const handleLogout = async () => {
     try {
@@ -117,22 +96,13 @@ function Header({ user, setUser, currentPage = 'dashboard' }) {
             >
               <i className="fas fa-home"></i> Dashboard
             </button>
-            <button 
+            <button
               className={`nav-link ${currentPage === 'my-expenses' ? 'active' : ''}`}
               onClick={() => navigate('/my-expenses')}
             >
               <i className="fas fa-list"></i> My Expenses
             </button>
 
-            {(user?.is_manager || user?.is_admin) && (
-              <button 
-                className={`nav-link ${currentPage === 'approvals' ? 'active' : ''}`}
-                onClick={() => navigate('/approvals')}
-              >
-                <i className="fas fa-clipboard-check"></i> Approvals
-                {pendingCount > 0 && <span className="notification-badge">{pendingCount}</span>}
-              </button>
-            )}
             {user?.is_admin && (
               <>
                 <button 
@@ -193,15 +163,6 @@ function Header({ user, setUser, currentPage = 'dashboard' }) {
             <i className="fas fa-list"></i> My Expenses
           </button>
 
-          {(user?.is_manager || user?.is_admin) && (
-            <button
-              className={`mobile-nav-link ${currentPage === 'approvals' ? 'active' : ''}`}
-              onClick={() => handleNavigation('/approvals')}
-            >
-              <i className="fas fa-clipboard-check"></i> Approvals
-              {pendingCount > 0 && <span className="mobile-notification-badge">{pendingCount}</span>}
-            </button>
-          )}
           {user?.is_admin && (
             <>
               <div className="mobile-nav-divider"></div>

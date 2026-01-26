@@ -884,10 +884,16 @@ def admin_list_expenses():
             query = query.filter(Expense.payment_method == payment_method)
 
         if start_date:
-            query = query.filter(Expense.date >= datetime.fromisoformat(start_date))
+            try:
+                query = query.filter(Expense.date >= datetime.fromisoformat(start_date))
+            except ValueError:
+                return jsonify({'error': 'Invalid start_date format. Use ISO format (YYYY-MM-DD)'}), 400
 
         if end_date:
-            query = query.filter(Expense.date <= datetime.fromisoformat(end_date))
+            try:
+                query = query.filter(Expense.date <= datetime.fromisoformat(end_date))
+            except ValueError:
+                return jsonify({'error': 'Invalid end_date format. Use ISO format (YYYY-MM-DD)'}), 400
 
         if search:
             # Search in description, reason, employee name, supplier name, and amount

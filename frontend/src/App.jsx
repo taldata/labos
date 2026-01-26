@@ -11,7 +11,6 @@ import './App.css'
 const Dashboard = lazy(() => import('./pages/Dashboard'))
 const SubmitExpense = lazy(() => import('./pages/SubmitExpense'))
 const MyExpenses = lazy(() => import('./pages/MyExpenses'))
-const Approvals = lazy(() => import('./pages/Approvals'))
 const ExpenseDetails = lazy(() => import('./pages/ExpenseDetails'))
 const DepartmentManager = lazy(() => import('./pages/DepartmentManager'))
 const AdminDashboard = lazy(() => import('./pages/AdminDashboard'))
@@ -94,10 +93,6 @@ function App() {
               <Route
                 path="/my-expenses"
                 element={<AuthenticatedRoute user={user} setUser={setUser}><MyExpenses user={user} setUser={setUser} /></AuthenticatedRoute>}
-              />
-              <Route
-                path="/approvals"
-                element={<AuthenticatedRoute user={user} setUser={setUser}><Approvals user={user} setUser={setUser} /></AuthenticatedRoute>}
               />
               <Route
                 path="/expenses/:id"
