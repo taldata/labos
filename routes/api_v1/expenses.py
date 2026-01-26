@@ -1,6 +1,6 @@
 from flask import jsonify, request
 from flask_login import login_required, current_user
-from models import db, Expense, User, Department, Category, Subcategory, Supplier, CreditCard
+from models import db, Expense, User, Department, Category, Subcategory, Supplier, CreditCard, BudgetYear
 from sqlalchemy import func
 from sqlalchemy.orm import joinedload
 from datetime import datetime, timedelta
@@ -531,9 +531,16 @@ def get_expense_stats():
 @api_v1.route('/form-data/departments', methods=['GET'])
 @login_required
 def get_departments():
-    """Get all departments for form dropdown"""
+    """Get all departments for form dropdown (filtered by current budget year)"""
     try:
-        departments = Department.query.filter_by().all()
+        # Get current budget year
+        current_year = BudgetYear.query.filter_by(is_current=True).first()
+
+        if current_year:
+            departments = Department.query.filter_by(year_id=current_year.id).all()
+        else:
+            departments = Department.query.all()
+
         dept_list = [{
             'id': dept.id,
             'name': dept.name,
@@ -548,21 +555,42 @@ def get_departments():
 @api_v1.route('/form-data/categories', methods=['GET'])
 @login_required
 def get_categories():
-    """Get categories for current user's department or all categories for admin"""
+    """Get categories for current user's department or all categories for admin (filtered by current budget year)"""
     try:
         department_id = request.args.get('department_id', type=int)
         include_subcategories = request.args.get('include_subcategories', 'false').lower() == 'true'
         all_categories = request.args.get('all', 'false').lower() == 'true'
 
+        # Get current budget year
+        current_year = BudgetYear.query.filter_by(is_current=True).first()
+
+        # Base query - always filter by current budget year
+        base_query = Category.query.join(Department)
+        if current_year:
+            base_query = base_query.filter(Department.year_id == current_year.id)
+
         # Admin users can see all categories if 'all' param is true
         if all_categories and current_user.is_admin:
-            categories = Category.query.join(Department).order_by(Department.name, Category.name).all()
+            categories = base_query.order_by(Department.name, Category.name).all()
         elif department_id:
-            categories = Category.query.filter_by(department_id=department_id).order_by(Category.name).all()
+            categories = base_query.filter(Category.department_id == department_id).order_by(Category.name).all()
         elif current_user.department_id:
-            categories = Category.query.filter_by(department_id=current_user.department_id).order_by(Category.name).all()
+            # Get the user's department in the current budget year
+            user_dept = Department.query.get(current_user.department_id)
+            if user_dept and current_year:
+                # Find matching department in current year by name
+                current_year_dept = Department.query.filter_by(
+                    name=user_dept.name,
+                    year_id=current_year.id
+                ).first()
+                if current_year_dept:
+                    categories = base_query.filter(Category.department_id == current_year_dept.id).order_by(Category.name).all()
+                else:
+                    categories = base_query.filter(Category.department_id == current_user.department_id).order_by(Category.name).all()
+            else:
+                categories = base_query.filter(Category.department_id == current_user.department_id).order_by(Category.name).all()
         else:
-            categories = Category.query.join(Department).order_by(Department.name, Category.name).all()
+            categories = base_query.order_by(Department.name, Category.name).all()
 
         cat_list = []
         for cat in categories:
@@ -590,15 +618,21 @@ def get_categories():
 @api_v1.route('/form-data/subcategories', methods=['GET'])
 @login_required
 def get_subcategories():
-    """Get subcategories for a category"""
+    """Get subcategories for a category (filtered by current budget year)"""
     try:
         category_id = request.args.get('category_id', type=int)
-        include_all = request.args.get('all', 'false').lower() == 'true'
 
         if category_id:
             subcategories = Subcategory.query.filter_by(category_id=category_id).all()
         else:
-            subcategories = Subcategory.query.all()
+            # Filter by current budget year when getting all subcategories
+            current_year = BudgetYear.query.filter_by(is_current=True).first()
+            if current_year:
+                subcategories = Subcategory.query.join(Category).join(Department).filter(
+                    Department.year_id == current_year.id
+                ).all()
+            else:
+                subcategories = Subcategory.query.all()
 
         subcat_list = [{
             'id': sub.id,
