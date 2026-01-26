@@ -102,16 +102,20 @@ function Settings({ user, setUser }) {
   const switchToLegacy = async () => {
     setVersionLoading(true)
     try {
-      await fetch('/api/v1/auth/set-version-preference', {
+      const response = await fetch('/api/v1/auth/set-version-preference', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
         body: JSON.stringify({ version: 'legacy' })
       })
-      window.location.href = '/'
+      if (response.ok) {
+        window.location.href = '/'
+      } else {
+        showError('Failed to switch version')
+        setVersionLoading(false)
+      }
     } catch (err) {
       showError('Failed to switch version')
-    } finally {
       setVersionLoading(false)
     }
   }

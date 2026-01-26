@@ -209,10 +209,10 @@ function Approvals({ user, setUser }) {
 
                     <div className="expense-submitter">
                       <div className="submitter-avatar">
-                        {expense.user.name?.charAt(0)?.toUpperCase() || 'U'}
+                        {expense.user?.name?.charAt(0)?.toUpperCase() || 'U'}
                       </div>
                       <div className="submitter-info">
-                        <span className="submitter-name">{expense.user.name}</span>
+                        <span className="submitter-name">{expense.user?.name || 'Unknown'}</span>
                         <span className="submitter-date">{formatDate(expense.date)}</span>
                       </div>
                     </div>

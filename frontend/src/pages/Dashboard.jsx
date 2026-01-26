@@ -57,11 +57,10 @@ function Dashboard({ user, setUser }) {
 
   useEffect(() => {
     isMountedRef.current = true
-    const cleanup = fetchDashboardData()
+    fetchDashboardData()
 
     return () => {
       isMountedRef.current = false
-      cleanup?.then(fn => fn?.())
     }
   }, [fetchDashboardData])
 
