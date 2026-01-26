@@ -4,6 +4,9 @@ import { Card, Button, Input, Select, SearchableSelect, TomSelectInput, Textarea
 import logger from '../utils/logger'
 import './SubmitExpense.css'
 
+// Static option for creating new supplier - defined outside component to prevent re-renders
+const CREATE_NEW_SUPPLIER_OPTION = { id: '__create_new__', name: 'Create New Supplier' }
+
 // Helper functions for DD/MM/YYYY date format
 const formatDateForDisplay = (isoDate) => {
   if (!isoDate) return ''
@@ -723,7 +726,7 @@ function SubmitExpense({ user, setUser }) {
                   displayKey="name"
                   valueKey="id"
                   required
-                  createNewOption={{ id: '__create_new__', name: 'Create New Supplier' }}
+                  createNewOption={CREATE_NEW_SUPPLIER_OPTION}
                 />
 
                 <Select
