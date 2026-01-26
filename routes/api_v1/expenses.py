@@ -1,6 +1,7 @@
 from flask import jsonify, request
 from flask_login import login_required, current_user
 from models import db, Expense, User, Department, Category, Subcategory, Supplier, CreditCard
+from sqlalchemy import extract
 from sqlalchemy import func
 from sqlalchemy.orm import joinedload
 from datetime import datetime, timedelta
@@ -859,7 +860,9 @@ def get_expense_details(expense_id):
             'receipt_filename': expense.receipt_filename,
             'quote_filename': expense.quote_filename,
             'rejection_reason': expense.rejection_reason,
-            'budget_impact': budget_impact
+            'budget_impact': budget_impact,
+            'external_accounting_entry': expense.external_accounting_entry,
+            'external_accounting_entry_at': expense.external_accounting_entry_at.isoformat() if expense.external_accounting_entry_at else None
         }
 
         return jsonify({'expense': expense_data}), 200
@@ -883,6 +886,10 @@ def approve_expense(expense_id):
 
         if expense.status != 'pending':
             return jsonify({'error': f'Cannot approve expense with status: {expense.status}'}), 400
+
+        # Check if expense has already been sent to external accounting
+        if expense.external_accounting_entry:
+            return jsonify({'error': 'Cannot modify expense that has been sent to external accounting system'}), 400
 
         # Check if manager has permission for this expense's department
         if not current_user.is_admin:
@@ -921,6 +928,10 @@ def reject_expense(expense_id):
 
         if expense.status != 'pending':
             return jsonify({'error': f'Cannot reject expense with status: {expense.status}'}), 400
+
+        # Check if expense has already been sent to external accounting
+        if expense.external_accounting_entry:
+            return jsonify({'error': 'Cannot modify expense that has been sent to external accounting system'}), 400
 
         # Check if manager has permission for this expense's department
         if not current_user.is_admin:
@@ -1032,6 +1043,184 @@ def submit_expense():
         return jsonify({'error': 'Failed to submit expense'}), 500
 
 
+@api_v1.route('/expenses/<int:expense_id>', methods=['PUT'])
+@login_required
+def update_expense(expense_id):
+    """Update an expense - managers can edit their own expenses"""
+    try:
+        expense = Expense.query.get(expense_id)
+        if not expense:
+            return jsonify({'error': 'Expense not found'}), 404
+
+        # Check permissions: user can only edit their own expenses
+        # Admins should use /admin/expenses/<id> endpoint
+        if expense.user_id != current_user.id:
+            return jsonify({'error': 'You can only edit your own expenses'}), 403
+
+        # Handle both JSON and FormData
+        if request.content_type and 'multipart/form-data' in request.content_type:
+            data = request.form.to_dict()
+        else:
+            data = request.get_json() or {}
+
+        # Validate required fields
+        if 'description' in data and not data['description']:
+            return jsonify({'error': 'Description is required'}), 400
+        if 'supplier_id' in data and not data['supplier_id']:
+            return jsonify({'error': 'Supplier is required'}), 400
+
+        # Basic fields that users can edit
+        if 'amount' in data and data['amount']:
+            expense.amount = float(data['amount'])
+
+        if 'currency' in data and data['currency']:
+            expense.currency = data['currency']
+
+        if 'description' in data:
+            expense.description = data['description']
+
+        if 'reason' in data:
+            expense.reason = data['reason']
+
+        if 'type' in data and data['type']:
+            expense.type = data['type']
+
+        if 'subcategory_id' in data and data['subcategory_id']:
+            expense.subcategory_id = int(data['subcategory_id'])
+
+        # Date fields
+        if 'date' in data and data['date']:
+            try:
+                expense.date = datetime.fromisoformat(data['date'].replace('Z', '+00:00'))
+            except:
+                expense.date = datetime.strptime(data['date'], '%Y-%m-%d')
+
+        # Payment related fields
+        if 'payment_method' in data and data['payment_method']:
+            expense.payment_method = data['payment_method']
+
+        if 'payment_due_date' in data and data['payment_due_date']:
+            expense.payment_due_date = data['payment_due_date']
+
+        # Supplier and credit card
+        if 'supplier_id' in data:
+            if data['supplier_id']:
+                expense.supplier_id = int(data['supplier_id'])
+            else:
+                expense.supplier_id = None
+
+        if 'credit_card_id' in data:
+            if data['credit_card_id']:
+                expense.credit_card_id = int(data['credit_card_id'])
+            else:
+                expense.credit_card_id = None
+
+        # Handle file uploads
+        upload_folder = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'uploads')
+        os.makedirs(upload_folder, exist_ok=True)
+
+        def allowed_file(filename):
+            ALLOWED_EXTENSIONS = {'pdf', 'png', 'jpg', 'jpeg', 'gif'}
+            return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+        if 'quote' in request.files:
+            file = request.files['quote']
+            if file and file.filename and allowed_file(file.filename):
+                # Delete old file if exists
+                if expense.quote_filename:
+                    try:
+                        old_path = os.path.join(upload_folder, expense.quote_filename)
+                        if os.path.exists(old_path):
+                            os.remove(old_path)
+                    except OSError:
+                        pass
+                filename = secure_filename(f"{expense_id}_{datetime.now().timestamp()}_quote_{file.filename}")
+                file.save(os.path.join(upload_folder, filename))
+                expense.quote_filename = filename
+
+        if 'invoice' in request.files:
+            file = request.files['invoice']
+            if file and file.filename and allowed_file(file.filename):
+                if expense.invoice_filename:
+                    try:
+                        old_path = os.path.join(upload_folder, expense.invoice_filename)
+                        if os.path.exists(old_path):
+                            os.remove(old_path)
+                    except OSError:
+                        pass
+                filename = secure_filename(f"{expense_id}_{datetime.now().timestamp()}_invoice_{file.filename}")
+                file.save(os.path.join(upload_folder, filename))
+                expense.invoice_filename = filename
+
+        if 'receipt' in request.files:
+            file = request.files['receipt']
+            if file and file.filename and allowed_file(file.filename):
+                if expense.receipt_filename:
+                    try:
+                        old_path = os.path.join(upload_folder, expense.receipt_filename)
+                        if os.path.exists(old_path):
+                            os.remove(old_path)
+                    except OSError:
+                        pass
+                filename = secure_filename(f"{expense_id}_{datetime.now().timestamp()}_receipt_{file.filename}")
+                file.save(os.path.join(upload_folder, filename))
+                expense.receipt_filename = filename
+
+        # Handle file deletion requests
+        if data.get('delete_quote') in [True, 'true', 'True', '1', 1]:
+            if expense.quote_filename:
+                try:
+                    old_path = os.path.join(upload_folder, expense.quote_filename)
+                    if os.path.exists(old_path):
+                        os.remove(old_path)
+                except OSError:
+                    pass
+                expense.quote_filename = None
+
+        if data.get('delete_invoice') in [True, 'true', 'True', '1', 1]:
+            if expense.invoice_filename:
+                try:
+                    old_path = os.path.join(upload_folder, expense.invoice_filename)
+                    if os.path.exists(old_path):
+                        os.remove(old_path)
+                except OSError:
+                    pass
+                expense.invoice_filename = None
+
+        if data.get('delete_receipt') in [True, 'true', 'True', '1', 1]:
+            if expense.receipt_filename:
+                try:
+                    old_path = os.path.join(upload_folder, expense.receipt_filename)
+                    if os.path.exists(old_path):
+                        os.remove(old_path)
+                except OSError:
+                    pass
+                expense.receipt_filename = None
+
+        db.session.commit()
+
+        logging.info(f"Expense {expense_id} updated by user {current_user.username}")
+
+        return jsonify({
+            'message': 'Expense updated successfully',
+            'expense': {
+                'id': expense.id,
+                'amount': expense.amount,
+                'currency': expense.currency,
+                'description': expense.description,
+                'status': expense.status,
+                'quote_filename': expense.quote_filename,
+                'invoice_filename': expense.invoice_filename,
+                'receipt_filename': expense.receipt_filename
+            }
+        }), 200
+
+    except Exception as e:
+        db.session.rollback()
+        logging.error(f"Error updating expense: {str(e)}", exc_info=True)
+        return jsonify({'error': f'Failed to update expense: {str(e)}'}), 500
+
+
 @api_v1.route('/expenses/report', methods=['GET'])
 @login_required
 def get_expense_report():
@@ -1120,112 +1309,128 @@ def get_expense_report():
 @api_v1.route('/expenses/export', methods=['GET'])
 @login_required
 def export_expenses():
-    """Export expenses as XLSX"""
+    """Export expenses as XLSX - optimized with SQL filters"""
     from flask import send_file
     import xlsxwriter
     from io import BytesIO
     from datetime import datetime as dt
+    from sqlalchemy import extract
 
     try:
         # Get filter parameters - support both old (Flask template) and new (React) parameter names
         status = request.args.get('status', 'all')
-
-        # Support both 'employee' (old) and 'user_id' (new) parameters
         employee_id = request.args.get('employee', request.args.get('user_id', 'all'))
-
-        # Support both 'department' (old) and 'department_id' (new) parameters
         department_id = request.args.get('department', request.args.get('department_id', 'all'))
-
-        # Support both 'category' (old) and 'category_id' (new) parameters
         category_id = request.args.get('category', request.args.get('category_id', 'all'))
-
-        # Support both 'subcategory' (old) and 'subcategory_id' (new) parameters
         subcategory_id = request.args.get('subcategory', request.args.get('subcategory_id', 'all'))
-
-        # Support both 'supplier' (old) and 'supplier_id' (new) parameters
         supplier_id = request.args.get('supplier', request.args.get('supplier_id', 'all'))
-
         payment_method = request.args.get('payment_method', 'all')
-
-        # Date range filters (React version)
         start_date = request.args.get('start_date', None)
         end_date = request.args.get('end_date', None)
-
-        # Month filters (Flask template version)
         adding_month = request.args.get('adding_month', 'all')
         purchase_month = request.args.get('purchase_month', 'all')
-
-        # Search parameter (React version)
         search = request.args.get('search', None)
 
-        # Build query based on user role
+        # Build query with SQL filters for better performance
+        query = Expense.query.join(User, Expense.user_id == User.id)\
+            .outerjoin(Supplier, Expense.supplier_id == Supplier.id)\
+            .outerjoin(Subcategory, Expense.subcategory_id == Subcategory.id)
+
+        # Apply role-based filtering
         if current_user.is_admin:
-            expenses = Expense.query.order_by(Expense.date.desc()).all()
+            pass  # Admin sees all
         elif current_user.is_manager:
             managed_dept_ids = [dept.id for dept in current_user.managed_departments]
-            if current_user.department_id:
+            if current_user.department_id and current_user.department_id not in managed_dept_ids:
                 managed_dept_ids.append(current_user.department_id)
-            expenses = db.session.query(Expense).join(User, Expense.user_id == User.id)\
-                .filter(User.department_id.in_(managed_dept_ids))\
-                .order_by(Expense.date.desc()).all()
+            if managed_dept_ids:
+                query = query.filter(User.department_id.in_(managed_dept_ids))
+            else:
+                query = query.filter(Expense.user_id == current_user.id)
         else:
-            expenses = Expense.query.filter_by(user_id=current_user.id)\
-                .order_by(Expense.date.desc()).all()
+            query = query.filter(Expense.user_id == current_user.id)
 
-        # Apply filters
-        if status != 'all' and status:
-            expenses = [exp for exp in expenses if exp.status == status]
+        # Apply SQL filters instead of Python filters
+        if status and status != 'all':
+            query = query.filter(Expense.status == status)
 
-        if employee_id != 'all' and employee_id:
-            expenses = [exp for exp in expenses if exp.user_id == int(employee_id)]
+        if employee_id and employee_id != 'all':
+            query = query.filter(Expense.user_id == int(employee_id))
 
-        # Fix department filter - filter by user's department, not category's department
-        if department_id != 'all' and department_id:
-            expenses = [exp for exp in expenses if exp.submitter and exp.submitter.department_id == int(department_id)]
+        if department_id and department_id != 'all':
+            query = query.filter(User.department_id == int(department_id))
 
-        if category_id != 'all' and category_id:
-            expenses = [exp for exp in expenses if exp.subcategory and exp.subcategory.category_id == int(category_id)]
+        if category_id and category_id != 'all':
+            query = query.filter(Subcategory.category_id == int(category_id))
 
-        if subcategory_id != 'all' and subcategory_id:
-            expenses = [exp for exp in expenses if exp.subcategory_id == int(subcategory_id)]
+        if subcategory_id and subcategory_id != 'all':
+            query = query.filter(Expense.subcategory_id == int(subcategory_id))
 
-        if supplier_id != 'all' and supplier_id:
-            expenses = [exp for exp in expenses if exp.supplier_id and exp.supplier_id == int(supplier_id)]
+        if supplier_id and supplier_id != 'all':
+            query = query.filter(Expense.supplier_id == int(supplier_id))
 
-        if payment_method != 'all' and payment_method:
-            expenses = [exp for exp in expenses if exp.payment_method == payment_method]
+        if payment_method and payment_method != 'all':
+            query = query.filter(Expense.payment_method == payment_method)
 
-        # Apply date range filters (React version)
         if start_date:
-            start_dt = dt.fromisoformat(start_date)
-            expenses = [exp for exp in expenses if exp.date and exp.date >= start_dt]
+            try:
+                start_dt = dt.fromisoformat(start_date)
+                query = query.filter(Expense.date >= start_dt)
+            except ValueError:
+                pass
 
         if end_date:
-            end_dt = dt.fromisoformat(end_date)
-            expenses = [exp for exp in expenses if exp.date and exp.date <= end_dt]
+            try:
+                end_dt = dt.fromisoformat(end_date)
+                query = query.filter(Expense.date <= end_dt)
+            except ValueError:
+                pass
 
-        # Apply search filter
+        # Apply search filter in SQL
         if search:
-            search_lower = search.lower()
-            expenses = [exp for exp in expenses if
-                       (exp.description and search_lower in exp.description.lower()) or
-                       (exp.reason and search_lower in exp.reason.lower()) or
-                       (exp.submitter and search_lower in (exp.submitter.first_name + ' ' + exp.submitter.last_name).lower()) or
-                       (exp.supplier and exp.supplier.name and search_lower in exp.supplier.name.lower()) or
-                       (search_lower in str(exp.amount))]
+            search_pattern = f'%{search}%'
+            query = query.filter(
+                (Expense.description.ilike(search_pattern)) |
+                (Expense.reason.ilike(search_pattern)) |
+                (User.first_name.ilike(search_pattern)) |
+                (User.last_name.ilike(search_pattern)) |
+                (Supplier.name.ilike(search_pattern)) |
+                (func.cast(Expense.amount, db.String).ilike(search_pattern))
+            )
 
-        # Apply admin-only month filters (Flask template version)
+        # Apply month filters (admin only)
         if current_user.is_admin:
-            if adding_month != 'all':
-                year, month = adding_month.split('-')
-                expenses = [exp for exp in expenses if
-                           exp.date.year == int(year) and exp.date.month == int(month)]
+            if adding_month and adding_month != 'all':
+                try:
+                    year, month = adding_month.split('-')
+                    query = query.filter(
+                        extract('year', Expense.date) == int(year),
+                        extract('month', Expense.date) == int(month)
+                    )
+                except ValueError:
+                    pass
 
-            if purchase_month != 'all':
-                year, month = purchase_month.split('-')
-                expenses = [exp for exp in expenses if
-                           exp.invoice_date and exp.invoice_date.year == int(year) and
-                           exp.invoice_date.month == int(month)]
+            if purchase_month and purchase_month != 'all':
+                try:
+                    year, month = purchase_month.split('-')
+                    query = query.filter(
+                        Expense.invoice_date.isnot(None),
+                        extract('year', Expense.invoice_date) == int(year),
+                        extract('month', Expense.invoice_date) == int(month)
+                    )
+                except ValueError:
+                    pass
+
+        # Add eager loading and ordering
+        query = query.options(
+            joinedload(Expense.submitter).joinedload(User.home_department),
+            joinedload(Expense.subcategory).joinedload(Subcategory.category).joinedload(Category.department),
+            joinedload(Expense.supplier),
+            joinedload(Expense.handler)
+        ).order_by(Expense.date.desc())
+
+        # Execute the optimized query
+        expenses = query.all()
 
         # Create XLSX file in memory
         output = BytesIO()

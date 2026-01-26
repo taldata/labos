@@ -978,7 +978,9 @@ def admin_list_expenses():
                 'has_quote': bool(expense.quote_filename),
                 'invoice_filename': expense.invoice_filename,
                 'receipt_filename': expense.receipt_filename,
-                'quote_filename': expense.quote_filename
+                'quote_filename': expense.quote_filename,
+                'external_accounting_entry': expense.external_accounting_entry,
+                'external_accounting_entry_at': expense.external_accounting_entry_at.isoformat() if expense.external_accounting_entry_at else None
             })
 
         return jsonify({
@@ -1009,6 +1011,19 @@ def admin_update_expense(expense_id):
         expense = Expense.query.get(expense_id)
         if not expense:
             return jsonify({'error': 'Expense not found'}), 404
+
+        # Check if expense has been sent to external accounting - allow only specific admin overrides
+        if expense.external_accounting_entry:
+            # Admin can only update payment-related fields for expenses in external accounting
+            data = request.get_json() if request.content_type and 'application/json' in request.content_type else request.form.to_dict()
+            allowed_fields = {'payment_status', 'is_paid', 'paid_by_id', 'paid_at'}
+            provided_fields = set(data.keys()) - {'delete_quote', 'delete_invoice', 'delete_receipt'}
+            non_allowed_fields = provided_fields - allowed_fields
+            if non_allowed_fields:
+                return jsonify({
+                    'error': 'This expense has been sent to external accounting. Only payment-related fields can be modified.',
+                    'allowed_fields': list(allowed_fields)
+                }), 400
 
         # Handle both JSON and FormData
         if request.content_type and 'multipart/form-data' in request.content_type:
@@ -1239,25 +1254,20 @@ def admin_update_expense(expense_id):
 @api_v1.route('/admin/expenses/<int:expense_id>', methods=['DELETE'])
 @login_required
 def admin_delete_expense(expense_id):
-    """Delete an expense (admin can delete any, manager can delete their own)"""
+    """Delete an expense (admin only)"""
     try:
+        # Only admins can delete expenses
+        if not current_user.is_admin:
+            return jsonify({'error': 'Admin access required. Only administrators can delete expenses.'}), 403
+
         expense = Expense.query.get(expense_id)
         if not expense:
             return jsonify({'error': 'Expense not found'}), 404
 
-        # Check permissions: admins can delete any expense, managers can delete their own
-        if not current_user.is_admin and not current_user.is_manager:
-            return jsonify({'error': 'Admin or manager access required'}), 403
-
-        # If manager, they can only delete their own expenses
-        if current_user.is_manager and not current_user.is_admin:
-            if expense.user_id != current_user.id:
-                return jsonify({'error': 'Managers can only delete their own expenses'}), 403
-
         db.session.delete(expense)
         db.session.commit()
 
-        logging.info(f"Expense {expense_id} deleted by {current_user.username} (admin={current_user.is_admin}, manager={current_user.is_manager})")
+        logging.info(f"Expense {expense_id} deleted by admin {current_user.username}")
 
         return jsonify({'message': 'Expense deleted successfully'}), 200
 
