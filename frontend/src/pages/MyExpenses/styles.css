@@ -207,6 +207,16 @@
   gap: 0.125rem;
 }
 
+.me-file-item .file-preview-trigger {
+  font-size: 1.25rem;
+  color: #667eea;
+}
+
+.me-file-item .file-preview-trigger i {
+  font-size: 1.25rem;
+  display: inline-block;
+}
+
 .me-file-label {
   font-size: 0.6rem;
   color: var(--me-text-sub);

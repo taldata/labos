@@ -439,6 +439,16 @@
   gap: 0.125rem;
 }
 
+.eh-file-item .file-preview-trigger {
+  font-size: 1.25rem;
+  color: #667eea;
+}
+
+.eh-file-item .file-preview-trigger i {
+  font-size: 1.25rem;
+  display: inline-block;
+}
+
 .eh-file-label {
   font-size: 0.65rem;
   color: var(--eh-text-muted);
