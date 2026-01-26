@@ -298,7 +298,7 @@ def get_all_users():
                 )
             )
 
-        users = query.order_by(User.first_name, User.last_name).all()
+        users = query.order_by(User.id.desc()).all()  # Newest first
 
         users_data = []
         for user in users:
@@ -548,7 +548,7 @@ def get_all_suppliers():
                 )
             )
 
-        suppliers = query.order_by(Supplier.name).all()
+        suppliers = query.order_by(Supplier.id.desc()).all()  # Newest first
 
         suppliers_data = [{
             'id': s.id,
@@ -717,7 +717,7 @@ def get_all_credit_cards():
         if status != 'all':
             query = query.filter(CreditCard.status == status)
 
-        cards = query.order_by(CreditCard.last_four_digits).all()
+        cards = query.order_by(CreditCard.id.desc()).all()  # Newest first
 
         cards_data = [{
             'id': c.id,
@@ -853,7 +853,7 @@ def admin_list_expenses():
         start_date = request.args.get('start_date', None, type=str)
         end_date = request.args.get('end_date', None, type=str)
         search = request.args.get('search', None, type=str)
-        sort_by = request.args.get('sort_by', 'date', type=str)
+        sort_by = request.args.get('sort_by', 'id', type=str)  # Default to insertion order (newest first)
         sort_order = request.args.get('sort_order', 'desc', type=str)
 
         # Build query - admin sees all expenses
@@ -907,14 +907,16 @@ def admin_list_expenses():
             )
 
         # Apply sorting
-        if sort_by == 'date':
+        if sort_by == 'id':
+            query = query.order_by(Expense.id.desc() if sort_order == 'desc' else Expense.id.asc())
+        elif sort_by == 'date':
             query = query.order_by(Expense.date.desc() if sort_order == 'desc' else Expense.date.asc())
         elif sort_by == 'amount':
             query = query.order_by(Expense.amount.desc() if sort_order == 'desc' else Expense.amount.asc())
         elif sort_by == 'status':
             query = query.order_by(Expense.status.desc() if sort_order == 'desc' else Expense.status.asc())
         else:
-            query = query.order_by(Expense.date.desc())
+            query = query.order_by(Expense.id.desc())  # Default to insertion order (newest first)
 
         # Add eager loading to avoid N+1 queries
         query = query.options(

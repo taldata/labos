@@ -82,7 +82,7 @@ def get_recent_expenses():
                     joinedload(Expense.submitter),
                     joinedload(Expense.subcategory).joinedload(Subcategory.category)
                 )\
-                .order_by(Expense.date.desc())\
+                .order_by(Expense.id.desc())\
                 .limit(limit)\
                 .all()
         elif current_user.is_manager:
@@ -98,7 +98,7 @@ def get_recent_expenses():
                         joinedload(Expense.submitter),
                         joinedload(Expense.subcategory).joinedload(Subcategory.category)
                     )\
-                    .order_by(Expense.date.desc())\
+                    .order_by(Expense.id.desc())\
                     .limit(limit)\
                     .all()
             else:
@@ -107,7 +107,7 @@ def get_recent_expenses():
                         joinedload(Expense.submitter),
                         joinedload(Expense.subcategory).joinedload(Subcategory.category)
                     )\
-                    .order_by(Expense.date.desc())\
+                    .order_by(Expense.id.desc())\
                     .limit(limit)\
                     .all()
         else:
@@ -117,7 +117,7 @@ def get_recent_expenses():
                     joinedload(Expense.submitter),
                     joinedload(Expense.subcategory).joinedload(Subcategory.category)
                 )\
-                .order_by(Expense.date.desc())\
+                .order_by(Expense.id.desc())\
                 .limit(limit)\
                 .all()
 
@@ -194,7 +194,7 @@ def get_pending_approvals():
         if current_user.is_admin:
             # Admins see all pending expenses
             expenses = base_query.filter_by(status='pending')\
-                .order_by(Expense.date.desc())\
+                .order_by(Expense.id.desc())\
                 .all()
         else:
             # Managers see expenses from their managed departments
@@ -204,7 +204,7 @@ def get_pending_approvals():
                     Expense.status == 'pending',
                     User.department_id.in_(managed_dept_ids)
                 )\
-                .order_by(Expense.date.desc())\
+                .order_by(Expense.id.desc())\
                 .all()
 
         # Pre-calculate all budget usage in 3 queries instead of N*3 queries
@@ -702,7 +702,7 @@ def list_expenses():
         start_date = request.args.get('start_date', None, type=str)
         end_date = request.args.get('end_date', None, type=str)
         search = request.args.get('search', None, type=str)
-        sort_by = request.args.get('sort_by', 'date', type=str)
+        sort_by = request.args.get('sort_by', 'id', type=str)  # Default to insertion order (newest first)
         sort_order = request.args.get('sort_order', 'desc', type=str)
 
         # Build query
@@ -736,14 +736,16 @@ def list_expenses():
             )
 
         # Apply sorting
-        if sort_by == 'date':
+        if sort_by == 'id':
+            query = query.order_by(Expense.id.desc() if sort_order == 'desc' else Expense.id.asc())
+        elif sort_by == 'date':
             query = query.order_by(Expense.date.desc() if sort_order == 'desc' else Expense.date.asc())
         elif sort_by == 'amount':
             query = query.order_by(Expense.amount.desc() if sort_order == 'desc' else Expense.amount.asc())
         elif sort_by == 'status':
             query = query.order_by(Expense.status.desc() if sort_order == 'desc' else Expense.status.asc())
         else:
-            query = query.order_by(Expense.date.desc())
+            query = query.order_by(Expense.id.desc())
 
         # Add eager loading to avoid N+1 queries
         query = query.options(
@@ -778,8 +780,9 @@ def list_expenses():
                     'id': expense.supplier.id,
                     'name': expense.supplier.name
                 } if expense.supplier else None,
-                'has_invoice': bool(expense.invoice_filename),
-                'has_receipt': bool(expense.receipt_filename)
+                'invoice_filename': expense.invoice_filename,
+                'receipt_filename': expense.receipt_filename,
+                'quote_filename': expense.quote_filename
             })
 
         return jsonify({
@@ -1073,7 +1076,7 @@ def get_expense_report():
         if user_id and (current_user.is_admin or current_user.is_manager):
             query = query.filter(Expense.user_id == int(user_id))
         
-        expenses = query.order_by(Expense.date.desc()).all()
+        expenses = query.order_by(Expense.id.desc()).all()
         
         # Build response
         report_data = []
@@ -1160,17 +1163,17 @@ def export_expenses():
 
         # Build query based on user role
         if current_user.is_admin:
-            expenses = Expense.query.order_by(Expense.date.desc()).all()
+            expenses = Expense.query.order_by(Expense.id.desc()).all()
         elif current_user.is_manager:
             managed_dept_ids = [dept.id for dept in current_user.managed_departments]
             if current_user.department_id:
                 managed_dept_ids.append(current_user.department_id)
             expenses = db.session.query(Expense).join(User, Expense.user_id == User.id)\
                 .filter(User.department_id.in_(managed_dept_ids))\
-                .order_by(Expense.date.desc()).all()
+                .order_by(Expense.id.desc()).all()
         else:
             expenses = Expense.query.filter_by(user_id=current_user.id)\
-                .order_by(Expense.date.desc()).all()
+                .order_by(Expense.id.desc()).all()
 
         # Apply filters
         if status != 'all' and status:
