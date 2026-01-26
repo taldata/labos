@@ -428,6 +428,12 @@
   align-items: center;
   justify-content: center;
   gap: 0.375rem;
+  font-size: 1.125rem;
+}
+
+.file-preview-trigger i {
+  font-size: 1.125rem;
+  line-height: 1;
 }
 
 .file-preview-trigger:hover {
