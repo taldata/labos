@@ -351,16 +351,20 @@ export const TomSelectInput = forwardRef(({
       tomOptions.push({
         value: createNewOption[valueKey]?.toString() || '__create_new__',
         text: createNewOption[displayKey] || 'Create New',
-        $order: 0 // Keep at top
+        $order: -1 // Use -1 to ensure it's always first
       });
     }
-    
-    // Add regular options with order starting from 1
-    options.forEach((option, index) => {
+
+    // Add regular options sorted alphabetically
+    const sortedOptions = [...options].sort((a, b) =>
+      (a[displayKey] || '').localeCompare(b[displayKey] || '')
+    );
+
+    sortedOptions.forEach((option, index) => {
       tomOptions.push({
         value: option[valueKey]?.toString() || '',
         text: option[displayKey] || '',
-        $order: index + 1
+        $order: index
       });
     });
 
@@ -424,26 +428,30 @@ export const TomSelectInput = forwardRef(({
   useEffect(() => {
     if (tomSelectRef.current) {
       tomSelectRef.current.clearOptions();
-      
+
       // Add createNew option first if provided
       const tomOptions = [];
       if (createNewOption) {
         tomOptions.push({
           value: createNewOption[valueKey]?.toString() || '__create_new__',
           text: createNewOption[displayKey] || 'Create New',
-          $order: 0
+          $order: -1 // Use -1 to ensure it's always first
         });
       }
-      
-      // Add regular options
-      options.forEach((option, index) => {
+
+      // Add regular options sorted alphabetically
+      const sortedOptions = [...options].sort((a, b) =>
+        (a[displayKey] || '').localeCompare(b[displayKey] || '')
+      );
+
+      sortedOptions.forEach((option, index) => {
         tomOptions.push({
           value: option[valueKey]?.toString() || '',
           text: option[displayKey] || '',
-          $order: index + 1
+          $order: index
         });
       });
-      
+
       tomSelectRef.current.addOptions(tomOptions);
       tomSelectRef.current.refreshOptions(false);
 
