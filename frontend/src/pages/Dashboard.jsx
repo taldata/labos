@@ -216,19 +216,6 @@ function Dashboard({ user, setUser }) {
 
 
 
-                {(user?.is_manager || user?.is_admin) && (
-                  <Card hoverable clickable onClick={() => navigate('/approvals')} className="action-card">
-                    <Card.Body>
-                      <div className="action-icon action-icon-approvals">
-                        <i className="fas fa-clipboard-check"></i>
-                      </div>
-                      <div className="action-content">
-                        <h4>Approvals</h4>
-                        <p>Review pending expenses</p>
-                      </div>
-                    </Card.Body>
-                  </Card>
-                )}
 
                 {user?.is_admin && (
                   <>

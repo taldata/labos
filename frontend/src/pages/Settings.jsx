@@ -323,12 +323,6 @@ function Settings({ user, setUser }) {
                   <i className="fas fa-list"></i>
                   <span>View My Expenses</span>
                 </button>
-                {(user?.is_manager || user?.is_admin) && (
-                  <button className="quick-link" onClick={() => navigate('/approvals')}>
-                    <i className="fas fa-clipboard-check"></i>
-                    <span>Pending Approvals</span>
-                  </button>
-                )}
                 {user?.is_admin && (
                   <button className="quick-link" onClick={() => navigate('/admin')}>
                     <i className="fas fa-chart-line"></i>
