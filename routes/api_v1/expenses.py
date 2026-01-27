@@ -1,4 +1,4 @@
-from flask import jsonify, request
+from flask import jsonify, request, current_app
 from flask_login import login_required, current_user
 from models import db, Expense, User, Department, Category, Subcategory, Supplier, CreditCard, BudgetYear
 from sqlalchemy import func
@@ -1028,8 +1028,11 @@ def submit_expense():
             expense.paid_by_id = current_user.id
             expense.payment_status = 'paid'
 
-        # Handle file uploads
-        upload_folder = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'uploads')
+        # Handle file uploads - use configured UPLOAD_FOLDER for consistency with download route
+        upload_folder = current_app.config.get('UPLOAD_FOLDER')
+        if not upload_folder:
+            logging.error("UPLOAD_FOLDER is not configured in app.config")
+            return jsonify({'error': 'Server configuration error'}), 500
         os.makedirs(upload_folder, exist_ok=True)
 
         if 'invoice' in request.files:
