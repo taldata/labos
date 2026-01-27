@@ -350,13 +350,13 @@ const DepartmentManager = ({ user, setUser }) => {
                                             <div className="manager-budget-overview">
                                                 <div className="manager-budget-stats">
                                                     <div className="manager-stat">
-                                                        <span className="manager-stat-label">תקציב כולל</span>
+                                                        <span className="manager-stat-label">תקציב</span>
                                                         <span className="manager-stat-value">
                                                             {dept.budget.toLocaleString()} {getCurrencyLabel(dept.currency)}
                                                         </span>
                                                     </div>
                                                     <div className="manager-stat">
-                                                        <span className="manager-stat-label">נוצל</span>
+                                                        <span className="manager-stat-label">הוצאות</span>
                                                         <span className="manager-stat-value spent">
                                                             {(dept.spent || 0).toLocaleString()} {getCurrencyLabel(dept.currency)}
                                                         </span>
@@ -371,7 +371,7 @@ const DepartmentManager = ({ user, setUser }) => {
 
                                                 <div className="manager-progress-container">
                                                     <div className={`manager-progress-bar ${isOverBudget ? 'over-budget' : isWarning ? 'warning' : ''}`}>
-                                                        <div 
+                                                        <div
                                                             className="manager-progress-fill"
                                                             style={{ width: `${Math.min(usagePercent, 100)}%` }}
                                                         ></div>
@@ -386,7 +386,7 @@ const DepartmentManager = ({ user, setUser }) => {
                                                     <i className="fas fa-folder"></i>
                                                     קטגוריות ({dept.categories.length})
                                                 </h3>
-                                                
+
                                                 {dept.categories.length === 0 ? (
                                                     <p className="no-categories">אין קטגוריות במחלקה זו</p>
                                                 ) : (
@@ -394,7 +394,7 @@ const DepartmentManager = ({ user, setUser }) => {
                                                         {dept.categories.map(cat => {
                                                             const catRemaining = cat.budget - (cat.spent || 0);
                                                             const catUsage = getBudgetUsage(cat.spent || 0, cat.budget);
-                                                            
+
                                                             return (
                                                                 <div key={cat.id} className="manager-category-item">
                                                                     <div className="manager-category-header">
@@ -402,7 +402,7 @@ const DepartmentManager = ({ user, setUser }) => {
                                                                             <i className="fas fa-folder-open"></i>
                                                                             {cat.name}
                                                                         </span>
-                                                                        <span 
+                                                                        <span
                                                                             className="manager-category-expenses-link"
                                                                             onClick={() => navigate(`/admin/expense-history?category_id=${cat.id}`)}
                                                                             title="צפה בהוצאות"
@@ -417,6 +417,11 @@ const DepartmentManager = ({ user, setUser }) => {
                                                                         </span>
                                                                         <span className="cat-separator">|</span>
                                                                         <span className="cat-stat-item">
+                                                                            <span className="cat-stat-label">הוצאות:</span>
+                                                                            <span className="cat-spent" dir="ltr">{(cat.spent || 0).toLocaleString()}</span>
+                                                                        </span>
+                                                                        <span className="cat-separator">|</span>
+                                                                        <span className="cat-stat-item">
                                                                             <span className="cat-stat-label">יתרה:</span>
                                                                             <span className={`cat-remaining ${catRemaining < 0 ? 'negative' : 'positive'}`} dir="ltr">
                                                                                 {catRemaining < 0 ? `${Math.abs(catRemaining).toLocaleString()}-` : catRemaining.toLocaleString()}
@@ -424,7 +429,7 @@ const DepartmentManager = ({ user, setUser }) => {
                                                                         </span>
                                                                     </div>
                                                                     <div className="manager-category-progress">
-                                                                        <div 
+                                                                        <div
                                                                             className={`manager-cat-progress-fill ${catUsage >= 100 ? 'over' : catUsage >= 80 ? 'warning' : ''}`}
                                                                             style={{ width: `${Math.min(catUsage, 100)}%` }}
                                                                         ></div>
@@ -448,6 +453,11 @@ const DepartmentManager = ({ user, setUser }) => {
                                                                                             </span>
                                                                                             <span className="sub-separator">|</span>
                                                                                             <span className="sub-stat-item">
+                                                                                                <span className="sub-stat-label">הוצאות:</span>
+                                                                                                <span className="sub-spent" dir="ltr">{(sub.spent || 0).toLocaleString()}</span>
+                                                                                            </span>
+                                                                                            <span className="sub-separator">|</span>
+                                                                                            <span className="sub-stat-item">
                                                                                                 <span className="sub-stat-label">יתרה:</span>
                                                                                                 <span className={`sub-remaining ${subRemaining < 0 ? 'negative' : 'positive'}`} dir="ltr">
                                                                                                     {subRemaining < 0 ? `${Math.abs(subRemaining).toLocaleString()}-` : subRemaining.toLocaleString()}
@@ -468,8 +478,8 @@ const DepartmentManager = ({ user, setUser }) => {
 
                                             {/* Quick Action */}
                                             <div className="manager-dept-actions">
-                                                <Button 
-                                                    variant="ghost" 
+                                                <Button
+                                                    variant="ghost"
                                                     size="small"
                                                     icon="fas fa-list"
                                                     onClick={() => navigate(`/admin/expense-history?department_id=${dept.id}`)}
@@ -551,8 +561,8 @@ const DepartmentManager = ({ user, setUser }) => {
                     <div className="org-tree">
                         {filteredStructure.length === 0 && (
                             <div className="empty-state">
-                                {searchQuery 
-                                    ? `No results found for "${searchQuery}"` 
+                                {searchQuery
+                                    ? `No results found for "${searchQuery}"`
                                     : 'No departments yet. Click "Add Department" to get started!'}
                             </div>
                         )}
@@ -571,14 +581,6 @@ const DepartmentManager = ({ user, setUser }) => {
                                                     <span className="stat-currency">{getCurrencyLabel(dept.currency)}</span>
                                                 </span>
                                             </div>
-                                            <div className="stat-item">
-                                                <span className="stat-label">יתרה</span>
-                                                <span className={`stat-value ${(dept.budget - (dept.spent || 0)) > 0 ? 'positive' : (dept.budget - (dept.spent || 0)) < 0 ? 'negative over-budget' : ''}`}>
-                                                    {(dept.budget - (dept.spent || 0)) < 0 && <i className="fas fa-exclamation-triangle over-budget-icon" title="חריגה מתקציב!"></i>}
-                                                    {(dept.budget - (dept.spent || 0)).toLocaleString()}
-                                                    <span className="stat-currency">{getCurrencyLabel(dept.currency)}</span>
-                                                </span>
-                                            </div>
                                             <div
                                                 className="stat-item actionable"
                                                 onClick={(e) => {
@@ -587,9 +589,17 @@ const DepartmentManager = ({ user, setUser }) => {
                                                 }}
                                                 title="לחץ לצפייה בפירוט ההוצאות"
                                             >
-                                                <span className="stat-label">הוצאות בפועל</span>
+                                                <span className="stat-label">הוצאות</span>
                                                 <span className="stat-value">
                                                     {(dept.spent || 0).toLocaleString()}
+                                                    <span className="stat-currency">{getCurrencyLabel(dept.currency)}</span>
+                                                </span>
+                                            </div>
+                                            <div className="stat-item">
+                                                <span className="stat-label">יתרה</span>
+                                                <span className={`stat-value ${(dept.budget - (dept.spent || 0)) > 0 ? 'positive' : (dept.budget - (dept.spent || 0)) < 0 ? 'negative over-budget' : ''}`}>
+                                                    {(dept.budget - (dept.spent || 0)) < 0 && <i className="fas fa-exclamation-triangle over-budget-icon" title="חריגה מתקציב!"></i>}
+                                                    {(dept.budget - (dept.spent || 0)).toLocaleString()}
                                                     <span className="stat-currency">{getCurrencyLabel(dept.currency)}</span>
                                                 </span>
                                             </div>
@@ -635,14 +645,6 @@ const DepartmentManager = ({ user, setUser }) => {
                                                                         <span className="stat-currency">{getCurrencyLabel(dept.currency)}</span>
                                                                     </span>
                                                                 </div>
-                                                                <div className="stat-item">
-                                                                    <span className="stat-label">יתרה</span>
-                                                                    <span className={`stat-value ${(cat.budget - (cat.spent || 0)) > 0 ? 'positive' : (cat.budget - (cat.spent || 0)) < 0 ? 'negative over-budget' : ''}`}>
-                                                                        {(cat.budget - (cat.spent || 0)) < 0 && <i className="fas fa-exclamation-triangle over-budget-icon" title="חריגה מתקציב!"></i>}
-                                                                        {(cat.budget - (cat.spent || 0)).toLocaleString()}
-                                                                        <span className="stat-currency">{getCurrencyLabel(dept.currency)}</span>
-                                                                    </span>
-                                                                </div>
                                                                 <div
                                                                     className="stat-item actionable"
                                                                     onClick={(e) => {
@@ -654,6 +656,14 @@ const DepartmentManager = ({ user, setUser }) => {
                                                                     <span className="stat-label">הוצאות</span>
                                                                     <span className="stat-value">
                                                                         {(cat.spent || 0).toLocaleString()}
+                                                                        <span className="stat-currency">{getCurrencyLabel(dept.currency)}</span>
+                                                                    </span>
+                                                                </div>
+                                                                <div className="stat-item">
+                                                                    <span className="stat-label">יתרה</span>
+                                                                    <span className={`stat-value ${(cat.budget - (cat.spent || 0)) > 0 ? 'positive' : (cat.budget - (cat.spent || 0)) < 0 ? 'negative over-budget' : ''}`}>
+                                                                        {(cat.budget - (cat.spent || 0)) < 0 && <i className="fas fa-exclamation-triangle over-budget-icon" title="חריגה מתקציב!"></i>}
+                                                                        {(cat.budget - (cat.spent || 0)).toLocaleString()}
                                                                         <span className="stat-currency">{getCurrencyLabel(dept.currency)}</span>
                                                                     </span>
                                                                 </div>
@@ -682,14 +692,6 @@ const DepartmentManager = ({ user, setUser }) => {
                                                                                     <span className="stat-currency">{getCurrencyLabel(dept.currency)}</span>
                                                                                 </span>
                                                                             </div>
-                                                                            <div className="stat-item">
-                                                                                <span className="stat-label">יתרה</span>
-                                                                                <span className={`stat-value ${(sub.budget - (sub.spent || 0)) > 0 ? 'positive' : (sub.budget - (sub.spent || 0)) < 0 ? 'negative over-budget' : ''}`}>
-                                                                                    {(sub.budget - (sub.spent || 0)) < 0 && <i className="fas fa-exclamation-triangle over-budget-icon" title="חריגה מתקציב!"></i>}
-                                                                                    {(sub.budget - (sub.spent || 0)).toLocaleString()}
-                                                                                    <span className="stat-currency">{getCurrencyLabel(dept.currency)}</span>
-                                                                                </span>
-                                                                            </div>
                                                                             <div
                                                                                 className="stat-item actionable"
                                                                                 onClick={(e) => {
@@ -701,6 +703,14 @@ const DepartmentManager = ({ user, setUser }) => {
                                                                                 <span className="stat-label">הוצאות</span>
                                                                                 <span className="stat-value">
                                                                                     {(sub.spent || 0).toLocaleString()}
+                                                                                    <span className="stat-currency">{getCurrencyLabel(dept.currency)}</span>
+                                                                                </span>
+                                                                            </div>
+                                                                            <div className="stat-item">
+                                                                                <span className="stat-label">יתרה</span>
+                                                                                <span className={`stat-value ${(sub.budget - (sub.spent || 0)) > 0 ? 'positive' : (sub.budget - (sub.spent || 0)) < 0 ? 'negative over-budget' : ''}`}>
+                                                                                    {(sub.budget - (sub.spent || 0)) < 0 && <i className="fas fa-exclamation-triangle over-budget-icon" title="חריגה מתקציב!"></i>}
+                                                                                    {(sub.budget - (sub.spent || 0)).toLocaleString()}
                                                                                     <span className="stat-currency">{getCurrencyLabel(dept.currency)}</span>
                                                                                 </span>
                                                                             </div>
