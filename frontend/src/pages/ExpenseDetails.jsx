@@ -203,7 +203,7 @@ function ExpenseDetails({ user, setUser }) {
             </div>
             <div className="amount-meta">
               <span><i className="fas fa-calendar"></i> Document: {formatDate(expense.date)}</span>
-              <span><i className="fas fa-clock"></i> Submitted: {formatDate(expense.created_at)}</span>
+              <span><i className="fas fa-clock"></i> Submitted: {formatDate(expense.submit_date)}</span>
             </div>
           </Card.Body>
         </Card>

@@ -546,6 +546,9 @@ function ExpenseRow({ expense, onView, onEdit, onMove, onDelete, formatDate, for
       <td className="eh-table__cell eh-table__cell--date">
         {formatDate(expense.date)}
       </td>
+      <td className="eh-table__cell eh-table__cell--submit-date">
+        {formatDate(expense.submit_date)}
+      </td>
       <td className="eh-table__cell eh-table__cell--employee">
         <div className="eh-employee">
           <div className="eh-employee__avatar">
@@ -724,6 +727,7 @@ function ExpenseTable({ expenses, loading, error, hasActiveFilters, onView, onEd
         <thead className="eh-table__head">
           <tr>
             <th className="eh-table__header eh-table__header--date">Date</th>
+            <th className="eh-table__header eh-table__header--submit-date">Submit Date</th>
             <th className="eh-table__header eh-table__header--employee">Employee</th>
             <th className="eh-table__header eh-table__header--department">Department</th>
             <th className="eh-table__header eh-table__header--description">Description</th>

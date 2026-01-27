@@ -1255,7 +1255,8 @@ def manager_list_expenses():
                 'has_quote': bool(expense.quote_filename),
                 'invoice_filename': expense.invoice_filename,
                 'receipt_filename': expense.receipt_filename,
-                'quote_filename': expense.quote_filename
+                'quote_filename': expense.quote_filename,
+                'submit_date': expense.submit_date.isoformat() if expense.submit_date else None
             })
 
         return jsonify({
@@ -1424,7 +1425,8 @@ def admin_list_expenses():
                 'has_quote': bool(expense.quote_filename),
                 'invoice_filename': expense.invoice_filename,
                 'receipt_filename': expense.receipt_filename,
-                'quote_filename': expense.quote_filename
+                'quote_filename': expense.quote_filename,
+                'submit_date': expense.submit_date.isoformat() if expense.submit_date else None
             })
 
         return jsonify({

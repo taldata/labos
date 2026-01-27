@@ -2,17 +2,17 @@
 import React from 'react';
 import { Button, Badge, Skeleton, EmptyState, FilePreviewButton } from '../../../components/ui';
 
-const ExpenseList = ({ 
-  expenses, 
-  loading, 
-  error, 
+const ExpenseList = ({
+  expenses,
+  loading,
+  error,
   user,
-  onDelete, 
+  onDelete,
   onView,
   pagination,
   onPageChange
 }) => {
-  
+
   const formatDate = (dateString) => {
     if (!dateString) return '-';
     // Use consistent date formatting
@@ -67,6 +67,7 @@ const ExpenseList = ({
           <thead>
             <tr>
               <th>Date</th>
+              <th>Submit Date</th>
               <th>Description</th>
               <th>Category</th>
               <th style={{ textAlign: 'right' }}>Amount</th>
@@ -79,12 +80,13 @@ const ExpenseList = ({
           </thead>
           <tbody>
             {expenses.map((expense) => (
-              <tr 
-                key={expense.id} 
-                onClick={() => onView(expense.id)} 
+              <tr
+                key={expense.id}
+                onClick={() => onView(expense.id)}
                 style={{ cursor: 'pointer' }}
               >
                 <td className="me-cell-date">{formatDate(expense.date)}</td>
+                <td className="me-cell-date me-cell-submit-date">{formatDate(expense.submit_date)}</td>
                 <td>
                   <span className="me-cell-desc-title">{expense.description || 'No description'}</span>
                   {expense.reason && <span className="me-cell-desc-reason">{expense.reason}</span>}
@@ -92,10 +94,10 @@ const ExpenseList = ({
                 <td>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
                     {expense.category?.name && (
-                       <Badge variant="default" size="small">{expense.category.name}</Badge>
+                      <Badge variant="default" size="small">{expense.category.name}</Badge>
                     )}
                     {expense.subcategory?.name && (
-                       <span style={{ fontSize: '0.75rem', color: 'var(--me-text-sub)' }}>{expense.subcategory.name}</span>
+                      <span style={{ fontSize: '0.75rem', color: 'var(--me-text-sub)' }}>{expense.subcategory.name}</span>
                     )}
                   </div>
                 </td>
@@ -172,7 +174,7 @@ const ExpenseList = ({
 
       {/* Mobile Card View (Hidden on desktop via CSS) */}
       <div className="me-mobile-only">
-         {/* implemented in styles.css with media queries to show/hide */}
+        {/* implemented in styles.css with media queries to show/hide */}
       </div>
 
       {/* Pagination */}

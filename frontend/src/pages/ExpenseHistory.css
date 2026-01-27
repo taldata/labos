@@ -250,7 +250,14 @@
 /* Column Widths */
 .eh-table__header--date,
 .eh-table__cell--date {
-  width: 130px;
+  width: 110px;
+}
+
+.eh-table__header--submit-date,
+.eh-table__cell--submit-date {
+  width: 110px;
+  color: var(--eh-text-secondary);
+  font-size: 0.9rem;
 }
 
 .eh-table__header--employee,

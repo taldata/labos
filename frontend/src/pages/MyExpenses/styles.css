@@ -1,12 +1,18 @@
 /* MyExpenses Module Styles */
 :root {
-  --me-primary: #4f46e5; /* Indigo 600 */
-  --me-primary-hover: #4338ca; /* Indigo 700 */
-  --me-bg-page: #f9fafb; /* Gray 50 */
+  --me-primary: #4f46e5;
+  /* Indigo 600 */
+  --me-primary-hover: #4338ca;
+  /* Indigo 700 */
+  --me-bg-page: #f9fafb;
+  /* Gray 50 */
   --me-bg-card: #ffffff;
-  --me-text-main: #111827; /* Gray 900 */
-  --me-text-sub: #6b7280; /* Gray 500 */
-  --me-border: #e5e7eb; /* Gray 200 */
+  --me-text-main: #111827;
+  /* Gray 900 */
+  --me-text-sub: #6b7280;
+  /* Gray 500 */
+  --me-border: #e5e7eb;
+  /* Gray 200 */
   --me-danger: #ef4444;
   --me-success: #10b981;
   --me-warning: #f59e0b;
@@ -172,6 +178,10 @@
   color: var(--me-text-sub);
 }
 
+.me-cell-submit-date {
+  opacity: 0.8;
+}
+
 .me-cell-desc-title {
   font-weight: 600;
   color: var(--me-text-main);
@@ -235,10 +245,25 @@
   text-transform: capitalize;
 }
 
-.me-badge.pending { background: #fef3c7; color: #92400e; }
-.me-badge.approved { background: #d1fae5; color: #065f46; }
-.me-badge.rejected { background: #fee2e2; color: #991b1b; }
-.me-badge.paid { background: #dbeafe; color: #1e40af; }
+.me-badge.pending {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.me-badge.approved {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.me-badge.rejected {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.me-badge.paid {
+  background: #dbeafe;
+  color: #1e40af;
+}
 
 /* Pagination */
 .me-pagination {
@@ -252,8 +277,15 @@
 
 /* Animations */
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .me-animate-fade {
@@ -262,10 +294,20 @@
 
 /* Mobile Responsive */
 @media (max-width: 768px) {
-  .me-container { padding: 1rem; }
-  .me-header { flex-direction: column; align-items: flex-start; gap: 1rem; }
-  .me-table { display: none; }
-  
+  .me-container {
+    padding: 1rem;
+  }
+
+  .me-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+
+  .me-table {
+    display: none;
+  }
+
   .me-mobile-card {
     display: block;
     background: white;

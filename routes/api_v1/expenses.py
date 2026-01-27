@@ -820,7 +820,8 @@ def list_expenses():
                 } if expense.supplier else None,
                 'invoice_filename': expense.invoice_filename,
                 'receipt_filename': expense.receipt_filename,
-                'quote_filename': expense.quote_filename
+                'quote_filename': expense.quote_filename,
+                'submit_date': expense.submit_date.isoformat() if expense.submit_date else None
             })
 
         return jsonify({
@@ -900,7 +901,9 @@ def get_expense_details(expense_id):
             'receipt_filename': expense.receipt_filename,
             'quote_filename': expense.quote_filename,
             'rejection_reason': expense.rejection_reason,
-            'budget_impact': budget_impact
+            'budget_impact': budget_impact,
+            'submit_date': expense.submit_date.isoformat() if expense.submit_date else None,
+            'created_at': expense.submit_date.isoformat() if expense.submit_date else None
         }
 
         return jsonify({'expense': expense_data}), 200
