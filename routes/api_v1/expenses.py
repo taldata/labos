@@ -555,19 +555,23 @@ def get_departments():
 @api_v1.route('/form-data/categories', methods=['GET'])
 @login_required
 def get_categories():
-    """Get categories for current user's department or all categories for admin (filtered by current budget year)"""
+    """Get categories for current user's department or all categories for admin (filtered by budget year)"""
     try:
         department_id = request.args.get('department_id', type=int)
         include_subcategories = request.args.get('include_subcategories', 'false').lower() == 'true'
         all_categories = request.args.get('all', 'false').lower() == 'true'
+        budget_year_param = request.args.get('budget_year', type=int)
 
-        # Get current budget year
-        current_year = BudgetYear.query.filter_by(is_current=True).first()
+        # Get budget year - use parameter if provided, otherwise fall back to current year
+        if budget_year_param:
+            target_year = BudgetYear.query.filter_by(year=budget_year_param).first()
+        else:
+            target_year = BudgetYear.query.filter_by(is_current=True).first()
 
-        # Base query - always filter by current budget year
+        # Base query - always filter by target budget year
         base_query = Category.query.join(Department)
-        if current_year:
-            base_query = base_query.filter(Department.year_id == current_year.id)
+        if target_year:
+            base_query = base_query.filter(Department.year_id == target_year.id)
 
         # Admin users can see all categories if 'all' param is true
         if all_categories and current_user.is_admin:
@@ -575,16 +579,16 @@ def get_categories():
         elif department_id:
             categories = base_query.filter(Category.department_id == department_id).order_by(Category.name).all()
         elif current_user.department_id:
-            # Get the user's department in the current budget year
+            # Get the user's department in the target budget year
             user_dept = Department.query.get(current_user.department_id)
-            if user_dept and current_year:
-                # Find matching department in current year by name
-                current_year_dept = Department.query.filter_by(
+            if user_dept and target_year:
+                # Find matching department in target year by name
+                target_year_dept = Department.query.filter_by(
                     name=user_dept.name,
-                    year_id=current_year.id
+                    year_id=target_year.id
                 ).first()
-                if current_year_dept:
-                    categories = base_query.filter(Category.department_id == current_year_dept.id).order_by(Category.name).all()
+                if target_year_dept:
+                    categories = base_query.filter(Category.department_id == target_year_dept.id).order_by(Category.name).all()
                 else:
                     categories = base_query.filter(Category.department_id == current_user.department_id).order_by(Category.name).all()
             else:
