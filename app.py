@@ -430,6 +430,7 @@ def submit_expense():
             payment_due_date=payment_due_date,  # Add payment due date
             status='approved',  # All expenses are auto-approved
             invoice_date=invoice_date,
+            submit_date=datetime.utcnow(),  # Track when the expense was submitted
         )
         
         # Set payment_status to 'Pending attention' for 'Transfer' payment method
