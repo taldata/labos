@@ -197,25 +197,19 @@ function useFilterOptions() {
 
   const fetchFilterOptions = useCallback(async () => {
     try {
-      const [deptRes, userRes, catRes, suppRes, ccRes, subcatRes] = await Promise.all([
-        fetch('/api/v1/form-data/departments', { credentials: 'include' }),
-        fetch('/api/v1/admin/users', { credentials: 'include' }),
-        fetch('/api/v1/form-data/categories?all=true&include_subcategories=true', { credentials: 'include' }),
-        fetch('/api/v1/form-data/suppliers', { credentials: 'include' }),
-        fetch('/api/v1/form-data/credit-cards', { credentials: 'include' }),
-        fetch('/api/v1/form-data/subcategories?all=true', { credentials: 'include' })
-      ])
+      // Use combined endpoint for better performance (1 request instead of 6)
+      const response = await fetch('/api/v1/admin/expense-filter-options', { credentials: 'include' })
 
-      if (deptRes.ok) {
-        const data = await deptRes.json()
+      if (response.ok) {
+        const data = await response.json()
+
+        // Departments
         setDepartments(data.departments || [])
-      }
-      if (userRes.ok) {
-        const data = await userRes.json()
+
+        // Users
         setUsers(data.users || [])
-      }
-      if (catRes.ok) {
-        const data = await catRes.json()
+
+        // Categories and category options
         const categoriesData = data.categories || []
         setCategories(categoriesData)
 
@@ -243,18 +237,17 @@ function useFilterOptions() {
           }
         })
         setCategoryOptions(flattenedOptions)
-      }
-      if (suppRes.ok) {
-        const data = await suppRes.json()
+
+        // Suppliers
         setSuppliers(data.suppliers || [])
-      }
-      if (ccRes.ok) {
-        const data = await ccRes.json()
+
+        // Credit cards
         setCreditCards(data.credit_cards || [])
-      }
-      if (subcatRes.ok) {
-        const data = await subcatRes.json()
+
+        // Subcategories
         setSubcategories(data.subcategories || [])
+      } else {
+        logger.error('Failed to fetch filter options', { status: response.status })
       }
     } catch (err) {
       logger.error('Failed to fetch filter options', { error: err.message })
