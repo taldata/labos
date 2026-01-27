@@ -197,6 +197,7 @@
                     <thead>
                         <tr class="table-light">
                             <th class="col-date"><i class="fas fa-calendar text-primary"></i> Date</th>
+                            <th class="col-date"><i class="fas fa-calendar-check text-primary"></i> Submit Date</th>
                             <th class="col-employee"><i class="fas fa-user text-primary"></i> Employee</th>
                             <th class="col-department"><i class="fas fa-building text-primary"></i> Department</th>
                             <th><i class="fas fa-file-alt text-primary"></i> Description</th>
@@ -222,6 +223,7 @@
                         {% for expense in expenses %}
                         <tr>
                             <td class="col-date small">{{ expense.date.strftime('%d/%m/%Y %H:%M') }}</td>
+                            <td class="col-date small">{{ expense.submit_date.strftime('%d/%m/%Y %H:%M') if expense.submit_date else '-' }}</td>
                             <td class="col-employee">{{ expense.submitter.first_name }} {{ expense.submitter.last_name }}</td>
                             <td class="col-department">{{ expense.subcategory.category.department.name if
                                 expense.subcategory and expense.subcategory.category and expense.subcategory.category.department else 'No Department' }}</td>
@@ -319,7 +321,7 @@
                         {% endfor %}
                         {% if not expenses %}
                         <tr>
-                            <td colspan="17" class="text-center py-5 text-muted">
+                            <td colspan="18" class="text-center py-5 text-muted">
                                 <i class="fas fa-inbox fa-2x mb-3 d-block"></i>
                                 No expenses found
                             </td>

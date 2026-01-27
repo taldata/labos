@@ -153,6 +153,7 @@
                     <thead>
                         <tr>
                             <th class="date-col"><i class="fas fa-calendar"></i> Date</th>
+                            <th class="date-col"><i class="fas fa-calendar-check"></i> Submit Date</th>
                             <th><i class="fas fa-user"></i> Employee</th>
                             <th><i class="fas fa-building"></i> Department</th>
                             <th><i class="fas fa-file-alt"></i> Description</th>
@@ -176,6 +177,7 @@
                         {% for expense, dept_name, dept_budget, dept_remaining, cat_name, cat_budget, cat_remaining, subcat_name, subcat_budget, subcat_remaining in expenses %}
                         <tr>
                             <td title="{{ expense.date.strftime('%d/%m/%Y %H:%M:%S') }}">{{ expense.date.strftime('%d/%m/%Y %H:%M') }}</td>
+                            <td title="{{ expense.submit_date.strftime('%d/%m/%Y %H:%M:%S') if expense.submit_date else '' }}">{{ expense.submit_date.strftime('%d/%m/%Y %H:%M') if expense.submit_date else '-' }}</td>
                             <td>{{ expense.submitter.username }}</td>
                             <td>{{ expense.submitter.home_department.name if expense.submitter.home_department else 'No Department' }}</td>
                             <td>{{ expense.description }}</td>
@@ -346,7 +348,7 @@
                         {% endfor %}
                         {% if not expenses %}
                         <tr>
-                            <td colspan="12" class="text-center">No pending expenses</td>
+                            <td colspan="19" class="text-center">No pending expenses</td>
                         </tr>
                         {% endif %}
                     </tbody>

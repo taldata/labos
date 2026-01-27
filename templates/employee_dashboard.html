@@ -49,6 +49,7 @@
                 <thead>
                     <tr>
                         <th><i class="fas fa-calendar"></i> Date</th>
+                        <th><i class="fas fa-calendar-check"></i> Submit Date</th>
                         <th><i class="fas fa-file-alt"></i> Description</th>
                         <th><i class="fas fa-info-circle"></i> Reason</th>
                         <th><i class="fas fa-store"></i> Supplier</th>
@@ -71,6 +72,9 @@
                     <tr>
                         <td title="{{ expense.date.replace(tzinfo=pytz.UTC).astimezone(pytz.timezone('Asia/Jerusalem')).strftime('%d/%m/%Y %H:%M:%S') }}">
                             {{ expense.date.replace(tzinfo=pytz.UTC).astimezone(pytz.timezone('Asia/Jerusalem')).strftime('%d/%m/%Y %H:%M') }}
+                        </td>
+                        <td title="{{ expense.submit_date.replace(tzinfo=pytz.UTC).astimezone(pytz.timezone('Asia/Jerusalem')).strftime('%d/%m/%Y %H:%M:%S') if expense.submit_date else '' }}">
+                            {{ expense.submit_date.replace(tzinfo=pytz.UTC).astimezone(pytz.timezone('Asia/Jerusalem')).strftime('%d/%m/%Y %H:%M') if expense.submit_date else '-' }}
                         </td>
                         <td>{{ expense.description }}</td>
                         <td>{{ expense.reason }}</td>
@@ -166,7 +170,7 @@
                     {% endfor %}
                     {% if not expenses %}
                     <tr>
-                        <td colspan="14" class="text-center">No expenses submitted yet</td>
+                        <td colspan="17" class="text-center">No expenses submitted yet</td>
                     </tr>
                     {% endif %}
                 </tbody>
