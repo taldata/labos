@@ -92,8 +92,6 @@ def process_quote():
 @login_required
 def get_supplier(supplier_id):
     """Get supplier details including bank information"""
-    from app import Supplier
-    
     logging.info(f"Fetching supplier with ID: {supplier_id}")
     supplier = Supplier.query.get_or_404(supplier_id)
     response_data = {
