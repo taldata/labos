@@ -8,6 +8,7 @@ from werkzeug.utils import secure_filename
 from . import api_v1
 import logging
 import os
+import traceback
 
 @api_v1.route('/expenses/summary', methods=['GET'])
 @login_required
@@ -731,6 +732,8 @@ def get_credit_cards():
 def list_expenses():
     """List all expenses for current user with filtering and pagination"""
     try:
+        logging.info(f"list_expenses called for user_id={current_user.id}")
+
         # Get query parameters
         page = request.args.get('page', 1, type=int)
         per_page = request.args.get('per_page', 20, type=int)
@@ -791,37 +794,43 @@ def list_expenses():
             joinedload(Expense.supplier)
         )
 
+        logging.info(f"Executing paginated query for page={page}, per_page={per_page}")
         # Paginate
         pagination = query.paginate(page=page, per_page=per_page, error_out=False)
+        logging.info(f"Query returned {len(pagination.items)} items, total={pagination.total}")
 
         expense_list = []
         for expense in pagination.items:
-            expense_list.append({
-                'id': expense.id,
-                'amount': expense.amount,
-                'currency': expense.currency,
-                'description': expense.description,
-                'reason': expense.reason,
-                'date': expense.date.isoformat() if expense.date else None,
-                'status': expense.status,
-                'type': expense.type,
-                'payment_method': expense.payment_method,
-                'subcategory': {
-                    'id': expense.subcategory.id,
-                    'name': expense.subcategory.name
-                } if expense.subcategory else None,
-                'category': {
-                    'id': expense.subcategory.category.id,
-                    'name': expense.subcategory.category.name
-                } if expense.subcategory and expense.subcategory.category else None,
-                'supplier': {
-                    'id': expense.supplier.id,
-                    'name': expense.supplier.name
-                } if expense.supplier else None,
-                'invoice_filename': expense.invoice_filename,
-                'receipt_filename': expense.receipt_filename,
-                'quote_filename': expense.quote_filename
-            })
+            try:
+                expense_list.append({
+                    'id': expense.id,
+                    'amount': expense.amount,
+                    'currency': expense.currency,
+                    'description': expense.description,
+                    'reason': expense.reason,
+                    'date': expense.date.isoformat() if expense.date else None,
+                    'status': expense.status,
+                    'type': expense.type,
+                    'payment_method': expense.payment_method,
+                    'subcategory': {
+                        'id': expense.subcategory.id,
+                        'name': expense.subcategory.name
+                    } if expense.subcategory else None,
+                    'category': {
+                        'id': expense.subcategory.category.id,
+                        'name': expense.subcategory.category.name
+                    } if expense.subcategory and expense.subcategory.category else None,
+                    'supplier': {
+                        'id': expense.supplier.id,
+                        'name': expense.supplier.name
+                    } if expense.supplier else None,
+                    'invoice_filename': expense.invoice_filename,
+                    'receipt_filename': expense.receipt_filename,
+                    'quote_filename': expense.quote_filename
+                })
+            except Exception as e:
+                logging.error(f"Error serializing expense id={expense.id}: {str(e)}")
+                raise
 
         return jsonify({
             'expenses': expense_list,
@@ -837,6 +846,7 @@ def list_expenses():
 
     except Exception as e:
         logging.error(f"Error listing expenses: {str(e)}")
+        logging.error(f"Traceback: {traceback.format_exc()}")
         return jsonify({'error': 'Failed to fetch expenses'}), 500
 
 @api_v1.route('/expenses/<int:expense_id>', methods=['GET'])
