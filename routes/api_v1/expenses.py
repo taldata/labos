@@ -1018,7 +1018,8 @@ def submit_expense():
             payment_method=data.get('payment_method', 'credit'),
             credit_card_id=int(data['credit_card_id']) if data.get('credit_card_id') else None,
             payment_due_date=data.get('payment_due_date', 'end_of_month'),
-            status='approved'  # All expenses are auto-approved
+            status='approved',  # All expenses are auto-approved
+            submit_date=datetime.utcnow()  # Track when the expense was submitted
         )
 
         # Auto-mark credit card and standing order payments as paid for auto-approved expenses
