@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import './FileUpload.css'; // Reuse the same CSS styles
 
 const FilePreviewModal = ({ isOpen, onClose, fileUrl, fileName }) => {
@@ -31,7 +32,8 @@ const FilePreviewModal = ({ isOpen, onClose, fileUrl, fileName }) => {
 
   const isPreviewable = isImage(fileName) || isPdf(fileName);
 
-  return (
+  // Use portal to render modal at document body level to avoid overflow issues
+  return createPortal(
     <div className="file-preview-overlay" onClick={onClose}>
       <div className="file-preview-modal" onClick={(e) => e.stopPropagation()}>
         <div className="file-preview-header">
@@ -79,7 +81,8 @@ const FilePreviewModal = ({ isOpen, onClose, fileUrl, fileName }) => {
           )}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
 
