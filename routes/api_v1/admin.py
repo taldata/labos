@@ -251,6 +251,131 @@ def get_admin_stats():
         return jsonify({'error': 'Failed to fetch admin statistics'}), 500
 
 
+# ==================== EXPENSE FILTER OPTIONS ====================
+
+@api_v1.route('/admin/expense-filter-options', methods=['GET'])
+@login_required
+def get_expense_filter_options():
+    """Get all filter options for expense history in a single request.
+
+    This endpoint combines 6 separate API calls into one to improve performance:
+    - departments
+    - users
+    - categories (with subcategories)
+    - suppliers
+    - credit cards
+    - subcategories (flat list)
+    """
+    if not current_user.is_admin:
+        return jsonify({'error': 'Admin access required'}), 403
+
+    try:
+        # Get current budget year
+        current_year = BudgetYear.query.filter_by(is_current=True).first()
+
+        # 1. Departments (filtered by current budget year)
+        if current_year:
+            departments = Department.query.filter_by(year_id=current_year.id).all()
+        else:
+            departments = Department.query.all()
+        dept_list = [{
+            'id': dept.id,
+            'name': dept.name,
+            'budget': dept.budget,
+            'currency': dept.currency
+        } for dept in departments]
+
+        # 2. Users (with eager loading)
+        users = User.query.options(
+            joinedload(User.home_department)
+        ).filter(User.status == 'active').all()
+        user_list = [{
+            'id': user.id,
+            'username': user.username,
+            'first_name': user.first_name,
+            'last_name': user.last_name,
+            'email': user.email,
+            'department': user.home_department.name if user.home_department else None,
+            'department_id': user.department_id,
+            'is_admin': user.is_admin,
+            'is_manager': user.is_manager,
+            'is_accounting': user.is_accounting
+        } for user in users]
+
+        # 3. Categories with subcategories (filtered by budget year)
+        base_query = Category.query.join(Department).options(
+            joinedload(Category.subcategories),
+            joinedload(Category.department)
+        )
+        if current_year:
+            base_query = base_query.filter(Department.year_id == current_year.id)
+        categories = base_query.order_by(Department.name, Category.name).all()
+
+        cat_list = []
+        for cat in categories:
+            cat_data = {
+                'id': cat.id,
+                'name': cat.name,
+                'budget': cat.budget,
+                'department_id': cat.department_id,
+                'department_name': cat.department.name if cat.department else None,
+                'subcategories': [{
+                    'id': sub.id,
+                    'name': sub.name,
+                    'budget': sub.budget,
+                    'category_id': sub.category_id
+                } for sub in cat.subcategories]
+            }
+            cat_list.append(cat_data)
+
+        # 4. Suppliers (active only)
+        suppliers = Supplier.query.filter_by(status='active').all()
+        supplier_list = [{
+            'id': sup.id,
+            'name': sup.name,
+            'email': sup.email,
+            'phone': sup.phone
+        } for sup in suppliers]
+
+        # 5. Credit cards (active only)
+        cards = CreditCard.query.filter_by(status='active').all()
+        card_list = [{
+            'id': card.id,
+            'last_four_digits': card.last_four_digits,
+            'description': card.description,
+            'name': card.description or f"Card *{card.last_four_digits}"
+        } for card in cards]
+
+        # 6. Subcategories flat list (filtered by budget year)
+        if current_year:
+            subcategories = Subcategory.query.join(Category).join(Department).filter(
+                Department.year_id == current_year.id
+            ).all()
+        else:
+            subcategories = Subcategory.query.all()
+        subcat_list = [{
+            'id': sub.id,
+            'name': sub.name,
+            'budget': sub.budget,
+            'category_id': sub.category_id,
+            'category_name': sub.category.name if sub.category else None,
+            'department_name': sub.category.department.name if sub.category and sub.category.department else None
+        } for sub in subcategories]
+
+        return jsonify({
+            'departments': dept_list,
+            'users': user_list,
+            'categories': cat_list,
+            'suppliers': supplier_list,
+            'credit_cards': card_list,
+            'subcategories': subcat_list
+        }), 200
+
+    except Exception as e:
+        logging.error(f"Error getting expense filter options: {str(e)}", exc_info=True)
+        return jsonify({'error': 'Failed to fetch filter options'}), 500
+
+
 # ==================== USER MANAGEMENT ====================
 
 @api_v1.route('/admin/users', methods=['GET'])
