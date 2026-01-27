@@ -192,7 +192,7 @@ function useExpenseData(filters, currentPage, isManagerView = false) {
 // ============================================================================
 // Custom Hook: useFilterOptions
 // ============================================================================
-function useFilterOptions() {
+function useFilterOptions(isManagerView = false) {
   const [departments, setDepartments] = useState([])
   const [users, setUsers] = useState([])
   const [categories, setCategories] = useState([])
@@ -203,8 +203,11 @@ function useFilterOptions() {
 
   const fetchFilterOptions = useCallback(async () => {
     try {
-      // Use combined endpoint for better performance (1 request instead of 6)
-      const response = await fetch('/api/v1/admin/expense-filter-options', { credentials: 'include' })
+      // Use different endpoint based on view type
+      const endpoint = isManagerView
+        ? '/api/v1/manager/expense-filter-options'
+        : '/api/v1/admin/expense-filter-options'
+      const response = await fetch(endpoint, { credentials: 'include' })
 
       if (response.ok) {
         const data = await response.json()
@@ -1197,7 +1200,7 @@ function ExpenseHistory({ user, isManagerView = false }) {
   // Custom hooks
   const filterHook = useExpenseFilters()
   const dataHook = useExpenseData(filterHook.debouncedFilters, currentPage, isManagerView)
-  const optionsHook = useFilterOptions()
+  const optionsHook = useFilterOptions(isManagerView)
 
   // Memoize user options to prevent infinite re-renders from TomSelectInput
   const userOptions = useMemo(() =>

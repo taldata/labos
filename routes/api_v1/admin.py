@@ -376,6 +376,135 @@ def get_expense_filter_options():
         return jsonify({'error': 'Failed to fetch filter options'}), 500
 
 
+@api_v1.route('/manager/expense-filter-options', methods=['GET'])
+@login_required
+def get_manager_expense_filter_options():
+    """Get filter options for manager expense history, filtered to managed departments."""
+    if not current_user.is_manager and not current_user.is_admin:
+        return jsonify({'error': 'Manager access required'}), 403
+
+    try:
+        # Get managed department IDs
+        if current_user.is_admin:
+            managed_dept_ids = [d.id for d in Department.query.all()]
+        else:
+            managed_dept_ids = [d.id for d in current_user.managed_departments]
+            if current_user.department_id:
+                managed_dept_ids.append(current_user.department_id)
+            managed_dept_ids = list(set(managed_dept_ids))
+
+        if not managed_dept_ids:
+            return jsonify({
+                'departments': [],
+                'users': [],
+                'categories': [],
+                'suppliers': [],
+                'credit_cards': [],
+                'subcategories': []
+            }), 200
+
+        # Get current budget year
+        current_year = BudgetYear.query.filter_by(is_current=True).first()
+
+        # 1. Departments - only managed ones
+        departments = Department.query.filter(Department.id.in_(managed_dept_ids)).all()
+        dept_list = [{
+            'id': dept.id,
+            'name': dept.name,
+            'budget': dept.budget,
+            'currency': dept.currency
+        } for dept in departments]
+
+        # 2. Users - only from managed departments
+        users = User.query.options(
+            joinedload(User.home_department)
+        ).filter(
+            User.status == 'active',
+            User.department_id.in_(managed_dept_ids)
+        ).all()
+        user_list = [{
+            'id': user.id,
+            'username': user.username,
+            'first_name': user.first_name,
+            'last_name': user.last_name,
+            'email': user.email,
+            'department': user.home_department.name if user.home_department else None,
+            'department_id': user.department_id,
+            'is_admin': user.is_admin,
+            'is_manager': user.is_manager,
+            'is_accounting': user.is_accounting
+        } for user in users]
+
+        # 3. Categories with subcategories - only from managed departments
+        categories = Category.query.filter(
+            Category.department_id.in_(managed_dept_ids)
+        ).options(
+            joinedload(Category.subcategories),
+            joinedload(Category.department)
+        ).order_by(Category.name).all()
+
+        cat_list = []
+        for cat in categories:
+            cat_data = {
+                'id': cat.id,
+                'name': cat.name,
+                'budget': cat.budget,
+                'department_id': cat.department_id,
+                'department_name': cat.department.name if cat.department else None,
+                'subcategories': [{
+                    'id': sub.id,
+                    'name': sub.name,
+                    'budget': sub.budget,
+                    'category_id': sub.category_id
+                } for sub in cat.subcategories]
+            }
+            cat_list.append(cat_data)
+
+        # 4. Suppliers (active only) - show all since suppliers can be shared
+        suppliers = Supplier.query.filter_by(status='active').all()
+        supplier_list = [{
+            'id': sup.id,
+            'name': sup.name,
+            'email': sup.email,
+            'phone': sup.phone
+        } for sup in suppliers]
+
+        # 5. Credit cards (active only) - show all since cards can be shared
+        cards = CreditCard.query.filter_by(status='active').all()
+        card_list = [{
+            'id': card.id,
+            'last_four_digits': card.last_four_digits,
+            'description': card.description,
+            'name': card.description or f"Card *{card.last_four_digits}"
+        } for card in cards]
+
+        # 6. Subcategories flat list - only from managed departments
+        subcategories = Subcategory.query.join(Category).filter(
+            Category.department_id.in_(managed_dept_ids)
+        ).all()
+        subcat_list = [{
+            'id': sub.id,
+            'name': sub.name,
+            'budget': sub.budget,
+            'category_id': sub.category_id,
+            'category_name': sub.category.name if sub.category else None,
+            'department_name': sub.category.department.name if sub.category and sub.category.department else None
+        } for sub in subcategories]
+
+        return jsonify({
+            'departments': dept_list,
+            'users': user_list,
+            'categories': cat_list,
+            'suppliers': supplier_list,
+            'credit_cards': card_list,
+            'subcategories': subcat_list
+        }), 200
+
+    except Exception as e:
+        logging.error(f"Error getting manager expense filter options: {str(e)}", exc_info=True)
+        return jsonify({'error': 'Failed to fetch filter options'}), 500
+
+
 # ==================== USER MANAGEMENT ====================
 
 @api_v1.route('/admin/users', methods=['GET'])
