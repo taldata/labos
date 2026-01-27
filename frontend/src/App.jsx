@@ -123,6 +123,10 @@ function App() {
                 element={<AuthenticatedRoute user={user} setUser={setUser}><CreditCardManagement user={user} setUser={setUser} /></AuthenticatedRoute>}
               />
               <Route
+                path="/manager/expense-history"
+                element={<AuthenticatedRoute user={user} setUser={setUser}><ExpenseHistory user={user} setUser={setUser} isManagerView={true} /></AuthenticatedRoute>}
+              />
+              <Route
                 path="/admin/expense-history"
                 element={<AuthenticatedRoute user={user} setUser={setUser}><ExpenseHistory user={user} setUser={setUser} /></AuthenticatedRoute>}
               />

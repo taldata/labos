@@ -123,12 +123,13 @@ function useExpenseFilters() {
 // ============================================================================
 // Custom Hook: useExpenseData
 // ============================================================================
-function useExpenseData(filters, currentPage) {
+function useExpenseData(filters, currentPage, isManagerView = false) {
   const [expenses, setExpenses] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [totalPages, setTotalPages] = useState(1)
   const [totalExpenses, setTotalExpenses] = useState(0)
+  const [managedDepartments, setManagedDepartments] = useState([])
 
   const fetchExpenses = useCallback(async () => {
     try {
@@ -152,7 +153,9 @@ function useExpenseData(filters, currentPage) {
         )
       })
 
-      const response = await fetch(`/api/v1/admin/expenses?${params}`, {
+      // Use different API endpoint based on view type
+      const endpoint = isManagerView ? '/api/v1/manager/expenses' : '/api/v1/admin/expenses'
+      const response = await fetch(`${endpoint}?${params}`, {
         credentials: 'include'
       })
 
@@ -161,6 +164,9 @@ function useExpenseData(filters, currentPage) {
         setExpenses(data.expenses)
         setTotalPages(data.pagination.pages)
         setTotalExpenses(data.pagination.total)
+        if (data.managed_departments) {
+          setManagedDepartments(data.managed_departments)
+        }
       } else {
         setError('Failed to load expenses')
       }
@@ -170,7 +176,7 @@ function useExpenseData(filters, currentPage) {
     } finally {
       setLoading(false)
     }
-  }, [filters, currentPage])
+  }, [filters, currentPage, isManagerView])
 
   return {
     expenses,
@@ -178,8 +184,8 @@ function useExpenseData(filters, currentPage) {
     error,
     totalPages,
     totalExpenses,
-    fetchExpenses,
-    setExpenses
+    managedDepartments,
+    fetchExpenses
   }
 }
 
@@ -269,7 +275,7 @@ function useFilterOptions() {
 // ============================================================================
 // Component: ExpenseHistoryHeader
 // ============================================================================
-function ExpenseHistoryHeader({ totalExpenses, filters }) {
+function ExpenseHistoryHeader({ totalExpenses, filters, isManagerView = false }) {
   const handleExport = () => {
     // Convert display dates to ISO format for API
     const apiFilters = { ...filters }
@@ -288,7 +294,7 @@ function ExpenseHistoryHeader({ totalExpenses, filters }) {
 
   return (
     <PageHeader
-      title="Expense History"
+      title={isManagerView ? "Department Expenses" : "Expense History"}
       subtitle={`${totalExpenses.toLocaleString()} total expenses`}
       icon="fas fa-history"
       variant="blue"
@@ -830,13 +836,13 @@ function ExpenseEditModal({ isOpen, onClose, expense, onSuccess, subcategories, 
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    
+
     // Validate required fields
     if (!formData.description || !formData.supplier_id) {
       showError('Description and Supplier are required fields')
       return
     }
-    
+
     try {
       const formDataToSend = new FormData()
 
@@ -1184,13 +1190,13 @@ function ExpenseDeleteModal({ isOpen, onClose, expense, onSuccess }) {
 // ============================================================================
 // Main Component: ExpenseHistory
 // ============================================================================
-function ExpenseHistory({ user }) {
+function ExpenseHistory({ user, isManagerView = false }) {
   const navigate = useNavigate()
   const [currentPage, setCurrentPage] = useState(1)
 
   // Custom hooks
   const filterHook = useExpenseFilters()
-  const dataHook = useExpenseData(filterHook.debouncedFilters, currentPage)
+  const dataHook = useExpenseData(filterHook.debouncedFilters, currentPage, isManagerView)
   const optionsHook = useFilterOptions()
 
   // Memoize user options to prevent infinite re-renders from TomSelectInput
@@ -1211,7 +1217,12 @@ function ExpenseHistory({ user }) {
 
   // Initialize
   useEffect(() => {
-    if (!user?.is_admin) {
+    // Check access: admin for admin view, manager or admin for manager view
+    const hasAccess = isManagerView
+      ? (user?.is_manager || user?.is_admin)
+      : user?.is_admin
+
+    if (!hasAccess) {
       navigate('/dashboard')
       return
     }
@@ -1220,7 +1231,11 @@ function ExpenseHistory({ user }) {
 
   // Fetch expenses when debounced filters or page change
   useEffect(() => {
-    if (user?.is_admin) {
+    const hasAccess = isManagerView
+      ? (user?.is_manager || user?.is_admin)
+      : user?.is_admin
+
+    if (hasAccess) {
       dataHook.fetchExpenses()
     }
   }, [currentPage, filterHook.debouncedFilters])
@@ -1310,7 +1325,11 @@ function ExpenseHistory({ user }) {
     dataHook.fetchExpenses()
   }
 
-  if (!user?.is_admin) return null
+  // Check access
+  const hasAccess = isManagerView
+    ? (user?.is_manager || user?.is_admin)
+    : user?.is_admin
+  if (!hasAccess) return null
 
   return (
     <div className="eh-container">
@@ -1318,6 +1337,7 @@ function ExpenseHistory({ user }) {
         <ExpenseHistoryHeader
           totalExpenses={dataHook.totalExpenses}
           filters={filterHook.filters}
+          isManagerView={isManagerView}
         />
 
         <ExpenseHistoryFilters

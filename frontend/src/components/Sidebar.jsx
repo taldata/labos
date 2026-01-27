@@ -49,6 +49,7 @@ function Sidebar({ user, setUser, isOpen, onToggle }) {
   const managerItems = [
     // Approvals tab hidden - all expenses are auto-approved
     { path: '/admin/departments', icon: 'fa-sitemap', label: 'My Departments' },
+    { path: '/manager/expense-history', icon: 'fa-history', label: 'Department Expenses' },
   ]
 
   const adminItems = [
@@ -64,7 +65,7 @@ function Sidebar({ user, setUser, isOpen, onToggle }) {
     <>
       {/* Overlay for mobile */}
       {isOpen && <div className="sidebar-overlay" onClick={onToggle}></div>}
-      
+
       <aside className={`sidebar ${isOpen ? 'sidebar-open' : 'sidebar-collapsed'}`}>
         {/* Logo Section */}
         <div className="sidebar-header">
@@ -147,9 +148,9 @@ function Sidebar({ user, setUser, isOpen, onToggle }) {
           <div className="user-section">
             <div className="user-avatar" style={user?.profile_pic ? { padding: 0, overflow: 'hidden' } : {}}>
               {user?.profile_pic ? (
-                <img 
-                  src={user.profile_pic} 
-                  alt={`${user.first_name} ${user.last_name}`} 
+                <img
+                  src={user.profile_pic}
+                  alt={`${user.first_name} ${user.last_name}`}
                   style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                 />
               ) : (

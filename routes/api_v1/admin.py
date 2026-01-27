@@ -957,6 +957,196 @@ def delete_credit_card(card_id):
         return jsonify({'error': 'Failed to delete credit card'}), 500
 
 
+@api_v1.route('/manager/expenses', methods=['GET'])
+@login_required
+def manager_list_expenses():
+    """List expenses from manager's departments with filtering and pagination"""
+    if not current_user.is_manager and not current_user.is_admin:
+        return jsonify({'error': 'Manager access required'}), 403
+
+    try:
+        # Get managed department IDs
+        if current_user.is_admin:
+            # Admin can see all departments
+            managed_dept_ids = [d.id for d in Department.query.all()]
+        else:
+            # Manager sees their managed departments
+            managed_dept_ids = [d.id for d in current_user.managed_departments]
+            if current_user.department_id:
+                managed_dept_ids.append(current_user.department_id)
+            managed_dept_ids = list(set(managed_dept_ids))
+
+        if not managed_dept_ids:
+            return jsonify({
+                'expenses': [],
+                'pagination': {'page': 1, 'per_page': 25, 'total': 0, 'pages': 0, 'has_next': False, 'has_prev': False}
+            }), 200
+
+        # Get query parameters
+        page = request.args.get('page', 1, type=int)
+        per_page = request.args.get('per_page', 20, type=int)
+        status = request.args.get('status', None, type=str)
+        department_id = request.args.get('department_id', None, type=int)
+        user_id = request.args.get('user_id', None, type=int)
+        category_id = request.args.get('category_id', None, type=int)
+        subcategory_id = request.args.get('subcategory_id', None, type=int)
+        supplier_id = request.args.get('supplier_id', None, type=int)
+        payment_method = request.args.get('payment_method', None, type=str)
+        start_date = request.args.get('start_date', None, type=str)
+        end_date = request.args.get('end_date', None, type=str)
+        search = request.args.get('search', None, type=str)
+        sort_by = request.args.get('sort_by', 'id', type=str)
+        sort_order = request.args.get('sort_order', 'desc', type=str)
+
+        # Build query - manager sees expenses from their managed departments
+        query = Expense.query.join(User, Expense.user_id == User.id)
+
+        # Filter to managed departments
+        query = query.filter(User.department_id.in_(managed_dept_ids))
+
+        # Left join Supplier for search functionality
+        query = query.outerjoin(Supplier, Expense.supplier_id == Supplier.id)
+
+        # Apply filters
+        if status:
+            query = query.filter(Expense.status == status)
+
+        if department_id:
+            # Only allow filtering to departments the manager manages
+            if department_id in managed_dept_ids:
+                query = query.filter(User.department_id == department_id)
+
+        if user_id:
+            query = query.filter(Expense.user_id == user_id)
+
+        if subcategory_id:
+            query = query.filter(Expense.subcategory_id == subcategory_id)
+        elif category_id:
+            query = query.join(Subcategory, Expense.subcategory_id == Subcategory.id).filter(Subcategory.category_id == category_id)
+
+        if supplier_id:
+            query = query.filter(Expense.supplier_id == supplier_id)
+
+        if payment_method:
+            query = query.filter(Expense.payment_method == payment_method)
+
+        if start_date:
+            try:
+                query = query.filter(Expense.date >= datetime.fromisoformat(start_date))
+            except ValueError:
+                return jsonify({'error': 'Invalid start_date format. Use ISO format (YYYY-MM-DD)'}), 400
+
+        if end_date:
+            try:
+                query = query.filter(Expense.date <= datetime.fromisoformat(end_date))
+            except ValueError:
+                return jsonify({'error': 'Invalid end_date format. Use ISO format (YYYY-MM-DD)'}), 400
+
+        if search:
+            query = query.filter(
+                (Expense.description.ilike(f'%{search}%')) |
+                (Expense.reason.ilike(f'%{search}%')) |
+                (User.first_name.ilike(f'%{search}%')) |
+                (User.last_name.ilike(f'%{search}%')) |
+                (Supplier.name.ilike(f'%{search}%')) |
+                (func.cast(Expense.amount, db.String).ilike(f'%{search}%'))
+            )
+
+        # Apply sorting
+        if sort_by == 'id':
+            query = query.order_by(Expense.id.desc() if sort_order == 'desc' else Expense.id.asc())
+        elif sort_by == 'date':
+            query = query.order_by(Expense.date.desc() if sort_order == 'desc' else Expense.date.asc())
+        elif sort_by == 'amount':
+            query = query.order_by(Expense.amount.desc() if sort_order == 'desc' else Expense.amount.asc())
+        elif sort_by == 'status':
+            query = query.order_by(Expense.status.desc() if sort_order == 'desc' else Expense.status.asc())
+        else:
+            query = query.order_by(Expense.id.desc())
+
+        # Add eager loading
+        query = query.options(
+            joinedload(Expense.submitter).joinedload(User.home_department),
+            joinedload(Expense.subcategory).joinedload(Subcategory.category),
+            joinedload(Expense.supplier),
+            joinedload(Expense.credit_card),
+            joinedload(Expense.handler)
+        )
+
+        # Paginate
+        pagination = query.paginate(page=page, per_page=per_page, error_out=False)
+
+        expense_list = []
+        for expense in pagination.items:
+            expense_list.append({
+                'id': expense.id,
+                'amount': expense.amount,
+                'currency': expense.currency,
+                'description': expense.description,
+                'reason': expense.reason,
+                'date': expense.date.isoformat() if expense.date else None,
+                'invoice_date': expense.invoice_date.isoformat() if expense.invoice_date else None,
+                'status': expense.status,
+                'type': expense.type,
+                'payment_method': expense.payment_method,
+                'payment_status': expense.payment_status,
+                'rejection_reason': expense.rejection_reason,
+                'credit_card_id': expense.credit_card_id,
+                'credit_card': {
+                    'id': expense.credit_card.id,
+                    'name': expense.credit_card.description or f"Card *{expense.credit_card.last_four_digits}",
+                    'last_four_digits': expense.credit_card.last_four_digits
+                } if expense.credit_card else None,
+                'user': {
+                    'id': expense.submitter.id,
+                    'username': expense.submitter.username,
+                    'name': f"{expense.submitter.first_name} {expense.submitter.last_name}".strip(),
+                    'department': expense.submitter.home_department.name if expense.submitter.home_department else None,
+                    'department_id': expense.submitter.department_id
+                },
+                'subcategory': {
+                    'id': expense.subcategory.id,
+                    'name': expense.subcategory.name
+                } if expense.subcategory else None,
+                'category': {
+                    'id': expense.subcategory.category.id,
+                    'name': expense.subcategory.category.name
+                } if expense.subcategory and expense.subcategory.category else None,
+                'supplier': {
+                    'id': expense.supplier.id,
+                    'name': expense.supplier.name
+                } if expense.supplier else None,
+                'handler': {
+                    'id': expense.handler.id,
+                    'name': f"{expense.handler.first_name} {expense.handler.last_name}".strip()
+                } if expense.handler else None,
+                'handled_at': expense.handled_at.isoformat() if expense.handled_at else None,
+                'has_invoice': bool(expense.invoice_filename),
+                'has_receipt': bool(expense.receipt_filename),
+                'has_quote': bool(expense.quote_filename),
+                'invoice_filename': expense.invoice_filename,
+                'receipt_filename': expense.receipt_filename,
+                'quote_filename': expense.quote_filename
+            })
+
+        return jsonify({
+            'expenses': expense_list,
+            'pagination': {
+                'page': pagination.page,
+                'per_page': pagination.per_page,
+                'total': pagination.total,
+                'pages': pagination.pages,
+                'has_next': pagination.has_next,
+                'has_prev': pagination.has_prev
+            },
+            'managed_departments': managed_dept_ids
+        }), 200
+
+    except Exception as e:
+        logging.error(f"Error listing manager expenses: {str(e)}", exc_info=True)
+        return jsonify({'error': 'Failed to fetch expenses'}), 500
+
+
 @api_v1.route('/admin/expenses', methods=['GET'])
 @login_required
 def admin_list_expenses():
