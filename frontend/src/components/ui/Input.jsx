@@ -355,10 +355,23 @@ export const TomSelectInput = forwardRef(({
       });
     }
 
+    // Separate "Select All" options (empty value) from regular options
+    const selectAllOptions = options.filter(option => option[valueKey] === '' || option[valueKey] === null);
+    const regularOptions = options.filter(option => option[valueKey] !== '' && option[valueKey] !== null);
+
     // Add regular options sorted alphabetically
-    const sortedOptions = [...options].sort((a, b) =>
+    const sortedOptions = [...regularOptions].sort((a, b) =>
       (a[displayKey] || '').localeCompare(b[displayKey] || '')
     );
+
+    // Add "Select All" options first with $order: -1
+    selectAllOptions.forEach((option) => {
+      tomOptions.push({
+        value: option[valueKey]?.toString() || '',
+        text: option[displayKey] || '',
+        $order: -1
+      });
+    });
 
     sortedOptions.forEach((option, index) => {
       tomOptions.push({
@@ -439,10 +452,23 @@ export const TomSelectInput = forwardRef(({
         });
       }
 
+      // Separate "Select All" options (empty value) from regular options
+      const selectAllOptions = options.filter(option => option[valueKey] === '' || option[valueKey] === null);
+      const regularOptions = options.filter(option => option[valueKey] !== '' && option[valueKey] !== null);
+
       // Add regular options sorted alphabetically
-      const sortedOptions = [...options].sort((a, b) =>
+      const sortedOptions = [...regularOptions].sort((a, b) =>
         (a[displayKey] || '').localeCompare(b[displayKey] || '')
       );
+
+      // Add "Select All" options first with $order: -1
+      selectAllOptions.forEach((option) => {
+        tomOptions.push({
+          value: option[valueKey]?.toString() || '',
+          text: option[displayKey] || '',
+          $order: -1
+        });
+      });
 
       sortedOptions.forEach((option, index) => {
         tomOptions.push({
