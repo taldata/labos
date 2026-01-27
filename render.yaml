@@ -3,6 +3,7 @@ services:
     name: labos-expense-management
     env: python
     buildCommand: poetry install --no-root && cd frontend && npm ci && npm run build && rm -rf node_modules
+    preDeployCommand: poetry run flask db upgrade
     startCommand: poetry run gunicorn --workers 4 --threads 2 --worker-class gthread --timeout 120 --keep-alive 5 --max-requests 1000 --max-requests-jitter 50 app:app
     envVars:
       - key: PYTHON_VERSION
