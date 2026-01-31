@@ -152,8 +152,9 @@ def get_admin_stats():
         dept_query = db.session.query(
             Department.name,
             func.sum(func.coalesce(Expense.amount_ils, Expense.amount)).label('amount')
-        ).join(User, Department.id == User.department_id)\
-         .join(Expense, User.id == Expense.user_id)\
+        ).join(Category, Department.id == Category.department_id)\
+         .join(Subcategory, Category.id == Subcategory.category_id)\
+         .join(Expense, Subcategory.id == Expense.subcategory_id)\
          .filter(
              Expense.date >= start_date,
              Expense.date <= end_date,
