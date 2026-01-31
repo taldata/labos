@@ -1462,20 +1462,35 @@ def admin_list_expenses():
 @api_v1.route('/admin/expenses/<int:expense_id>', methods=['PUT'])
 @login_required
 def admin_update_expense(expense_id):
-    """Update an expense (admin only) - supports all fields and file uploads"""
-    if not current_user.is_admin:
-        return jsonify({'error': 'Admin access required'}), 403
+    """Update an expense (admin or manager) - supports all fields and file uploads"""
+    if not current_user.is_admin and not current_user.is_manager:
+        return jsonify({'error': 'Admin or manager access required'}), 403
 
     try:
         expense = Expense.query.get(expense_id)
         if not expense:
             return jsonify({'error': 'Expense not found'}), 404
 
+        # Managers can only edit expenses from their managed departments
+        if current_user.is_manager and not current_user.is_admin:
+            managed_dept_ids = [d.id for d in current_user.managed_departments]
+            expense_dept_id = None
+            if expense.subcategory and expense.subcategory.category:
+                expense_dept_id = expense.subcategory.category.department_id
+            if expense_dept_id not in managed_dept_ids:
+                return jsonify({'error': 'You can only edit expenses from your managed departments'}), 403
+
         # Handle both JSON and FormData
         if request.content_type and 'multipart/form-data' in request.content_type:
             data = request.form.to_dict()
         else:
             data = request.get_json() or {}
+
+        # Managers cannot modify admin-only fields
+        if current_user.is_manager and not current_user.is_admin:
+            admin_only_fields = ['user_id', 'manager_id', 'status', 'payment_status', 'is_paid', 'paid_by_id', 'paid_at']
+            for field in admin_only_fields:
+                data.pop(field, None)
 
         # Validate required fields (description and supplier_id)
         if 'description' in data and not data['description']:
@@ -1691,7 +1706,8 @@ def admin_update_expense(expense_id):
 
         db.session.commit()
 
-        logging.info(f"Expense {expense_id} updated by admin {current_user.username}")
+        role = 'admin' if current_user.is_admin else 'manager'
+        logging.info(f"Expense {expense_id} updated by {role} {current_user.username}")
 
         return jsonify({
             'message': 'Expense updated successfully',
