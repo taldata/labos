@@ -365,13 +365,24 @@ def get_expense_filter_options():
             'department_name': sub.category.department.name if sub.category and sub.category.department else None
         } for sub in subcategories]
 
+        # 7. Budget years
+        budget_years = BudgetYear.query.order_by(BudgetYear.year.desc()).all()
+        budget_year_list = [{
+            'id': by.id,
+            'year': by.year,
+            'name': by.name,
+            'is_active': by.is_active,
+            'is_current': by.is_current
+        } for by in budget_years]
+
         return jsonify({
             'departments': dept_list,
             'users': user_list,
             'categories': cat_list,
             'suppliers': supplier_list,
             'credit_cards': card_list,
-            'subcategories': subcat_list
+            'subcategories': subcat_list,
+            'budget_years': budget_year_list
         }), 200
 
     except Exception as e:
@@ -494,13 +505,24 @@ def get_manager_expense_filter_options():
             'department_name': sub.category.department.name if sub.category and sub.category.department else None
         } for sub in subcategories]
 
+        # 7. Budget years
+        budget_years = BudgetYear.query.order_by(BudgetYear.year.desc()).all()
+        budget_year_list = [{
+            'id': by.id,
+            'year': by.year,
+            'name': by.name,
+            'is_active': by.is_active,
+            'is_current': by.is_current
+        } for by in budget_years]
+
         return jsonify({
             'departments': dept_list,
             'users': user_list,
             'categories': cat_list,
             'suppliers': supplier_list,
             'credit_cards': card_list,
-            'subcategories': subcat_list
+            'subcategories': subcat_list,
+            'budget_years': budget_year_list
         }), 200
 
     except Exception as e:

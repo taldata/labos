@@ -200,6 +200,7 @@ function useFilterOptions(isManagerView = false) {
   const [suppliers, setSuppliers] = useState([])
   const [creditCards, setCreditCards] = useState([])
   const [subcategories, setSubcategories] = useState([])
+  const [budgetYears, setBudgetYears] = useState([])
 
   const fetchFilterOptions = useCallback(async () => {
     try {
@@ -255,6 +256,9 @@ function useFilterOptions(isManagerView = false) {
 
         // Subcategories
         setSubcategories(data.subcategories || [])
+
+        // Budget years
+        setBudgetYears(data.budget_years || [])
       } else {
         logger.error('Failed to fetch filter options', { status: response.status })
       }
@@ -271,6 +275,7 @@ function useFilterOptions(isManagerView = false) {
     suppliers,
     creditCards,
     subcategories,
+    budgetYears,
     fetchFilterOptions
   }
 }
@@ -803,15 +808,25 @@ function ExpensePagination({ currentPage, totalPages, onPageChange }) {
 // ============================================================================
 // Component: ExpenseEditModal
 // ============================================================================
-function ExpenseEditModal({ isOpen, onClose, expense, onSuccess, subcategories, suppliers, creditCards }) {
+function ExpenseEditModal({ isOpen, onClose, expense, onSuccess, subcategories, suppliers, creditCards, budgetYears }) {
   const { success, error: showError } = useToast()
   const [formData, setFormData] = useState({})
   const [editFiles, setEditFiles] = useState({ quote: null, invoice: null, receipt: null })
   const [deleteFiles, setDeleteFiles] = useState({ quote: false, invoice: false, receipt: false })
   const [ilsPreview, setIlsPreview] = useState(null)
+  const [selectedBudgetYearId, setSelectedBudgetYearId] = useState('')
+  const [yearSubcategories, setYearSubcategories] = useState([])
+  const [loadingSubcategories, setLoadingSubcategories] = useState(false)
 
   useEffect(() => {
     if (expense) {
+      // Determine the budget year from the expense's subcategory
+      const expenseBudgetYear = budgetYears.find(by => by.is_current)
+      // Try to find the budget year that matches the expense's budget_year field
+      const matchingYear = expense.budget_year
+        ? budgetYears.find(by => String(by.year) === String(expense.budget_year))
+        : expenseBudgetYear
+      setSelectedBudgetYearId(matchingYear?.id || expenseBudgetYear?.id || '')
       setFormData({
         status: expense.status || '',
         payment_status: expense.payment_status || '',
@@ -831,7 +846,47 @@ function ExpenseEditModal({ isOpen, onClose, expense, onSuccess, subcategories, 
       setDeleteFiles({ quote: false, invoice: false, receipt: false })
       setIlsPreview(null)
     }
-  }, [expense])
+  }, [expense, budgetYears])
+
+  // Fetch subcategories when budget year changes
+  useEffect(() => {
+    if (!selectedBudgetYearId) {
+      setYearSubcategories(subcategories)
+      return
+    }
+    const selectedYear = budgetYears.find(by => by.id === Number(selectedBudgetYearId))
+    if (!selectedYear) {
+      setYearSubcategories(subcategories)
+      return
+    }
+    const fetchSubcategories = async () => {
+      setLoadingSubcategories(true)
+      try {
+        const res = await fetch(
+          `/api/v1/form-data/categories?budget_year=${selectedYear.year}&include_subcategories=true&all=true`,
+          { credentials: 'include' }
+        )
+        if (res.ok) {
+          const data = await res.json()
+          // Flatten categories into subcategories list
+          const flatSubs = []
+          ;(data.categories || []).forEach(cat => {
+            ;(cat.subcategories || []).forEach(sub => {
+              flatSubs.push({
+                id: sub.id,
+                name: sub.name,
+                category_name: cat.name,
+                department_name: cat.department_name || ''
+              })
+            })
+          })
+          setYearSubcategories(flatSubs)
+        }
+      } catch (err) { /* ignore */ }
+      setLoadingSubcategories(false)
+    }
+    fetchSubcategories()
+  }, [selectedBudgetYearId, budgetYears])
 
   // Fetch ILS preview when amount/currency changes in edit modal
   useEffect(() => {
@@ -995,21 +1050,37 @@ function ExpenseEditModal({ isOpen, onClose, expense, onSuccess, subcategories, 
               <option value="pre_approved">Pre-approved</option>
               <option value="reimbursement">Reimbursement</option>
             </Select>
-            <TomSelectInput
-              label="Subcategory"
-              name="subcategory_id"
-              value={formData.subcategory_id}
-              onChange={(e) => handleInputChange('subcategory_id', e.target.value)}
-              options={subcategories.map(sub => ({
-                id: sub.id,
-                name: `${sub.department_name} > ${sub.category_name} > ${sub.name}`
-              }))}
-              displayKey="name"
-              valueKey="id"
-              placeholder="Select Subcategory"
-              allowClear={true}
-            />
+            <Select
+              label="Budget Year"
+              name="budget_year_id"
+              value={selectedBudgetYearId}
+              onChange={(e) => {
+                setSelectedBudgetYearId(e.target.value)
+                handleInputChange('subcategory_id', '')
+              }}
+            >
+              <option value="">Select Year</option>
+              {budgetYears.map(by => (
+                <option key={by.id} value={by.id}>
+                  {by.name || by.year}{by.is_current ? ' (Current)' : ''}
+                </option>
+              ))}
+            </Select>
           </div>
+          <TomSelectInput
+            label="Subcategory"
+            name="subcategory_id"
+            value={formData.subcategory_id}
+            onChange={(e) => handleInputChange('subcategory_id', e.target.value)}
+            options={(yearSubcategories.length > 0 ? yearSubcategories : subcategories).map(sub => ({
+              id: sub.id,
+              name: `${sub.department_name} > ${sub.category_name} > ${sub.name}`
+            }))}
+            displayKey="name"
+            valueKey="id"
+            placeholder={loadingSubcategories ? "Loading subcategories..." : "Select Subcategory"}
+            allowClear={true}
+          />
         </div>
 
         {/* Status & Payment */}
@@ -1431,6 +1502,7 @@ function ExpenseHistory({ user, isManagerView = false }) {
         subcategories={optionsHook.subcategories}
         suppliers={optionsHook.suppliers}
         creditCards={optionsHook.creditCards}
+        budgetYears={optionsHook.budgetYears}
       />
 
       <MoveExpenseToYearModal
