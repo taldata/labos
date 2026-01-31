@@ -152,14 +152,7 @@ def check_version_preference():
     if current_user.is_authenticated and \
        (current_user.can_use_modern_version or current_user.is_admin) and \
        current_user.preferred_version == 'modern':
-        # If accessing legacy routes (not /modern), inform them
-        if not request.path.startswith('/modern'):
-            # Allow explicit legacy access with ?legacy=true
-            if request.args.get('legacy') != 'true':
-                # Show message about modern version availability
-                flash('You have access to the modern version! Click "Switch to Modern" in settings.')
-
-    return None
+        return None
 
 @app.route('/')
 def index():
