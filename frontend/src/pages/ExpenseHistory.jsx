@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { Card, Button, Badge, Input, Select, TomSelectInput, Skeleton, EmptyState, Modal, useToast, FilePreviewButton, PageHeader } from '../components/ui'
+import { Card, Button, Badge, Input, Select, TomSelectInput, Skeleton, EmptyState, Modal, useToast, FilePreviewButton, PageHeader, DateRangeFilter } from '../components/ui'
 import MoveExpenseToYearModal from '../components/MoveExpenseToYearModal'
 import logger from '../utils/logger'
 import './ExpenseHistory.css'
@@ -319,6 +319,7 @@ function ExpenseHistoryHeader({ totalExpenses, filters, isManagerView = false })
 // ============================================================================
 function ExpenseHistoryFilters({
   filters,
+  setFilters,
   updateFilter,
   clearFilters,
   hasActiveFilters,
@@ -460,28 +461,11 @@ function ExpenseHistoryFilters({
               <option value="cash">Cash</option>
               <option value="standing_order">Standing Order</option>
             </Select>
-            <Input
-              type="text"
-              label="Start Date"
-              name="start_date"
-              value={filters.start_date}
-              onChange={handleFilterChange}
-              placeholder="DD/MM/YYYY"
-              pattern="\d{2}/\d{2}/\d{4}"
-            />
           </div>
 
-          {/* Row 3: End Date, Sort By, Order, Clear */}
+          {/* Row 3: Time Period, Sort By, Order, Clear */}
           <div className="eh-filters__row">
-            <Input
-              type="text"
-              label="End Date"
-              name="end_date"
-              value={filters.end_date}
-              onChange={handleFilterChange}
-              placeholder="DD/MM/YYYY"
-              pattern="\d{2}/\d{2}/\d{4}"
-            />
+            <DateRangeFilter filters={filters} setFilters={setFilters} />
             <Select
               label="Sort By"
               name="sort_by"
@@ -1391,6 +1375,7 @@ function ExpenseHistory({ user, isManagerView = false }) {
 
         <ExpenseHistoryFilters
           filters={filterHook.filters}
+          setFilters={filterHook.setFilters}
           updateFilter={filterHook.updateFilter}
           clearFilters={filterHook.clearFilters}
           hasActiveFilters={filterHook.hasActiveFilters}
