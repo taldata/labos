@@ -192,7 +192,7 @@ function AdminDashboard({ user, setUser }) {
             </Select>
 
             {timePeriod === 'custom' && (
-              <>
+              <div className="custom-date-inputs" style={{ display: 'contents' }}>
                 <Input
                   type="text"
                   label="Start Date"
@@ -218,7 +218,7 @@ function AdminDashboard({ user, setUser }) {
                 >
                   Apply
                 </Button>
-              </>
+              </div>
             )}
 
             {(departmentId || status) && (
