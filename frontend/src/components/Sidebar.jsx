@@ -59,6 +59,7 @@ function Sidebar({ user, setUser, isOpen, onToggle }) {
     { path: '/admin/users', icon: 'fa-users', label: 'Users' },
     { path: '/admin/suppliers', icon: 'fa-building', label: 'Suppliers' },
     { path: '/admin/credit-cards', icon: 'fa-credit-card', label: 'Credit Cards' },
+    { path: '/accounting_dashboard', icon: 'fa-calculator', label: 'Accounting', external: true },
   ]
 
   return (
@@ -132,7 +133,7 @@ function Sidebar({ user, setUser, isOpen, onToggle }) {
                 <button
                   key={item.path}
                   className={`nav-item ${isActive(item.path) ? 'active' : ''}`}
-                  onClick={() => navigate(item.path)}
+                  onClick={() => item.external ? window.location.href = item.path : navigate(item.path)}
                   title={!isOpen ? item.label : ''}
                 >
                   <i className={`fas ${item.icon}`}></i>
