@@ -950,16 +950,20 @@ function ExpenseEditModal({ isOpen, onClose, expense, onSuccess, subcategories, 
               step="0.01"
               min="0"
             />
-            <Select
+            <TomSelectInput
               label="Currency"
               name="currency"
               value={formData.currency}
               onChange={(e) => handleInputChange('currency', e.target.value)}
-            >
-              <option value="ILS">ILS (₪)</option>
-              <option value="USD">USD ($)</option>
-              <option value="EUR">EUR (€)</option>
-            </Select>
+              options={[
+                { id: 'ILS', name: 'ILS (₪)' },
+                { id: 'USD', name: 'USD ($)' },
+                { id: 'EUR', name: 'EUR (€)' }
+              ]}
+              displayKey="name"
+              valueKey="id"
+              placeholder="Select Currency"
+            />
           </div>
           {formData.currency !== 'ILS' && ilsPreview && (
             <div style={{
@@ -985,16 +989,20 @@ function ExpenseEditModal({ isOpen, onClose, expense, onSuccess, subcategories, 
             onChange={(e) => handleInputChange('reason', e.target.value)}
           />
           <div className="eh-edit-form__row">
-            <Select
+            <TomSelectInput
               label="Type"
               name="type"
               value={formData.type}
               onChange={(e) => handleInputChange('type', e.target.value)}
-            >
-              <option value="needs_approval">Needs Approval</option>
-              <option value="pre_approved">Pre-approved</option>
-              <option value="reimbursement">Reimbursement</option>
-            </Select>
+              options={[
+                { id: 'needs_approval', name: 'Needs Approval' },
+                { id: 'pre_approved', name: 'Pre-approved' },
+                { id: 'reimbursement', name: 'Reimbursement' }
+              ]}
+              displayKey="name"
+              valueKey="id"
+              placeholder="Select Type"
+            />
             <TomSelectInput
               label="Subcategory"
               name="subcategory_id"
@@ -1018,27 +1026,36 @@ function ExpenseEditModal({ isOpen, onClose, expense, onSuccess, subcategories, 
             <i className="fas fa-check-circle" /> Status & Payment
           </h4>
           <div className="eh-edit-form__row">
-            <Select
+            <TomSelectInput
               label="Status"
               name="status"
               value={formData.status}
               onChange={(e) => handleInputChange('status', e.target.value)}
-            >
-              <option value="pending">Pending</option>
-              <option value="approved">Approved</option>
-              <option value="rejected">Rejected</option>
-            </Select>
-            <Select
+              options={[
+                { id: 'pending', name: 'Pending' },
+                { id: 'approved', name: 'Approved' },
+                { id: 'rejected', name: 'Rejected' }
+              ]}
+              displayKey="name"
+              valueKey="id"
+              placeholder="Select Status"
+            />
+            <TomSelectInput
               label="Payment Status"
               name="payment_status"
               value={formData.payment_status}
               onChange={(e) => handleInputChange('payment_status', e.target.value)}
-            >
-              <option value="">Not Set</option>
-              <option value="pending_attention">Pending Attention</option>
-              <option value="pending_payment">Pending Payment</option>
-              <option value="paid">Paid</option>
-            </Select>
+              options={[
+                { id: '', name: 'Not Set' },
+                { id: 'pending_attention', name: 'Pending Attention' },
+                { id: 'pending_payment', name: 'Pending Payment' },
+                { id: 'paid', name: 'Paid' }
+              ]}
+              displayKey="name"
+              valueKey="id"
+              placeholder="Select Payment Status"
+              allowClear={true}
+            />
           </div>
           {formData.status === 'rejected' && (
             <Input
@@ -1050,31 +1067,37 @@ function ExpenseEditModal({ isOpen, onClose, expense, onSuccess, subcategories, 
             />
           )}
           <div className="eh-edit-form__row">
-            <Select
+            <TomSelectInput
               label="Payment Method"
               name="payment_method"
               value={formData.payment_method}
               onChange={(e) => handleInputChange('payment_method', e.target.value)}
-            >
-              <option value="">Select Method</option>
-              <option value="credit">Credit Card</option>
-              <option value="transfer">Bank Transfer</option>
-              <option value="standing_order">Standing Order</option>
-            </Select>
+              options={[
+                { id: '', name: 'Select Method' },
+                { id: 'credit', name: 'Credit Card' },
+                { id: 'transfer', name: 'Bank Transfer' },
+                { id: 'standing_order', name: 'Standing Order' }
+              ]}
+              displayKey="name"
+              valueKey="id"
+              placeholder="Select Method"
+              allowClear={true}
+            />
             {formData.payment_method === 'credit' && (
-              <Select
+              <TomSelectInput
                 label="Credit Card"
                 name="credit_card_id"
                 value={formData.credit_card_id}
                 onChange={(e) => handleInputChange('credit_card_id', e.target.value)}
-              >
-                <option value="">Select Card</option>
-                {creditCards.map(card => (
-                  <option key={card.id} value={card.id}>
-                    {card.name} (*{card.last_four_digits})
-                  </option>
-                ))}
-              </Select>
+                options={creditCards.map(card => ({
+                  id: card.id,
+                  name: `${card.name} (*${card.last_four_digits})`
+                }))}
+                displayKey="name"
+                valueKey="id"
+                placeholder="Select Card"
+                allowClear={true}
+              />
             )}
           </div>
         </div>
