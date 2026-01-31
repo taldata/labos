@@ -199,16 +199,17 @@ def get_admin_stats():
             for username, amount in user_query
         ]
         
-        # Budget usage by department - pre-calculate all department spending in single query
+        # Budget usage by department - associate expenses with budget's department (subcategory->category->department)
         dept_spending_query = db.session.query(
-            User.department_id,
+            Category.department_id,
             func.sum(Expense.amount).label('spent')
-        ).join(User, Expense.user_id == User.id)\
+        ).join(Subcategory, Expense.subcategory_id == Subcategory.id)\
+         .join(Category, Subcategory.category_id == Category.id)\
          .filter(
              Expense.date >= start_date,
              Expense.date <= end_date,
              Expense.status == 'approved'
-         ).group_by(User.department_id).all()
+         ).group_by(Category.department_id).all()
 
         dept_spending_map = {dept_id: float(spent or 0) for dept_id, spent in dept_spending_query}
 
@@ -1127,11 +1128,12 @@ def manager_list_expenses():
         sort_by = request.args.get('sort_by', 'id', type=str)
         sort_order = request.args.get('sort_order', 'desc', type=str)
 
-        # Build query - manager sees expenses from their managed departments
-        query = Expense.query.join(User, Expense.user_id == User.id)
+        # Build query - manager sees expenses from their managed departments (via budget hierarchy)
+        query = Expense.query.join(Subcategory, Expense.subcategory_id == Subcategory.id)\
+            .join(Category, Subcategory.category_id == Category.id)
 
-        # Filter to managed departments
-        query = query.filter(User.department_id.in_(managed_dept_ids))
+        # Filter to managed departments via budget hierarchy
+        query = query.filter(Category.department_id.in_(managed_dept_ids))
 
         # Left join Supplier for search functionality
         query = query.outerjoin(Supplier, Expense.supplier_id == Supplier.id)
@@ -1143,7 +1145,7 @@ def manager_list_expenses():
         if department_id:
             # Only allow filtering to departments the manager manages
             if department_id in managed_dept_ids:
-                query = query.filter(User.department_id == department_id)
+                query = query.filter(Category.department_id == department_id)
 
         if user_id:
             query = query.filter(Expense.user_id == user_id)
@@ -1151,7 +1153,8 @@ def manager_list_expenses():
         if subcategory_id:
             query = query.filter(Expense.subcategory_id == subcategory_id)
         elif category_id:
-            query = query.join(Subcategory, Expense.subcategory_id == Subcategory.id).filter(Subcategory.category_id == category_id)
+            # Subcategory already joined above
+            query = query.filter(Subcategory.category_id == category_id)
 
         if supplier_id:
             query = query.filter(Expense.supplier_id == supplier_id)
@@ -1230,8 +1233,8 @@ def manager_list_expenses():
                     'id': expense.submitter.id,
                     'username': expense.submitter.username,
                     'name': f"{expense.submitter.first_name} {expense.submitter.last_name}".strip(),
-                    'department': expense.submitter.home_department.name if expense.submitter.home_department else None,
-                    'department_id': expense.submitter.department_id
+                    'department': expense.subcategory.category.department.name if expense.subcategory and expense.subcategory.category and expense.subcategory.category.department else None,
+                    'department_id': expense.subcategory.category.department_id if expense.subcategory and expense.subcategory.category else None
                 },
                 'subcategory': {
                     'id': expense.subcategory.id,
@@ -1312,7 +1315,9 @@ def admin_list_expenses():
             query = query.filter(Expense.status == status)
 
         if department_id:
-            query = query.filter(User.department_id == department_id)
+            query = query.join(Subcategory, Expense.subcategory_id == Subcategory.id)\
+                .join(Category, Subcategory.category_id == Category.id)\
+                .filter(Category.department_id == department_id)
 
         if user_id:
             query = query.filter(Expense.user_id == user_id)
@@ -1320,7 +1325,9 @@ def admin_list_expenses():
         if subcategory_id:
             query = query.filter(Expense.subcategory_id == subcategory_id)
         elif category_id:
-            query = query.join(Subcategory, Expense.subcategory_id == Subcategory.id).filter(Subcategory.category_id == category_id)
+            if not department_id:  # Avoid duplicate join
+                query = query.join(Subcategory, Expense.subcategory_id == Subcategory.id)
+            query = query.filter(Subcategory.category_id == category_id)
 
         if supplier_id:
             query = query.filter(Expense.supplier_id == supplier_id)
@@ -1400,8 +1407,8 @@ def admin_list_expenses():
                     'id': expense.submitter.id,
                     'username': expense.submitter.username,
                     'name': f"{expense.submitter.first_name} {expense.submitter.last_name}".strip(),
-                    'department': expense.submitter.home_department.name if expense.submitter.home_department else None,
-                    'department_id': expense.submitter.department_id
+                    'department': expense.subcategory.category.department.name if expense.subcategory and expense.subcategory.category and expense.subcategory.category.department else None,
+                    'department_id': expense.subcategory.category.department_id if expense.subcategory and expense.subcategory.category else None
                 },
                 'subcategory': {
                     'id': expense.subcategory.id,

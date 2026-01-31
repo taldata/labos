@@ -92,8 +92,9 @@ def get_recent_expenses():
                 managed_dept_ids.append(current_user.department_id)
 
             if managed_dept_ids:
-                expenses = Expense.query.join(User, Expense.user_id == User.id)\
-                    .filter(User.department_id.in_(managed_dept_ids))\
+                expenses = Expense.query.join(Subcategory, Expense.subcategory_id == Subcategory.id)\
+                    .join(Category, Subcategory.category_id == Category.id)\
+                    .filter(Category.department_id.in_(managed_dept_ids))\
                     .options(
                         joinedload(Expense.submitter),
                         joinedload(Expense.subcategory).joinedload(Subcategory.category)
@@ -161,10 +162,11 @@ def get_pending_count():
                 managed_dept_ids = [current_user.department_id] if current_user.department_id else []
 
             if managed_dept_ids:
-                count = Expense.query.join(User, Expense.user_id == User.id)\
+                count = Expense.query.join(Subcategory, Expense.subcategory_id == Subcategory.id)\
+                    .join(Category, Subcategory.category_id == Category.id)\
                     .filter(
                         Expense.status == 'pending',
-                        User.department_id.in_(managed_dept_ids)
+                        Category.department_id.in_(managed_dept_ids)
                     ).count()
             else:
                 count = 0
@@ -199,10 +201,11 @@ def get_pending_approvals():
         else:
             # Managers see expenses from their managed departments
             managed_dept_ids = [dept.id for dept in current_user.managed_departments]
-            expenses = base_query.join(User)\
+            expenses = base_query.join(Subcategory, Expense.subcategory_id == Subcategory.id)\
+                .join(Category, Subcategory.category_id == Category.id)\
                 .filter(
                     Expense.status == 'pending',
-                    User.department_id.in_(managed_dept_ids)
+                    Category.department_id.in_(managed_dept_ids)
                 )\
                 .order_by(Expense.id.desc())\
                 .all()
@@ -211,11 +214,12 @@ def get_pending_approvals():
         # 1. Calculate department budget usage
         dept_budget_usage = {}
         dept_usage_query = db.session.query(
-            User.department_id,
+            Category.department_id,
             func.sum(Expense.amount).label('used')
-        ).join(User, Expense.user_id == User.id)\
+        ).join(Subcategory, Expense.subcategory_id == Subcategory.id)\
+         .join(Category, Subcategory.category_id == Category.id)\
          .filter(Expense.status == 'approved')\
-         .group_by(User.department_id).all()
+         .group_by(Category.department_id).all()
 
         for dept_id, used in dept_usage_query:
             dept_budget_usage[dept_id] = float(used) if used else 0.0
@@ -295,9 +299,9 @@ def _calculate_budget_impact_optimized(expense, dept_budget_usage, cat_budget_us
         budget_impact = {}
         expense_amount = expense.amount
 
-        # Calculate Department Budget Impact
-        if expense.submitter and expense.submitter.home_department:
-            department = expense.submitter.home_department
+        # Calculate Department Budget Impact - use the budget's department (subcategory->category->department)
+        if expense.subcategory and expense.subcategory.category and expense.subcategory.category.department:
+            department = expense.subcategory.category.department
             dept_used = dept_budget_usage.get(department.id, 0.0)
 
             dept_remaining_before = department.budget - dept_used
@@ -380,15 +384,16 @@ def _calculate_budget_impact(expense):
         # Get expense amount in ILS (or convert if needed)
         expense_amount = expense.amount
 
-        # Calculate Department Budget Impact
-        if expense.submitter and expense.submitter.home_department:
-            department = expense.submitter.home_department
+        # Calculate Department Budget Impact - use the budget's department (subcategory->category->department)
+        if expense.subcategory and expense.subcategory.category and expense.subcategory.category.department:
+            department = expense.subcategory.category.department
 
             # Calculate used budget (approved expenses in current period)
-            # Explicitly specify the join condition to avoid ambiguity with multiple foreign keys
-            dept_used = db.session.query(func.sum(Expense.amount)).join(User, Expense.user_id == User.id)\
+            dept_used = db.session.query(func.sum(Expense.amount))\
+                .join(Subcategory, Expense.subcategory_id == Subcategory.id)\
+                .join(Category, Subcategory.category_id == Category.id)\
                 .filter(
-                    User.department_id == department.id,
+                    Category.department_id == department.id,
                     Expense.status == 'approved'
                 ).scalar() or 0.0
 
@@ -928,10 +933,11 @@ def approve_expense(expense_id):
         if expense.status != 'pending':
             return jsonify({'error': f'Cannot approve expense with status: {expense.status}'}), 400
 
-        # Check if manager has permission for this expense's department
+        # Check if manager has permission for this expense's department (via budget hierarchy)
         if not current_user.is_admin:
             user_dept_ids = [dept.id for dept in current_user.managed_departments]
-            if expense.submitter.department_id not in user_dept_ids:
+            expense_dept_id = expense.subcategory.category.department_id if expense.subcategory and expense.subcategory.category else None
+            if expense_dept_id not in user_dept_ids:
                 return jsonify({'error': 'Not authorized to approve this expense'}), 403
 
         expense.status = 'approved'
@@ -966,10 +972,11 @@ def reject_expense(expense_id):
         if expense.status != 'pending':
             return jsonify({'error': f'Cannot reject expense with status: {expense.status}'}), 400
 
-        # Check if manager has permission for this expense's department
+        # Check if manager has permission for this expense's department (via budget hierarchy)
         if not current_user.is_admin:
             user_dept_ids = [dept.id for dept in current_user.managed_departments]
-            if expense.submitter.department_id not in user_dept_ids:
+            expense_dept_id = expense.subcategory.category.department_id if expense.subcategory and expense.subcategory.category else None
+            if expense_dept_id not in user_dept_ids:
                 return jsonify({'error': 'Not authorized to reject this expense'}), 403
 
         data = request.get_json() or {}
@@ -1097,12 +1104,13 @@ def get_expense_report():
         if current_user.is_admin:
             query = Expense.query
         elif current_user.is_manager:
-            # Managers see their department's expenses
+            # Managers see expenses from departments they manage (via budget hierarchy)
             managed_dept_ids = [d.id for d in current_user.managed_departments]
             if not managed_dept_ids:
                 managed_dept_ids = [current_user.department_id] if current_user.department_id else []
-            query = Expense.query.join(User, Expense.user_id == User.id)\
-                .filter(User.department_id.in_(managed_dept_ids))
+            query = Expense.query.join(Subcategory, Expense.subcategory_id == Subcategory.id)\
+                .join(Category, Subcategory.category_id == Category.id)\
+                .filter(Category.department_id.in_(managed_dept_ids))
         else:
             # Regular users see only their expenses
             query = Expense.query.filter_by(user_id=current_user.id)
@@ -1115,9 +1123,13 @@ def get_expense_report():
         if status and status != 'all':
             query = query.filter(Expense.status == status)
         if department_id and current_user.is_admin:
-            query = query.join(User, Expense.user_id == User.id).filter(User.department_id == int(department_id))
+            query = query.join(Subcategory, Expense.subcategory_id == Subcategory.id)\
+                .join(Category, Subcategory.category_id == Category.id)\
+                .filter(Category.department_id == int(department_id))
         if category_id:
-            query = query.join(Subcategory).filter(Subcategory.category_id == int(category_id))
+            if not (department_id and current_user.is_admin) and not current_user.is_manager:
+                query = query.join(Subcategory, Expense.subcategory_id == Subcategory.id)
+            query = query.filter(Subcategory.category_id == int(category_id))
         if user_id and (current_user.is_admin or current_user.is_manager):
             query = query.filter(Expense.user_id == int(user_id))
         
@@ -1213,8 +1225,9 @@ def export_expenses():
             managed_dept_ids = [dept.id for dept in current_user.managed_departments]
             if current_user.department_id:
                 managed_dept_ids.append(current_user.department_id)
-            expenses = db.session.query(Expense).join(User, Expense.user_id == User.id)\
-                .filter(User.department_id.in_(managed_dept_ids))\
+            expenses = db.session.query(Expense).join(Subcategory, Expense.subcategory_id == Subcategory.id)\
+                .join(Category, Subcategory.category_id == Category.id)\
+                .filter(Category.department_id.in_(managed_dept_ids))\
                 .order_by(Expense.id.desc()).all()
         else:
             expenses = Expense.query.filter_by(user_id=current_user.id)\
@@ -1227,9 +1240,9 @@ def export_expenses():
         if employee_id != 'all' and employee_id:
             expenses = [exp for exp in expenses if exp.user_id == int(employee_id)]
 
-        # Fix department filter - filter by user's department, not category's department
+        # Filter by the budget's department (subcategory -> category -> department)
         if department_id != 'all' and department_id:
-            expenses = [exp for exp in expenses if exp.submitter and exp.submitter.department_id == int(department_id)]
+            expenses = [exp for exp in expenses if exp.subcategory and exp.subcategory.category and exp.subcategory.category.department_id == int(department_id)]
 
         if category_id != 'all' and category_id:
             expenses = [exp for exp in expenses if exp.subcategory and exp.subcategory.category_id == int(category_id)]

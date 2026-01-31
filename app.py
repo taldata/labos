@@ -914,7 +914,7 @@ def manager_dashboard():
             .outerjoin(subcat_expenses, Subcategory.id == subcat_expenses.c.id)\
             .filter(
                 Expense.status == 'pending',
-                User.department_id == current_user.department_id
+                Category.department_id == current_user.department_id
             )\
             .add_columns(
                 Department.name.label('department_name'),
@@ -997,9 +997,11 @@ def expense_history():
         managed_dept_ids.append(current_user.department_id)
         
         expenses = db.session.query(Expense).join(
-            User, Expense.user_id == User.id
+            Subcategory, Expense.subcategory_id == Subcategory.id
+        ).join(
+            Category, Subcategory.category_id == Category.id
         ).filter(
-            User.department_id.in_(managed_dept_ids)
+            Category.department_id.in_(managed_dept_ids)
         ).order_by(Expense.date.desc()).all()
     else:
         # For regular employees, show only their expenses
@@ -2023,13 +2025,17 @@ def admin_dashboard():
     
     # Apply department filter if specified
     if selected_department != 'all':
-        expense_query = expense_query.join(User, Expense.user_id == User.id).filter(
-            User.department_id == selected_department
+        expense_query = expense_query.join(Subcategory, Expense.subcategory_id == Subcategory.id).join(
+            Category, Subcategory.category_id == Category.id
+        ).filter(
+            Category.department_id == selected_department
         )
     
     # Apply category filter if specified
     if selected_category != 'all':
-        expense_query = expense_query.join(Subcategory, Expense.subcategory_id == Subcategory.id).filter(
+        if selected_department == 'all':
+            expense_query = expense_query.join(Subcategory, Expense.subcategory_id == Subcategory.id)
+        expense_query = expense_query.filter(
             Subcategory.category_id == selected_category
         )
     
@@ -2092,9 +2098,11 @@ def admin_dashboard():
     for dept in departments:
         # Calculate spent amount for the department
         dept_spent = db.session.query(func.sum(Expense.amount)).join(
-            User, Expense.user_id == User.id
+            Subcategory, Expense.subcategory_id == Subcategory.id
+        ).join(
+            Category, Subcategory.category_id == Category.id
         ).filter(
-            User.department_id == dept.id,
+            Category.department_id == dept.id,
             Expense.status == 'approved',
             Expense.date >= start_date,
             Expense.date <= end_date
@@ -2134,9 +2142,7 @@ def admin_dashboard():
     )
     
     if selected_department != 'all':
-        category_spending = category_spending.join(
-            User, Expense.user_id == User.id
-        ).filter(User.department_id == selected_department)
+        category_spending = category_spending.filter(Category.department_id == selected_department)
     
     category_spending = category_spending.group_by(Category.name).all()
     
@@ -2206,13 +2212,17 @@ def admin_dashboard():
         
         if selected_department != 'all':
             month_expenses = month_expenses.join(
-                User, Expense.user_id == User.id
-            ).filter(User.department_id == selected_department)
+                Subcategory, Expense.subcategory_id == Subcategory.id
+            ).join(
+                Category, Subcategory.category_id == Category.id
+            ).filter(Category.department_id == selected_department)
         
         if selected_category != 'all':
-            month_expenses = month_expenses.join(
-                Subcategory, Expense.subcategory_id == Subcategory.id
-            ).filter(Subcategory.category_id == selected_category)
+            if selected_department == 'all':
+                month_expenses = month_expenses.join(
+                    Subcategory, Expense.subcategory_id == Subcategory.id
+                )
+            month_expenses = month_expenses.filter(Subcategory.category_id == selected_category)
         
         if selected_subcategory != 'all':
             month_expenses = month_expenses.filter(Expense.subcategory_id == selected_subcategory)
@@ -2640,7 +2650,7 @@ def export_accounting_excel():
         data.append({
             'Date Submitted': expense.date.strftime('%d/%m/%Y'),
             'Employee': expense.submitter.username,
-            'Department': expense.submitter.home_department.name,
+            'Department': expense.subcategory.category.department.name if expense.subcategory and expense.subcategory.category and expense.subcategory.category.department else '',
             'Description': expense.description,
             'Reason': expense.reason,
             'Type': expense.type,
