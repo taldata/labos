@@ -102,7 +102,14 @@ const ExpenseList = ({
                   </div>
                 </td>
                 <td className="me-cell-amount" style={{ textAlign: 'right' }}>
-                  {formatCurrency(expense.amount, expense.currency)}
+                  <div>
+                    {formatCurrency(expense.amount, expense.currency)}
+                    {expense.currency !== 'ILS' && expense.amount_ils && (
+                      <div style={{ fontSize: '0.75rem', color: '#666', marginTop: '2px' }}>
+                        ≈ {formatCurrency(expense.amount_ils, 'ILS')}
+                      </div>
+                    )}
+                  </div>
                 </td>
                 <td style={{ textAlign: 'center' }}>
                   <span className={`me-badge ${expense.status}`}>

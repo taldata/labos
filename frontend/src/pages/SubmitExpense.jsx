@@ -108,6 +108,10 @@ function SubmitExpense({ user, setUser }) {
   const [ocrDataLoading, setOcrDataLoading] = useState(false)
   const [showOcrSuccess, setShowOcrSuccess] = useState(false)
 
+  // ILS preview state
+  const [ilsPreview, setIlsPreview] = useState(null)
+  const [ilsPreviewLoading, setIlsPreviewLoading] = useState(false)
+
   // UI state
   const [loading, setLoading] = useState(false)
 
@@ -130,6 +134,36 @@ function SubmitExpense({ user, setUser }) {
   useEffect(() => {
     fetchCategories()
   }, [budgetYear])
+
+  // Fetch ILS preview when currency, amount, or date change (for non-ILS currencies)
+  useEffect(() => {
+    if (formData.currency === 'ILS' || !formData.amount || !formData.date || !isValidDate(formData.date)) {
+      setIlsPreview(null)
+      return
+    }
+
+    const fetchPreview = async () => {
+      setIlsPreviewLoading(true)
+      try {
+        const isoDate = formatDateForApi(formData.date)
+        const res = await fetch(
+          `/api/v1/exchange-rate?currency=${formData.currency}&date=${isoDate}&amount=${formData.amount}`,
+          { credentials: 'include' }
+        )
+        if (res.ok) {
+          const data = await res.json()
+          setIlsPreview(data)
+        }
+      } catch (err) {
+        logger.error('Failed to fetch exchange rate preview', { error: err.message })
+      } finally {
+        setIlsPreviewLoading(false)
+      }
+    }
+
+    const timer = setTimeout(fetchPreview, 500)
+    return () => clearTimeout(timer)
+  }, [formData.currency, formData.amount, formData.date])
 
   const fetchCategories = async () => {
     try {
@@ -304,6 +338,12 @@ function SubmitExpense({ user, setUser }) {
               setFormData(prev => ({
                 ...prev,
                 amount: ocrResult.amount
+              }))
+            }
+            if (ocrResult.currency && ['ILS', 'USD', 'EUR'].includes(ocrResult.currency)) {
+              setFormData(prev => ({
+                ...prev,
+                currency: ocrResult.currency
               }))
             }
             if (ocrResult.purchase_date) {
@@ -608,6 +648,20 @@ function SubmitExpense({ user, setUser }) {
                   <option value="USD">USD ($)</option>
                   <option value="EUR">EUR (€)</option>
                 </Select>
+
+                {formData.currency !== 'ILS' && ilsPreview && (
+                  <div className="ils-preview" style={{
+                    display: 'flex', alignItems: 'center', gap: '0.5rem',
+                    padding: '0.5rem 0.75rem', backgroundColor: '#f0f7ff', borderRadius: '6px',
+                    fontSize: '0.85rem', color: '#1565c0', alignSelf: 'flex-end', marginBottom: '0.25rem'
+                  }}>
+                    <i className="fas fa-exchange-alt"></i>
+                    <span>
+                      {ilsPreviewLoading ? 'Loading...' : `≈ ₪${ilsPreview.amount_ils?.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+                      {ilsPreview.rate && <span style={{ opacity: 0.7, marginLeft: '0.5rem' }}>(rate: {ilsPreview.rate})</span>}
+                    </span>
+                  </div>
+                )}
 
                 <div className="date-input-wrapper">
                   <Input

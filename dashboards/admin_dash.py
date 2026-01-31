@@ -71,7 +71,7 @@ def create_admin_dashboard(server):
         
         expenses = db.session.query(
             func.date_trunc('month', Expense.date).label('month'),
-            func.sum(Expense.amount).label('total')
+            func.sum(func.coalesce(Expense.amount_ils, Expense.amount)).label('total')
         ).filter(
             Expense.date >= start_date,
             Expense.date <= end_date
@@ -96,7 +96,7 @@ def create_admin_dashboard(server):
         dept_data = []
         
         for dept in departments:
-            total_expenses = db.session.query(func.sum(Expense.amount))\
+            total_expenses = db.session.query(func.sum(func.coalesce(Expense.amount_ils, Expense.amount)))\
                 .join(Category)\
                 .filter(Category.department_id == dept.id)\
                 .scalar() or 0
@@ -139,10 +139,10 @@ def create_admin_dashboard(server):
         # Get top 10 spenders
         top_spenders = db.session.query(
             User.username,
-            func.sum(Expense.amount).label('total')
+            func.sum(func.coalesce(Expense.amount_ils, Expense.amount)).label('total')
         ).join(Expense)\
         .group_by(User.username)\
-        .order_by(func.sum(Expense.amount).desc())\
+        .order_by(func.sum(func.coalesce(Expense.amount_ils, Expense.amount)).desc())\
         .limit(10).all()
         
         df = pd.DataFrame(top_spenders, columns=['User', 'Total Spent'])

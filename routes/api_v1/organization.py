@@ -252,7 +252,7 @@ def get_organization_structure():
         if dept_ids:
             dept_query = db.session.query(
                 Category.department_id,
-                func.sum(Expense.amount).label('spent')
+                func.sum(func.coalesce(Expense.amount_ils, Expense.amount)).label('spent')
             ).join(Subcategory, Expense.subcategory_id == Subcategory.id)\
              .join(Category, Subcategory.category_id == Category.id)\
              .filter(Category.department_id.in_(dept_ids))\
@@ -267,7 +267,7 @@ def get_organization_structure():
         if dept_ids:
             cat_query = db.session.query(
                 Subcategory.category_id,
-                func.sum(Expense.amount).label('spent')
+                func.sum(func.coalesce(Expense.amount_ils, Expense.amount)).label('spent')
             ).join(Subcategory, Expense.subcategory_id == Subcategory.id)\
              .join(Category, Subcategory.category_id == Category.id)\
              .filter(Category.department_id.in_(dept_ids))\
@@ -282,7 +282,7 @@ def get_organization_structure():
         if dept_ids:
             subcat_query = db.session.query(
                 Expense.subcategory_id,
-                func.sum(Expense.amount).label('spent')
+                func.sum(func.coalesce(Expense.amount_ils, Expense.amount)).label('spent')
             ).join(Subcategory, Expense.subcategory_id == Subcategory.id)\
              .join(Category, Subcategory.category_id == Category.id)\
              .filter(Category.department_id.in_(dept_ids))\

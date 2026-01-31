@@ -51,16 +51,16 @@ class DocumentProcessor:
     def _extract_amount(self, amount_field):
         """
         Extract float amount from a field value that might be a CurrencyValue
-        
+
         Args:
             amount_field: Field value from Form Recognizer
-            
+
         Returns:
             float: The amount value
         """
         if amount_field is None:
             return None
-            
+
         if hasattr(amount_field, 'amount'):
             # Handle CurrencyValue objects
             return float(amount_field.amount)
@@ -73,6 +73,36 @@ class DocumentProcessor:
                 return float(amount_field)
             except (ValueError, TypeError):
                 return None
+
+    def _extract_currency(self, amount_field):
+        """
+        Extract currency code from a CurrencyValue field.
+
+        Args:
+            amount_field: Field value from Form Recognizer (may be CurrencyValue)
+
+        Returns:
+            str or None: Currency code (e.g., 'USD', 'ILS', 'EUR')
+        """
+        if amount_field is None:
+            return None
+
+        # CurrencyValue objects have a 'symbol' or 'code' attribute
+        currency_code = getattr(amount_field, 'code', None)
+        if currency_code:
+            return currency_code.upper()
+
+        symbol = getattr(amount_field, 'symbol', None)
+        if symbol:
+            symbol_map = {
+                '$': 'USD',
+                '₪': 'ILS',
+                '\u20aa': 'ILS',  # Unicode shekel sign
+                '\u20ac': 'EUR',  # Euro sign
+            }
+            return symbol_map.get(symbol, None)
+
+        return None
     
     def _calculate_file_hash(self, file_path):
         """Calculate a hash for the file to use as a cache key"""
@@ -153,7 +183,11 @@ class DocumentProcessor:
                         amount_field = doc.fields.get(fields["amount"])
                         amount_value = self._extract_amount(amount_field.value if amount_field else None)
                         logging.info(f"DocumentProcessor: Amount field ({fields['amount']}): {amount_value}")
-                        
+
+                        # Extract currency from CurrencyValue
+                        currency_value = self._extract_currency(amount_field.value if amount_field else None)
+                        logging.info(f"DocumentProcessor: Currency: {currency_value}")
+
                         # If we found either date or amount, return the results
                         if date_value or amount_value:
                             # Convert date to ISO format string for JSON serialization
@@ -163,10 +197,11 @@ class DocumentProcessor:
                                     date_str = date_value.isoformat()
                                 else:
                                     date_str = str(date_value)
-                            
+
                             result = {
                                 "purchase_date": date_str,
-                                "amount": amount_value
+                                "amount": amount_value,
+                                "currency": currency_value
                             }
                             logging.info(f"DocumentProcessor: Success! Returning: {result}")
                             # Cache the result

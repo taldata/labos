@@ -11,6 +11,7 @@ import logging
 import os
 import pytz
 from . import api_v1
+from services.exchange_rate import get_exchange_rate
 
 
 def allowed_file(filename):
@@ -77,7 +78,7 @@ def get_admin_stats():
         status_query = db.session.query(
             Expense.status,
             func.count(Expense.id).label('count'),
-            func.sum(Expense.amount).label('amount')
+            func.sum(func.coalesce(Expense.amount_ils, Expense.amount)).label('amount')
         ).filter(
             Expense.date >= start_date,
             Expense.date <= end_date
@@ -114,7 +115,7 @@ def get_admin_stats():
             # Monthly breakdown
             trend_query = db.session.query(
                 func.date_trunc('month', Expense.date).label('month'),
-                func.sum(Expense.amount).label('amount')
+                func.sum(func.coalesce(Expense.amount_ils, Expense.amount)).label('amount')
             ).filter(
                 Expense.date >= start_date,
                 Expense.date <= end_date,
@@ -132,7 +133,7 @@ def get_admin_stats():
             # Weekly breakdown for shorter periods
             trend_query = db.session.query(
                 func.date_trunc('week', Expense.date).label('week'),
-                func.sum(Expense.amount).label('amount')
+                func.sum(func.coalesce(Expense.amount_ils, Expense.amount)).label('amount')
             ).filter(
                 Expense.date >= start_date,
                 Expense.date <= end_date,
@@ -150,14 +151,14 @@ def get_admin_stats():
         # Department spending
         dept_query = db.session.query(
             Department.name,
-            func.sum(Expense.amount).label('amount')
+            func.sum(func.coalesce(Expense.amount_ils, Expense.amount)).label('amount')
         ).join(User, Department.id == User.department_id)\
          .join(Expense, User.id == Expense.user_id)\
          .filter(
              Expense.date >= start_date,
              Expense.date <= end_date,
              Expense.status == 'approved'
-         ).group_by(Department.name).order_by(func.sum(Expense.amount).desc()).limit(10).all()
+         ).group_by(Department.name).order_by(func.sum(func.coalesce(Expense.amount_ils, Expense.amount)).desc()).limit(10).all()
         
         department_spending = [
             {'name': name, 'amount': float(amount or 0)}
@@ -167,7 +168,7 @@ def get_admin_stats():
         # Category distribution
         cat_query = db.session.query(
             Category.name,
-            func.sum(Expense.amount).label('amount')
+            func.sum(func.coalesce(Expense.amount_ils, Expense.amount)).label('amount')
         ).select_from(Expense)\
          .join(Subcategory, Expense.subcategory_id == Subcategory.id)\
          .join(Category, Subcategory.category_id == Category.id)\
@@ -175,7 +176,7 @@ def get_admin_stats():
              Expense.date >= start_date,
              Expense.date <= end_date,
              Expense.status == 'approved'
-         ).group_by(Category.name).order_by(func.sum(Expense.amount).desc()).limit(10).all()
+         ).group_by(Category.name).order_by(func.sum(func.coalesce(Expense.amount_ils, Expense.amount)).desc()).limit(10).all()
         
         category_distribution = [
             {'name': name, 'amount': float(amount or 0)}
@@ -185,14 +186,14 @@ def get_admin_stats():
         # Top users
         user_query = db.session.query(
             User.username,
-            func.sum(Expense.amount).label('amount')
+            func.sum(func.coalesce(Expense.amount_ils, Expense.amount)).label('amount')
         ).select_from(Expense)\
          .join(User, Expense.user_id == User.id)\
          .filter(
              Expense.date >= start_date,
              Expense.date <= end_date,
              Expense.status == 'approved'
-         ).group_by(User.username).order_by(func.sum(Expense.amount).desc()).limit(10).all()
+         ).group_by(User.username).order_by(func.sum(func.coalesce(Expense.amount_ils, Expense.amount)).desc()).limit(10).all()
         
         top_users = [
             {'name': username, 'amount': float(amount or 0)}
@@ -202,7 +203,7 @@ def get_admin_stats():
         # Budget usage by department - associate expenses with budget's department (subcategory->category->department)
         dept_spending_query = db.session.query(
             Category.department_id,
-            func.sum(Expense.amount).label('spent')
+            func.sum(func.coalesce(Expense.amount_ils, Expense.amount)).label('spent')
         ).join(Subcategory, Expense.subcategory_id == Subcategory.id)\
          .join(Category, Subcategory.category_id == Category.id)\
          .filter(
@@ -1214,6 +1215,8 @@ def manager_list_expenses():
                 'id': expense.id,
                 'amount': expense.amount,
                 'currency': expense.currency,
+                'amount_ils': expense.amount_ils,
+                'exchange_rate': expense.exchange_rate,
                 'description': expense.description,
                 'reason': expense.reason,
                 'date': expense.date.isoformat() if expense.date else None,
@@ -1388,6 +1391,8 @@ def admin_list_expenses():
                 'id': expense.id,
                 'amount': expense.amount,
                 'currency': expense.currency,
+                'amount_ils': expense.amount_ils,
+                'exchange_rate': expense.exchange_rate,
                 'description': expense.description,
                 'reason': expense.reason,
                 'date': expense.date.isoformat() if expense.date else None,
@@ -1588,6 +1593,22 @@ def admin_update_expense(expense_id):
             else:
                 expense.paid_at = None
 
+        # Recalculate ILS equivalent if amount, currency, or date changed
+        if any(k in data for k in ['amount', 'currency', 'date']):
+            try:
+                if expense.currency == 'ILS':
+                    expense.amount_ils = expense.amount
+                    expense.exchange_rate = 1.0
+                else:
+                    expense_date = expense.date.date() if hasattr(expense.date, 'date') else expense.date
+                    rate = get_exchange_rate(expense.currency, expense_date)
+                    expense.exchange_rate = rate
+                    expense.amount_ils = round(expense.amount * rate, 2)
+            except Exception as e:
+                logging.warning(f"Failed to recalculate exchange rate: {e}")
+                expense.amount_ils = expense.amount
+                expense.exchange_rate = 1.0
+
         # Handle file uploads
         upload_folder = current_app.config.get('UPLOAD_FOLDER', 'uploads')
 
@@ -1677,6 +1698,8 @@ def admin_update_expense(expense_id):
                 'id': expense.id,
                 'amount': expense.amount,
                 'currency': expense.currency,
+                'amount_ils': expense.amount_ils,
+                'exchange_rate': expense.exchange_rate,
                 'description': expense.description,
                 'status': expense.status,
                 'quote_filename': expense.quote_filename,

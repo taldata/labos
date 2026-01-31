@@ -584,7 +584,14 @@ function ExpenseRow({ expense, onView, onEdit, onMove, onDelete, formatDate, for
         {expense.supplier?.name || '-'}
       </td>
       <td className="eh-table__cell eh-table__cell--amount">
-        {formatCurrency(expense.amount, expense.currency)}
+        <div>
+          {formatCurrency(expense.amount, expense.currency)}
+          {expense.currency !== 'ILS' && expense.amount_ils && (
+            <div style={{ fontSize: '0.75rem', color: '#666', marginTop: '2px' }}>
+              ≈ {formatCurrency(expense.amount_ils, 'ILS')}
+            </div>
+          )}
+        </div>
       </td>
       <td className="eh-table__cell eh-table__cell--status">
         <Badge variant={getStatusVariant(expense.status)} size="small" rounded>
@@ -801,6 +808,7 @@ function ExpenseEditModal({ isOpen, onClose, expense, onSuccess, subcategories, 
   const [formData, setFormData] = useState({})
   const [editFiles, setEditFiles] = useState({ quote: null, invoice: null, receipt: null })
   const [deleteFiles, setDeleteFiles] = useState({ quote: false, invoice: false, receipt: false })
+  const [ilsPreview, setIlsPreview] = useState(null)
 
   useEffect(() => {
     if (expense) {
@@ -821,8 +829,32 @@ function ExpenseEditModal({ isOpen, onClose, expense, onSuccess, subcategories, 
       })
       setEditFiles({ quote: null, invoice: null, receipt: null })
       setDeleteFiles({ quote: false, invoice: false, receipt: false })
+      setIlsPreview(null)
     }
   }, [expense])
+
+  // Fetch ILS preview when amount/currency changes in edit modal
+  useEffect(() => {
+    if (!formData.currency || formData.currency === 'ILS' || !formData.amount) {
+      setIlsPreview(null)
+      return
+    }
+    const fetchPreview = async () => {
+      try {
+        const dateParam = expense?.date ? `&date=${expense.date.split('T')[0]}` : ''
+        const res = await fetch(
+          `/api/v1/exchange-rate?currency=${formData.currency}&amount=${formData.amount}${dateParam}`,
+          { credentials: 'include' }
+        )
+        if (res.ok) {
+          const data = await res.json()
+          setIlsPreview(data)
+        }
+      } catch (err) { /* ignore */ }
+    }
+    const timer = setTimeout(fetchPreview, 500)
+    return () => clearTimeout(timer)
+  }, [formData.amount, formData.currency])
 
   const handleInputChange = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }))
@@ -929,6 +961,16 @@ function ExpenseEditModal({ isOpen, onClose, expense, onSuccess, subcategories, 
               <option value="EUR">EUR (€)</option>
             </Select>
           </div>
+          {formData.currency !== 'ILS' && ilsPreview && (
+            <div style={{
+              padding: '0.5rem 0.75rem', backgroundColor: '#f0f7ff', borderRadius: '6px',
+              fontSize: '0.85rem', color: '#1565c0', marginBottom: '0.5rem'
+            }}>
+              <i className="fas fa-exchange-alt" style={{ marginRight: '0.5rem' }} />
+              ≈ ₪{ilsPreview.amount_ils?.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              {ilsPreview.rate && <span style={{ opacity: 0.7, marginLeft: '0.5rem' }}>(rate: {ilsPreview.rate})</span>}
+            </div>
+          )}
           <Input
             label="Description"
             name="description"

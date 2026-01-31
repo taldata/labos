@@ -6,6 +6,7 @@ from sqlalchemy.orm import joinedload
 from datetime import datetime, timedelta
 from werkzeug.utils import secure_filename
 from . import api_v1
+from services.exchange_rate import get_exchange_rate
 import logging
 import os
 
@@ -30,8 +31,9 @@ def get_expense_summary():
         approved = status_map.get('approved', 0)
         rejected = status_map.get('rejected', 0)
 
-        # Calculate total amount for this month (approved only)
-        total_amount = db.session.query(func.sum(Expense.amount)).filter(
+        # Calculate total amount for this month (approved only) - use ILS equivalent
+        total_amount = db.session.query(func.sum(
+            func.coalesce(Expense.amount_ils, Expense.amount))).filter(
             Expense.user_id == current_user.id,
             Expense.status == 'approved',
             Expense.date >= start_of_month
@@ -128,6 +130,8 @@ def get_recent_expenses():
                 'id': expense.id,
                 'amount': expense.amount,
                 'currency': expense.currency,
+                'amount_ils': expense.amount_ils,
+                'exchange_rate': expense.exchange_rate,
                 'description': expense.description,
                 'date': expense.date.isoformat() if expense.date else None,
                 'status': expense.status,
@@ -215,7 +219,7 @@ def get_pending_approvals():
         dept_budget_usage = {}
         dept_usage_query = db.session.query(
             Category.department_id,
-            func.sum(Expense.amount).label('used')
+            func.sum(func.coalesce(Expense.amount_ils, Expense.amount)).label('used')
         ).join(Subcategory, Expense.subcategory_id == Subcategory.id)\
          .join(Category, Subcategory.category_id == Category.id)\
          .filter(Expense.status == 'approved')\
@@ -228,7 +232,7 @@ def get_pending_approvals():
         cat_budget_usage = {}
         cat_usage_query = db.session.query(
             Subcategory.category_id,
-            func.sum(Expense.amount).label('used')
+            func.sum(func.coalesce(Expense.amount_ils, Expense.amount)).label('used')
         ).join(Subcategory, Expense.subcategory_id == Subcategory.id)\
          .filter(Expense.status == 'approved')\
          .group_by(Subcategory.category_id).all()
@@ -240,7 +244,7 @@ def get_pending_approvals():
         subcat_budget_usage = {}
         subcat_usage_query = db.session.query(
             Expense.subcategory_id,
-            func.sum(Expense.amount).label('used')
+            func.sum(func.coalesce(Expense.amount_ils, Expense.amount)).label('used')
         ).filter(Expense.status == 'approved')\
          .group_by(Expense.subcategory_id).all()
 
@@ -262,6 +266,8 @@ def get_pending_approvals():
                 'id': expense.id,
                 'amount': expense.amount,
                 'currency': expense.currency,
+                'amount_ils': expense.amount_ils,
+                'exchange_rate': expense.exchange_rate,
                 'description': expense.description,
                 'reason': expense.reason,
                 'date': expense.date.isoformat() if expense.date else None,
@@ -297,7 +303,7 @@ def _calculate_budget_impact_optimized(expense, dept_budget_usage, cat_budget_us
     """Calculate budget impact for an expense using pre-calculated budget usage data"""
     try:
         budget_impact = {}
-        expense_amount = expense.amount
+        expense_amount = expense.amount_ils if expense.amount_ils else expense.amount
 
         # Calculate Department Budget Impact - use the budget's department (subcategory->category->department)
         if expense.subcategory and expense.subcategory.category and expense.subcategory.category.department:
@@ -381,15 +387,15 @@ def _calculate_budget_impact(expense):
     try:
         budget_impact = {}
 
-        # Get expense amount in ILS (or convert if needed)
-        expense_amount = expense.amount
+        # Get expense amount in ILS
+        expense_amount = expense.amount_ils if expense.amount_ils else expense.amount
 
         # Calculate Department Budget Impact - use the budget's department (subcategory->category->department)
         if expense.subcategory and expense.subcategory.category and expense.subcategory.category.department:
             department = expense.subcategory.category.department
 
             # Calculate used budget (approved expenses in current period)
-            dept_used = db.session.query(func.sum(Expense.amount))\
+            dept_used = db.session.query(func.sum(func.coalesce(Expense.amount_ils, Expense.amount)))\
                 .join(Subcategory, Expense.subcategory_id == Subcategory.id)\
                 .join(Category, Subcategory.category_id == Category.id)\
                 .filter(
@@ -419,7 +425,7 @@ def _calculate_budget_impact(expense):
             category = expense.subcategory.category
 
             # Calculate used budget (approved expenses in this category)
-            cat_used = db.session.query(func.sum(Expense.amount))\
+            cat_used = db.session.query(func.sum(func.coalesce(Expense.amount_ils, Expense.amount)))\
                 .join(Subcategory)\
                 .filter(
                     Subcategory.category_id == category.id,
@@ -448,7 +454,7 @@ def _calculate_budget_impact(expense):
             subcategory = expense.subcategory
 
             # Calculate used budget (approved expenses in this subcategory)
-            subcat_used = db.session.query(func.sum(Expense.amount))\
+            subcat_used = db.session.query(func.sum(func.coalesce(Expense.amount_ils, Expense.amount)))\
                 .filter(
                     Expense.subcategory_id == subcategory.id,
                     Expense.status == 'approved'
@@ -489,7 +495,7 @@ def get_expense_stats():
         # Get expenses by month
         monthly_data = db.session.query(
             func.date_trunc('month', Expense.date).label('month'),
-            func.sum(Expense.amount).label('total')
+            func.sum(func.coalesce(Expense.amount_ils, Expense.amount)).label('total')
         ).filter(
             Expense.user_id == current_user.id,
             Expense.status == 'approved',
@@ -505,7 +511,7 @@ def get_expense_stats():
         # Get expenses by category
         category_data = db.session.query(
             Category.name,
-            func.sum(Expense.amount).label('total')
+            func.sum(func.coalesce(Expense.amount_ils, Expense.amount)).label('total')
         ).join(Subcategory).join(Expense).filter(
             Expense.user_id == current_user.id,
             Expense.status == 'approved',
@@ -805,6 +811,8 @@ def list_expenses():
                 'id': expense.id,
                 'amount': expense.amount,
                 'currency': expense.currency,
+                'amount_ils': expense.amount_ils,
+                'exchange_rate': expense.exchange_rate,
                 'description': expense.description,
                 'reason': expense.reason,
                 'date': expense.date.isoformat() if expense.date else None,
@@ -868,6 +876,8 @@ def get_expense_details(expense_id):
             'id': expense.id,
             'amount': expense.amount,
             'currency': expense.currency,
+            'amount_ils': expense.amount_ils,
+            'exchange_rate': expense.exchange_rate,
             'description': expense.description,
             'reason': expense.reason,
             'date': expense.date.isoformat() if expense.date else None,
@@ -1032,6 +1042,20 @@ def submit_expense():
             submit_date=datetime.utcnow()  # Track when the expense was submitted
         )
 
+        # Calculate ILS equivalent
+        try:
+            if expense.currency == 'ILS':
+                expense.amount_ils = expense.amount
+                expense.exchange_rate = 1.0
+            else:
+                rate = get_exchange_rate(expense.currency, expense.date.date() if hasattr(expense.date, 'date') else expense.date)
+                expense.exchange_rate = rate
+                expense.amount_ils = round(expense.amount * rate, 2)
+        except Exception as e:
+            logging.warning(f"Failed to get exchange rate for {expense.currency}: {e}. Using amount as-is.")
+            expense.amount_ils = expense.amount
+            expense.exchange_rate = 1.0
+
         # Auto-mark credit card and standing order payments as paid for auto-approved expenses
         if (data.get('payment_method') in ['credit', 'standing_order']) and expense.status == 'approved':
             expense.is_paid = True
@@ -1085,6 +1109,45 @@ def submit_expense():
         db.session.rollback()
         logging.error(f"Error submitting expense: {str(e)}")
         return jsonify({'error': 'Failed to submit expense'}), 500
+
+
+@api_v1.route('/exchange-rate', methods=['GET'])
+@login_required
+def get_exchange_rate_endpoint():
+    """Get exchange rate for a currency on a given date"""
+    try:
+        currency = request.args.get('currency', 'USD')
+        date_str = request.args.get('date')
+        amount = request.args.get('amount', type=float)
+
+        if currency == 'ILS':
+            return jsonify({
+                'currency': 'ILS',
+                'rate': 1.0,
+                'amount_ils': amount if amount else None
+            }), 200
+
+        from datetime import date as date_type
+        if date_str:
+            target_date = date_type.fromisoformat(date_str)
+        else:
+            target_date = date_type.today()
+
+        rate = get_exchange_rate(currency, target_date)
+
+        result = {
+            'currency': currency,
+            'date': target_date.isoformat(),
+            'rate': rate
+        }
+        if amount is not None:
+            result['amount_ils'] = round(amount * rate, 2)
+
+        return jsonify(result), 200
+
+    except Exception as e:
+        logging.error(f"Error getting exchange rate: {str(e)}")
+        return jsonify({'error': 'Failed to get exchange rate'}), 500
 
 
 @api_v1.route('/expenses/report', methods=['GET'])
@@ -1146,6 +1209,8 @@ def get_expense_report():
                 'description': exp.description or '',
                 'amount': exp.amount,
                 'currency': exp.currency,
+                'amount_ils': exp.amount_ils,
+                'exchange_rate': exp.exchange_rate,
                 'status': exp.status,
                 'type': exp.type,
                 'category': exp.subcategory.category.name if exp.subcategory and exp.subcategory.category else '',
@@ -1157,7 +1222,7 @@ def get_expense_report():
                 'reason': exp.reason or ''
             })
             if exp.status == 'approved':
-                total_amount += exp.amount
+                total_amount += (exp.amount_ils if exp.amount_ils else exp.amount)
         
         return jsonify({
             'expenses': report_data,
