@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Input, Select, Button } from '../../../components/ui';
+import { Input, Select, Button, DateRangeFilter } from '../../../components/ui';
 
 const ExpenseFilters = ({ 
   filters, 
@@ -82,24 +82,7 @@ const ExpenseFilters = ({
           </div>
 
           <div className="me-filters-grid" style={{ marginTop: '1.5rem' }}>
-             <Input
-               type="text"
-               label="Start Date"
-               name="start_date"
-               value={filters.start_date}
-               onChange={handleChange}
-               placeholder="DD/MM/YYYY"
-               pattern="\d{2}/\d{2}/\d{4}"
-             />
-             <Input
-               type="text"
-               label="End Date"
-               name="end_date"
-               value={filters.end_date}
-               onChange={handleChange}
-               placeholder="DD/MM/YYYY"
-               pattern="\d{2}/\d{2}/\d{4}"
-             />
+             <DateRangeFilter filters={filters} setFilters={setFilters} />
              <Select
                label="Order"
                name="sort_order"

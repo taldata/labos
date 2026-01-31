@@ -10,4 +10,5 @@ export { default as Skeleton } from './Skeleton';
 export { default as Toast, ToastProvider, useToast } from './Toast';
 export { default as Modal } from './Modal';
 export { default as PageHeader } from '../PageHeader';
+export { default as DateRangeFilter } from './DateRangeFilter';
 
