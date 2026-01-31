@@ -2931,8 +2931,8 @@ def test_email():
 @app.route('/accounting_dashboard')
 @login_required
 def accounting_dashboard():
-    if not current_user.is_accounting:
-        flash('Access denied. You must be an accounting user to view this page.', 'danger')
+    if not current_user.is_accounting and not current_user.is_admin:
+        flash('Access denied. You must be an accounting or admin user to view this page.', 'danger')
         return redirect(url_for('index'))
     
     # Get filter parameters
@@ -3074,7 +3074,7 @@ def accounting_dashboard():
 @app.route('/mark_expense_paid/<int:expense_id>', methods=['POST'])
 @login_required
 def mark_expense_paid(expense_id):
-    if not current_user.is_accounting:
+    if not current_user.is_accounting and not current_user.is_admin:
         return jsonify({'error': 'Access denied'}), 403
     
     expense = Expense.query.get_or_404(expense_id)
@@ -3121,7 +3121,7 @@ def mark_expense_paid(expense_id):
 @app.route('/mark_expense_unpaid/<int:expense_id>', methods=['POST'])
 @login_required
 def mark_expense_unpaid(expense_id):
-    if not current_user.is_accounting:
+    if not current_user.is_accounting and not current_user.is_admin:
         return jsonify({'error': 'Access denied'}), 403
     
     expense = Expense.query.get_or_404(expense_id)
@@ -3139,7 +3139,7 @@ def mark_expense_unpaid(expense_id):
 @app.route('/mark_expense_pending_payment/<int:expense_id>', methods=['POST'])
 @login_required
 def mark_expense_pending_payment(expense_id):
-    if not current_user.is_accounting:
+    if not current_user.is_accounting and not current_user.is_admin:
         return jsonify({'error': 'Access denied'}), 403
     
     expense = Expense.query.get_or_404(expense_id)
@@ -3153,7 +3153,7 @@ def mark_expense_pending_payment(expense_id):
 @app.route('/mark_expense_external_accounting/<int:expense_id>', methods=['POST'])
 @login_required
 def mark_expense_external_accounting(expense_id):
-    if not current_user.is_accounting:
+    if not current_user.is_accounting and not current_user.is_admin:
         return jsonify({'error': 'Access denied'}), 403
     
     expense = Expense.query.get_or_404(expense_id)
@@ -3170,7 +3170,7 @@ def mark_expense_external_accounting(expense_id):
 @app.route('/unmark_expense_external_accounting/<int:expense_id>', methods=['POST'])
 @login_required
 def unmark_expense_external_accounting(expense_id):
-    if not current_user.is_accounting:
+    if not current_user.is_accounting and not current_user.is_admin:
         return jsonify({'error': 'Access denied'}), 403
     
     expense = Expense.query.get_or_404(expense_id)
