@@ -155,7 +155,7 @@ function Sidebar({ user, setUser, isOpen, onToggle }) {
                   style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                 />
               ) : (
-                <>{user?.first_name?.[0]}{user?.last_name?.[0]}</>
+                <span>{user?.first_name?.[0]}{user?.last_name?.[0]}</span>
               )}
             </div>
             {isOpen && (
