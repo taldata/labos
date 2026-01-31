@@ -809,9 +809,28 @@ function ExpenseEditModal({ isOpen, onClose, expense, onSuccess, subcategories, 
   const [editFiles, setEditFiles] = useState({ quote: null, invoice: null, receipt: null })
   const [deleteFiles, setDeleteFiles] = useState({ quote: false, invoice: false, receipt: false })
   const [ilsPreview, setIlsPreview] = useState(null)
+  const [budgetYears, setBudgetYears] = useState([])
+  const [selectedBudgetYear, setSelectedBudgetYear] = useState('')
+  const [filteredSubcategories, setFilteredSubcategories] = useState([])
+  const [loadingSubcategories, setLoadingSubcategories] = useState(false)
+
+  // Fetch budget years when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      fetch('/api/v1/organization/years', { credentials: 'include' })
+        .then(res => res.ok ? res.json() : Promise.reject())
+        .then(data => {
+          const years = data.years || data || []
+          setBudgetYears(years)
+        })
+        .catch(() => setBudgetYears([]))
+    }
+  }, [isOpen])
 
   useEffect(() => {
     if (expense) {
+      const yearValue = expense.budget_year?.year || ''
+      setSelectedBudgetYear(yearValue ? String(yearValue) : '')
       setFormData({
         status: expense.status || '',
         payment_status: expense.payment_status || '',
@@ -832,6 +851,52 @@ function ExpenseEditModal({ isOpen, onClose, expense, onSuccess, subcategories, 
       setIlsPreview(null)
     }
   }, [expense])
+
+  // Fetch subcategories when budget year changes
+  useEffect(() => {
+    if (!selectedBudgetYear) {
+      setFilteredSubcategories(subcategories)
+      return
+    }
+
+    const fetchSubcategories = async () => {
+      setLoadingSubcategories(true)
+      try {
+        const res = await fetch(
+          `/api/v1/form-data/categories?budget_year=${selectedBudgetYear}&all=true&include_subcategories=true`,
+          { credentials: 'include' }
+        )
+        if (res.ok) {
+          const data = await res.json()
+          const flatSubs = []
+          for (const cat of (data.categories || [])) {
+            for (const sub of (cat.subcategories || [])) {
+              flatSubs.push({
+                id: sub.id,
+                name: sub.name,
+                category_name: cat.name,
+                department_name: cat.department_name
+              })
+            }
+          }
+          setFilteredSubcategories(flatSubs)
+        } else {
+          setFilteredSubcategories(subcategories)
+        }
+      } catch {
+        setFilteredSubcategories(subcategories)
+      } finally {
+        setLoadingSubcategories(false)
+      }
+    }
+
+    fetchSubcategories()
+  }, [selectedBudgetYear, subcategories])
+
+  const handleBudgetYearChange = (newYear) => {
+    setSelectedBudgetYear(newYear)
+    setFormData(prev => ({ ...prev, subcategory_id: '' }))
+  }
 
   // Fetch ILS preview when amount/currency changes in edit modal
   useEffect(() => {
@@ -995,21 +1060,34 @@ function ExpenseEditModal({ isOpen, onClose, expense, onSuccess, subcategories, 
               <option value="pre_approved">Pre-approved</option>
               <option value="reimbursement">Reimbursement</option>
             </Select>
-            <TomSelectInput
-              label="Subcategory"
-              name="subcategory_id"
-              value={formData.subcategory_id}
-              onChange={(e) => handleInputChange('subcategory_id', e.target.value)}
-              options={subcategories.map(sub => ({
-                id: sub.id,
-                name: `${sub.department_name} > ${sub.category_name} > ${sub.name}`
-              }))}
-              displayKey="name"
-              valueKey="id"
-              placeholder="Select Subcategory"
-              allowClear={true}
-            />
+            <Select
+              label="Budget Year"
+              name="budget_year"
+              value={selectedBudgetYear}
+              onChange={(e) => handleBudgetYearChange(e.target.value)}
+            >
+              <option value="">All Years</option>
+              {budgetYears.map(by => (
+                <option key={by.id} value={by.year}>
+                  {by.name || by.year}{by.is_current ? ' (Current)' : ''}
+                </option>
+              ))}
+            </Select>
           </div>
+          <TomSelectInput
+            label="Subcategory"
+            name="subcategory_id"
+            value={formData.subcategory_id}
+            onChange={(e) => handleInputChange('subcategory_id', e.target.value)}
+            options={filteredSubcategories.map(sub => ({
+              id: sub.id,
+              name: `${sub.department_name} > ${sub.category_name} > ${sub.name}`
+            }))}
+            displayKey="name"
+            valueKey="id"
+            placeholder={loadingSubcategories ? "Loading..." : "Select Subcategory"}
+            allowClear={true}
+          />
         </div>
 
         {/* Status & Payment - admin only */}
