@@ -803,7 +803,7 @@ function ExpensePagination({ currentPage, totalPages, onPageChange }) {
 // ============================================================================
 // Component: ExpenseEditModal
 // ============================================================================
-function ExpenseEditModal({ isOpen, onClose, expense, onSuccess, subcategories, suppliers, creditCards }) {
+function ExpenseEditModal({ isOpen, onClose, expense, onSuccess, subcategories, suppliers, creditCards, isManagerView = false }) {
   const { success, error: showError } = useToast()
   const [formData, setFormData] = useState({})
   const [editFiles, setEditFiles] = useState({ quote: null, invoice: null, receipt: null })
@@ -1012,7 +1012,8 @@ function ExpenseEditModal({ isOpen, onClose, expense, onSuccess, subcategories, 
           </div>
         </div>
 
-        {/* Status & Payment */}
+        {/* Status & Payment - admin only */}
+        {!isManagerView && (
         <div className="eh-edit-form__section">
           <h4 className="eh-edit-form__section-title">
             <i className="fas fa-check-circle" /> Status & Payment
@@ -1078,6 +1079,7 @@ function ExpenseEditModal({ isOpen, onClose, expense, onSuccess, subcategories, 
             )}
           </div>
         </div>
+        )}
 
         {/* Supplier & Date */}
         <div className="eh-edit-form__section">
@@ -1431,6 +1433,7 @@ function ExpenseHistory({ user, isManagerView = false }) {
         subcategories={optionsHook.subcategories}
         suppliers={optionsHook.suppliers}
         creditCards={optionsHook.creditCards}
+        isManagerView={isManagerView}
       />
 
       <MoveExpenseToYearModal
