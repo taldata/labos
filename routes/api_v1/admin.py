@@ -1201,7 +1201,7 @@ def manager_list_expenses():
         # Add eager loading
         query = query.options(
             joinedload(Expense.submitter).joinedload(User.home_department),
-            joinedload(Expense.subcategory).joinedload(Subcategory.category),
+            joinedload(Expense.subcategory).joinedload(Subcategory.category).joinedload(Category.department).joinedload(Department.budget_year),
             joinedload(Expense.supplier),
             joinedload(Expense.credit_card),
             joinedload(Expense.handler)
@@ -1252,6 +1252,11 @@ def manager_list_expenses():
                     'id': expense.supplier.id,
                     'name': expense.supplier.name
                 } if expense.supplier else None,
+                'budget_year': {
+                    'id': expense.subcategory.category.department.budget_year.id,
+                    'year': expense.subcategory.category.department.budget_year.year,
+                    'name': expense.subcategory.category.department.budget_year.name
+                } if expense.subcategory and expense.subcategory.category and expense.subcategory.category.department and expense.subcategory.category.department.budget_year else None,
                 'handler': {
                     'id': expense.handler.id,
                     'name': f"{expense.handler.first_name} {expense.handler.last_name}".strip()
@@ -1377,7 +1382,7 @@ def admin_list_expenses():
         # Add eager loading to avoid N+1 queries
         query = query.options(
             joinedload(Expense.submitter).joinedload(User.home_department),
-            joinedload(Expense.subcategory).joinedload(Subcategory.category),
+            joinedload(Expense.subcategory).joinedload(Subcategory.category).joinedload(Category.department).joinedload(Department.budget_year),
             joinedload(Expense.supplier),
             joinedload(Expense.credit_card),
             joinedload(Expense.handler)
@@ -1428,6 +1433,11 @@ def admin_list_expenses():
                     'id': expense.supplier.id,
                     'name': expense.supplier.name
                 } if expense.supplier else None,
+                'budget_year': {
+                    'id': expense.subcategory.category.department.budget_year.id,
+                    'year': expense.subcategory.category.department.budget_year.year,
+                    'name': expense.subcategory.category.department.budget_year.name
+                } if expense.subcategory and expense.subcategory.category and expense.subcategory.category.department and expense.subcategory.category.department.budget_year else None,
                 'handler': {
                     'id': expense.handler.id,
                     'name': f"{expense.handler.first_name} {expense.handler.last_name}".strip()
