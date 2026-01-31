@@ -93,7 +93,8 @@ class User(UserMixin, db.Model):
         else:
             end_date = datetime(year, month + 1, 1)
         
-        total = db.session.query(db.func.sum(Expense.amount))\
+        total = db.session.query(db.func.sum(
+                   db.func.coalesce(Expense.amount_ils, Expense.amount)))\
             .filter(Expense.user_id == self.id,
                    Expense.status == 'approved',
                    Expense.type != 'future_approval',  # Exclude future approvals even if approved
@@ -143,6 +144,8 @@ class Expense(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     amount = db.Column(db.Float, nullable=False)
     currency = db.Column(db.String(3), nullable=False, default='ILS')
+    amount_ils = db.Column(db.Float, nullable=True)      # ILS equivalent
+    exchange_rate = db.Column(db.Float, nullable=True)    # Rate used (e.g., 3.65 for USD->ILS)
     description = db.Column(db.String(200))
     reason = db.Column(db.String(500))
     type = db.Column(db.String(50), nullable=False, default='needs_approval')
@@ -177,3 +180,13 @@ class Expense(db.Model):
     external_accounting_entry_by = db.relationship('User',
                             foreign_keys=[external_accounting_entry_by_id],
                             backref=db.backref('external_accounting_entries', lazy='dynamic'))
+
+
+class ExchangeRateCache(db.Model):
+    """Cache table for exchange rates to ILS"""
+    __tablename__ = 'exchange_rate_cache'
+    id = db.Column(db.Integer, primary_key=True)
+    currency = db.Column(db.String(3), nullable=False)
+    date = db.Column(db.Date, nullable=False)
+    rate_to_ils = db.Column(db.Float, nullable=False)
+    __table_args__ = (db.UniqueConstraint('currency', 'date'),)

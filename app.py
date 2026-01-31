@@ -17,6 +17,7 @@ from config import Config
 from io import BytesIO
 import pandas as pd
 from models import db, Department, Category, Subcategory, User, Supplier, Expense, CreditCard, BudgetYear
+from services.exchange_rate import get_exchange_rate
 import msal
 import requests
 from dateutil.relativedelta import relativedelta
@@ -309,7 +310,7 @@ def employee_dashboard():
     pending_requests = sum(1 for e in expenses if e.status == 'pending')
     approved_requests = sum(1 for e in expenses if e.status == 'approved')
     rejected_requests = sum(1 for e in expenses if e.status == 'rejected')
-    total_approved_amount = sum(e.amount for e in expenses if e.status == 'approved')
+    total_approved_amount = sum((e.amount_ils if e.amount_ils else e.amount) for e in expenses if e.status == 'approved')
     
     return render_template('employee_dashboard.html', 
                          expenses=expenses,
@@ -559,6 +560,21 @@ def submit_expense():
         file_upload_time = (datetime.now() - file_upload_start_time).total_seconds()
         logging.info(f"Total file upload and processing time: {file_upload_time:.2f} seconds")
         
+        # Calculate ILS equivalent for multi-currency support
+        try:
+            if expense.currency and expense.currency != 'ILS':
+                expense_date = expense.date.date() if hasattr(expense.date, 'date') and callable(expense.date.date) else expense.date
+                rate = get_exchange_rate(expense.currency, expense_date)
+                expense.exchange_rate = rate
+                expense.amount_ils = round(expense.amount * rate, 2)
+            else:
+                expense.amount_ils = expense.amount
+                expense.exchange_rate = 1.0
+        except Exception as e:
+            logging.warning(f"Failed to get exchange rate for {expense.currency}: {e}. Falling back to amount as-is.")
+            expense.amount_ils = expense.amount
+            expense.exchange_rate = 1.0
+
         # Save the expense to database
         try:
             db.session.add(expense)
@@ -849,7 +865,7 @@ def manager_dashboard():
     # Subquery to get total approved expenses for each level
     dept_expenses = db.session.query(
         Department.id,
-        db.func.sum(Expense.amount).label('total_expenses')
+        db.func.sum(db.func.coalesce(Expense.amount_ils, Expense.amount)).label('total_expenses')
     ).join(
         Category, Department.id == Category.department_id
     ).join(
@@ -863,7 +879,7 @@ def manager_dashboard():
 
     cat_expenses = db.session.query(
         Category.id,
-        db.func.sum(Expense.amount).label('total_expenses')
+        db.func.sum(db.func.coalesce(Expense.amount_ils, Expense.amount)).label('total_expenses')
     ).join(
         Subcategory, Category.id == Subcategory.category_id
     ).join(
@@ -875,7 +891,7 @@ def manager_dashboard():
 
     subcat_expenses = db.session.query(
         Subcategory.id,
-        db.func.sum(Expense.amount).label('total_expenses')
+        db.func.sum(db.func.coalesce(Expense.amount_ils, Expense.amount)).label('total_expenses')
     ).join(
         Expense, Subcategory.id == Expense.subcategory_id
     ).filter(
@@ -2064,7 +2080,7 @@ def admin_dashboard():
         total_budget = db.session.query(func.sum(Department.budget)).scalar() or 0
     
     # Calculate total spent in the period
-    total_spent = db.session.query(func.sum(Expense.amount)).filter(
+    total_spent = db.session.query(func.sum(func.coalesce(Expense.amount_ils, Expense.amount))).filter(
         Expense.status == 'approved',
         Expense.date >= start_date,
         Expense.date <= end_date
@@ -2097,7 +2113,7 @@ def admin_dashboard():
     
     for dept in departments:
         # Calculate spent amount for the department
-        dept_spent = db.session.query(func.sum(Expense.amount)).join(
+        dept_spent = db.session.query(func.sum(func.coalesce(Expense.amount_ils, Expense.amount))).join(
             Subcategory, Expense.subcategory_id == Subcategory.id
         ).join(
             Category, Subcategory.category_id == Category.id
@@ -2130,7 +2146,7 @@ def admin_dashboard():
     # Query to get spending by category
     category_spending = db.session.query(
         Category.name,
-        func.sum(Expense.amount).label('total')
+        func.sum(func.coalesce(Expense.amount_ils, Expense.amount)).label('total')
     ).join(
         Subcategory, Category.id == Subcategory.category_id
     ).join(
@@ -2157,7 +2173,7 @@ def admin_dashboard():
     # Query to get spending by subcategory
     subcategory_spending = db.session.query(
         Subcategory.name,
-        func.sum(Expense.amount).label('total')
+        func.sum(func.coalesce(Expense.amount_ils, Expense.amount)).label('total')
     ).join(
         Expense, Subcategory.id == Expense.subcategory_id
     ).filter(
@@ -2204,7 +2220,7 @@ def admin_dashboard():
         expense_trend_labels.append(month_label)
         
         # Calculate total expenses for the month
-        month_expenses = db.session.query(func.sum(Expense.amount)).filter(
+        month_expenses = db.session.query(func.sum(func.coalesce(Expense.amount_ils, Expense.amount))).filter(
             Expense.status == 'approved',
             Expense.date >= month_start,
             Expense.date <= month_end
