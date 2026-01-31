@@ -341,30 +341,36 @@ export const TomSelectInput = forwardRef(({
 }, ref) => {
   const selectRef = useRef(null);
   const tomSelectRef = useRef(null);
+  const onChangeRef = useRef(onChange);
+  const nameRef = useRef(name);
+
+  // Keep refs in sync so event handlers always use latest values
+  useEffect(() => {
+    onChangeRef.current = onChange;
+  }, [onChange]);
 
   useEffect(() => {
-    if (!selectRef.current) return;
+    nameRef.current = name;
+  }, [name]);
 
-    // Prepare options for Tom Select - add createNew option first if provided
+  // Helper to build Tom Select options array from props
+  const buildTomOptions = () => {
     const tomOptions = [];
     if (createNewOption) {
       tomOptions.push({
         value: createNewOption[valueKey]?.toString() || '__create_new__',
         text: createNewOption[displayKey] || 'Create New',
-        $order: -1 // Use -1 to ensure it's always first
+        $order: -1
       });
     }
 
-    // Separate "Select All" options (empty value) from regular options
     const selectAllOptions = options.filter(option => option[valueKey] === '' || option[valueKey] === null);
     const regularOptions = options.filter(option => option[valueKey] !== '' && option[valueKey] !== null);
 
-    // Add regular options sorted alphabetically
     const sortedOptions = [...regularOptions].sort((a, b) =>
       (a[displayKey] || '').localeCompare(b[displayKey] || '')
     );
 
-    // Add "Select All" options first with $order: -1
     selectAllOptions.forEach((option) => {
       tomOptions.push({
         value: option[valueKey]?.toString() || '',
@@ -381,7 +387,25 @@ export const TomSelectInput = forwardRef(({
       });
     });
 
-    // Initialize Tom Select
+    return tomOptions;
+  };
+
+  // Initialize Tom Select
+  useEffect(() => {
+    if (!selectRef.current) return;
+
+    // Destroy existing instance to prevent duplicates
+    if (tomSelectRef.current) {
+      try {
+        tomSelectRef.current.destroy();
+      } catch (e) {
+        // Ignore cleanup errors
+      }
+      tomSelectRef.current = null;
+    }
+
+    const tomOptions = buildTomOptions();
+
     const config = {
       options: tomOptions,
       items: value ? [value.toString()] : [],
@@ -404,106 +428,90 @@ export const TomSelectInput = forwardRef(({
       },
       onItemAdd: function() {
         const selectedValue = this.getValue();
-        if (onChange) {
-          const syntheticEvent = {
+        if (onChangeRef.current) {
+          onChangeRef.current({
             target: {
-              name: name,
+              name: nameRef.current,
               value: selectedValue
             }
-          };
-          onChange(syntheticEvent);
+          });
         }
       },
       onClear: function() {
-        if (onChange) {
-          const syntheticEvent = {
+        if (onChangeRef.current) {
+          onChangeRef.current({
             target: {
-              name: name,
+              name: nameRef.current,
               value: ''
             }
-          };
-          onChange(syntheticEvent);
+          });
         }
       }
     };
 
-    tomSelectRef.current = new TomSelect(selectRef.current, config);
+    try {
+      tomSelectRef.current = new TomSelect(selectRef.current, config);
+    } catch (e) {
+      console.error('Tom Select initialization failed:', e);
+      return;
+    }
 
-    // Cleanup
+    if (disabled) {
+      tomSelectRef.current.disable();
+    }
+
     return () => {
       if (tomSelectRef.current) {
-        tomSelectRef.current.destroy();
+        try {
+          tomSelectRef.current.destroy();
+        } catch (e) {
+          // Ignore cleanup errors
+        }
+        tomSelectRef.current = null;
       }
     };
-  }, []);
+  }, [allowClear, placeholder]);
 
   // Update Tom Select when options change
   useEffect(() => {
-    if (tomSelectRef.current) {
+    if (!tomSelectRef.current) return;
+
+    try {
       tomSelectRef.current.clearOptions();
-
-      // Add createNew option first if provided
-      const tomOptions = [];
-      if (createNewOption) {
-        tomOptions.push({
-          value: createNewOption[valueKey]?.toString() || '__create_new__',
-          text: createNewOption[displayKey] || 'Create New',
-          $order: -1 // Use -1 to ensure it's always first
-        });
-      }
-
-      // Separate "Select All" options (empty value) from regular options
-      const selectAllOptions = options.filter(option => option[valueKey] === '' || option[valueKey] === null);
-      const regularOptions = options.filter(option => option[valueKey] !== '' && option[valueKey] !== null);
-
-      // Add regular options sorted alphabetically
-      const sortedOptions = [...regularOptions].sort((a, b) =>
-        (a[displayKey] || '').localeCompare(b[displayKey] || '')
-      );
-
-      // Add "Select All" options first with $order: -1
-      selectAllOptions.forEach((option) => {
-        tomOptions.push({
-          value: option[valueKey]?.toString() || '',
-          text: option[displayKey] || '',
-          $order: -1
-        });
-      });
-
-      sortedOptions.forEach((option, index) => {
-        tomOptions.push({
-          value: option[valueKey]?.toString() || '',
-          text: option[displayKey] || '',
-          $order: index
-        });
-      });
-
-      tomSelectRef.current.addOptions(tomOptions);
+      tomSelectRef.current.addOptions(buildTomOptions());
       tomSelectRef.current.refreshOptions(false);
 
-      // Re-set the value (even if empty)
+      // Re-set the value after options update
       tomSelectRef.current.setValue(value?.toString() || '', true);
+    } catch (e) {
+      console.error('Tom Select options update failed:', e);
     }
   }, [options, displayKey, valueKey, createNewOption]);
 
   // Update disabled state
   useEffect(() => {
-    if (tomSelectRef.current) {
+    if (!tomSelectRef.current) return;
+    try {
       if (disabled) {
         tomSelectRef.current.disable();
       } else {
         tomSelectRef.current.enable();
       }
+    } catch (e) {
+      // Ignore
     }
   }, [disabled]);
 
   // Update Tom Select when value changes externally
   useEffect(() => {
-    if (tomSelectRef.current) {
-      const currentValue = tomSelectRef.current.getValue();
-      const newValue = value?.toString() || '';
-      if (currentValue !== newValue) {
+    if (!tomSelectRef.current) return;
+    const currentValue = tomSelectRef.current.getValue();
+    const newValue = value?.toString() || '';
+    if (currentValue !== newValue) {
+      try {
         tomSelectRef.current.setValue(newValue, true);
+      } catch (e) {
+        // Ignore
       }
     }
   }, [value]);
