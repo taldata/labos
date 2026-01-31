@@ -59,7 +59,7 @@ function Sidebar({ user, setUser, isOpen, onToggle }) {
     { path: '/admin/users', icon: 'fa-users', label: 'Users' },
     { path: '/admin/suppliers', icon: 'fa-building', label: 'Suppliers' },
     { path: '/admin/credit-cards', icon: 'fa-credit-card', label: 'Credit Cards' },
-    { path: '/accounting_dashboard', icon: 'fa-calculator', label: 'Accounting', external: true },
+    { path: '/admin/accounting', icon: 'fa-calculator', label: 'Accounting' },
   ]
 
   return (
