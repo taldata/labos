@@ -1989,3 +1989,249 @@ def move_expense_to_year(expense_id):
         logging.error(f"Error moving expense to year: {str(e)}", exc_info=True)
         return jsonify({'error': f'Failed to move expense: {str(e)}'}), 500
 
+
+# ============================================================================
+# Accounting Dashboard API
+# ============================================================================
+
+@api_v1.route('/accounting/expenses', methods=['GET'])
+@login_required
+def get_accounting_expenses():
+    """Get approved expenses for the accounting dashboard with filters and pagination"""
+    if not current_user.is_accounting and not current_user.is_admin:
+        return jsonify({'error': 'Access denied'}), 403
+
+    try:
+        page = request.args.get('page', 1, type=int)
+        per_page = request.args.get('per_page', 25, type=int)
+        month = request.args.get('month', 'all')
+        payment_method = request.args.get('payment_method', 'all')
+        payment_status = request.args.get('payment_status', 'all')
+        payment_due_date = request.args.get('payment_due_date', 'all')
+        invoice_date = request.args.get('invoice_date', 'all')
+        external_accounting = request.args.get('external_accounting', 'all')
+        supplier_search = request.args.get('supplier_search', '')
+        search_text = request.args.get('search_text', '')
+        amount_min = request.args.get('amount_min', '')
+        amount_max = request.args.get('amount_max', '')
+
+        query = Expense.query.options(
+            joinedload(Expense.supplier),
+            joinedload(Expense.submitter),
+            joinedload(Expense.handler),
+            joinedload(Expense.paid_by),
+            joinedload(Expense.external_accounting_entry_by),
+            joinedload(Expense.credit_card)
+        ).filter_by(status='approved')
+
+        # Search text filter
+        if search_text:
+            search_term = f'%{search_text}%'
+            query = query.join(Supplier, Expense.supplier_id == Supplier.id, isouter=True).filter(
+                or_(
+                    Expense.description.ilike(search_term),
+                    Supplier.notes.ilike(search_term),
+                    Supplier.email.ilike(search_term),
+                    Supplier.phone.ilike(search_term),
+                    Supplier.address.ilike(search_term),
+                    Supplier.tax_id.ilike(search_term)
+                )
+            )
+
+        # Supplier search
+        if supplier_search:
+            if not search_text:
+                query = query.join(Supplier, Expense.supplier_id == Supplier.id, isouter=True)
+            query = query.filter(Supplier.name.ilike(f'%{supplier_search}%'))
+
+        # Amount range
+        if amount_min:
+            try:
+                query = query.filter(Expense.amount >= float(amount_min))
+            except ValueError:
+                pass
+        if amount_max:
+            try:
+                query = query.filter(Expense.amount <= float(amount_max))
+            except ValueError:
+                pass
+
+        # Month filter
+        if month != 'all':
+            try:
+                year, mon = month.split('-')
+                start = datetime(int(year), int(mon), 1)
+                if int(mon) == 12:
+                    end = datetime(int(year) + 1, 1, 1)
+                else:
+                    end = datetime(int(year), int(mon) + 1, 1)
+                query = query.filter(Expense.date >= start, Expense.date < end)
+            except (ValueError, AttributeError):
+                pass
+
+        # Invoice date filter
+        if invoice_date != 'all':
+            today = datetime.now()
+            if invoice_date == 'this_month':
+                s = datetime(today.year, today.month, 1)
+                e = datetime(today.year + (1 if today.month == 12 else 0), 1 if today.month == 12 else today.month + 1, 1)
+            elif invoice_date == 'last_month':
+                if today.month == 1:
+                    s = datetime(today.year - 1, 12, 1)
+                    e = datetime(today.year, 1, 1)
+                else:
+                    s = datetime(today.year, today.month - 1, 1)
+                    e = datetime(today.year, today.month, 1)
+            elif invoice_date == 'this_quarter':
+                q = (today.month - 1) // 3 + 1
+                s = datetime(today.year, 3 * q - 2, 1)
+                e = datetime(today.year + (1 if q == 4 else 0), 1 if q == 4 else 3 * q + 1, 1)
+            elif invoice_date == 'this_year':
+                s = datetime(today.year, 1, 1)
+                e = datetime(today.year + 1, 1, 1)
+            else:
+                s = e = None
+            if s and e:
+                query = query.filter(Expense.invoice_date >= s, Expense.invoice_date < e)
+
+        # Payment due date filter
+        if payment_due_date != 'all':
+            query = query.filter(Expense.payment_due_date == payment_due_date)
+
+        # Payment method filter
+        if payment_method != 'all':
+            query = query.filter(Expense.payment_method == payment_method)
+
+        # Payment status filter
+        if payment_status == 'paid':
+            query = query.filter(Expense.is_paid == True)
+        elif payment_status == 'pending':
+            query = query.filter(Expense.is_paid == False)
+
+        # External accounting filter
+        if external_accounting == 'entered':
+            query = query.filter(Expense.external_accounting_entry == True)
+        elif external_accounting == 'not_entered':
+            query = query.filter(Expense.external_accounting_entry == False)
+
+        # Get totals before pagination
+        total_query = query.with_entities(
+            func.count(Expense.id),
+            func.sum(func.coalesce(Expense.amount_ils, Expense.amount))
+        ).first()
+        total_count = total_query[0] or 0
+        total_amount = float(total_query[1] or 0)
+
+        # Payment status summary
+        status_summary = query.with_entities(
+            Expense.payment_status,
+            func.count(Expense.id),
+            func.sum(func.coalesce(Expense.amount_ils, Expense.amount))
+        ).group_by(Expense.payment_status).all()
+
+        summary = {
+            'total_count': total_count,
+            'total_amount': round(total_amount, 2),
+            'paid_count': 0, 'paid_amount': 0,
+            'pending_count': 0, 'pending_amount': 0,
+            'external_entered_count': 0, 'external_not_entered_count': 0
+        }
+        for ps, cnt, amt in status_summary:
+            if ps == 'paid':
+                summary['paid_count'] = cnt
+                summary['paid_amount'] = round(float(amt or 0), 2)
+            else:
+                summary['pending_count'] += cnt
+                summary['pending_amount'] += round(float(amt or 0), 2)
+
+        # External accounting summary
+        ext_summary = query.with_entities(
+            Expense.external_accounting_entry,
+            func.count(Expense.id)
+        ).group_by(Expense.external_accounting_entry).all()
+        for ext, cnt in ext_summary:
+            if ext:
+                summary['external_entered_count'] = cnt
+            else:
+                summary['external_not_entered_count'] = cnt
+
+        # Paginate
+        pagination = query.order_by(Expense.date.desc()).paginate(page=page, per_page=per_page, error_out=False)
+
+        expenses = []
+        for exp in pagination.items:
+            expenses.append({
+                'id': exp.id,
+                'date': exp.date.isoformat() if exp.date else None,
+                'description': exp.description,
+                'reason': exp.reason,
+                'amount': exp.amount,
+                'currency': exp.currency,
+                'amount_ils': exp.amount_ils,
+                'payment_method': exp.payment_method,
+                'payment_due_date': exp.payment_due_date,
+                'payment_status': exp.payment_status,
+                'is_paid': exp.is_paid,
+                'paid_by': exp.paid_by.username if exp.paid_by else None,
+                'paid_at': exp.paid_at.isoformat() if exp.paid_at else None,
+                'invoice_date': exp.invoice_date.isoformat() if exp.invoice_date else None,
+                'type': exp.type,
+                'external_accounting_entry': exp.external_accounting_entry,
+                'external_accounting_entry_by': exp.external_accounting_entry_by.username if exp.external_accounting_entry_by else None,
+                'external_accounting_entry_at': exp.external_accounting_entry_at.isoformat() if exp.external_accounting_entry_at else None,
+                'supplier': {
+                    'name': exp.supplier.name,
+                    'email': exp.supplier.email,
+                    'phone': exp.supplier.phone,
+                    'address': exp.supplier.address,
+                    'tax_id': exp.supplier.tax_id,
+                    'bank_name': exp.supplier.bank_name,
+                    'bank_account_number': exp.supplier.bank_account_number,
+                    'bank_branch': exp.supplier.bank_branch,
+                    'bank_swift': exp.supplier.bank_swift,
+                    'notes': exp.supplier.notes,
+                    'status': exp.supplier.status
+                } if exp.supplier else None,
+                'credit_card': {
+                    'description': exp.credit_card.description if hasattr(exp.credit_card, 'description') else '',
+                    'last_four_digits': exp.credit_card.last_four_digits
+                } if exp.credit_card else None,
+                'submitter': {
+                    'username': exp.submitter.username,
+                    'department': exp.submitter.home_department.name if exp.submitter.home_department else None
+                },
+                'handler': {
+                    'username': exp.handler.username
+                } if exp.handler else None,
+                'handled_at': exp.handled_at.isoformat() if exp.handled_at else None,
+                'quote_filename': exp.quote_filename,
+                'invoice_filename': exp.invoice_filename,
+                'receipt_filename': exp.receipt_filename
+            })
+
+        # Generate month options (last 12 months)
+        current_date = datetime.now()
+        month_options = []
+        for i in range(12):
+            d = current_date - relativedelta(months=i)
+            month_options.append({
+                'value': d.strftime('%Y-%m'),
+                'label': d.strftime('%B %Y')
+            })
+
+        return jsonify({
+            'expenses': expenses,
+            'summary': summary,
+            'month_options': month_options,
+            'pagination': {
+                'page': pagination.page,
+                'pages': pagination.pages,
+                'total': pagination.total,
+                'per_page': per_page
+            }
+        })
+
+    except Exception as e:
+        logging.error(f"Error fetching accounting expenses: {str(e)}", exc_info=True)
+        return jsonify({'error': 'Failed to fetch expenses'}), 500
+
