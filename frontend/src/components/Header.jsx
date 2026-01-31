@@ -104,26 +104,26 @@ function Header({ user, setUser, currentPage = 'dashboard' }) {
             </button>
 
             {user?.is_admin && (
-              <>
-                <button 
+              <div className="admin-nav-group">
+                <button
                   className={`nav-link ${currentPage === 'admin' ? 'active' : ''}`}
                   onClick={() => navigate('/admin')}
                 >
                   <i className="fas fa-chart-line"></i> Analytics
                 </button>
-                <button 
+                <button
                   className={`nav-link ${currentPage === 'departments' ? 'active' : ''}`}
                   onClick={() => navigate('/admin/departments')}
                 >
                   <i className="fas fa-sitemap"></i> Organization
                 </button>
-                <button 
+                <button
                   className={`nav-link ${currentPage === 'users' ? 'active' : ''}`}
                   onClick={() => navigate('/admin/users')}
                 >
                   <i className="fas fa-users"></i> Users
                 </button>
-                <button 
+                <button
                   className={`nav-link ${currentPage === 'suppliers' ? 'active' : ''}`}
                   onClick={() => navigate('/admin/suppliers')}
                 >
@@ -141,7 +141,7 @@ function Header({ user, setUser, currentPage = 'dashboard' }) {
                 >
                   <i className="fas fa-history"></i> History
                 </button>
-              </>
+              </div>
             )}
           </nav>
         )}
@@ -164,7 +164,7 @@ function Header({ user, setUser, currentPage = 'dashboard' }) {
           </button>
 
           {user?.is_admin && (
-            <>
+            <div className="mobile-admin-nav-group">
               <div className="mobile-nav-divider"></div>
               <div className="mobile-nav-section-title">Admin</div>
               <button
@@ -203,7 +203,7 @@ function Header({ user, setUser, currentPage = 'dashboard' }) {
               >
                 <i className="fas fa-history"></i> Expense History
               </button>
-            </>
+            </div>
           )}
           <div className="mobile-nav-divider"></div>
           <button className="mobile-nav-link mobile-nav-cta" onClick={() => handleNavigation('/submit-expense')}>

@@ -390,6 +390,24 @@ export const TomSelectInput = forwardRef(({
     return tomOptions;
   };
 
+  // Use a container ref to isolate TomSelect's DOM mutations from React reconciliation
+  const containerRef = useRef(null);
+
+  useEffect(() => {
+    if (!containerRef.current) return;
+    // Create the select element imperatively so React doesn't try to reconcile
+    // DOM nodes that TomSelect has mutated
+    if (!selectRef.current) {
+      const select = document.createElement('select');
+      select.name = name || '';
+      if (required) select.required = true;
+      if (disabled) select.disabled = true;
+      select.className = `tom-select-field ${className}`;
+      containerRef.current.appendChild(select);
+      selectRef.current = select;
+    }
+  }, []);
+
   // Initialize Tom Select
   useEffect(() => {
     if (!selectRef.current) return;
@@ -524,23 +542,7 @@ export const TomSelectInput = forwardRef(({
           {required && <span className="input-required">*</span>}
         </label>
       )}
-      <div className="tom-select-container">
-        <select
-          ref={selectRef}
-          name={name}
-          required={required}
-          disabled={disabled}
-          className={`tom-select-field ${className}`}
-          {...props}
-        >
-          {allowClear && <option value="">-- {placeholder} --</option>}
-          {options.map((option) => (
-            <option key={option[valueKey]} value={option[valueKey]}>
-              {option[displayKey]}
-            </option>
-          ))}
-        </select>
-      </div>
+      <div className="tom-select-container" ref={containerRef} />
       {error && <span className="input-error-message">{error}</span>}
       {!error && helperText && <span className="input-helper-text">{helperText}</span>}
     </div>
