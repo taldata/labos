@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useColumnResize } from '../hooks/useColumnResize'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { Card, Button, Badge, Input, Select, TomSelectInput, Skeleton, EmptyState, Modal, useToast, FilePreviewButton, PageHeader, DateRangeFilter } from '../components/ui'
 import MoveExpenseToYearModal from '../components/MoveExpenseToYearModal'
@@ -666,7 +667,25 @@ function ExpenseRow({ expense, onView, onEdit, onMove, onDelete, formatDate, for
 // ============================================================================
 // Component: ExpenseTable
 // ============================================================================
+const EH_DEFAULT_WIDTHS = {
+  date: 110, 'submit-date': 110, employee: 180, department: 120,
+  description: 240, category: 150, supplier: 140, amount: 110,
+  status: 100, payment: 100, files: 150, actions: 150
+}
+
+function ResizeHandle({ columnKey, onResizeStart }) {
+  return (
+    <span
+      className="col-resize-handle"
+      onMouseDown={(e) => onResizeStart(columnKey, e)}
+      onClick={(e) => e.stopPropagation()}
+    />
+  )
+}
+
 function ExpenseTable({ expenses, loading, error, hasActiveFilters, onView, onEdit, onMove, onDelete }) {
+  const { columnWidths, onResizeStart } = useColumnResize('expense-history', EH_DEFAULT_WIDTHS)
+
   const formatDate = (dateString) => {
     if (!dateString) return '-'
     const date = new Date(dateString)
@@ -717,18 +736,17 @@ function ExpenseTable({ expenses, loading, error, hasActiveFilters, onView, onEd
       <table className="eh-table">
         <thead className="eh-table__head">
           <tr>
-            <th className="eh-table__header eh-table__header--date">Date</th>
-            <th className="eh-table__header eh-table__header--submit-date">Submit Date</th>
-            <th className="eh-table__header eh-table__header--employee">Employee</th>
-            <th className="eh-table__header eh-table__header--department">Department</th>
-            <th className="eh-table__header eh-table__header--description">Description</th>
-            <th className="eh-table__header eh-table__header--category">Category</th>
-            <th className="eh-table__header eh-table__header--supplier">Supplier</th>
-            <th className="eh-table__header eh-table__header--amount">Amount</th>
-            <th className="eh-table__header eh-table__header--status">Status</th>
-            <th className="eh-table__header eh-table__header--payment">Payment</th>
-            <th className="eh-table__header eh-table__header--files">Files</th>
-            <th className="eh-table__header eh-table__header--actions">Actions</th>
+            {[
+              ['date', 'Date'], ['submit-date', 'Submit Date'], ['employee', 'Employee'],
+              ['department', 'Department'], ['description', 'Description'], ['category', 'Category'],
+              ['supplier', 'Supplier'], ['amount', 'Amount'], ['status', 'Status'],
+              ['payment', 'Payment'], ['files', 'Files'], ['actions', 'Actions']
+            ].map(([key, label]) => (
+              <th key={key} className={`eh-table__header eh-table__header--${key}`} style={{ width: columnWidths[key] }}>
+                {label}
+                <ResizeHandle columnKey={key} onResizeStart={onResizeStart} />
+              </th>
+            ))}
           </tr>
         </thead>
         <tbody className="eh-table__body">

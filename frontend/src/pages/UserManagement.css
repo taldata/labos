@@ -67,7 +67,7 @@
 
 /* Users Table */
 .users-table-container {
-  overflow: hidden;
+  overflow-x: auto;
 }
 
 .users-table {
@@ -76,40 +76,9 @@
   table-layout: fixed;
 }
 
-.users-table th:nth-child(1),
-.users-table td:nth-child(1) {
-  width: 22%;
-}
-
-.users-table th:nth-child(2),
-.users-table td:nth-child(2) {
-  width: 20%;
-}
-
-.users-table th:nth-child(3),
-.users-table td:nth-child(3) {
-  width: 15%;
-}
-
-.users-table th:nth-child(4),
-.users-table td:nth-child(4) {
-  width: 18%;
-}
-
-.users-table th:nth-child(5),
-.users-table td:nth-child(5) {
-  width: 10%;
-}
-
 .users-table th:nth-child(6),
 .users-table td:nth-child(6) {
-  width: 8%;
   text-align: center;
-}
-
-.users-table th:nth-child(7),
-.users-table td:nth-child(7) {
-  width: 7%;
 }
 
 .users-table th {
@@ -120,6 +89,25 @@
   color: #475569;
   font-size: 0.875rem;
   border-bottom: 2px solid #e2e8f0;
+  overflow: hidden;
+}
+
+/* Column Resize Handles */
+.users-table .col-resize-handle {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 6px;
+  height: 100%;
+  cursor: col-resize;
+  background: transparent;
+  z-index: 11;
+  transition: background 0.15s;
+}
+
+.users-table .col-resize-handle:hover,
+.users-table .col-resize-handle:active {
+  background: #667eea;
 }
 
 .users-table td {
