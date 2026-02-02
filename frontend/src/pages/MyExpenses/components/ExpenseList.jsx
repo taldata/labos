@@ -1,6 +1,9 @@
 
 import React from 'react';
 import { Button, Badge, Skeleton, EmptyState, FilePreviewButton } from '../../../components/ui';
+import { useColumnResize } from '../../../hooks/useColumnResize';
+
+const ME_DEFAULT_WIDTHS = { date: 110, submitDate: 110, description: 220, category: 150, amount: 120, status: 100, files: 130, actions: 100 };
 
 const ExpenseList = ({
   expenses,
@@ -47,6 +50,9 @@ const ExpenseList = ({
     );
   }
 
+  const hasActions = user?.is_manager || user?.is_admin;
+  const { columnWidths, onResizeStart } = useColumnResize('my-expenses', ME_DEFAULT_WIDTHS);
+
   if (expenses.length === 0) {
     return (
       <div className="me-list-card">
@@ -66,16 +72,18 @@ const ExpenseList = ({
         <table className="me-table">
           <thead>
             <tr>
-              <th>Date</th>
-              <th>Submit Date</th>
-              <th>Description</th>
-              <th>Category</th>
-              <th style={{ textAlign: 'right' }}>Amount</th>
-              <th style={{ textAlign: 'center' }}>Status</th>
-              <th style={{ textAlign: 'center' }}>Files</th>
-              {(user?.is_manager || user?.is_admin) && (
-                <th style={{ textAlign: 'center' }}>Actions</th>
-              )}
+              {[
+                ['date', 'Date', {}], ['submitDate', 'Submit Date', {}],
+                ['description', 'Description', {}], ['category', 'Category', {}],
+                ['amount', 'Amount', { textAlign: 'right' }], ['status', 'Status', { textAlign: 'center' }],
+                ['files', 'Files', { textAlign: 'center' }],
+                ...(hasActions ? [['actions', 'Actions', { textAlign: 'center' }]] : [])
+              ].map(([key, label, extraStyle]) => (
+                <th key={key} style={{ width: columnWidths[key], position: 'relative', ...extraStyle }}>
+                  {label}
+                  <span className="col-resize-handle" onMouseDown={(e) => onResizeStart(key, e)} onClick={(e) => e.stopPropagation()} />
+                </th>
+              ))}
             </tr>
           </thead>
           <tbody>

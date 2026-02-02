@@ -2,12 +2,20 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Card, Button, Input, Select, TomSelectInput, Modal, Badge, Skeleton, useToast, PageHeader } from '../components/ui'
 import { useScrollToItem } from '../hooks/useScrollToItem'
+import { useColumnResize } from '../hooks/useColumnResize'
 import logger from '../utils/logger'
 import './UserManagement.css'
+
+const UM_DEFAULT_WIDTHS = { user: 240, email: 220, department: 160, roles: 160, status: 110, modern: 90, actions: 110 }
+const UM_COLUMNS = [
+  ['user', 'User'], ['email', 'Email'], ['department', 'Department'],
+  ['roles', 'Roles'], ['status', 'Status'], ['modern', 'Modern UI'], ['actions', 'Actions']
+]
 
 function UserManagement({ user, setUser }) {
   const navigate = useNavigate()
   const { success, error: showError } = useToast()
+  const { columnWidths, onResizeStart } = useColumnResize('user-management', UM_DEFAULT_WIDTHS)
   const [loading, setLoading] = useState(true)
   const [users, setUsers] = useState([])
   const [departments, setDepartments] = useState([])
@@ -296,13 +304,12 @@ function UserManagement({ user, setUser }) {
             <table className="users-table">
               <thead>
                 <tr>
-                  <th>User</th>
-                  <th>Email</th>
-                  <th>Department</th>
-                  <th>Roles</th>
-                  <th>Status</th>
-                  <th>Modern UI</th>
-                  <th>Actions</th>
+                  {UM_COLUMNS.map(([key, label]) => (
+                    <th key={key} style={{ width: columnWidths[key], position: 'relative' }}>
+                      {label}
+                      <span className="col-resize-handle" onMouseDown={(e) => onResizeStart(key, e)} onClick={(e) => e.stopPropagation()} />
+                    </th>
+                  ))}
                 </tr>
               </thead>
               <tbody>

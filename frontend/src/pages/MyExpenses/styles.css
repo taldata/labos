@@ -147,6 +147,7 @@
 .me-table {
   width: 100%;
   border-collapse: collapse;
+  table-layout: fixed;
 }
 
 .me-table th {
@@ -159,6 +160,24 @@
   color: var(--me-text-sub);
   letter-spacing: 0.05em;
   white-space: nowrap;
+  overflow: hidden;
+}
+
+.me-table .col-resize-handle {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 6px;
+  height: 100%;
+  cursor: col-resize;
+  background: transparent;
+  z-index: 11;
+  transition: background 0.15s;
+}
+
+.me-table .col-resize-handle:hover,
+.me-table .col-resize-handle:active {
+  background: var(--me-primary, #4f46e5);
 }
 
 .me-table td {
