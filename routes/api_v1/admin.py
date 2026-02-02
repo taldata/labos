@@ -2021,7 +2021,8 @@ def get_accounting_expenses():
             joinedload(Expense.handler),
             joinedload(Expense.paid_by),
             joinedload(Expense.external_accounting_entry_by),
-            joinedload(Expense.credit_card)
+            joinedload(Expense.credit_card),
+            joinedload(Expense.subcategory).joinedload(Subcategory.category)
         ).filter_by(status='approved')
 
         # Search text filter
@@ -2204,6 +2205,8 @@ def get_accounting_expenses():
                     'username': exp.handler.username
                 } if exp.handler else None,
                 'handled_at': exp.handled_at.isoformat() if exp.handled_at else None,
+                'category': exp.subcategory.category.name if exp.subcategory and exp.subcategory.category else None,
+                'subcategory': exp.subcategory.name if exp.subcategory else None,
                 'quote_filename': exp.quote_filename,
                 'invoice_filename': exp.invoice_filename,
                 'receipt_filename': exp.receipt_filename

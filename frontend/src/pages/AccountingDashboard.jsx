@@ -250,6 +250,11 @@ function ExpenseCard({ expense, onMarkPaid, onMarkUnpaid, onMarkPending, actionL
           <div className="acct-expense__supplier">
             {expense.supplier?.name || 'No supplier'}
           </div>
+          {(expense.category || expense.subcategory) && (
+            <div className="acct-expense__category">
+              {expense.category}{expense.subcategory ? ` / ${expense.subcategory}` : ''}
+            </div>
+          )}
           <div className="acct-expense__description">{expense.description}</div>
         </div>
         <div className="acct-expense__center">
@@ -401,6 +406,14 @@ function ExpenseCard({ expense, onMarkPaid, onMarkUnpaid, onMarkPending, actionL
               <div className="acct-detail-row">
                 <span>Type</span>
                 <span>{expense.type}</span>
+              </div>
+              <div className="acct-detail-row">
+                <span>Category</span>
+                <span>{expense.category || '-'}</span>
+              </div>
+              <div className="acct-detail-row">
+                <span>Subcategory</span>
+                <span>{expense.subcategory || '-'}</span>
               </div>
               {expense.handler && (
                 <div className="acct-detail-row">
