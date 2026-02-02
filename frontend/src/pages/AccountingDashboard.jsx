@@ -81,15 +81,6 @@ function SummaryCards({ summary }) {
       color: '#f59e0b',
       bg: '#fffbeb'
     },
-    {
-      label: 'External Accounting',
-      count: summary.external_entered_count,
-      amount: null,
-      icon: 'fas fa-building-columns',
-      color: '#8b5cf6',
-      bg: '#f5f3ff',
-      subtitle: `${summary.external_not_entered_count} not entered`
-    }
   ]
 
   return (
@@ -178,11 +169,6 @@ function AccountingFilters({ filters, onChange, onClear, monthOptions }) {
               <option value="this_quarter">This Quarter</option>
               <option value="this_year">This Year</option>
             </Select>
-            <Select label="External Accounting" name="external_accounting" value={filters.external_accounting} onChange={handleChange}>
-              <option value="all">All</option>
-              <option value="entered">Entered</option>
-              <option value="not_entered">Not Entered</option>
-            </Select>
             <Input
               label="Supplier"
               name="supplier_search"
@@ -237,7 +223,7 @@ function AccountingFilters({ filters, onChange, onClear, monthOptions }) {
 // ============================================================================
 // Expense Row (card-based for modern look)
 // ============================================================================
-function ExpenseCard({ expense, onMarkPaid, onMarkUnpaid, onMarkPending, onMarkExternal, onUnmarkExternal, actionLoading }) {
+function ExpenseCard({ expense, onMarkPaid, onMarkUnpaid, onMarkPending, actionLoading }) {
   const [expanded, setExpanded] = useState(false)
 
   const getPaymentStatusBadge = () => {
@@ -285,11 +271,6 @@ function ExpenseCard({ expense, onMarkPaid, onMarkUnpaid, onMarkPending, onMarkE
         <div className="acct-expense__right">
           <div className="acct-expense__badges">
             {getPaymentStatusBadge()}
-            {expense.external_accounting_entry ? (
-              <Badge variant="success" size="small" icon="fas fa-building-columns">Entered</Badge>
-            ) : (
-              <Badge variant="default" size="small" icon="fas fa-building-columns">Not Entered</Badge>
-            )}
           </div>
           <div className="acct-expense__actions" onClick={(e) => e.stopPropagation()}>
             {/* Payment actions */}
@@ -327,19 +308,6 @@ function ExpenseCard({ expense, onMarkPaid, onMarkUnpaid, onMarkPending, onMarkE
                 )}
               </>
             )}
-            {/* External accounting */}
-            {expense.external_accounting_entry ? (
-              <Button size="small" variant="ghost" icon="fas fa-times"
-                onClick={() => onUnmarkExternal(expense.id)} disabled={isLoading}
-                title="Remove external entry">
-                Unmark
-              </Button>
-            ) : (
-              <Button size="small" variant="secondary" icon="fas fa-building-columns"
-                onClick={() => onMarkExternal(expense.id)} disabled={isLoading}>
-                Mark Ext.
-              </Button>
-            )}
           </div>
         </div>
         <div className="acct-expense__chevron">
@@ -371,18 +339,6 @@ function ExpenseCard({ expense, onMarkPaid, onMarkUnpaid, onMarkPending, onMarkE
                   <div className="acct-detail-row">
                     <span>Paid At</span>
                     <span>{formatDate(expense.paid_at)}</span>
-                  </div>
-                </>
-              )}
-              {expense.external_accounting_entry && (
-                <>
-                  <div className="acct-detail-row">
-                    <span>Ext. Entry By</span>
-                    <span>{expense.external_accounting_entry_by || '-'}</span>
-                  </div>
-                  <div className="acct-detail-row">
-                    <span>Ext. Entry At</span>
-                    <span>{formatDateTime(expense.external_accounting_entry_at)}</span>
                   </div>
                 </>
               )}
@@ -548,7 +504,6 @@ function AccountingDashboard({ user }) {
     payment_status: searchParams.get('payment_status') || 'all',
     payment_due_date: searchParams.get('payment_due_date') || 'all',
     invoice_date: searchParams.get('invoice_date') || 'all',
-    external_accounting: searchParams.get('external_accounting') || 'all',
     supplier_search: searchParams.get('supplier_search') || '',
     search_text: searchParams.get('search_text') || '',
     amount_min: searchParams.get('amount_min') || '',
@@ -612,7 +567,7 @@ function AccountingDashboard({ user }) {
   const handleClearFilters = useCallback(() => {
     setFilters({
       month: 'all', payment_method: 'all', payment_status: 'all',
-      payment_due_date: 'all', invoice_date: 'all', external_accounting: 'all',
+      payment_due_date: 'all', invoice_date: 'all',
       supplier_search: '', search_text: '', amount_min: '', amount_max: ''
     })
     setSearchParams({}, { replace: true })
@@ -707,8 +662,6 @@ function AccountingDashboard({ user }) {
                   onMarkPaid={(id) => doAction(`/mark_expense_paid/${id}`, id)}
                   onMarkUnpaid={(id) => doAction(`/mark_expense_unpaid/${id}`, id)}
                   onMarkPending={(id) => doAction(`/mark_expense_pending_payment/${id}`, id)}
-                  onMarkExternal={(id) => doAction(`/mark_expense_external_accounting/${id}`, id)}
-                  onUnmarkExternal={(id) => doAction(`/unmark_expense_external_accounting/${id}`, id)}
                 />
               ))}
               <Pagination
