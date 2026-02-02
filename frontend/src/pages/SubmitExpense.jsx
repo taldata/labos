@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Card, Button, Input, Select, SearchableSelect, TomSelectInput, Textarea, FileUpload, useToast, PageHeader, Modal } from '../components/ui'
 import logger from '../utils/logger'
@@ -114,6 +114,7 @@ function SubmitExpense({ user, setUser }) {
 
   // UI state
   const [loading, setLoading] = useState(false)
+  const isSubmitting = useRef(false)
 
   // New supplier modal state
   const [showNewSupplierModal, setShowNewSupplierModal] = useState(false)
@@ -401,6 +402,8 @@ function SubmitExpense({ user, setUser }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
+    if (isSubmitting.current) return
+    isSubmitting.current = true
     setLoading(true)
 
     try {
@@ -466,6 +469,7 @@ function SubmitExpense({ user, setUser }) {
       showError('An error occurred while submitting the expense')
       logger.error('Submission error', { error: err.message })
     } finally {
+      isSubmitting.current = false
       setLoading(false)
     }
   }
