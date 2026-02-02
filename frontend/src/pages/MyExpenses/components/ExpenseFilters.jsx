@@ -32,6 +32,41 @@ const ExpenseFilters = ({
         <i className={`fas fa-chevron-${isOpen ? 'up' : 'down'}`} style={{color: 'var(--me-text-sub)'}}></i>
       </div>
 
+      {activeFilterCount > 0 && (
+        <div className="me-active-filters">
+          {filters.search && (
+            <span className="me-filter-chip">
+              Search: "{filters.search}"
+              <button onClick={() => setFilters(prev => ({ ...prev, search: '' }))}><i className="fas fa-times"></i></button>
+            </span>
+          )}
+          {filters.status && (
+            <span className="me-filter-chip">
+              Status: {filters.status.charAt(0).toUpperCase() + filters.status.slice(1)}
+              <button onClick={() => setFilters(prev => ({ ...prev, status: '' }))}><i className="fas fa-times"></i></button>
+            </span>
+          )}
+          {filters.category_id && (
+            <span className="me-filter-chip">
+              Category: {categories.find(c => String(c.id) === String(filters.category_id))?.name || filters.category_id}
+              <button onClick={() => setFilters(prev => ({ ...prev, category_id: '' }))}><i className="fas fa-times"></i></button>
+            </span>
+          )}
+          {filters.start_date && (
+            <span className="me-filter-chip">
+              From: {filters.start_date}
+              <button onClick={() => setFilters(prev => ({ ...prev, start_date: '' }))}><i className="fas fa-times"></i></button>
+            </span>
+          )}
+          {filters.end_date && (
+            <span className="me-filter-chip">
+              To: {filters.end_date}
+              <button onClick={() => setFilters(prev => ({ ...prev, end_date: '' }))}><i className="fas fa-times"></i></button>
+            </span>
+          )}
+        </div>
+      )}
+
       {isOpen && (
         <div className="me-filters-body me-animate-fade">
           <div className="me-filters-grid">

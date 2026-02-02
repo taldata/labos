@@ -379,6 +379,65 @@ function ExpenseHistoryFilters({
         <i className={`fas fa-chevron-${isExpanded ? 'up' : 'down'} eh-filters__toggle`} />
       </button>
 
+      {hasActiveFilters && (
+        <div className="eh-active-filters">
+          {filters.search && (
+            <span className="eh-filter-chip">
+              Search: "{filters.search}"
+              <button onClick={() => updateFilter('search', '')}><i className="fas fa-times"></i></button>
+            </span>
+          )}
+          {filters.status && (
+            <span className="eh-filter-chip">
+              Status: {filters.status.charAt(0).toUpperCase() + filters.status.slice(1)}
+              <button onClick={() => updateFilter('status', '')}><i className="fas fa-times"></i></button>
+            </span>
+          )}
+          {filters.department_id && (
+            <span className="eh-filter-chip">
+              Department: {departments.find(d => String(d.id) === String(filters.department_id))?.name || filters.department_id}
+              <button onClick={() => updateFilter('department_id', '')}><i className="fas fa-times"></i></button>
+            </span>
+          )}
+          {filters.user_id && (
+            <span className="eh-filter-chip">
+              Employee: {userOptions.find(u => String(u.id) === String(filters.user_id))?.name || filters.user_id}
+              <button onClick={() => updateFilter('user_id', '')}><i className="fas fa-times"></i></button>
+            </span>
+          )}
+          {filters.category_id && (
+            <span className="eh-filter-chip">
+              Category: {categoryOptions.find(c => String(c.id) === String(filters.category_id))?.name || filters.category_id}
+              <button onClick={() => { updateFilter('category_id', ''); updateFilter('subcategory_id', ''); onCategorySelect({ target: { name: 'category_id', value: '' } }); }}><i className="fas fa-times"></i></button>
+            </span>
+          )}
+          {filters.supplier_id && (
+            <span className="eh-filter-chip">
+              Supplier: {suppliers.find(s => String(s.id) === String(filters.supplier_id))?.name || filters.supplier_id}
+              <button onClick={() => updateFilter('supplier_id', '')}><i className="fas fa-times"></i></button>
+            </span>
+          )}
+          {filters.payment_method && (
+            <span className="eh-filter-chip">
+              Payment: {filters.payment_method.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}
+              <button onClick={() => updateFilter('payment_method', '')}><i className="fas fa-times"></i></button>
+            </span>
+          )}
+          {filters.start_date && (
+            <span className="eh-filter-chip">
+              From: {filters.start_date}
+              <button onClick={() => setFilters(prev => ({ ...prev, start_date: '' }))}><i className="fas fa-times"></i></button>
+            </span>
+          )}
+          {filters.end_date && (
+            <span className="eh-filter-chip">
+              To: {filters.end_date}
+              <button onClick={() => setFilters(prev => ({ ...prev, end_date: '' }))}><i className="fas fa-times"></i></button>
+            </span>
+          )}
+        </div>
+      )}
+
       {isExpanded && (
         <div className="eh-filters__body">
           {/* Row 1: Search, Status, Department, Employee */}
