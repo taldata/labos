@@ -390,6 +390,9 @@ export const TomSelectInput = forwardRef(({
     return tomOptions;
   };
 
+  // Flag to suppress onClear/onItemAdd during programmatic option updates
+  const updatingOptionsRef = useRef(false);
+
   // Use a container ref to isolate TomSelect's DOM mutations from React reconciliation
   const containerRef = useRef(null);
 
@@ -445,6 +448,7 @@ export const TomSelectInput = forwardRef(({
         }
       },
       onItemAdd: function() {
+        if (updatingOptionsRef.current) return;
         const selectedValue = this.getValue();
         if (onChangeRef.current) {
           onChangeRef.current({
@@ -456,6 +460,7 @@ export const TomSelectInput = forwardRef(({
         }
       },
       onClear: function() {
+        if (updatingOptionsRef.current) return;
         if (onChangeRef.current) {
           onChangeRef.current({
             target: {
@@ -495,13 +500,16 @@ export const TomSelectInput = forwardRef(({
     if (!tomSelectRef.current) return;
 
     try {
+      updatingOptionsRef.current = true;
       tomSelectRef.current.clearOptions();
       tomSelectRef.current.addOptions(buildTomOptions());
       tomSelectRef.current.refreshOptions(false);
 
       // Re-set the value after options update
       tomSelectRef.current.setValue(value?.toString() || '', true);
+      updatingOptionsRef.current = false;
     } catch (e) {
+      updatingOptionsRef.current = false;
       console.error('Tom Select options update failed:', e);
     }
   }, [options, displayKey, valueKey, createNewOption]);
