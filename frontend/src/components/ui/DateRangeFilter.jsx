@@ -57,7 +57,7 @@ function formatDate(d) {
 }
 
 const DateRangeFilter = ({ filters, setFilters, style }) => {
-  const [timePeriod, setTimePeriod] = useState('this_month')
+  const [timePeriod, setTimePeriod] = useState('all')
 
   // On mount, if filters already have dates set, default to custom
   const [initialized, setInitialized] = useState(false)
@@ -66,19 +66,19 @@ const DateRangeFilter = ({ filters, setFilters, style }) => {
       setInitialized(true)
       if (filters.start_date || filters.end_date) {
         setTimePeriod('custom')
-      } else {
-        // Apply default "this_month" range
-        const range = computeDateRange('this_month')
-        if (range) {
-          setFilters(prev => ({ ...prev, ...range }))
-        }
       }
+      // Default is 'all' — no date filtering applied
     }
   }, [initialized, filters.start_date, filters.end_date, setFilters])
 
   const handlePeriodChange = useCallback((e) => {
     const period = e.target.value
     setTimePeriod(period)
+
+    if (period === 'all') {
+      setFilters(prev => ({ ...prev, start_date: '', end_date: '' }))
+      return
+    }
 
     if (period === 'custom') {
       // Don't clear dates - let user set them manually
@@ -104,6 +104,7 @@ const DateRangeFilter = ({ filters, setFilters, style }) => {
         value={timePeriod}
         onChange={handlePeriodChange}
       >
+        <option value="all">All Dates</option>
         <option value="this_month">This Month</option>
         <option value="last_month">Last Month</option>
         <option value="this_quarter">This Quarter</option>

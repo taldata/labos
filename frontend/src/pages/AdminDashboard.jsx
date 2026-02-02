@@ -14,7 +14,7 @@ function AdminDashboard({ user, setUser }) {
   const navigate = useNavigate()
   const [loading, setLoading] = useState(true)
   const [stats, setStats] = useState(null)
-  const [timePeriod, setTimePeriod] = useState('this_month')
+  const [timePeriod, setTimePeriod] = useState('all')
   const [startDate, setStartDate] = useState('') // DD/MM/YYYY format
   const [endDate, setEndDate] = useState('') // DD/MM/YYYY format
   const [departmentId, setDepartmentId] = useState('')
@@ -158,6 +158,7 @@ function AdminDashboard({ user, setUser }) {
               onChange={(e) => setTimePeriod(e.target.value)}
               style={{ minWidth: '180px' }}
             >
+              <option value="all">All Dates</option>
               <option value="this_month">This Month</option>
               <option value="last_month">Last Month</option>
               <option value="this_quarter">This Quarter</option>
