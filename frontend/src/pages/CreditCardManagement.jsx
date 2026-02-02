@@ -195,6 +195,9 @@ function CreditCardManagement({ user, setUser }) {
           <Card.Body>
             <div className="filter-label">
               <i className="fas fa-filter"></i> Filter by status:
+              {statusFilter !== 'all' && (
+                <Badge variant="primary" size="small">1 active</Badge>
+              )}
             </div>
             <div className="filter-buttons">
               <Button

@@ -80,6 +80,13 @@
   flex: 1;
 }
 
+.filters-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+
 .filter-label {
   color: #64748b;
   font-size: 0.95rem;
