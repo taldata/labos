@@ -73,7 +73,7 @@ const ExpenseList = ({
           <thead>
             <tr>
               {[
-                ['date', 'Date', {}], ['submitDate', 'Submit Date', {}],
+                ['date', 'Document Date', {}], ['submitDate', 'Submit Date', {}],
                 ['description', 'Description', {}], ['category', 'Category', {}],
                 ['amount', 'Amount', { textAlign: 'right' }], ['status', 'Status', { textAlign: 'center' }],
                 ['files', 'Files', { textAlign: 'center' }],
@@ -93,7 +93,7 @@ const ExpenseList = ({
                 onClick={() => onView(expense.id)}
                 style={{ cursor: 'pointer' }}
               >
-                <td className="me-cell-date">{formatDate(expense.date)}</td>
+                <td className="me-cell-date">{formatDate(expense.invoice_date)}</td>
                 <td className="me-cell-date me-cell-submit-date">{formatDate(expense.submit_date)}</td>
                 <td>
                   <span className="me-cell-desc-title">{expense.description || 'No description'}</span>

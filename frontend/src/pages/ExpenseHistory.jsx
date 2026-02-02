@@ -588,7 +588,7 @@ function ExpenseRow({ expense, onView, onEdit, onMove, onDelete, formatDate, for
   return (
     <tr className="eh-table__row eh-table__row--clickable" onClick={() => onView(expense.id)} style={{ cursor: 'pointer' }}>
       <td className="eh-table__cell eh-table__cell--date">
-        {formatDate(expense.date)}
+        {formatDate(expense.invoice_date)}
       </td>
       <td className="eh-table__cell eh-table__cell--submit-date">
         {formatDate(expense.submit_date)}
@@ -800,7 +800,7 @@ function ExpenseTable({ expenses, loading, error, hasActiveFilters, onView, onEd
         <thead className="eh-table__head">
           <tr>
             {[
-              ['date', 'Date'], ['submit-date', 'Submit Date'], ['employee', 'Employee'],
+              ['date', 'Document Date'], ['submit-date', 'Submit Date'], ['employee', 'Employee'],
               ['department', 'Department'], ['description', 'Description'], ['category', 'Category'],
               ['supplier', 'Supplier'], ['amount', 'Amount'], ['status', 'Status'],
               ['payment', 'Payment'], ['files', 'Files'], ['actions', 'Actions']

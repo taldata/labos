@@ -834,7 +834,8 @@ def list_expenses():
                 'invoice_filename': expense.invoice_filename,
                 'receipt_filename': expense.receipt_filename,
                 'quote_filename': expense.quote_filename,
-                'submit_date': expense.submit_date.isoformat() if expense.submit_date else None
+                'submit_date': expense.submit_date.isoformat() if expense.submit_date else None,
+                'invoice_date': expense.invoice_date.isoformat() if expense.invoice_date else None
             })
 
         return jsonify({
