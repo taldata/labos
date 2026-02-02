@@ -506,7 +506,7 @@ function ExpenseHistoryFilters({
 // ============================================================================
 // Component: ExpenseRow
 // ============================================================================
-function ExpenseRow({ expense, onView, onEdit, onMove, onDelete, formatDate, formatCurrency }) {
+function ExpenseRow({ expense, onView, onEdit, onMove, onDelete, formatDate, formatCurrency, isManagerView }) {
   const getStatusVariant = (status) => {
     const variants = {
       pending: 'warning',
@@ -642,22 +642,26 @@ function ExpenseRow({ expense, onView, onEdit, onMove, onDelete, formatDate, for
             onClick={() => onEdit(expense)}
             title="Edit"
           />
-          <Button
-            variant="ghost"
-            size="small"
-            icon="fas fa-calendar-alt"
-            onClick={() => onMove(expense)}
-            title="Move to Different Year"
-            className="eh-actions__move"
-          />
-          <Button
-            variant="ghost"
-            size="small"
-            icon="fas fa-trash"
-            onClick={() => onDelete(expense)}
-            title="Delete"
-            className="eh-actions__delete"
-          />
+          {!isManagerView && (
+            <Button
+              variant="ghost"
+              size="small"
+              icon="fas fa-calendar-alt"
+              onClick={() => onMove(expense)}
+              title="Move to Different Year"
+              className="eh-actions__move"
+            />
+          )}
+          {!isManagerView && (
+            <Button
+              variant="ghost"
+              size="small"
+              icon="fas fa-trash"
+              onClick={() => onDelete(expense)}
+              title="Delete"
+              className="eh-actions__delete"
+            />
+          )}
         </div>
       </td>
     </tr>
@@ -683,7 +687,7 @@ function ResizeHandle({ columnKey, onResizeStart }) {
   )
 }
 
-function ExpenseTable({ expenses, loading, error, hasActiveFilters, onView, onEdit, onMove, onDelete }) {
+function ExpenseTable({ expenses, loading, error, hasActiveFilters, onView, onEdit, onMove, onDelete, isManagerView }) {
   const { columnWidths, onResizeStart } = useColumnResize('expense-history', EH_DEFAULT_WIDTHS)
 
   const formatDate = (dateString) => {
@@ -760,6 +764,7 @@ function ExpenseTable({ expenses, loading, error, hasActiveFilters, onView, onEd
               onDelete={onDelete}
               formatDate={formatDate}
               formatCurrency={formatCurrency}
+              isManagerView={isManagerView}
             />
           ))}
         </tbody>
@@ -1496,6 +1501,7 @@ function ExpenseHistory({ user, isManagerView = false }) {
             onEdit={handleEdit}
             onMove={handleMove}
             onDelete={handleDelete}
+            isManagerView={isManagerView}
           />
           <ExpensePagination
             currentPage={currentPage}
