@@ -255,6 +255,15 @@
   text-overflow: ellipsis;
 }
 
+.acct-expense__category {
+  font-size: 0.78rem;
+  color: var(--acct-primary-dark);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-weight: 500;
+}
+
 .acct-expense__description {
   font-size: 0.82rem;
   color: var(--acct-text-secondary);
