@@ -61,18 +61,24 @@ class DocumentProcessor:
         if amount_field is None:
             return None
 
+        value = None
         if hasattr(amount_field, 'amount'):
             # Handle CurrencyValue objects
-            return float(amount_field.amount)
+            value = float(amount_field.amount)
         elif isinstance(amount_field, (int, float)):
             # Handle direct numeric values
-            return float(amount_field)
+            value = float(amount_field)
         else:
             # Try to convert string or other types
             try:
-                return float(amount_field)
+                value = float(amount_field)
             except (ValueError, TypeError):
                 return None
+
+        # OCR may interpret parentheses (e.g. "(100)") as negative — always return absolute value
+        if value is not None:
+            return abs(value)
+        return None
 
     def _extract_currency(self, amount_field):
         """
