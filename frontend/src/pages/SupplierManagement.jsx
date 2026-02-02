@@ -210,6 +210,32 @@ function SupplierManagement({ user, setUser }) {
         {/* Filters */}
         <Card className="filters-section">
           <Card.Body>
+            <div className="filters-header">
+              <div className="filter-label">
+                <i className="fas fa-filter"></i> Filters
+                {(() => {
+                  const count = [
+                    searchQuery,
+                    statusFilter !== 'all' && statusFilter
+                  ].filter(Boolean).length
+                  return count > 0 ? (
+                    <Badge variant="primary" size="small">{count} active</Badge>
+                  ) : null
+                })()}
+              </div>
+              {(searchQuery || statusFilter !== 'all') && (
+                <Button
+                  variant="ghost"
+                  size="small"
+                  onClick={() => {
+                    setSearchQuery('')
+                    setStatusFilter('all')
+                  }}
+                >
+                  <i className="fas fa-times"></i> Clear Filters
+                </Button>
+              )}
+            </div>
             <div className="search-box">
               <Input
                 type="text"

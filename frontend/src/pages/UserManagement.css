@@ -41,6 +41,32 @@
   justify-content: flex-start !important;
 }
 
+.filters-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+
+.filters-header .filter-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 600;
+  color: #475569;
+  font-size: 0.9rem;
+}
+
+.filter-row {
+  display: flex;
+  gap: 0.75rem;
+  width: 100%;
+}
+
+.filter-row .select-wrapper {
+  flex: 1;
+}
+
 .search-box {
   display: flex;
   align-items: center;

@@ -124,6 +124,46 @@
   gap: 1.5rem;
 }
 
+.me-active-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  border-bottom: 1px solid var(--me-border);
+  background: #f0f4ff;
+}
+
+.me-filter-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.25rem 0.5rem 0.25rem 0.75rem;
+  background: white;
+  border: 1px solid rgba(102, 126, 234, 0.25);
+  border-radius: 20px;
+  font-size: 0.8rem;
+  color: #475569;
+  font-weight: 500;
+}
+
+.me-filter-chip button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #94a3b8;
+  padding: 0.1rem;
+  border-radius: 50%;
+  font-size: 0.65rem;
+  transition: color 0.2s;
+}
+
+.me-filter-chip button:hover {
+  color: #ef4444;
+}
+
 .me-filters-footer {
   margin-top: 1.5rem;
   padding-top: 1.5rem;
