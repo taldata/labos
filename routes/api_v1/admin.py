@@ -37,7 +37,11 @@ def get_date_range(period, custom_start=None, custom_end=None):
             start_date = datetime(today.year, today.month, 1)
             return start_date, end_date
     
-    if period == 'this_month':
+    if period == 'all':
+        start_date = datetime(2000, 1, 1)
+        end_date = datetime(2100, 12, 31, 23, 59, 59)
+        return start_date, end_date
+    elif period == 'this_month':
         start_date = datetime(today.year, today.month, 1)
     elif period == 'last_month':
         if today.month == 1:
@@ -69,7 +73,7 @@ def get_admin_stats():
         return jsonify({'error': 'Admin access required'}), 403
     
     try:
-        period = request.args.get('period', 'this_month')
+        period = request.args.get('period', 'all')
         custom_start = request.args.get('start_date')
         custom_end = request.args.get('end_date')
         start_date, end_date = get_date_range(period, custom_start, custom_end)
@@ -111,7 +115,7 @@ def get_admin_stats():
         total_amount = approved_amount
         
         # Expense trend over time
-        if period in ['this_year', 'last_6_months']:
+        if period in ['all', 'this_year', 'last_6_months']:
             # Monthly breakdown
             trend_query = db.session.query(
                 func.date_trunc('month', Expense.date).label('month'),
