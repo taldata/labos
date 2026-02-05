@@ -1,6 +1,6 @@
 """Add is_hr to user and is_welfare to category
 
-Revision ID: b2c3d4e5f6g7
+Revision ID: f831eb5c8b3a
 Revises: a1b2c3d4e5f6
 Create Date: 2026-02-05
 
@@ -9,7 +9,7 @@ from alembic import op
 import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
-revision = 'b2c3d4e5f6g7'
+revision = 'f831eb5c8b3a'
 down_revision = 'a1b2c3d4e5f6'
 branch_labels = None
 depends_on = None
