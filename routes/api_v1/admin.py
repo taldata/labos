@@ -1,6 +1,7 @@
 from flask import jsonify, request, current_app
 from flask_login import login_required, current_user
 from models import Expense, Department, Category, Subcategory, User, Supplier, CreditCard, BudgetYear, db
+from services.manager_access import get_manager_access, build_category_access_filter, has_category_access
 from sqlalchemy import func, and_, or_
 from sqlalchemy.orm import joinedload
 from datetime import datetime, timedelta
@@ -391,16 +392,15 @@ def get_manager_expense_filter_options():
         return jsonify({'error': 'Manager access required'}), 403
 
     try:
-        # Get managed department IDs
+        # Get managed department IDs and cross-department category IDs
         if current_user.is_admin:
             managed_dept_ids = [d.id for d in Department.query.all()]
+            managed_cat_ids = []
         else:
-            managed_dept_ids = [d.id for d in current_user.managed_departments]
-            if current_user.department_id:
-                managed_dept_ids.append(current_user.department_id)
+            managed_dept_ids, managed_cat_ids = get_manager_access(current_user)
             managed_dept_ids = list(set(managed_dept_ids))
 
-        if not managed_dept_ids:
+        if not managed_dept_ids and not managed_cat_ids:
             return jsonify({
                 'departments': [],
                 'users': [],
@@ -410,11 +410,20 @@ def get_manager_expense_filter_options():
                 'subcategories': []
             }), 200
 
+        # Build category access filter
+        cat_access_filter = build_category_access_filter(managed_dept_ids, managed_cat_ids)
+
         # Get current budget year
         current_year = BudgetYear.query.filter_by(is_current=True).first()
 
-        # 1. Departments - only managed ones
-        departments = Department.query.filter(Department.id.in_(managed_dept_ids)).all()
+        # 1. Departments - managed ones + departments that contain cross-dept categories
+        dept_ids_from_cats = []
+        if managed_cat_ids:
+            cross_cats = Category.query.filter(Category.id.in_(managed_cat_ids)).all()
+            dept_ids_from_cats = list(set(c.department_id for c in cross_cats))
+        all_dept_ids = list(set(managed_dept_ids + dept_ids_from_cats))
+
+        departments = Department.query.filter(Department.id.in_(all_dept_ids)).all() if all_dept_ids else []
         dept_list = [{
             'id': dept.id,
             'name': dept.name,
@@ -422,13 +431,13 @@ def get_manager_expense_filter_options():
             'currency': dept.currency
         } for dept in departments]
 
-        # 2. Users - only from managed departments
+        # 2. Users - from managed departments
         users = User.query.options(
             joinedload(User.home_department)
         ).filter(
             User.status == 'active',
             User.department_id.in_(managed_dept_ids)
-        ).all()
+        ).all() if managed_dept_ids else []
         user_list = [{
             'id': user.id,
             'username': user.username,
@@ -442,13 +451,14 @@ def get_manager_expense_filter_options():
             'is_accounting': user.is_accounting
         } for user in users]
 
-        # 3. Categories with subcategories - only from managed departments
-        categories = Category.query.filter(
-            Category.department_id.in_(managed_dept_ids)
-        ).options(
+        # 3. Categories with subcategories - from managed departments + cross-dept categories
+        cat_query = Category.query.options(
             joinedload(Category.subcategories),
             joinedload(Category.department)
-        ).order_by(Category.name).all()
+        )
+        if cat_access_filter is not None:
+            cat_query = cat_query.filter(cat_access_filter)
+        categories = cat_query.order_by(Category.name).all()
 
         cat_list = []
         for cat in categories:
@@ -485,10 +495,11 @@ def get_manager_expense_filter_options():
             'name': card.description or f"Card *{card.last_four_digits}"
         } for card in cards]
 
-        # 6. Subcategories flat list - only from managed departments
-        subcategories = Subcategory.query.join(Category).filter(
-            Category.department_id.in_(managed_dept_ids)
-        ).all()
+        # 6. Subcategories flat list - from managed departments + cross-dept categories
+        subcat_query = Subcategory.query.join(Category)
+        if cat_access_filter is not None:
+            subcat_query = subcat_query.filter(cat_access_filter)
+        subcategories = subcat_query.all()
         subcat_list = [{
             'id': sub.id,
             'name': sub.name,
@@ -568,6 +579,12 @@ def get_all_users():
                 {'id': d.id, 'name': d.name, 'year_id': d.year_id}
                 for d in user.managed_departments
             ]
+            # Get managed categories info (cross-department)
+            managed_cats = [
+                {'id': c.id, 'name': c.name, 'department_id': c.department_id,
+                 'department_name': c.department.name if c.department else None}
+                for c in user.managed_categories
+            ]
             users_data.append({
                 'id': user.id,
                 'username': user.username,
@@ -582,7 +599,9 @@ def get_all_users():
                 'department_id': user.department_id,
                 'department_name': user.home_department.name if user.home_department else None,
                 'managed_departments': managed_depts,
-                'managed_department_ids': [d.id for d in user.managed_departments]
+                'managed_department_ids': [d.id for d in user.managed_departments],
+                'managed_categories': managed_cats,
+                'managed_category_ids': [c.id for c in user.managed_categories]
             })
 
         return jsonify({'users': users_data}), 200
@@ -638,11 +657,19 @@ def create_user():
             ).all()
             user.managed_departments = managed_depts
             logging.info(f"Assigned managed departments to {user.username}: {[d.name for d in managed_depts]}")
-        
+
+        # Handle managed categories (cross-department) for managers
+        if user.is_manager and data.get('managed_category_ids'):
+            managed_cats = Category.query.filter(
+                Category.id.in_(data['managed_category_ids'])
+            ).all()
+            user.managed_categories = managed_cats
+            logging.info(f"Assigned managed categories to {user.username}: {[c.name for c in managed_cats]}")
+
         db.session.commit()
-        
+
         logging.info(f"User {user.username} created by {current_user.username}")
-        
+
         return jsonify({
             'message': 'User created successfully',
             'user': {
@@ -651,7 +678,8 @@ def create_user():
                 'email': user.email,
                 'first_name': user.first_name,
                 'last_name': user.last_name,
-                'managed_department_ids': [d.id for d in user.managed_departments]
+                'managed_department_ids': [d.id for d in user.managed_departments],
+                'managed_category_ids': [c.id for c in user.managed_categories]
             }
         }), 201
         
@@ -708,11 +736,22 @@ def update_user(user_id):
             else:
                 # Clear managed departments if not a manager or empty list
                 user.managed_departments = []
-        
+
+        # Handle managed categories (cross-department) for managers
+        if 'managed_category_ids' in data:
+            if user.is_manager and data['managed_category_ids']:
+                managed_cats = Category.query.filter(
+                    Category.id.in_(data['managed_category_ids'])
+                ).all()
+                user.managed_categories = managed_cats
+                logging.info(f"Updated managed categories for {user.username}: {[c.name for c in managed_cats]}")
+            else:
+                user.managed_categories = []
+
         db.session.commit()
-        
+
         logging.info(f"User {user.username} updated by {current_user.username}")
-        
+
         return jsonify({
             'message': 'User updated successfully',
             'user': {
@@ -727,7 +766,8 @@ def update_user(user_id):
                 'status': user.status,
                 'can_use_modern_version': user.can_use_modern_version,
                 'department_id': user.department_id,
-                'managed_department_ids': [d.id for d in user.managed_departments]
+                'managed_department_ids': [d.id for d in user.managed_departments],
+                'managed_category_ids': [c.id for c in user.managed_categories]
             }
         }), 200
         
@@ -1101,18 +1141,16 @@ def manager_list_expenses():
         return jsonify({'error': 'Manager access required'}), 403
 
     try:
-        # Get managed department IDs
+        # Get managed department IDs and cross-department category IDs
         if current_user.is_admin:
-            # Admin can see all departments
             managed_dept_ids = [d.id for d in Department.query.all()]
+            managed_cat_ids = []
         else:
-            # Manager sees their managed departments
-            managed_dept_ids = [d.id for d in current_user.managed_departments]
-            if current_user.department_id:
-                managed_dept_ids.append(current_user.department_id)
+            managed_dept_ids, managed_cat_ids = get_manager_access(current_user)
             managed_dept_ids = list(set(managed_dept_ids))
 
-        if not managed_dept_ids:
+        cat_access_filter = build_category_access_filter(managed_dept_ids, managed_cat_ids)
+        if cat_access_filter is None:
             return jsonify({
                 'expenses': [],
                 'pagination': {'page': 1, 'per_page': 25, 'total': 0, 'pages': 0, 'has_next': False, 'has_prev': False}
@@ -1134,12 +1172,12 @@ def manager_list_expenses():
         sort_by = request.args.get('sort_by', 'id', type=str)
         sort_order = request.args.get('sort_order', 'desc', type=str)
 
-        # Build query - manager sees expenses from their managed departments (via budget hierarchy)
+        # Build query - manager sees expenses from managed departments + cross-dept categories
         query = Expense.query.join(Subcategory, Expense.subcategory_id == Subcategory.id)\
             .join(Category, Subcategory.category_id == Category.id)
 
-        # Filter to managed departments via budget hierarchy
-        query = query.filter(Category.department_id.in_(managed_dept_ids))
+        # Filter to managed departments + cross-department categories
+        query = query.filter(cat_access_filter)
 
         # Left join Supplier for search functionality
         query = query.outerjoin(Supplier, Expense.supplier_id == Supplier.id)
