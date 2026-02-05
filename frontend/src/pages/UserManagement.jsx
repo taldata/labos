@@ -40,6 +40,7 @@ function UserManagement({ user, setUser }) {
     is_admin: false,
     is_manager: false,
     is_accounting: false,
+    is_hr: false,
     status: 'active',
     can_use_modern_version: true,
     department_id: '',
@@ -133,6 +134,7 @@ function UserManagement({ user, setUser }) {
         is_admin: userToEdit.is_admin,
         is_manager: userToEdit.is_manager,
         is_accounting: userToEdit.is_accounting,
+        is_hr: userToEdit.is_hr || false,
         status: userToEdit.status,
         can_use_modern_version: userToEdit.can_use_modern_version,
         department_id: userToEdit.department_id || '',
@@ -147,6 +149,7 @@ function UserManagement({ user, setUser }) {
         is_admin: false,
         is_manager: false,
         is_accounting: false,
+        is_hr: false,
         status: 'active',
         can_use_modern_version: true,
         department_id: '',
@@ -251,6 +254,7 @@ function UserManagement({ user, setUser }) {
     if (u.is_admin) badges.push(<Badge key="admin" variant="warning">Admin</Badge>)
     if (u.is_manager) badges.push(<Badge key="manager" variant="info">Manager</Badge>)
     if (u.is_accounting) badges.push(<Badge key="accounting" variant="success">Accounting</Badge>)
+    if (u.is_hr) badges.push(<Badge key="hr" variant="success">HR</Badge>)
     if (badges.length === 0) badges.push(<Badge key="employee" variant="default">Employee</Badge>)
     return badges
   }
@@ -339,6 +343,7 @@ function UserManagement({ user, setUser }) {
                 <option value="admin">Admin</option>
                 <option value="manager">Manager</option>
                 <option value="accounting">Accounting</option>
+                <option value="hr">HR</option>
                 <option value="employee">Employee</option>
               </Select>
               <Select
@@ -566,6 +571,15 @@ function UserManagement({ user, setUser }) {
                   onChange={handleInputChange}
                 />
                 <span>Accounting</span>
+              </label>
+              <label className="checkbox-label">
+                <input
+                  type="checkbox"
+                  name="is_hr"
+                  checked={formData.is_hr}
+                  onChange={handleInputChange}
+                />
+                <span>HR</span>
               </label>
               <label className="checkbox-label">
                 <input

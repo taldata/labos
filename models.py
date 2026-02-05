@@ -31,6 +31,7 @@ class Category(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
     budget = db.Column(db.Float, default=0.0)
+    is_welfare = db.Column(db.Boolean, default=False)
     department_id = db.Column(db.Integer, db.ForeignKey('department.id'), nullable=False)
     subcategories = db.relationship('Subcategory', backref='category', lazy=True)
 
@@ -59,6 +60,7 @@ class User(UserMixin, db.Model):
     is_manager = db.Column(db.Boolean, default=False)
     is_admin = db.Column(db.Boolean, default=False)
     is_accounting = db.Column(db.Boolean, default=False)
+    is_hr = db.Column(db.Boolean, default=False)
     profile_pic = db.Column(db.String(255), nullable=True)
     status = db.Column(db.String(20), default='active')  # active, inactive, pending
     # Version preference for parallel frontend versions
