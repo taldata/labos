@@ -33,6 +33,7 @@ const DepartmentManager = ({ user, setUser }) => {
         name: '',
         budget: '',
         currency: 'ILS',
+        is_welfare: false,
         year: new Date().getFullYear()
     });
 
@@ -54,14 +55,15 @@ const DepartmentManager = ({ user, setUser }) => {
     // Check if user is admin or manager (managers get view-only access to their departments)
     const isAdmin = user?.is_admin;
     const isManager = user?.is_manager;
+    const isHR = user?.is_hr;
 
     useEffect(() => {
-        if (!isAdmin && !isManager) {
+        if (!isAdmin && !isManager && !isHR) {
             navigate('/dashboard');
             return;
         }
-        // Set view-only mode for managers (non-admins)
-        if (isManager && !isAdmin) {
+        // Set view-only mode for managers and HR (non-admins)
+        if ((isManager || isHR) && !isAdmin) {
             setViewOnly(true);
         }
         fetchYears();
@@ -144,6 +146,7 @@ const DepartmentManager = ({ user, setUser }) => {
                 name: item.name,
                 budget: item.budget || 0,
                 currency: item.currency || 'ILS',
+                is_welfare: item.is_welfare || false,
                 year: new Date().getFullYear()
             });
         } else {
@@ -151,6 +154,7 @@ const DepartmentManager = ({ user, setUser }) => {
                 name: '',
                 budget: '',
                 currency: 'ILS',
+                is_welfare: false,
                 year: new Date().getFullYear()
             });
         }
@@ -160,16 +164,16 @@ const DepartmentManager = ({ user, setUser }) => {
 
     const closeModal = () => {
         setModalOpen(false);
-        setFormData({ name: '', budget: '', currency: 'ILS', year: new Date().getFullYear() });
+        setFormData({ name: '', budget: '', currency: 'ILS', is_welfare: false, year: new Date().getFullYear() });
         setCurrentItem(null);
         setParentId(null);
     };
 
     const handleInputChange = (e) => {
-        const { name, value } = e.target;
+        const { name, value, type, checked } = e.target;
         setFormData(prev => ({
             ...prev,
-            [name]: value
+            [name]: type === 'checkbox' ? checked : value
         }));
     };
 
@@ -642,7 +646,7 @@ const DepartmentManager = ({ user, setUser }) => {
                                                         <div className="dept-info">
                                                             <i className={`fas fa-chevron-right expand-icon ${expandedCats[cat.id] ? 'expanded' : ''}`}></i>
                                                             <div className="category-icon">📁</div>
-                                                            <span className="category-name">{cat.name}</span>
+                                                            <span className="category-name">{cat.name}{cat.is_welfare && <span style={{ marginLeft: '0.5rem', color: '#10b981', fontSize: '0.75rem' }}><i className="fas fa-heart"></i></span>}</span>
                                                             <div className="stats-container">
                                                                 <div className="stat-item">
                                                                     <span className="stat-label">תקציב</span>
@@ -800,6 +804,19 @@ const DepartmentManager = ({ user, setUser }) => {
                                             <option value="USD">$ USD (US Dollar)</option>
                                             <option value="EUR">€ EUR (Euro)</option>
                                         </Select>
+                                    )}
+
+                                    {modalType === 'category' && (
+                                        <label className="checkbox-label" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.5rem', cursor: 'pointer' }}>
+                                            <input
+                                                type="checkbox"
+                                                name="is_welfare"
+                                                checked={formData.is_welfare}
+                                                onChange={handleInputChange}
+                                            />
+                                            <i className="fas fa-heart" style={{ color: '#10b981' }}></i>
+                                            <span>Welfare Category</span>
+                                        </label>
                                     )}
                                 </>
                             )}

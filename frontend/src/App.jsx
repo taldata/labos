@@ -20,6 +20,7 @@ const SupplierManagement = lazy(() => import('./pages/SupplierManagement'))
 const CreditCardManagement = lazy(() => import('./pages/CreditCardManagement'))
 const ExpenseHistory = lazy(() => import('./pages/ExpenseHistory'))
 const AccountingDashboard = lazy(() => import('./pages/AccountingDashboard'))
+const HRDashboard = lazy(() => import('./pages/HRDashboard'))
 const NotFound = lazy(() => import('./pages/NotFound'))
 
 // Loading fallback component
@@ -130,6 +131,10 @@ function App() {
               <Route
                 path="/admin/accounting"
                 element={<AuthenticatedRoute user={user} setUser={setUser}><AccountingDashboard user={user} setUser={setUser} /></AuthenticatedRoute>}
+              />
+              <Route
+                path="/hr"
+                element={<AuthenticatedRoute user={user} setUser={setUser}><HRDashboard user={user} setUser={setUser} /></AuthenticatedRoute>}
               />
               <Route
                 path="/admin/expense-history"

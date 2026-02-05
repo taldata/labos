@@ -52,6 +52,10 @@ function Sidebar({ user, setUser, isOpen, onToggle }) {
     { path: '/manager/expense-history', icon: 'fa-history', label: 'Department Expenses' },
   ]
 
+  const hrItems = [
+    { path: '/hr', icon: 'fa-heart', label: 'HR Welfare' },
+  ]
+
   const adminItems = [
     { path: '/admin', icon: 'fa-chart-line', label: 'Analytics' },
     { path: '/admin/expense-history', icon: 'fa-history', label: 'Expense History' },
@@ -60,6 +64,7 @@ function Sidebar({ user, setUser, isOpen, onToggle }) {
     { path: '/admin/suppliers', icon: 'fa-building', label: 'Suppliers' },
     { path: '/admin/credit-cards', icon: 'fa-credit-card', label: 'Credit Cards' },
     { path: '/admin/accounting', icon: 'fa-calculator', label: 'Accounting' },
+    { path: '/hr', icon: 'fa-heart', label: 'HR Welfare' },
   ]
 
   return (
@@ -125,6 +130,24 @@ function Sidebar({ user, setUser, isOpen, onToggle }) {
             </div>
           )}
 
+          {/* HR Section - Only for HR users who are not admins */}
+          {(user?.is_hr && !user?.is_admin) && (
+            <div className="nav-section">
+              {isOpen && <div className="nav-section-title">HR</div>}
+              {hrItems.map(item => (
+                <button
+                  key={item.path}
+                  className={`nav-item ${isActive(item.path) ? 'active' : ''}`}
+                  onClick={() => navigate(item.path)}
+                  title={!isOpen ? item.label : ''}
+                >
+                  <i className={`fas ${item.icon}`}></i>
+                  {isOpen && <span>{item.label}</span>}
+                </button>
+              ))}
+            </div>
+          )}
+
           {/* Admin Section */}
           {user?.is_admin && (
             <div className="nav-section">
@@ -162,7 +185,7 @@ function Sidebar({ user, setUser, isOpen, onToggle }) {
               <div className="user-info">
                 <div className="user-name">{user?.first_name} {user?.last_name}</div>
                 <div className="user-role">
-                  {user?.is_admin ? 'Admin' : user?.is_manager ? 'Manager' : 'Employee'}
+                  {user?.is_admin ? 'Admin' : user?.is_hr ? 'HR' : user?.is_manager ? 'Manager' : 'Employee'}
                 </div>
               </div>
             )}

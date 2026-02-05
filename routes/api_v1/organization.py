@@ -14,7 +14,7 @@ from datetime import datetime
 def get_budget_years():
     """Get all budget years"""
     try:
-        if not current_user.is_admin and not current_user.is_manager:
+        if not current_user.is_admin and not current_user.is_manager and not current_user.is_hr:
             return jsonify({'error': 'Not authorized'}), 403
 
         years = BudgetYear.query.order_by(BudgetYear.year.desc()).all()
@@ -160,6 +160,7 @@ def copy_structure_from_year(year_id, source_id):
                 new_cat = Category(
                     name=src_cat.name,
                     budget=0.0,
+                    is_welfare=src_cat.is_welfare,
                     department_id=new_dept.id
                 )
                 db.session.add(new_cat)
@@ -191,8 +192,8 @@ def copy_structure_from_year(year_id, source_id):
 def get_organization_structure():
     """Get full organization structure (Departments -> Categories -> Subcategories)"""
     try:
-        # Check if user is admin or manager
-        if not current_user.is_admin and not current_user.is_manager:
+        # Check if user is admin, manager, or HR
+        if not current_user.is_admin and not current_user.is_manager and not current_user.is_hr:
             return jsonify({'error': 'Not authorized'}), 403
 
         # Filter by year if provided
@@ -376,6 +377,7 @@ def get_organization_structure():
                     'name': cat.name,
                     'budget': cat.budget,
                     'spent': cat_spending.get(cat.id, 0.0),
+                    'is_welfare': cat.is_welfare,
                     'department_id': cat.department_id,
                     'is_cross_department': not is_fully_managed,
                     'subcategories': []
@@ -397,9 +399,9 @@ def get_organization_structure():
             if is_fully_managed or dept_data['categories']:
                 structure.append(dept_data)
 
-        # Include view_only flag for managers (non-admins)
+        # Include view_only flag for managers and HR users (non-admins)
         response_data = {'structure': structure}
-        if current_user.is_manager and not current_user.is_admin:
+        if (current_user.is_manager or current_user.is_hr) and not current_user.is_admin:
             response_data['view_only'] = True
         
         return jsonify(response_data), 200
@@ -556,6 +558,7 @@ def create_category():
         category = Category(
             name=data['name'],
             budget=budget_val,
+            is_welfare=data.get('is_welfare', False),
             department_id=int(data['department_id'])
         )
         
@@ -570,6 +573,7 @@ def create_category():
                 'id': category.id,
                 'name': category.name,
                 'budget': category.budget,
+                'is_welfare': category.is_welfare,
                 'department_id': category.department_id
             }
         }), 201
@@ -601,17 +605,20 @@ def update_category(cat_id):
                 category.budget = 0.0
             else:
                 category.budget = float(budget_val)
-            
+        if 'is_welfare' in data:
+            category.is_welfare = data['is_welfare']
+
         db.session.commit()
-        
+
         logging.info(f"Category {category.id} updated by {current_user.username}")
-        
+
         return jsonify({
             'message': 'Category updated successfully',
             'category': {
                 'id': category.id,
                 'name': category.name,
                 'budget': category.budget,
+                'is_welfare': category.is_welfare,
                 'department_id': category.department_id
             }
         }), 200

@@ -307,7 +307,8 @@ def get_expense_filter_options():
             'department_id': user.department_id,
             'is_admin': user.is_admin,
             'is_manager': user.is_manager,
-            'is_accounting': user.is_accounting
+            'is_accounting': user.is_accounting,
+            'is_hr': user.is_hr
         } for user in users]
 
         # 3. Categories with subcategories (filtered by budget year)
@@ -448,7 +449,8 @@ def get_manager_expense_filter_options():
             'department_id': user.department_id,
             'is_admin': user.is_admin,
             'is_manager': user.is_manager,
-            'is_accounting': user.is_accounting
+            'is_accounting': user.is_accounting,
+            'is_hr': user.is_hr
         } for user in users]
 
         # 3. Categories with subcategories - from managed departments + cross-dept categories
@@ -555,8 +557,10 @@ def get_all_users():
             query = query.filter(User.is_manager == True)
         elif role == 'accounting':
             query = query.filter(User.is_accounting == True)
+        elif role == 'hr':
+            query = query.filter(User.is_hr == True)
         elif role == 'employee':
-            query = query.filter(User.is_admin == False, User.is_manager == False, User.is_accounting == False)
+            query = query.filter(User.is_admin == False, User.is_manager == False, User.is_accounting == False, User.is_hr == False)
 
         # Apply search filter in SQL instead of in-memory
         if search:
@@ -594,6 +598,7 @@ def get_all_users():
                 'is_admin': user.is_admin,
                 'is_manager': user.is_manager,
                 'is_accounting': user.is_accounting,
+                'is_hr': user.is_hr,
                 'status': user.status,
                 'can_use_modern_version': user.can_use_modern_version,
                 'department_id': user.department_id,
@@ -638,6 +643,7 @@ def create_user():
             is_admin=data.get('is_admin', False),
             is_manager=data.get('is_manager', False),
             is_accounting=data.get('is_accounting', False),
+            is_hr=data.get('is_hr', False),
             status=data.get('status', 'active'),
             can_use_modern_version=data.get('can_use_modern_version', True),
             department_id=data.get('department_id')
@@ -716,6 +722,8 @@ def update_user(user_id):
             user.is_manager = data['is_manager']
         if 'is_accounting' in data:
             user.is_accounting = data['is_accounting']
+        if 'is_hr' in data:
+            user.is_hr = data['is_hr']
         if 'status' in data:
             user.status = data['status']
         if 'can_use_modern_version' in data:
@@ -763,6 +771,7 @@ def update_user(user_id):
                 'is_admin': user.is_admin,
                 'is_manager': user.is_manager,
                 'is_accounting': user.is_accounting,
+                'is_hr': user.is_hr,
                 'status': user.status,
                 'can_use_modern_version': user.can_use_modern_version,
                 'department_id': user.department_id,
@@ -770,7 +779,7 @@ def update_user(user_id):
                 'managed_category_ids': [c.id for c in user.managed_categories]
             }
         }), 200
-        
+
     except Exception as e:
         db.session.rollback()
         logging.error(f"Error updating user: {str(e)}", exc_info=True)
