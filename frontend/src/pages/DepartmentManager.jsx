@@ -335,18 +335,23 @@ const DepartmentManager = ({ user, setUser }) => {
                                     const usagePercent = getBudgetUsage(dept.spent || 0, dept.budget);
                                     const isOverBudget = remaining < 0;
                                     const isWarning = usagePercent >= 80 && !isOverBudget;
+                                    const isCrossDept = dept.is_fully_managed === false;
 
                                     return (
-                                        <Card key={dept.id} className="manager-dept-card">
+                                        <Card key={dept.id} className={`manager-dept-card ${isCrossDept ? 'cross-dept-card' : ''}`}>
                                             {/* Department Header */}
                                             <div className="manager-dept-header">
                                                 <div className="manager-dept-title">
-                                                    <span className="manager-dept-icon">🏢</span>
+                                                    <span className="manager-dept-icon">{isCrossDept ? '📂' : '🏢'}</span>
                                                     <h2>{dept.name}</h2>
+                                                    {isCrossDept && (
+                                                        <span className="cross-dept-badge">קטגוריות ממחלקה אחרת</span>
+                                                    )}
                                                 </div>
                                             </div>
 
-                                            {/* Budget Overview */}
+                                            {/* Budget Overview - only for fully managed departments */}
+                                            {!isCrossDept && (
                                             <div className="manager-budget-overview">
                                                 <div className="manager-budget-stats">
                                                     <div className="manager-stat">
@@ -379,6 +384,7 @@ const DepartmentManager = ({ user, setUser }) => {
                                                     <span className="manager-progress-text">{usagePercent.toFixed(0)}% נוצל</span>
                                                 </div>
                                             </div>
+                                            )}
 
                                             {/* Categories */}
                                             <div className="manager-categories">

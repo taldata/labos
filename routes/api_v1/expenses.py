@@ -1,6 +1,7 @@
 from flask import jsonify, request, current_app
 from flask_login import login_required, current_user
 from models import db, Expense, User, Department, Category, Subcategory, Supplier, CreditCard, BudgetYear
+from services.manager_access import get_manager_access, build_category_access_filter, has_category_access
 from sqlalchemy import func
 from sqlalchemy.orm import joinedload
 from datetime import datetime, timedelta
@@ -88,15 +89,14 @@ def get_recent_expenses():
                 .limit(limit)\
                 .all()
         elif current_user.is_manager:
-            # Managers see expenses from their managed departments
-            managed_dept_ids = [d.id for d in current_user.managed_departments]
-            if current_user.department_id and current_user.department_id not in managed_dept_ids:
-                managed_dept_ids.append(current_user.department_id)
+            # Managers see expenses from managed departments + cross-dept categories
+            managed_dept_ids, managed_cat_ids = get_manager_access(current_user)
+            cat_access_filter = build_category_access_filter(managed_dept_ids, managed_cat_ids)
 
-            if managed_dept_ids:
+            if cat_access_filter is not None:
                 expenses = Expense.query.join(Subcategory, Expense.subcategory_id == Subcategory.id)\
                     .join(Category, Subcategory.category_id == Category.id)\
-                    .filter(Category.department_id.in_(managed_dept_ids))\
+                    .filter(cat_access_filter)\
                     .options(
                         joinedload(Expense.submitter),
                         joinedload(Expense.subcategory).joinedload(Subcategory.category)
@@ -160,17 +160,16 @@ def get_pending_count():
             # Admins see all pending expenses
             count = Expense.query.filter_by(status='pending').count()
         else:
-            # Managers see expenses from their managed departments
-            managed_dept_ids = [d.id for d in current_user.managed_departments]
-            if not managed_dept_ids:
-                managed_dept_ids = [current_user.department_id] if current_user.department_id else []
+            # Managers see expenses from managed departments + cross-dept categories
+            managed_dept_ids, managed_cat_ids = get_manager_access(current_user)
+            cat_access_filter = build_category_access_filter(managed_dept_ids, managed_cat_ids)
 
-            if managed_dept_ids:
+            if cat_access_filter is not None:
                 count = Expense.query.join(Subcategory, Expense.subcategory_id == Subcategory.id)\
                     .join(Category, Subcategory.category_id == Category.id)\
                     .filter(
                         Expense.status == 'pending',
-                        Category.department_id.in_(managed_dept_ids)
+                        cat_access_filter
                     ).count()
             else:
                 count = 0
@@ -203,16 +202,20 @@ def get_pending_approvals():
                 .order_by(Expense.id.desc())\
                 .all()
         else:
-            # Managers see expenses from their managed departments
-            managed_dept_ids = [dept.id for dept in current_user.managed_departments]
-            expenses = base_query.join(Subcategory, Expense.subcategory_id == Subcategory.id)\
-                .join(Category, Subcategory.category_id == Category.id)\
-                .filter(
-                    Expense.status == 'pending',
-                    Category.department_id.in_(managed_dept_ids)
-                )\
-                .order_by(Expense.id.desc())\
-                .all()
+            # Managers see expenses from managed departments + cross-dept categories
+            managed_dept_ids, managed_cat_ids = get_manager_access(current_user)
+            cat_access_filter = build_category_access_filter(managed_dept_ids, managed_cat_ids)
+            if cat_access_filter is not None:
+                expenses = base_query.join(Subcategory, Expense.subcategory_id == Subcategory.id)\
+                    .join(Category, Subcategory.category_id == Category.id)\
+                    .filter(
+                        Expense.status == 'pending',
+                        cat_access_filter
+                    )\
+                    .order_by(Expense.id.desc())\
+                    .all()
+            else:
+                expenses = []
 
         # Pre-calculate all budget usage in 3 queries instead of N*3 queries
         # 1. Calculate department budget usage
@@ -944,11 +947,11 @@ def approve_expense(expense_id):
         if expense.status != 'pending':
             return jsonify({'error': f'Cannot approve expense with status: {expense.status}'}), 400
 
-        # Check if manager has permission for this expense's department (via budget hierarchy)
+        # Check if manager has permission for this expense's category/department
         if not current_user.is_admin:
-            user_dept_ids = [dept.id for dept in current_user.managed_departments]
+            expense_cat_id = expense.subcategory.category.id if expense.subcategory and expense.subcategory.category else None
             expense_dept_id = expense.subcategory.category.department_id if expense.subcategory and expense.subcategory.category else None
-            if expense_dept_id not in user_dept_ids:
+            if not has_category_access(current_user, expense_cat_id, expense_dept_id):
                 return jsonify({'error': 'Not authorized to approve this expense'}), 403
 
         expense.status = 'approved'
@@ -983,11 +986,11 @@ def reject_expense(expense_id):
         if expense.status != 'pending':
             return jsonify({'error': f'Cannot reject expense with status: {expense.status}'}), 400
 
-        # Check if manager has permission for this expense's department (via budget hierarchy)
+        # Check if manager has permission for this expense's category/department
         if not current_user.is_admin:
-            user_dept_ids = [dept.id for dept in current_user.managed_departments]
+            expense_cat_id = expense.subcategory.category.id if expense.subcategory and expense.subcategory.category else None
             expense_dept_id = expense.subcategory.category.department_id if expense.subcategory and expense.subcategory.category else None
-            if expense_dept_id not in user_dept_ids:
+            if not has_category_access(current_user, expense_cat_id, expense_dept_id):
                 return jsonify({'error': 'Not authorized to reject this expense'}), 403
 
         data = request.get_json() or {}
@@ -1168,13 +1171,15 @@ def get_expense_report():
         if current_user.is_admin:
             query = Expense.query
         elif current_user.is_manager:
-            # Managers see expenses from departments they manage (via budget hierarchy)
-            managed_dept_ids = [d.id for d in current_user.managed_departments]
-            if not managed_dept_ids:
-                managed_dept_ids = [current_user.department_id] if current_user.department_id else []
-            query = Expense.query.join(Subcategory, Expense.subcategory_id == Subcategory.id)\
-                .join(Category, Subcategory.category_id == Category.id)\
-                .filter(Category.department_id.in_(managed_dept_ids))
+            # Managers see expenses from managed departments + cross-dept categories
+            managed_dept_ids, managed_cat_ids = get_manager_access(current_user)
+            cat_access_filter = build_category_access_filter(managed_dept_ids, managed_cat_ids)
+            if cat_access_filter is not None:
+                query = Expense.query.join(Subcategory, Expense.subcategory_id == Subcategory.id)\
+                    .join(Category, Subcategory.category_id == Category.id)\
+                    .filter(cat_access_filter)
+            else:
+                query = Expense.query.filter_by(user_id=current_user.id)
         else:
             # Regular users see only their expenses
             query = Expense.query.filter_by(user_id=current_user.id)
@@ -1288,13 +1293,16 @@ def export_expenses():
         if current_user.is_admin:
             expenses = Expense.query.order_by(Expense.id.desc()).all()
         elif current_user.is_manager:
-            managed_dept_ids = [dept.id for dept in current_user.managed_departments]
-            if current_user.department_id:
-                managed_dept_ids.append(current_user.department_id)
-            expenses = db.session.query(Expense).join(Subcategory, Expense.subcategory_id == Subcategory.id)\
-                .join(Category, Subcategory.category_id == Category.id)\
-                .filter(Category.department_id.in_(managed_dept_ids))\
-                .order_by(Expense.id.desc()).all()
+            managed_dept_ids, managed_cat_ids = get_manager_access(current_user)
+            cat_access_filter = build_category_access_filter(managed_dept_ids, managed_cat_ids)
+            if cat_access_filter is not None:
+                expenses = db.session.query(Expense).join(Subcategory, Expense.subcategory_id == Subcategory.id)\
+                    .join(Category, Subcategory.category_id == Category.id)\
+                    .filter(cat_access_filter)\
+                    .order_by(Expense.id.desc()).all()
+            else:
+                expenses = Expense.query.filter_by(user_id=current_user.id)\
+                    .order_by(Expense.id.desc()).all()
         else:
             expenses = Expense.query.filter_by(user_id=current_user.id)\
                 .order_by(Expense.id.desc()).all()

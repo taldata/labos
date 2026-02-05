@@ -43,7 +43,8 @@ function UserManagement({ user, setUser }) {
     status: 'active',
     can_use_modern_version: true,
     department_id: '',
-    managed_department_ids: []
+    managed_department_ids: [],
+    managed_category_ids: []
   })
   const [formError, setFormError] = useState('')
 
@@ -136,7 +137,8 @@ function UserManagement({ user, setUser }) {
         status: userToEdit.status,
         can_use_modern_version: userToEdit.can_use_modern_version,
         department_id: userToEdit.department_id || '',
-        managed_department_ids: userToEdit.managed_department_ids || []
+        managed_department_ids: userToEdit.managed_department_ids || [],
+        managed_category_ids: userToEdit.managed_category_ids || []
       })
     } else {
       setFormData({
@@ -150,7 +152,8 @@ function UserManagement({ user, setUser }) {
         status: 'active',
         can_use_modern_version: true,
         department_id: '',
-        managed_department_ids: []
+        managed_department_ids: [],
+        managed_category_ids: []
       })
     }
     setModalOpen(true)
@@ -415,6 +418,11 @@ function UserManagement({ user, setUser }) {
                               <i className="fas fa-building"></i> {u.managed_departments.length} managed
                             </div>
                           )}
+                          {u.is_manager && u.managed_categories && u.managed_categories.length > 0 && (
+                            <div className="managed-depts-info cross-dept" title={`Cross-dept categories: ${u.managed_categories.map(c => `${c.name} (${c.department_name})`).join(', ')}`}>
+                              <i className="fas fa-folder-plus"></i> {u.managed_categories.length} extra categories
+                            </div>
+                          )}
                         </div>
                       </td>
                       <td><div className="roles-cell">{getRoleBadges(u)}</div></td>
@@ -585,7 +593,7 @@ function UserManagement({ user, setUser }) {
               <label className="section-label">
                 <i className="fas fa-building"></i> Managed Departments
               </label>
-              <p className="field-hint">Select the departments this manager can manage</p>
+              <p className="field-hint">Select the departments this manager can fully manage</p>
               <div className="managed-departments-list">
                 {departments.map(dept => (
                   <label key={dept.id} className="checkbox-label dept-checkbox">
@@ -594,12 +602,21 @@ function UserManagement({ user, setUser }) {
                       checked={formData.managed_department_ids.includes(dept.id)}
                       onChange={(e) => {
                         const checked = e.target.checked
-                        setFormData(prev => ({
-                          ...prev,
-                          managed_department_ids: checked
+                        setFormData(prev => {
+                          const newManagedDeptIds = checked
                             ? [...prev.managed_department_ids, dept.id]
                             : prev.managed_department_ids.filter(id => id !== dept.id)
-                        }))
+                          // When adding a department, remove its categories from cross-dept list
+                          const deptCatIds = (dept.categories || []).map(c => c.id)
+                          const newManagedCatIds = checked
+                            ? prev.managed_category_ids.filter(id => !deptCatIds.includes(id))
+                            : prev.managed_category_ids
+                          return {
+                            ...prev,
+                            managed_department_ids: newManagedDeptIds,
+                            managed_category_ids: newManagedCatIds
+                          }
+                        })
                       }}
                     />
                     <span>{dept.name}</span>
@@ -611,6 +628,54 @@ function UserManagement({ user, setUser }) {
               </div>
             </div>
           )}
+
+          {/* Cross-Department Categories - shown for managers, only departments not fully managed */}
+          {formData.is_manager && (() => {
+            const unmanagedDepts = departments.filter(d =>
+              !formData.managed_department_ids.includes(d.id) &&
+              d.categories && d.categories.length > 0
+            )
+            if (unmanagedDepts.length === 0) return null
+            return (
+              <div className="form-group">
+                <label className="section-label">
+                  <i className="fas fa-folder-plus"></i> Additional Categories from Other Departments
+                </label>
+                <p className="field-hint">
+                  Grant access to specific categories from departments this manager doesn't fully manage
+                </p>
+                <div className="cross-dept-categories-list">
+                  {unmanagedDepts.map(dept => (
+                    <div key={dept.id} className="cross-dept-group">
+                      <div className="cross-dept-name">
+                        <i className="fas fa-building"></i> {dept.name}
+                      </div>
+                      <div className="cross-dept-cats">
+                        {dept.categories.map(cat => (
+                          <label key={cat.id} className="checkbox-label cat-checkbox">
+                            <input
+                              type="checkbox"
+                              checked={formData.managed_category_ids.includes(cat.id)}
+                              onChange={(e) => {
+                                const checked = e.target.checked
+                                setFormData(prev => ({
+                                  ...prev,
+                                  managed_category_ids: checked
+                                    ? [...prev.managed_category_ids, cat.id]
+                                    : prev.managed_category_ids.filter(id => id !== cat.id)
+                                }))
+                              }}
+                            />
+                            <span>{cat.name}</span>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )
+          })()}
 
           <div className="modal-actions">
             <Button type="button" variant="secondary" onClick={closeModal}>

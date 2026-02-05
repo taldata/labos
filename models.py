@@ -48,6 +48,12 @@ manager_departments = db.Table('manager_departments',
     db.Column('department_id', db.Integer, db.ForeignKey('department.id'), primary_key=True)
 )
 
+# Manager-Category association table (for cross-department category access)
+manager_categories = db.Table('manager_categories',
+    db.Column('user_id', db.Integer, db.ForeignKey('user.id'), primary_key=True),
+    db.Column('category_id', db.Integer, db.ForeignKey('category.id'), primary_key=True)
+)
+
 class User(UserMixin, db.Model):
     __tablename__ = 'user'
     id = db.Column(db.Integer, primary_key=True)
@@ -69,9 +75,13 @@ class User(UserMixin, db.Model):
                                     foreign_keys=[department_id],
                                     back_populates='employees')
     # Add managed departments relationship
-    managed_departments = db.relationship('Department', 
+    managed_departments = db.relationship('Department',
                                        secondary=manager_departments,
                                        backref=db.backref('department_managers', lazy='dynamic'))
+    # Cross-department category access
+    managed_categories = db.relationship('Category',
+                                       secondary=manager_categories,
+                                       backref=db.backref('category_managers', lazy='dynamic'))
     
     # Relationship for expenses where user is the submitter
     submitted_expenses = db.relationship('Expense',
