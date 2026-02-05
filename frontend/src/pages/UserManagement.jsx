@@ -645,33 +645,40 @@ function UserManagement({ user, setUser }) {
                   Grant access to specific categories from departments this manager doesn't fully manage
                 </p>
                 <div className="cross-dept-categories-list">
-                  {unmanagedDepts.map(dept => (
-                    <div key={dept.id} className="cross-dept-group">
-                      <div className="cross-dept-name">
-                        <i className="fas fa-building"></i> {dept.name}
+                  {unmanagedDepts.map(dept => {
+                    const selectedCount = dept.categories.filter(c => formData.managed_category_ids.includes(c.id)).length
+                    return (
+                      <div key={dept.id} className="cross-dept-group">
+                        <div className="cross-dept-name">
+                          <i className="fas fa-building"></i>
+                          <span>{dept.name}</span>
+                          <span className="cross-dept-count">
+                            {selectedCount > 0 ? `${selectedCount} selected` : `${dept.categories.length} categories`}
+                          </span>
+                        </div>
+                        <div className="cross-dept-cats">
+                          {dept.categories.map(cat => (
+                            <label key={cat.id} className="checkbox-label cross-cat-checkbox">
+                              <input
+                                type="checkbox"
+                                checked={formData.managed_category_ids.includes(cat.id)}
+                                onChange={(e) => {
+                                  const checked = e.target.checked
+                                  setFormData(prev => ({
+                                    ...prev,
+                                    managed_category_ids: checked
+                                      ? [...prev.managed_category_ids, cat.id]
+                                      : prev.managed_category_ids.filter(id => id !== cat.id)
+                                  }))
+                                }}
+                              />
+                              <span className="cross-cat-name">{cat.name}</span>
+                            </label>
+                          ))}
+                        </div>
                       </div>
-                      <div className="cross-dept-cats">
-                        {dept.categories.map(cat => (
-                          <label key={cat.id} className="checkbox-label cat-checkbox">
-                            <input
-                              type="checkbox"
-                              checked={formData.managed_category_ids.includes(cat.id)}
-                              onChange={(e) => {
-                                const checked = e.target.checked
-                                setFormData(prev => ({
-                                  ...prev,
-                                  managed_category_ids: checked
-                                    ? [...prev.managed_category_ids, cat.id]
-                                    : prev.managed_category_ids.filter(id => id !== cat.id)
-                                }))
-                              }}
-                            />
-                            <span>{cat.name}</span>
-                          </label>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
+                    )
+                  })}
                 </div>
               </div>
             )
