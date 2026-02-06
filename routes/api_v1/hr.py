@@ -257,3 +257,303 @@ def update_welfare_subcategory_budget(subcategory_id):
         db.session.rollback()
         logging.error(f"Error updating welfare subcategory budget: {str(e)}")
         return jsonify({'error': 'Failed to update budget'}), 500
+
+
+# --- HR Welfare Category & Subcategory CRUD ---
+
+@api_v1.route('/hr/departments', methods=['GET'])
+@login_required
+def get_hr_departments():
+    """Get departments list for a budget year (for HR dropdowns)"""
+    if not _check_hr_access():
+        return jsonify({'error': 'HR access required'}), 403
+
+    try:
+        year_id = request.args.get('year_id', type=int)
+        query = Department.query
+        if year_id:
+            query = query.filter_by(year_id=year_id)
+        else:
+            current_year = BudgetYear.query.filter_by(is_current=True).first()
+            if current_year:
+                query = query.filter_by(year_id=current_year.id)
+
+        departments = query.order_by(Department.name).all()
+
+        return jsonify({
+            'departments': [{
+                'id': d.id,
+                'name': d.name
+            } for d in departments]
+        }), 200
+    except Exception as e:
+        logging.error(f"Error getting HR departments: {str(e)}")
+        return jsonify({'error': 'Failed to fetch departments'}), 500
+
+
+@api_v1.route('/hr/welfare-categories', methods=['POST'])
+@login_required
+def create_welfare_category():
+    """Create a new welfare category for a department"""
+    if not _check_hr_access():
+        return jsonify({'error': 'HR access required'}), 403
+
+    try:
+        data = request.get_json()
+        if not data or 'name' not in data or 'department_id' not in data:
+            return jsonify({'error': 'Name and department are required'}), 400
+
+        department = Department.query.get(int(data['department_id']))
+        if not department:
+            return jsonify({'error': 'Department not found'}), 404
+
+        budget_val = data.get('budget')
+        if budget_val == '' or budget_val is None:
+            budget_val = 0.0
+        else:
+            budget_val = float(budget_val)
+
+        category = Category(
+            name=data['name'],
+            budget=budget_val,
+            is_welfare=True,
+            department_id=department.id
+        )
+
+        db.session.add(category)
+        db.session.commit()
+
+        logging.info(f"Welfare category '{category.name}' created for dept '{department.name}' by {current_user.username}")
+
+        return jsonify({
+            'message': 'Welfare category created',
+            'category': {
+                'id': category.id,
+                'name': category.name,
+                'budget': category.budget,
+                'is_welfare': True,
+                'department_id': category.department_id
+            }
+        }), 201
+
+    except Exception as e:
+        db.session.rollback()
+        logging.error(f"Error creating welfare category: {str(e)}")
+        return jsonify({'error': 'Failed to create welfare category'}), 500
+
+
+@api_v1.route('/hr/welfare-categories/<int:category_id>', methods=['PUT'])
+@login_required
+def update_welfare_category(category_id):
+    """Update a welfare category (name and/or budget)"""
+    if not _check_hr_access():
+        return jsonify({'error': 'HR access required'}), 403
+
+    try:
+        category = Category.query.get(category_id)
+        if not category or not category.is_welfare:
+            return jsonify({'error': 'Welfare category not found'}), 404
+
+        data = request.get_json()
+
+        if 'name' in data:
+            name = data['name'].strip()
+            if not name:
+                return jsonify({'error': 'Name cannot be empty'}), 400
+            category.name = name
+
+        if 'budget' in data:
+            budget_val = data['budget']
+            if budget_val == '' or budget_val is None:
+                category.budget = 0.0
+            else:
+                category.budget = float(budget_val)
+
+        db.session.commit()
+
+        logging.info(f"Welfare category {category_id} updated by {current_user.username}")
+
+        return jsonify({
+            'message': 'Welfare category updated',
+            'category': {
+                'id': category.id,
+                'name': category.name,
+                'budget': category.budget,
+                'is_welfare': True,
+                'department_id': category.department_id
+            }
+        }), 200
+
+    except Exception as e:
+        db.session.rollback()
+        logging.error(f"Error updating welfare category: {str(e)}")
+        return jsonify({'error': 'Failed to update welfare category'}), 500
+
+
+@api_v1.route('/hr/welfare-categories/<int:category_id>', methods=['DELETE'])
+@login_required
+def delete_welfare_category(category_id):
+    """Delete a welfare category (only if it has no subcategories with expenses)"""
+    if not _check_hr_access():
+        return jsonify({'error': 'HR access required'}), 403
+
+    try:
+        category = Category.query.get(category_id)
+        if not category or not category.is_welfare:
+            return jsonify({'error': 'Welfare category not found'}), 404
+
+        # Check if any subcategory has expenses
+        for sub in category.subcategories:
+            if sub.expenses:
+                return jsonify({
+                    'error': 'Cannot delete category with existing expenses. Remove the expenses first.'
+                }), 400
+
+        # Delete subcategories first, then the category
+        for sub in category.subcategories:
+            db.session.delete(sub)
+        db.session.delete(category)
+        db.session.commit()
+
+        logging.info(f"Welfare category {category_id} deleted by {current_user.username}")
+
+        return jsonify({'message': 'Welfare category deleted'}), 200
+
+    except Exception as e:
+        db.session.rollback()
+        logging.error(f"Error deleting welfare category: {str(e)}")
+        return jsonify({'error': 'Failed to delete welfare category'}), 500
+
+
+@api_v1.route('/hr/welfare-subcategories', methods=['POST'])
+@login_required
+def create_welfare_subcategory():
+    """Create a new subcategory under a welfare category"""
+    if not _check_hr_access():
+        return jsonify({'error': 'HR access required'}), 403
+
+    try:
+        data = request.get_json()
+        if not data or 'name' not in data or 'category_id' not in data:
+            return jsonify({'error': 'Name and category are required'}), 400
+
+        category = Category.query.get(int(data['category_id']))
+        if not category or not category.is_welfare:
+            return jsonify({'error': 'Welfare category not found'}), 404
+
+        budget_val = data.get('budget')
+        if budget_val == '' or budget_val is None:
+            budget_val = 0.0
+        else:
+            budget_val = float(budget_val)
+
+        subcategory = Subcategory(
+            name=data['name'],
+            budget=budget_val,
+            category_id=category.id
+        )
+
+        db.session.add(subcategory)
+        db.session.commit()
+
+        logging.info(f"Welfare subcategory '{subcategory.name}' created under category '{category.name}' by {current_user.username}")
+
+        return jsonify({
+            'message': 'Welfare subcategory created',
+            'subcategory': {
+                'id': subcategory.id,
+                'name': subcategory.name,
+                'budget': subcategory.budget,
+                'category_id': subcategory.category_id
+            }
+        }), 201
+
+    except Exception as e:
+        db.session.rollback()
+        logging.error(f"Error creating welfare subcategory: {str(e)}")
+        return jsonify({'error': 'Failed to create welfare subcategory'}), 500
+
+
+@api_v1.route('/hr/welfare-subcategories/<int:subcategory_id>', methods=['PUT'])
+@login_required
+def update_welfare_subcategory(subcategory_id):
+    """Update a welfare subcategory (name and/or budget)"""
+    if not _check_hr_access():
+        return jsonify({'error': 'HR access required'}), 403
+
+    try:
+        subcategory = Subcategory.query.get(subcategory_id)
+        if not subcategory:
+            return jsonify({'error': 'Subcategory not found'}), 404
+
+        category = Category.query.get(subcategory.category_id)
+        if not category or not category.is_welfare:
+            return jsonify({'error': 'Subcategory does not belong to a welfare category'}), 404
+
+        data = request.get_json()
+
+        if 'name' in data:
+            name = data['name'].strip()
+            if not name:
+                return jsonify({'error': 'Name cannot be empty'}), 400
+            subcategory.name = name
+
+        if 'budget' in data:
+            budget_val = data['budget']
+            if budget_val == '' or budget_val is None:
+                subcategory.budget = 0.0
+            else:
+                subcategory.budget = float(budget_val)
+
+        db.session.commit()
+
+        logging.info(f"Welfare subcategory {subcategory_id} updated by {current_user.username}")
+
+        return jsonify({
+            'message': 'Welfare subcategory updated',
+            'subcategory': {
+                'id': subcategory.id,
+                'name': subcategory.name,
+                'budget': subcategory.budget,
+                'category_id': subcategory.category_id
+            }
+        }), 200
+
+    except Exception as e:
+        db.session.rollback()
+        logging.error(f"Error updating welfare subcategory: {str(e)}")
+        return jsonify({'error': 'Failed to update welfare subcategory'}), 500
+
+
+@api_v1.route('/hr/welfare-subcategories/<int:subcategory_id>', methods=['DELETE'])
+@login_required
+def delete_welfare_subcategory(subcategory_id):
+    """Delete a welfare subcategory (only if it has no expenses)"""
+    if not _check_hr_access():
+        return jsonify({'error': 'HR access required'}), 403
+
+    try:
+        subcategory = Subcategory.query.get(subcategory_id)
+        if not subcategory:
+            return jsonify({'error': 'Subcategory not found'}), 404
+
+        category = Category.query.get(subcategory.category_id)
+        if not category or not category.is_welfare:
+            return jsonify({'error': 'Subcategory does not belong to a welfare category'}), 404
+
+        if subcategory.expenses:
+            return jsonify({
+                'error': 'Cannot delete subcategory with existing expenses. Remove the expenses first.'
+            }), 400
+
+        db.session.delete(subcategory)
+        db.session.commit()
+
+        logging.info(f"Welfare subcategory {subcategory_id} deleted by {current_user.username}")
+
+        return jsonify({'message': 'Welfare subcategory deleted'}), 200
+
+    except Exception as e:
+        db.session.rollback()
+        logging.error(f"Error deleting welfare subcategory: {str(e)}")
+        return jsonify({'error': 'Failed to delete welfare subcategory'}), 500

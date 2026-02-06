@@ -4,7 +4,7 @@ import {
   BarChart, Bar,
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
 } from 'recharts'
-import { Card, Select, Skeleton, Button, Badge, Input, PageHeader, useToast } from '../components/ui'
+import { Card, Select, Skeleton, Button, Badge, Input, Modal, PageHeader, useToast } from '../components/ui'
 import logger from '../utils/logger'
 import './HRDashboard.css'
 
@@ -24,6 +24,24 @@ function HRDashboard({ user }) {
   const [selectedYear, setSelectedYear] = useState('')
   const [expandedDepts, setExpandedDepts] = useState({})
   const [editingBudget, setEditingBudget] = useState(null) // { type: 'category'|'subcategory', id, value }
+
+  // Departments list for "add category" modal
+  const [departments, setDepartments] = useState([])
+
+  // Modal states
+  const [showAddCategory, setShowAddCategory] = useState(false)
+  const [showAddSubcategory, setShowAddSubcategory] = useState(false)
+  const [showEditItem, setShowEditItem] = useState(false)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+
+  // Form state for add/edit modals
+  const [formData, setFormData] = useState({ name: '', budget: '', department_id: '', category_id: '' })
+  const [editTarget, setEditTarget] = useState(null) // { type: 'category'|'subcategory', id, name, budget }
+  const [deleteTarget, setDeleteTarget] = useState(null) // { type: 'category'|'subcategory', id, name }
+  const [modalLoading, setModalLoading] = useState(false)
+
+  // Inline editing for names
+  const [editingName, setEditingName] = useState(null) // { type, id, value }
 
   // Access check
   useEffect(() => {
@@ -63,6 +81,28 @@ function HRDashboard({ user }) {
     }
     fetchYears()
   }, [])
+
+  // Fetch departments for the selected year (for add category modal)
+  const fetchDepartments = useCallback(async () => {
+    if (!selectedYear) return
+    try {
+      const response = await fetch(`/api/v1/hr/departments?year_id=${selectedYear}`, {
+        credentials: 'include'
+      })
+      if (response.ok) {
+        const result = await response.json()
+        if (mountedRef.current) {
+          setDepartments(result.departments || [])
+        }
+      }
+    } catch (error) {
+      logger.error('Failed to fetch departments', { error: error.message })
+    }
+  }, [selectedYear])
+
+  useEffect(() => {
+    fetchDepartments()
+  }, [fetchDepartments])
 
   // Fetch welfare data when year changes
   const fetchWelfareOverview = useCallback(async () => {
@@ -142,10 +182,173 @@ function HRDashboard({ user }) {
     return `₪${Number(amount).toLocaleString('he-IL', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`
   }
 
+  // --- CRUD Operations ---
+
+  const openAddCategory = () => {
+    setFormData({ name: '', budget: '', department_id: '', category_id: '' })
+    setShowAddCategory(true)
+  }
+
+  const openAddSubcategory = (categoryId) => {
+    setFormData({ name: '', budget: '', department_id: '', category_id: String(categoryId) })
+    setShowAddSubcategory(true)
+  }
+
+  const openEditItem = (type, item) => {
+    setEditTarget({ type, id: item.id, name: item.name, budget: item.budget })
+    setFormData({ name: item.name, budget: String(item.budget), department_id: '', category_id: '' })
+    setShowEditItem(true)
+  }
+
+  const openDeleteConfirm = (type, item) => {
+    setDeleteTarget({ type, id: item.id, name: item.name })
+    setShowDeleteConfirm(true)
+  }
+
+  const handleAddCategory = async () => {
+    if (!formData.name.trim() || !formData.department_id) {
+      showError('Please fill in all required fields')
+      return
+    }
+
+    setModalLoading(true)
+    try {
+      const response = await fetch('/api/v1/hr/welfare-categories', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          name: formData.name.trim(),
+          budget: parseFloat(formData.budget) || 0,
+          department_id: parseInt(formData.department_id)
+        })
+      })
+
+      if (response.ok) {
+        success('Welfare category created')
+        setShowAddCategory(false)
+        fetchWelfareOverview()
+      } else {
+        const err = await response.json()
+        showError(err.error || 'Failed to create category')
+      }
+    } catch (error) {
+      logger.error('Failed to create welfare category', { error: error.message })
+      showError('Failed to create category')
+    } finally {
+      setModalLoading(false)
+    }
+  }
+
+  const handleAddSubcategory = async () => {
+    if (!formData.name.trim() || !formData.category_id) {
+      showError('Please fill in all required fields')
+      return
+    }
+
+    setModalLoading(true)
+    try {
+      const response = await fetch('/api/v1/hr/welfare-subcategories', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          name: formData.name.trim(),
+          budget: parseFloat(formData.budget) || 0,
+          category_id: parseInt(formData.category_id)
+        })
+      })
+
+      if (response.ok) {
+        success('Subcategory created')
+        setShowAddSubcategory(false)
+        fetchWelfareOverview()
+      } else {
+        const err = await response.json()
+        showError(err.error || 'Failed to create subcategory')
+      }
+    } catch (error) {
+      logger.error('Failed to create welfare subcategory', { error: error.message })
+      showError('Failed to create subcategory')
+    } finally {
+      setModalLoading(false)
+    }
+  }
+
+  const handleEditItem = async () => {
+    if (!editTarget || !formData.name.trim()) {
+      showError('Name cannot be empty')
+      return
+    }
+
+    setModalLoading(true)
+    const url = editTarget.type === 'category'
+      ? `/api/v1/hr/welfare-categories/${editTarget.id}`
+      : `/api/v1/hr/welfare-subcategories/${editTarget.id}`
+
+    try {
+      const response = await fetch(url, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          name: formData.name.trim(),
+          budget: parseFloat(formData.budget) || 0
+        })
+      })
+
+      if (response.ok) {
+        success(`${editTarget.type === 'category' ? 'Category' : 'Subcategory'} updated`)
+        setShowEditItem(false)
+        setEditTarget(null)
+        fetchWelfareOverview()
+      } else {
+        const err = await response.json()
+        showError(err.error || 'Failed to update')
+      }
+    } catch (error) {
+      logger.error('Failed to update welfare item', { error: error.message })
+      showError('Failed to update')
+    } finally {
+      setModalLoading(false)
+    }
+  }
+
+  const handleDelete = async () => {
+    if (!deleteTarget) return
+
+    setModalLoading(true)
+    const url = deleteTarget.type === 'category'
+      ? `/api/v1/hr/welfare-categories/${deleteTarget.id}`
+      : `/api/v1/hr/welfare-subcategories/${deleteTarget.id}`
+
+    try {
+      const response = await fetch(url, {
+        method: 'DELETE',
+        credentials: 'include'
+      })
+
+      if (response.ok) {
+        success(`${deleteTarget.type === 'category' ? 'Category' : 'Subcategory'} deleted`)
+        setShowDeleteConfirm(false)
+        setDeleteTarget(null)
+        fetchWelfareOverview()
+      } else {
+        const err = await response.json()
+        showError(err.error || 'Failed to delete')
+      }
+    } catch (error) {
+      logger.error('Failed to delete welfare item', { error: error.message })
+      showError('Failed to delete')
+    } finally {
+      setModalLoading(false)
+    }
+  }
+
   if (!user?.is_hr && !user?.is_admin) return null
 
   const summary = data?.summary
-  const departments = data?.departments || []
+  const deptResults = data?.departments || []
   const chartData = data?.chart_data || []
 
   return (
@@ -156,7 +359,7 @@ function HRDashboard({ user }) {
         icon="fas fa-heart"
       />
 
-      {/* Year Selector */}
+      {/* Year Selector + Add Category Button */}
       <Card className="hr-filters-card">
         <Card.Body>
           <div className="hr-filters-row">
@@ -171,6 +374,9 @@ function HRDashboard({ user }) {
                 </option>
               ))}
             </Select>
+            <Button variant="primary" onClick={openAddCategory} className="hr-add-category-btn">
+              <i className="fas fa-plus"></i> Add Welfare Category
+            </Button>
           </div>
         </Card.Body>
       </Card>
@@ -265,10 +471,10 @@ function HRDashboard({ user }) {
               <span className="hr-dept-count">{summary?.department_count || 0} departments</span>
             </Card.Header>
             <Card.Body>
-              {departments.length === 0 ? (
+              {deptResults.length === 0 ? (
                 <div className="hr-empty-state">
                   <i className="fas fa-info-circle"></i>
-                  <p>No welfare categories found. Mark categories as &quot;Welfare&quot; in the Organization page to see them here.</p>
+                  <p>No welfare categories found. Click &quot;Add Welfare Category&quot; to create one, or mark categories as &quot;Welfare&quot; in the Organization page.</p>
                 </div>
               ) : (
                 <div className="hr-table-wrapper">
@@ -285,7 +491,7 @@ function HRDashboard({ user }) {
                       </tr>
                     </thead>
                     <tbody>
-                      {departments.map(dept => {
+                      {deptResults.map(dept => {
                         const wc = dept.welfare_category
                         const isExpanded = expandedDepts[dept.department_id]
                         const key = `dept-${dept.department_id}-cat-${wc.id}`
@@ -327,14 +533,41 @@ function HRDashboard({ user }) {
                                 <UtilizationBadge percent={wc.utilization_percent} />
                               </td>
                               <td className="col-actions" onClick={e => e.stopPropagation()}>
-                                <Button
-                                  variant="ghost"
-                                  size="small"
-                                  onClick={() => startEdit('category', wc.id, wc.budget)}
-                                  title="Edit budget"
-                                >
-                                  <i className="fas fa-edit"></i>
-                                </Button>
+                                <div className="hr-actions-group">
+                                  <Button
+                                    variant="ghost"
+                                    size="small"
+                                    onClick={() => startEdit('category', wc.id, wc.budget)}
+                                    title="Edit budget"
+                                  >
+                                    <i className="fas fa-coins"></i>
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="small"
+                                    onClick={() => openEditItem('category', wc)}
+                                    title="Edit category"
+                                  >
+                                    <i className="fas fa-edit"></i>
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="small"
+                                    onClick={() => openAddSubcategory(wc.id)}
+                                    title="Add subcategory"
+                                  >
+                                    <i className="fas fa-plus"></i>
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="small"
+                                    onClick={() => openDeleteConfirm('category', wc)}
+                                    title="Delete category"
+                                    className="hr-delete-btn"
+                                  >
+                                    <i className="fas fa-trash"></i>
+                                  </Button>
+                                </div>
                               </td>
                             </tr>
                             {isExpanded && wc.subcategories.map(sub => (
@@ -367,17 +600,50 @@ function HRDashboard({ user }) {
                                   <UtilizationBadge percent={sub.utilization_percent} />
                                 </td>
                                 <td className="col-actions">
-                                  <Button
-                                    variant="ghost"
-                                    size="small"
-                                    onClick={() => startEdit('subcategory', sub.id, sub.budget)}
-                                    title="Edit budget"
-                                  >
-                                    <i className="fas fa-edit"></i>
-                                  </Button>
+                                  <div className="hr-actions-group">
+                                    <Button
+                                      variant="ghost"
+                                      size="small"
+                                      onClick={() => startEdit('subcategory', sub.id, sub.budget)}
+                                      title="Edit budget"
+                                    >
+                                      <i className="fas fa-coins"></i>
+                                    </Button>
+                                    <Button
+                                      variant="ghost"
+                                      size="small"
+                                      onClick={() => openEditItem('subcategory', sub)}
+                                      title="Edit subcategory"
+                                    >
+                                      <i className="fas fa-edit"></i>
+                                    </Button>
+                                    <Button
+                                      variant="ghost"
+                                      size="small"
+                                      onClick={() => openDeleteConfirm('subcategory', sub)}
+                                      title="Delete subcategory"
+                                      className="hr-delete-btn"
+                                    >
+                                      <i className="fas fa-trash"></i>
+                                    </Button>
+                                  </div>
                                 </td>
                               </tr>
                             ))}
+                            {isExpanded && wc.subcategories.length === 0 && (
+                              <tr className="hr-subcat-row hr-empty-subcat-row">
+                                <td colSpan="7" className="hr-empty-subcat">
+                                  <span>No subcategories</span>
+                                  <Button
+                                    variant="ghost"
+                                    size="small"
+                                    onClick={() => openAddSubcategory(wc.id)}
+                                  >
+                                    <i className="fas fa-plus"></i> Add Subcategory
+                                  </Button>
+                                </td>
+                              </tr>
+                            )}
                           </tbody>
                         )
                       })}
@@ -389,6 +655,117 @@ function HRDashboard({ user }) {
           </Card>
         </>
       )}
+
+      {/* Add Welfare Category Modal */}
+      <Modal.Form
+        isOpen={showAddCategory}
+        onClose={() => setShowAddCategory(false)}
+        onSubmit={handleAddCategory}
+        title="Add Welfare Category"
+        submitText="Create"
+        loading={modalLoading}
+      >
+        <div className="hr-modal-field">
+          <Select
+            label="Department"
+            value={formData.department_id}
+            onChange={(e) => setFormData(prev => ({ ...prev, department_id: e.target.value }))}
+            required
+          >
+            <option value="">Select department...</option>
+            {departments.map(d => (
+              <option key={d.id} value={d.id}>{d.name}</option>
+            ))}
+          </Select>
+        </div>
+        <div className="hr-modal-field">
+          <Input
+            label="Category Name"
+            value={formData.name}
+            onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+            placeholder="e.g., Employee Benefits"
+            required
+          />
+        </div>
+        <div className="hr-modal-field">
+          <Input
+            label="Budget (ILS)"
+            type="number"
+            value={formData.budget}
+            onChange={(e) => setFormData(prev => ({ ...prev, budget: e.target.value }))}
+            placeholder="0"
+          />
+        </div>
+      </Modal.Form>
+
+      {/* Add Subcategory Modal */}
+      <Modal.Form
+        isOpen={showAddSubcategory}
+        onClose={() => setShowAddSubcategory(false)}
+        onSubmit={handleAddSubcategory}
+        title="Add Subcategory"
+        submitText="Create"
+        loading={modalLoading}
+      >
+        <div className="hr-modal-field">
+          <Input
+            label="Subcategory Name"
+            value={formData.name}
+            onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+            placeholder="e.g., Holiday Gifts"
+            required
+          />
+        </div>
+        <div className="hr-modal-field">
+          <Input
+            label="Budget (ILS)"
+            type="number"
+            value={formData.budget}
+            onChange={(e) => setFormData(prev => ({ ...prev, budget: e.target.value }))}
+            placeholder="0"
+          />
+        </div>
+      </Modal.Form>
+
+      {/* Edit Category/Subcategory Modal */}
+      <Modal.Form
+        isOpen={showEditItem}
+        onClose={() => { setShowEditItem(false); setEditTarget(null) }}
+        onSubmit={handleEditItem}
+        title={`Edit ${editTarget?.type === 'category' ? 'Category' : 'Subcategory'}`}
+        submitText="Save"
+        loading={modalLoading}
+      >
+        <div className="hr-modal-field">
+          <Input
+            label="Name"
+            value={formData.name}
+            onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+            required
+          />
+        </div>
+        <div className="hr-modal-field">
+          <Input
+            label="Budget (ILS)"
+            type="number"
+            value={formData.budget}
+            onChange={(e) => setFormData(prev => ({ ...prev, budget: e.target.value }))}
+            placeholder="0"
+          />
+        </div>
+      </Modal.Form>
+
+      {/* Delete Confirmation */}
+      <Modal.Confirm
+        isOpen={showDeleteConfirm}
+        onClose={() => { setShowDeleteConfirm(false); setDeleteTarget(null) }}
+        onConfirm={handleDelete}
+        title={`Delete ${deleteTarget?.type === 'category' ? 'Category' : 'Subcategory'}`}
+        message={`Are you sure you want to delete "${deleteTarget?.name}"? ${deleteTarget?.type === 'category' ? 'All subcategories under this category will also be deleted.' : ''} This action cannot be undone.`}
+        confirmText="Delete"
+        variant="danger"
+        loading={modalLoading}
+      />
     </div>
   )
 }
