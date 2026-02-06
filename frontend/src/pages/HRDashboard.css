@@ -12,7 +12,22 @@
 }
 
 .hr-filters-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.hr-filters-row > :first-child {
   max-width: 300px;
+  flex: 1;
+}
+
+.hr-add-category-btn {
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
 /* Loading */
@@ -164,7 +179,7 @@
 
 .hr-welfare-table .col-actions {
   text-align: center;
-  width: 80px;
+  width: 160px;
 }
 
 /* Department row */
@@ -240,6 +255,48 @@
 
 .hr-budget-input input {
   text-align: right;
+}
+
+/* Actions group */
+.hr-actions-group {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.125rem;
+}
+
+.hr-delete-btn {
+  color: #ef4444 !important;
+}
+
+.hr-delete-btn:hover {
+  background-color: #fef2f2 !important;
+  color: #dc2626 !important;
+}
+
+/* Empty subcategory row */
+.hr-empty-subcat {
+  text-align: center;
+  padding: 0.75rem 1rem;
+  color: #94a3b8;
+  font-size: 0.85rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+}
+
+.hr-empty-subcat-row:hover {
+  background-color: #fafbfc;
+}
+
+/* Modal field spacing */
+.hr-modal-field {
+  margin-bottom: 1rem;
+}
+
+.hr-modal-field:last-child {
+  margin-bottom: 0;
 }
 
 /* Empty state */
