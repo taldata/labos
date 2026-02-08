@@ -1,16 +1,27 @@
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   BarChart, Bar,
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
 } from 'recharts'
-import { Card, Select, Skeleton, Button, Badge, Input, Modal, PageHeader, useToast } from '../components/ui'
+import { Card, Select, Skeleton, Button, Input, Modal, PageHeader, useToast } from '../components/ui'
 import logger from '../utils/logger'
 import './HRDashboard.css'
 
-function UtilizationBadge({ percent }) {
-  const variant = percent > 90 ? 'danger' : percent > 70 ? 'warning' : 'success'
-  return <Badge variant={variant}>{percent.toFixed(1)}%</Badge>
+function UtilizationBar({ percent }) {
+  const color = percent > 90 ? '#ef4444' : percent > 70 ? '#f59e0b' : '#10b981'
+  const clampedPercent = Math.min(percent, 100)
+  return (
+    <div className="hr-util-bar-container">
+      <div className="hr-util-bar-track">
+        <div
+          className="hr-util-bar-fill"
+          style={{ width: `${clampedPercent}%`, backgroundColor: color }}
+        />
+      </div>
+      <span className="hr-util-bar-label" style={{ color }}>{percent.toFixed(1)}%</span>
+    </div>
+  )
 }
 
 function HRDashboard({ user }) {
@@ -24,6 +35,10 @@ function HRDashboard({ user }) {
   const [selectedYear, setSelectedYear] = useState('')
   const [expandedDepts, setExpandedDepts] = useState({})
   const [editingBudget, setEditingBudget] = useState(null) // { type: 'category'|'subcategory', id, value }
+
+  // Search and sort state
+  const [searchQuery, setSearchQuery] = useState('')
+  const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' })
 
   // Departments list for "add category" modal
   const [departments, setDepartments] = useState([])
@@ -40,8 +55,6 @@ function HRDashboard({ user }) {
   const [deleteTarget, setDeleteTarget] = useState(null) // { type: 'category'|'subcategory', id, name }
   const [modalLoading, setModalLoading] = useState(false)
 
-  // Inline editing for names
-  const [editingName, setEditingName] = useState(null) // { type, id, value }
 
   // Access check
   useEffect(() => {
@@ -345,10 +358,135 @@ function HRDashboard({ user }) {
     }
   }
 
+  // --- Search, Sort, and Derived Data ---
+
+  const deptResults = useMemo(() => data?.departments || [], [data])
+
+  const filteredDepts = useMemo(() => {
+    if (!searchQuery.trim()) return deptResults
+    const q = searchQuery.toLowerCase()
+    return deptResults.filter(dept =>
+      dept.department_name.toLowerCase().includes(q) ||
+      dept.welfare_category.name.toLowerCase().includes(q) ||
+      dept.welfare_category.subcategories.some(s => s.name.toLowerCase().includes(q))
+    )
+  }, [deptResults, searchQuery])
+
+  const sortedDepts = useMemo(() => {
+    if (!sortConfig.key) return filteredDepts
+    const sorted = [...filteredDepts]
+    sorted.sort((a, b) => {
+      let aVal, bVal
+      switch (sortConfig.key) {
+        case 'department':
+          aVal = a.department_name.toLowerCase()
+          bVal = b.department_name.toLowerCase()
+          break
+        case 'category':
+          aVal = a.welfare_category.name.toLowerCase()
+          bVal = b.welfare_category.name.toLowerCase()
+          break
+        case 'budget':
+          aVal = a.welfare_category.budget
+          bVal = b.welfare_category.budget
+          break
+        case 'spent':
+          aVal = a.welfare_category.spent
+          bVal = b.welfare_category.spent
+          break
+        case 'remaining':
+          aVal = a.welfare_category.remaining
+          bVal = b.welfare_category.remaining
+          break
+        case 'utilization':
+          aVal = a.welfare_category.utilization_percent
+          bVal = b.welfare_category.utilization_percent
+          break
+        default:
+          return 0
+      }
+      if (aVal < bVal) return sortConfig.direction === 'asc' ? -1 : 1
+      if (aVal > bVal) return sortConfig.direction === 'asc' ? 1 : -1
+      return 0
+    })
+    return sorted
+  }, [filteredDepts, sortConfig])
+
+  const handleSort = (key) => {
+    setSortConfig(prev => ({
+      key,
+      direction: prev.key === key && prev.direction === 'asc' ? 'desc' : 'asc'
+    }))
+  }
+
+  const getSortIcon = (key) => {
+    if (sortConfig.key !== key) return 'fas fa-sort'
+    return sortConfig.direction === 'asc' ? 'fas fa-sort-up' : 'fas fa-sort-down'
+  }
+
+  const overBudgetCount = useMemo(() => {
+    return deptResults.filter(d => d.welfare_category.remaining < 0).length
+  }, [deptResults])
+
+  const allExpanded = useMemo(() => {
+    return filteredDepts.length > 0 && filteredDepts.every(d => expandedDepts[d.department_id])
+  }, [filteredDepts, expandedDepts])
+
+  const toggleExpandAll = () => {
+    if (allExpanded) {
+      setExpandedDepts({})
+    } else {
+      const newExpanded = {}
+      filteredDepts.forEach(d => { newExpanded[d.department_id] = true })
+      setExpandedDepts(newExpanded)
+    }
+  }
+
+  const exportCSV = () => {
+    if (!deptResults.length) return
+    const rows = [['Department', 'Category', 'Subcategory', 'Budget', 'Spent', 'Remaining', 'Utilization %']]
+
+    for (const dept of deptResults) {
+      const wc = dept.welfare_category
+      rows.push([
+        dept.department_name,
+        wc.name,
+        '',
+        wc.budget,
+        wc.spent,
+        wc.remaining,
+        wc.utilization_percent
+      ])
+      for (const sub of wc.subcategories) {
+        rows.push([
+          dept.department_name,
+          wc.name,
+          sub.name,
+          sub.budget,
+          sub.spent,
+          sub.remaining,
+          sub.utilization_percent
+        ])
+      }
+    }
+
+    const csvContent = rows.map(row =>
+      row.map(val => typeof val === 'string' && val.includes(',') ? `"${val}"` : val).join(',')
+    ).join('\n')
+
+    const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `welfare_report_${new Date().toISOString().slice(0, 10)}.csv`
+    link.click()
+    URL.revokeObjectURL(url)
+    success('Report exported')
+  }
+
   if (!user?.is_hr && !user?.is_admin) return null
 
   const summary = data?.summary
-  const deptResults = data?.departments || []
   const chartData = data?.chart_data || []
 
   return (
@@ -359,7 +497,7 @@ function HRDashboard({ user }) {
         icon="fas fa-heart"
       />
 
-      {/* Year Selector + Add Category Button */}
+      {/* Year Selector + Actions */}
       <Card className="hr-filters-card">
         <Card.Body>
           <div className="hr-filters-row">
@@ -374,9 +512,14 @@ function HRDashboard({ user }) {
                 </option>
               ))}
             </Select>
-            <Button variant="primary" onClick={openAddCategory} className="hr-add-category-btn">
-              <i className="fas fa-plus"></i> Add Welfare Category
-            </Button>
+            <div className="hr-filters-actions">
+              <Button variant="secondary" onClick={exportCSV} disabled={!deptResults.length} title="Export to CSV">
+                <i className="fas fa-download"></i> Export CSV
+              </Button>
+              <Button variant="primary" onClick={openAddCategory} className="hr-add-category-btn">
+                <i className="fas fa-plus"></i> Add Welfare Category
+              </Button>
+            </div>
           </div>
         </Card.Body>
       </Card>
@@ -439,6 +582,19 @@ function HRDashboard({ user }) {
                   </div>
                 </Card.Body>
               </Card>
+              {overBudgetCount > 0 && (
+                <Card className="hr-stat-card hr-stat-card-alert">
+                  <Card.Body>
+                    <div className="hr-stat-icon red">
+                      <i className="fas fa-exclamation-triangle"></i>
+                    </div>
+                    <div className="hr-stat-info">
+                      <div className="hr-stat-value">{overBudgetCount}</div>
+                      <div className="hr-stat-label">Over Budget</div>
+                    </div>
+                  </Card.Body>
+                </Card>
+              )}
             </div>
           )}
 
@@ -468,7 +624,32 @@ function HRDashboard({ user }) {
           <Card className="hr-table-card">
             <Card.Header>
               <h3>Department Welfare Details</h3>
-              <span className="hr-dept-count">{summary?.department_count || 0} departments</span>
+              <div className="hr-table-header-actions">
+                <div className="hr-search-box">
+                  <i className="fas fa-search"></i>
+                  <input
+                    type="text"
+                    placeholder="Search departments or categories..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="hr-search-input"
+                  />
+                  {searchQuery && (
+                    <button className="hr-search-clear" onClick={() => setSearchQuery('')}>
+                      <i className="fas fa-times"></i>
+                    </button>
+                  )}
+                </div>
+                <span className="hr-dept-count">
+                  {filteredDepts.length}{filteredDepts.length !== deptResults.length ? ` / ${deptResults.length}` : ''} departments
+                </span>
+                {filteredDepts.length > 0 && (
+                  <Button variant="ghost" size="small" onClick={toggleExpandAll} title={allExpanded ? 'Collapse all' : 'Expand all'}>
+                    <i className={`fas fa-${allExpanded ? 'compress-alt' : 'expand-alt'}`}></i>
+                    {allExpanded ? ' Collapse All' : ' Expand All'}
+                  </Button>
+                )}
+              </div>
             </Card.Header>
             <Card.Body>
               {deptResults.length === 0 ? (
@@ -476,22 +657,39 @@ function HRDashboard({ user }) {
                   <i className="fas fa-info-circle"></i>
                   <p>No welfare categories found. Click &quot;Add Welfare Category&quot; to create one, or mark categories as &quot;Welfare&quot; in the Organization page.</p>
                 </div>
+              ) : filteredDepts.length === 0 ? (
+                <div className="hr-empty-state">
+                  <i className="fas fa-search"></i>
+                  <p>No results match &quot;{searchQuery}&quot;. Try a different search term.</p>
+                </div>
               ) : (
                 <div className="hr-table-wrapper">
                   <table className="hr-welfare-table">
                     <thead>
                       <tr>
-                        <th className="col-dept">Department</th>
-                        <th className="col-cat">Category</th>
-                        <th className="col-budget">Budget</th>
-                        <th className="col-spent">Spent</th>
-                        <th className="col-remaining">Remaining</th>
-                        <th className="col-util">Utilization</th>
+                        <th className="col-dept hr-sortable" onClick={() => handleSort('department')}>
+                          Department <i className={getSortIcon('department')}></i>
+                        </th>
+                        <th className="col-cat hr-sortable" onClick={() => handleSort('category')}>
+                          Category <i className={getSortIcon('category')}></i>
+                        </th>
+                        <th className="col-budget hr-sortable" onClick={() => handleSort('budget')}>
+                          Budget <i className={getSortIcon('budget')}></i>
+                        </th>
+                        <th className="col-spent hr-sortable" onClick={() => handleSort('spent')}>
+                          Spent <i className={getSortIcon('spent')}></i>
+                        </th>
+                        <th className="col-remaining hr-sortable" onClick={() => handleSort('remaining')}>
+                          Remaining <i className={getSortIcon('remaining')}></i>
+                        </th>
+                        <th className="col-util hr-sortable" onClick={() => handleSort('utilization')}>
+                          Utilization <i className={getSortIcon('utilization')}></i>
+                        </th>
                         <th className="col-actions">Actions</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {deptResults.map(dept => {
+                      {sortedDepts.map(dept => {
                         const wc = dept.welfare_category
                         const isExpanded = expandedDepts[dept.department_id]
                         const key = `dept-${dept.department_id}-cat-${wc.id}`
@@ -499,7 +697,7 @@ function HRDashboard({ user }) {
                         return (
                           <tbody key={key} className="hr-dept-group">
                             <tr
-                              className={`hr-dept-row ${isExpanded ? 'expanded' : ''}`}
+                              className={`hr-dept-row ${isExpanded ? 'expanded' : ''} ${wc.remaining < 0 ? 'over-budget' : ''}`}
                               onClick={() => toggleExpand(dept.department_id)}
                             >
                               <td className="col-dept">
@@ -530,7 +728,7 @@ function HRDashboard({ user }) {
                                 {formatCurrency(wc.remaining)}
                               </td>
                               <td className="col-util">
-                                <UtilizationBadge percent={wc.utilization_percent} />
+                                <UtilizationBar percent={wc.utilization_percent} />
                               </td>
                               <td className="col-actions" onClick={e => e.stopPropagation()}>
                                 <div className="hr-actions-group">
@@ -597,7 +795,7 @@ function HRDashboard({ user }) {
                                   {formatCurrency(sub.remaining)}
                                 </td>
                                 <td className="col-util">
-                                  <UtilizationBadge percent={sub.utilization_percent} />
+                                  <UtilizationBar percent={sub.utilization_percent} />
                                 </td>
                                 <td className="col-actions">
                                   <div className="hr-actions-group">

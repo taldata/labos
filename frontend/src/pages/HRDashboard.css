@@ -23,6 +23,13 @@
   flex: 1;
 }
 
+.hr-filters-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-left: auto;
+}
+
 .hr-add-category-btn {
   white-space: nowrap;
   display: flex;
@@ -40,7 +47,7 @@
 /* Stats Grid */
 .hr-stats-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 1.5rem;
   margin-bottom: 2rem;
 }
@@ -59,6 +66,10 @@
 .hr-stat-card:hover {
   transform: translateY(-4px);
   box-shadow: 0 20px 40px -12px rgba(0, 0, 0, 0.1);
+}
+
+.hr-stat-card-alert {
+  border-left: 4px solid #ef4444 !important;
 }
 
 .hr-stat-card .card-body {
@@ -92,6 +103,11 @@
 .hr-stat-icon.yellow {
   background-color: #fef3c7;
   color: #d97706;
+}
+
+.hr-stat-icon.red {
+  background-color: #fee2e2;
+  color: #ef4444;
 }
 
 .hr-stat-info {
@@ -129,6 +145,8 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
+  flex-wrap: wrap;
+  gap: 0.75rem;
 }
 
 .hr-table-card .card-header h3 {
@@ -137,12 +155,77 @@
   font-weight: 600;
 }
 
+.hr-table-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+/* Search box */
+.hr-search-box {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.hr-search-box > i {
+  position: absolute;
+  left: 0.75rem;
+  color: #94a3b8;
+  font-size: 0.85rem;
+  pointer-events: none;
+}
+
+.hr-search-input {
+  padding: 0.5rem 2rem 0.5rem 2.25rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  background: #f8fafc;
+  color: #1e293b;
+  width: 260px;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  outline: none;
+}
+
+.hr-search-input:focus {
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+  background: #fff;
+}
+
+.hr-search-input::placeholder {
+  color: #94a3b8;
+}
+
+.hr-search-clear {
+  position: absolute;
+  right: 0.5rem;
+  background: none;
+  border: none;
+  color: #94a3b8;
+  cursor: pointer;
+  padding: 0.25rem;
+  font-size: 0.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+}
+
+.hr-search-clear:hover {
+  color: #64748b;
+  background-color: #e2e8f0;
+}
+
 .hr-dept-count {
   font-size: 0.85rem;
   color: #64748b;
   background: #f1f5f9;
   padding: 0.25rem 0.75rem;
   border-radius: 999px;
+  white-space: nowrap;
 }
 
 .hr-table-wrapper {
@@ -167,6 +250,26 @@
   white-space: nowrap;
 }
 
+.hr-welfare-table thead th.hr-sortable {
+  cursor: pointer;
+  user-select: none;
+  transition: color 0.15s ease;
+}
+
+.hr-welfare-table thead th.hr-sortable:hover {
+  color: #334155;
+}
+
+.hr-welfare-table thead th.hr-sortable i {
+  margin-left: 0.375rem;
+  font-size: 0.7rem;
+  opacity: 0.4;
+}
+
+.hr-welfare-table thead th.hr-sortable:hover i {
+  opacity: 0.7;
+}
+
 .hr-welfare-table .col-budget,
 .hr-welfare-table .col-spent,
 .hr-welfare-table .col-remaining {
@@ -174,12 +277,42 @@
 }
 
 .hr-welfare-table .col-util {
-  text-align: center;
+  text-align: left;
+  min-width: 160px;
 }
 
 .hr-welfare-table .col-actions {
   text-align: center;
   width: 160px;
+}
+
+/* Utilization progress bar */
+.hr-util-bar-container {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.hr-util-bar-track {
+  flex: 1;
+  height: 8px;
+  background: #e2e8f0;
+  border-radius: 4px;
+  overflow: hidden;
+  min-width: 60px;
+}
+
+.hr-util-bar-fill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.4s ease;
+}
+
+.hr-util-bar-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  min-width: 48px;
+  text-align: right;
 }
 
 /* Department row */
@@ -198,6 +331,10 @@
 
 .hr-dept-row.expanded {
   background-color: #f1f5f9;
+}
+
+.hr-dept-row.over-budget {
+  border-left: 3px solid #ef4444;
 }
 
 .hr-dept-row td {
@@ -336,6 +473,7 @@
 .hr-stat-card:nth-child(2) { animation: fadeInUp 0.5s ease-out 0.1s both; }
 .hr-stat-card:nth-child(3) { animation: fadeInUp 0.5s ease-out 0.15s both; }
 .hr-stat-card:nth-child(4) { animation: fadeInUp 0.5s ease-out 0.2s both; }
+.hr-stat-card:nth-child(5) { animation: fadeInUp 0.5s ease-out 0.25s both; }
 
 /* Responsive */
 @media (max-width: 768px) {
@@ -360,10 +498,28 @@
   .hr-subcat-row td {
     padding: 0.5rem;
   }
+
+  .hr-search-input {
+    width: 180px;
+  }
+
+  .hr-table-header-actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .hr-filters-actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
 }
 
 @media (max-width: 480px) {
   .hr-stats-grid {
     grid-template-columns: 1fr;
+  }
+
+  .hr-search-input {
+    width: 150px;
   }
 }
