@@ -9,17 +9,17 @@ import logger from '../utils/logger'
 import './HRDashboard.css'
 
 function UtilizationBar({ percent }) {
-  const color = percent > 90 ? '#ef4444' : percent > 70 ? '#f59e0b' : '#10b981'
+  const level = percent > 90 ? 'danger' : percent > 70 ? 'warning' : 'success'
   const clampedPercent = Math.min(percent, 100)
   return (
     <div className="hr-util-bar-container">
       <div className="hr-util-bar-track">
         <div
-          className="hr-util-bar-fill"
-          style={{ width: `${clampedPercent}%`, backgroundColor: color }}
+          className={`hr-util-bar-fill hr-util-${level}`}
+          style={{ width: `${clampedPercent}%` }}
         />
       </div>
-      <span className="hr-util-bar-label" style={{ color }}>{percent.toFixed(1)}%</span>
+      <span className={`hr-util-bar-label hr-util-${level}-text`}>{percent.toFixed(1)}%</span>
     </div>
   )
 }
@@ -688,25 +688,98 @@ function HRDashboard({ user }) {
                         <th className="col-actions">Actions</th>
                       </tr>
                     </thead>
-                    <tbody>
-                      {sortedDepts.map(dept => {
-                        const wc = dept.welfare_category
-                        const isExpanded = expandedDepts[dept.department_id]
-                        const key = `dept-${dept.department_id}-cat-${wc.id}`
+                    {sortedDepts.map(dept => {
+                      const wc = dept.welfare_category
+                      const isExpanded = expandedDepts[dept.department_id]
+                      const key = `dept-${dept.department_id}-cat-${wc.id}`
 
-                        return (
-                          <tbody key={key} className="hr-dept-group">
-                            <tr
-                              className={`hr-dept-row ${isExpanded ? 'expanded' : ''} ${wc.remaining < 0 ? 'over-budget' : ''}`}
-                              onClick={() => toggleExpand(dept.department_id)}
-                            >
+                      return (
+                        <tbody key={key} className={`hr-dept-group ${isExpanded ? 'hr-dept-group-expanded' : ''}`}>
+                          <tr
+                            className={`hr-dept-row ${isExpanded ? 'expanded' : ''} ${wc.remaining < 0 ? 'over-budget' : ''}`}
+                            onClick={() => toggleExpand(dept.department_id)}
+                          >
+                            <td className="col-dept">
+                              <span className="hr-expand-toggle">
+                                <i className={`fas fa-chevron-right expand-icon ${isExpanded ? 'expand-icon-open' : ''}`}></i>
+                              </span>
+                              <span className="hr-dept-name">{dept.department_name}</span>
+                            </td>
+                            <td className="col-cat">
+                              <span className="hr-cat-badge">{wc.name}</span>
+                            </td>
+                            <td className="col-budget">
+                              {editingBudget?.type === 'category' && editingBudget?.id === wc.id ? (
+                                <div className="hr-edit-inline" onClick={e => e.stopPropagation()}>
+                                  <Input
+                                    type="number"
+                                    value={editingBudget.value}
+                                    onChange={(e) => setEditingBudget(prev => ({ ...prev, value: e.target.value }))}
+                                    onKeyDown={handleEditKeyDown}
+                                    autoFocus
+                                    className="hr-budget-input"
+                                  />
+                                  <Button variant="ghost" size="small" onClick={saveEdit}><i className="fas fa-check"></i></Button>
+                                  <Button variant="ghost" size="small" onClick={cancelEdit}><i className="fas fa-times"></i></Button>
+                                </div>
+                              ) : (
+                                <span className="hr-currency">{formatCurrency(wc.budget)}</span>
+                              )}
+                            </td>
+                            <td className="col-spent">
+                              <span className="hr-currency">{formatCurrency(wc.spent)}</span>
+                            </td>
+                            <td className={`col-remaining ${wc.remaining < 0 ? 'negative' : ''}`}>
+                              <span className="hr-currency">{formatCurrency(wc.remaining)}</span>
+                            </td>
+                            <td className="col-util">
+                              <UtilizationBar percent={wc.utilization_percent} />
+                            </td>
+                            <td className="col-actions" onClick={e => e.stopPropagation()}>
+                              <div className="hr-actions-group">
+                                <button
+                                  className="hr-action-btn"
+                                  onClick={() => startEdit('category', wc.id, wc.budget)}
+                                  title="Edit budget"
+                                >
+                                  <i className="fas fa-coins"></i>
+                                </button>
+                                <button
+                                  className="hr-action-btn"
+                                  onClick={() => openEditItem('category', wc)}
+                                  title="Edit category"
+                                >
+                                  <i className="fas fa-edit"></i>
+                                </button>
+                                <button
+                                  className="hr-action-btn"
+                                  onClick={() => openAddSubcategory(wc.id)}
+                                  title="Add subcategory"
+                                >
+                                  <i className="fas fa-plus"></i>
+                                </button>
+                                <button
+                                  className="hr-action-btn hr-action-btn-danger"
+                                  onClick={() => openDeleteConfirm('category', wc)}
+                                  title="Delete category"
+                                >
+                                  <i className="fas fa-trash"></i>
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                          {isExpanded && wc.subcategories.map((sub, idx) => (
+                            <tr key={`sub-${sub.id}`} className={`hr-subcat-row ${idx === wc.subcategories.length - 1 ? 'hr-subcat-row-last' : ''}`}>
                               <td className="col-dept">
-                                <i className={`fas fa-chevron-${isExpanded ? 'down' : 'right'} expand-icon`}></i>
-                                {dept.department_name}
+                                <span className="hr-tree-line">
+                                  <span className={`hr-tree-connector ${idx === wc.subcategories.length - 1 ? 'hr-tree-connector-last' : ''}`}></span>
+                                </span>
                               </td>
-                              <td className="col-cat">{wc.name}</td>
+                              <td className="col-cat">
+                                <span className="hr-subcat-name">{sub.name}</span>
+                              </td>
                               <td className="col-budget">
-                                {editingBudget?.type === 'category' && editingBudget?.id === wc.id ? (
+                                {editingBudget?.type === 'subcategory' && editingBudget?.id === sub.id ? (
                                   <div className="hr-edit-inline" onClick={e => e.stopPropagation()}>
                                     <Input
                                       type="number"
@@ -720,132 +793,63 @@ function HRDashboard({ user }) {
                                     <Button variant="ghost" size="small" onClick={cancelEdit}><i className="fas fa-times"></i></Button>
                                   </div>
                                 ) : (
-                                  formatCurrency(wc.budget)
+                                  <span className="hr-currency hr-currency-sub">{formatCurrency(sub.budget)}</span>
                                 )}
                               </td>
-                              <td className="col-spent">{formatCurrency(wc.spent)}</td>
-                              <td className={`col-remaining ${wc.remaining < 0 ? 'negative' : ''}`}>
-                                {formatCurrency(wc.remaining)}
+                              <td className="col-spent">
+                                <span className="hr-currency hr-currency-sub">{formatCurrency(sub.spent)}</span>
+                              </td>
+                              <td className={`col-remaining ${sub.remaining < 0 ? 'negative' : ''}`}>
+                                <span className="hr-currency hr-currency-sub">{formatCurrency(sub.remaining)}</span>
                               </td>
                               <td className="col-util">
-                                <UtilizationBar percent={wc.utilization_percent} />
+                                <UtilizationBar percent={sub.utilization_percent} />
                               </td>
-                              <td className="col-actions" onClick={e => e.stopPropagation()}>
+                              <td className="col-actions">
                                 <div className="hr-actions-group">
-                                  <Button
-                                    variant="ghost"
-                                    size="small"
-                                    onClick={() => startEdit('category', wc.id, wc.budget)}
+                                  <button
+                                    className="hr-action-btn"
+                                    onClick={() => startEdit('subcategory', sub.id, sub.budget)}
                                     title="Edit budget"
                                   >
                                     <i className="fas fa-coins"></i>
-                                  </Button>
-                                  <Button
-                                    variant="ghost"
-                                    size="small"
-                                    onClick={() => openEditItem('category', wc)}
-                                    title="Edit category"
+                                  </button>
+                                  <button
+                                    className="hr-action-btn"
+                                    onClick={() => openEditItem('subcategory', sub)}
+                                    title="Edit subcategory"
                                   >
                                     <i className="fas fa-edit"></i>
-                                  </Button>
-                                  <Button
-                                    variant="ghost"
-                                    size="small"
-                                    onClick={() => openAddSubcategory(wc.id)}
-                                    title="Add subcategory"
-                                  >
-                                    <i className="fas fa-plus"></i>
-                                  </Button>
-                                  <Button
-                                    variant="ghost"
-                                    size="small"
-                                    onClick={() => openDeleteConfirm('category', wc)}
-                                    title="Delete category"
-                                    className="hr-delete-btn"
+                                  </button>
+                                  <button
+                                    className="hr-action-btn hr-action-btn-danger"
+                                    onClick={() => openDeleteConfirm('subcategory', sub)}
+                                    title="Delete subcategory"
                                   >
                                     <i className="fas fa-trash"></i>
-                                  </Button>
+                                  </button>
                                 </div>
                               </td>
                             </tr>
-                            {isExpanded && wc.subcategories.map(sub => (
-                              <tr key={`sub-${sub.id}`} className="hr-subcat-row">
-                                <td className="col-dept"></td>
-                                <td className="col-cat indent">{sub.name}</td>
-                                <td className="col-budget">
-                                  {editingBudget?.type === 'subcategory' && editingBudget?.id === sub.id ? (
-                                    <div className="hr-edit-inline" onClick={e => e.stopPropagation()}>
-                                      <Input
-                                        type="number"
-                                        value={editingBudget.value}
-                                        onChange={(e) => setEditingBudget(prev => ({ ...prev, value: e.target.value }))}
-                                        onKeyDown={handleEditKeyDown}
-                                        autoFocus
-                                        className="hr-budget-input"
-                                      />
-                                      <Button variant="ghost" size="small" onClick={saveEdit}><i className="fas fa-check"></i></Button>
-                                      <Button variant="ghost" size="small" onClick={cancelEdit}><i className="fas fa-times"></i></Button>
-                                    </div>
-                                  ) : (
-                                    formatCurrency(sub.budget)
-                                  )}
-                                </td>
-                                <td className="col-spent">{formatCurrency(sub.spent)}</td>
-                                <td className={`col-remaining ${sub.remaining < 0 ? 'negative' : ''}`}>
-                                  {formatCurrency(sub.remaining)}
-                                </td>
-                                <td className="col-util">
-                                  <UtilizationBar percent={sub.utilization_percent} />
-                                </td>
-                                <td className="col-actions">
-                                  <div className="hr-actions-group">
-                                    <Button
-                                      variant="ghost"
-                                      size="small"
-                                      onClick={() => startEdit('subcategory', sub.id, sub.budget)}
-                                      title="Edit budget"
-                                    >
-                                      <i className="fas fa-coins"></i>
-                                    </Button>
-                                    <Button
-                                      variant="ghost"
-                                      size="small"
-                                      onClick={() => openEditItem('subcategory', sub)}
-                                      title="Edit subcategory"
-                                    >
-                                      <i className="fas fa-edit"></i>
-                                    </Button>
-                                    <Button
-                                      variant="ghost"
-                                      size="small"
-                                      onClick={() => openDeleteConfirm('subcategory', sub)}
-                                      title="Delete subcategory"
-                                      className="hr-delete-btn"
-                                    >
-                                      <i className="fas fa-trash"></i>
-                                    </Button>
-                                  </div>
-                                </td>
-                              </tr>
-                            ))}
-                            {isExpanded && wc.subcategories.length === 0 && (
-                              <tr className="hr-subcat-row hr-empty-subcat-row">
-                                <td colSpan="7" className="hr-empty-subcat">
-                                  <span>No subcategories</span>
-                                  <Button
-                                    variant="ghost"
-                                    size="small"
-                                    onClick={() => openAddSubcategory(wc.id)}
-                                  >
-                                    <i className="fas fa-plus"></i> Add Subcategory
-                                  </Button>
-                                </td>
-                              </tr>
-                            )}
-                          </tbody>
-                        )
-                      })}
-                    </tbody>
+                          ))}
+                          {isExpanded && wc.subcategories.length === 0 && (
+                            <tr className="hr-subcat-row hr-empty-subcat-row">
+                              <td colSpan="7" className="hr-empty-subcat">
+                                <i className="fas fa-folder-open"></i>
+                                <span>No subcategories yet</span>
+                                <Button
+                                  variant="ghost"
+                                  size="small"
+                                  onClick={() => openAddSubcategory(wc.id)}
+                                >
+                                  <i className="fas fa-plus"></i> Add Subcategory
+                                </Button>
+                              </td>
+                            </tr>
+                          )}
+                        </tbody>
+                      )
+                    })}
                   </table>
                 </div>
               )}
