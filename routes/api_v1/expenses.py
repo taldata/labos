@@ -2,7 +2,7 @@ from flask import jsonify, request, current_app
 from flask_login import login_required, current_user
 from models import db, Expense, User, Department, Category, Subcategory, Supplier, CreditCard, BudgetYear
 from services.manager_access import get_manager_access, build_category_access_filter, has_category_access
-from sqlalchemy import func
+from sqlalchemy import func, or_
 from sqlalchemy.orm import joinedload
 from datetime import datetime, timedelta
 from werkzeug.utils import secure_filename
@@ -99,9 +99,12 @@ def get_recent_expenses():
                     .filter(cat_access_filter)
 
                 # HR users have a dedicated welfare dashboard; exclude welfare
-                # expenses from the manager view.
+                # from other departments, but keep welfare from their own department.
                 if current_user.is_hr and not current_user.is_admin:
-                    recent_query = recent_query.filter(Category.is_welfare == False)
+                    recent_query = recent_query.filter(or_(
+                        Category.is_welfare == False,
+                        Category.department_id == current_user.department_id
+                    ))
 
                 expenses = recent_query\
                     .options(
@@ -178,9 +181,12 @@ def get_pending_count():
                         Expense.status == 'pending',
                         cat_access_filter
                     )
-                # HR users: exclude welfare expenses (handled via HR dashboard)
+                # HR users: exclude welfare from other departments (handled via HR dashboard)
                 if current_user.is_hr and not current_user.is_admin:
-                    count_query = count_query.filter(Category.is_welfare == False)
+                    count_query = count_query.filter(or_(
+                        Category.is_welfare == False,
+                        Category.department_id == current_user.department_id
+                    ))
                 count = count_query.count()
             else:
                 count = 0
@@ -225,9 +231,12 @@ def get_pending_approvals():
                     )
 
                 # HR users have a dedicated welfare dashboard; exclude welfare
-                # expenses from the pending approvals view.
+                # from other departments in the pending approvals view.
                 if current_user.is_hr and not current_user.is_admin:
-                    pending_query = pending_query.filter(Category.is_welfare == False)
+                    pending_query = pending_query.filter(or_(
+                        Category.is_welfare == False,
+                        Category.department_id == current_user.department_id
+                    ))
 
                 expenses = pending_query\
                     .order_by(Expense.id.desc())\
@@ -1196,9 +1205,12 @@ def get_expense_report():
                 query = Expense.query.join(Subcategory, Expense.subcategory_id == Subcategory.id)\
                     .join(Category, Subcategory.category_id == Category.id)\
                     .filter(cat_access_filter)
-                # HR users: exclude welfare expenses (handled via HR dashboard)
+                # HR users: exclude welfare from other departments (handled via HR dashboard)
                 if current_user.is_hr:
-                    query = query.filter(Category.is_welfare == False)
+                    query = query.filter(or_(
+                        Category.is_welfare == False,
+                        Category.department_id == current_user.department_id
+                    ))
             else:
                 query = Expense.query.filter_by(user_id=current_user.id)
         else:
@@ -1320,9 +1332,12 @@ def export_expenses():
                 export_query = db.session.query(Expense).join(Subcategory, Expense.subcategory_id == Subcategory.id)\
                     .join(Category, Subcategory.category_id == Category.id)\
                     .filter(cat_access_filter)
-                # HR users: exclude welfare expenses (handled via HR dashboard)
+                # HR users: exclude welfare from other departments (handled via HR dashboard)
                 if current_user.is_hr:
-                    export_query = export_query.filter(Category.is_welfare == False)
+                    export_query = export_query.filter(or_(
+                        Category.is_welfare == False,
+                        Category.department_id == current_user.department_id
+                    ))
                 expenses = export_query.order_by(Expense.id.desc()).all()
             else:
                 expenses = Expense.query.filter_by(user_id=current_user.id)\
