@@ -434,19 +434,30 @@ function ExpenseDetails({ user, setUser }) {
         )}
 
         {/* Manager Actions */}
-        {canManageExpense() && (
+        {(user?.is_manager || user?.is_admin) && (
           <Card className="actions-card">
             <Card.Header>
               <i className="fas fa-tasks"></i> Manager Actions
             </Card.Header>
             <Card.Body>
               <div className="action-buttons">
-                <Button variant="success" icon="fas fa-check" onClick={() => openApprovalModal('approve')}>
-                  Approve Expense
+                <Button
+                  variant="primary"
+                  icon="fas fa-edit"
+                  onClick={() => navigate(user?.is_admin ? '/admin/expense-history' : '/manager/expense-history')}
+                >
+                  Edit Expense
                 </Button>
-                <Button variant="danger" icon="fas fa-times" onClick={() => openApprovalModal('reject')}>
-                  Reject Expense
-                </Button>
+                {expense?.status === 'pending' && (
+                  <>
+                    <Button variant="success" icon="fas fa-check" onClick={() => openApprovalModal('approve')}>
+                      Approve Expense
+                    </Button>
+                    <Button variant="danger" icon="fas fa-times" onClick={() => openApprovalModal('reject')}>
+                      Reject Expense
+                    </Button>
+                  </>
+                )}
               </div>
             </Card.Body>
           </Card>
