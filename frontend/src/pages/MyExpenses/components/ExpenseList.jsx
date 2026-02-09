@@ -10,6 +10,7 @@ const ExpenseList = ({
   loading,
   error,
   user,
+  onEdit,
   onDelete,
   onView,
   pagination,
@@ -170,6 +171,13 @@ const ExpenseList = ({
                 {(user?.is_manager || user?.is_admin) && (
                   <td onClick={(e) => e.stopPropagation()}>
                     <div className="me-cell-actions">
+                      <Button
+                        variant="ghost"
+                        size="small"
+                        icon="fas fa-edit"
+                        onClick={(e) => { e.stopPropagation(); onEdit(expense); }}
+                        title="Edit"
+                      />
                       <Button
                         variant="ghost"
                         size="small"

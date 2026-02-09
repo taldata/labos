@@ -188,6 +188,10 @@ function MyExpenses({ user, setUser }) {
     setSearchParams({}, { replace: true }) // Clear URL params
   }
 
+  const handleEditClick = (expense) => {
+    navigate(user?.is_admin ? '/admin/expense-history' : '/manager/expense-history')
+  }
+
   const handleDeleteClick = (e, expense) => {
     e.stopPropagation()
     setExpenseToDelete(expense)
@@ -267,6 +271,7 @@ function MyExpenses({ user, setUser }) {
         loading={loading}
         error={error}
         user={user}
+        onEdit={handleEditClick}
         onDelete={handleDeleteClick}
         onView={(id) => navigate(`/expenses/${id}`)}
         pagination={pagination}
