@@ -460,6 +460,9 @@ def get_manager_expense_filter_options():
         )
         if cat_access_filter is not None:
             cat_query = cat_query.filter(cat_access_filter)
+        # HR users: exclude welfare categories (handled via HR dashboard)
+        if current_user.is_hr and not current_user.is_admin:
+            cat_query = cat_query.filter(Category.is_welfare == False)
         categories = cat_query.order_by(Category.name).all()
 
         cat_list = []
@@ -501,6 +504,9 @@ def get_manager_expense_filter_options():
         subcat_query = Subcategory.query.join(Category)
         if cat_access_filter is not None:
             subcat_query = subcat_query.filter(cat_access_filter)
+        # HR users: exclude welfare subcategories (handled via HR dashboard)
+        if current_user.is_hr and not current_user.is_admin:
+            subcat_query = subcat_query.filter(Category.is_welfare == False)
         subcategories = subcat_query.all()
         subcat_list = [{
             'id': sub.id,
@@ -1187,6 +1193,11 @@ def manager_list_expenses():
 
         # Filter to managed departments + cross-department categories
         query = query.filter(cat_access_filter)
+
+        # HR users have a dedicated welfare dashboard; exclude welfare expenses
+        # from the manager view so they don't see welfare from other departments.
+        if current_user.is_hr and not current_user.is_admin:
+            query = query.filter(Category.is_welfare == False)
 
         # Left join Supplier for search functionality
         query = query.outerjoin(Supplier, Expense.supplier_id == Supplier.id)

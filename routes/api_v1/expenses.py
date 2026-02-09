@@ -94,9 +94,16 @@ def get_recent_expenses():
             cat_access_filter = build_category_access_filter(managed_dept_ids, managed_cat_ids)
 
             if cat_access_filter is not None:
-                expenses = Expense.query.join(Subcategory, Expense.subcategory_id == Subcategory.id)\
+                recent_query = Expense.query.join(Subcategory, Expense.subcategory_id == Subcategory.id)\
                     .join(Category, Subcategory.category_id == Category.id)\
-                    .filter(cat_access_filter)\
+                    .filter(cat_access_filter)
+
+                # HR users have a dedicated welfare dashboard; exclude welfare
+                # expenses from the manager view.
+                if current_user.is_hr and not current_user.is_admin:
+                    recent_query = recent_query.filter(Category.is_welfare == False)
+
+                expenses = recent_query\
                     .options(
                         joinedload(Expense.submitter),
                         joinedload(Expense.subcategory).joinedload(Subcategory.category)
@@ -165,12 +172,16 @@ def get_pending_count():
             cat_access_filter = build_category_access_filter(managed_dept_ids, managed_cat_ids)
 
             if cat_access_filter is not None:
-                count = Expense.query.join(Subcategory, Expense.subcategory_id == Subcategory.id)\
+                count_query = Expense.query.join(Subcategory, Expense.subcategory_id == Subcategory.id)\
                     .join(Category, Subcategory.category_id == Category.id)\
                     .filter(
                         Expense.status == 'pending',
                         cat_access_filter
-                    ).count()
+                    )
+                # HR users: exclude welfare expenses (handled via HR dashboard)
+                if current_user.is_hr and not current_user.is_admin:
+                    count_query = count_query.filter(Category.is_welfare == False)
+                count = count_query.count()
             else:
                 count = 0
 
@@ -206,12 +217,19 @@ def get_pending_approvals():
             managed_dept_ids, managed_cat_ids = get_manager_access(current_user)
             cat_access_filter = build_category_access_filter(managed_dept_ids, managed_cat_ids)
             if cat_access_filter is not None:
-                expenses = base_query.join(Subcategory, Expense.subcategory_id == Subcategory.id)\
+                pending_query = base_query.join(Subcategory, Expense.subcategory_id == Subcategory.id)\
                     .join(Category, Subcategory.category_id == Category.id)\
                     .filter(
                         Expense.status == 'pending',
                         cat_access_filter
-                    )\
+                    )
+
+                # HR users have a dedicated welfare dashboard; exclude welfare
+                # expenses from the pending approvals view.
+                if current_user.is_hr and not current_user.is_admin:
+                    pending_query = pending_query.filter(Category.is_welfare == False)
+
+                expenses = pending_query\
                     .order_by(Expense.id.desc())\
                     .all()
             else:
@@ -1178,12 +1196,15 @@ def get_expense_report():
                 query = Expense.query.join(Subcategory, Expense.subcategory_id == Subcategory.id)\
                     .join(Category, Subcategory.category_id == Category.id)\
                     .filter(cat_access_filter)
+                # HR users: exclude welfare expenses (handled via HR dashboard)
+                if current_user.is_hr:
+                    query = query.filter(Category.is_welfare == False)
             else:
                 query = Expense.query.filter_by(user_id=current_user.id)
         else:
             # Regular users see only their expenses
             query = Expense.query.filter_by(user_id=current_user.id)
-        
+
         # Apply filters
         if start_date:
             query = query.filter(Expense.date >= datetime.strptime(start_date, '%Y-%m-%d'))
@@ -1296,10 +1317,13 @@ def export_expenses():
             managed_dept_ids, managed_cat_ids = get_manager_access(current_user)
             cat_access_filter = build_category_access_filter(managed_dept_ids, managed_cat_ids)
             if cat_access_filter is not None:
-                expenses = db.session.query(Expense).join(Subcategory, Expense.subcategory_id == Subcategory.id)\
+                export_query = db.session.query(Expense).join(Subcategory, Expense.subcategory_id == Subcategory.id)\
                     .join(Category, Subcategory.category_id == Category.id)\
-                    .filter(cat_access_filter)\
-                    .order_by(Expense.id.desc()).all()
+                    .filter(cat_access_filter)
+                # HR users: exclude welfare expenses (handled via HR dashboard)
+                if current_user.is_hr:
+                    export_query = export_query.filter(Category.is_welfare == False)
+                expenses = export_query.order_by(Expense.id.desc()).all()
             else:
                 expenses = Expense.query.filter_by(user_id=current_user.id)\
                     .order_by(Expense.id.desc()).all()

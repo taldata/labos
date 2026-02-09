@@ -1004,14 +1004,21 @@ def expense_history():
         # For managers, show all expenses from their departments
         managed_dept_ids = [dept.id for dept in current_user.managed_departments]
         managed_dept_ids.append(current_user.department_id)
-        
-        expenses = db.session.query(Expense).join(
+
+        history_query = db.session.query(Expense).join(
             Subcategory, Expense.subcategory_id == Subcategory.id
         ).join(
             Category, Subcategory.category_id == Category.id
         ).filter(
             Category.department_id.in_(managed_dept_ids)
-        ).order_by(Expense.date.desc()).all()
+        )
+
+        # HR users have a dedicated welfare dashboard; exclude welfare expenses
+        # from the manager expense history.
+        if current_user.is_hr:
+            history_query = history_query.filter(Category.is_welfare == False)
+
+        expenses = history_query.order_by(Expense.date.desc()).all()
     else:
         # For regular employees, show only their expenses
         expenses = Expense.query.filter_by(
@@ -1035,8 +1042,14 @@ def expense_history():
         departments = [dept for dept in Department.query.filter(Department.id.in_(managed_dept_ids)).all()]
         suppliers = []
         # Get categories and subcategories from manager's departments
-        categories = Category.query.filter(Category.department_id.in_(managed_dept_ids)).all()
-        subcategories = Subcategory.query.join(Category).filter(Category.department_id.in_(managed_dept_ids)).all()
+        cat_query = Category.query.filter(Category.department_id.in_(managed_dept_ids))
+        subcat_query = Subcategory.query.join(Category).filter(Category.department_id.in_(managed_dept_ids))
+        # HR users: exclude welfare categories (handled via HR dashboard)
+        if current_user.is_hr:
+            cat_query = cat_query.filter(Category.is_welfare == False)
+            subcat_query = subcat_query.filter(Category.is_welfare == False)
+        categories = cat_query.all()
+        subcategories = subcat_query.all()
     else:
         employees = []
         departments = []
