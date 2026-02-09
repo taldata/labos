@@ -3,6 +3,7 @@ from flask_login import login_required, current_user
 from models import db, Department, Category, Subcategory, Expense, BudgetYear
 from sqlalchemy import func
 from . import api_v1
+from services.manager_access import get_manager_access
 import logging
 from datetime import datetime
 
@@ -10,6 +11,15 @@ from datetime import datetime
 def _check_hr_access():
     """Check if current user has HR or admin access"""
     return current_user.is_hr or current_user.is_admin
+
+
+def _get_hr_managed_dept_ids():
+    """Get department IDs the current HR user is allowed to access.
+    Admins get all departments; non-admin HR users get only their managed departments."""
+    if current_user.is_admin:
+        return None  # None means no filtering needed (all departments)
+    managed_dept_ids, _ = get_manager_access(current_user)
+    return managed_dept_ids
 
 
 @api_v1.route('/hr/welfare-overview', methods=['GET'])
@@ -31,10 +41,13 @@ def get_welfare_overview():
             if current_year:
                 year_id = current_year.id
 
-        # Get all departments for this year
+        # Get departments for this year, filtered by access
+        managed_dept_ids = _get_hr_managed_dept_ids()
         dept_query = Department.query
         if year_id:
             dept_query = dept_query.filter_by(year_id=year_id)
+        if managed_dept_ids is not None:
+            dept_query = dept_query.filter(Department.id.in_(managed_dept_ids))
         departments = dept_query.order_by(Department.name).all()
         dept_ids = [d.id for d in departments]
 
@@ -188,6 +201,10 @@ def update_welfare_category_budget(category_id):
         if not category or not category.is_welfare:
             return jsonify({'error': 'Welfare category not found'}), 404
 
+        managed_dept_ids = _get_hr_managed_dept_ids()
+        if managed_dept_ids is not None and category.department_id not in managed_dept_ids:
+            return jsonify({'error': 'Access denied: department not in your managed departments'}), 403
+
         data = request.get_json()
         if 'budget' in data:
             budget_val = data['budget']
@@ -232,6 +249,10 @@ def update_welfare_subcategory_budget(subcategory_id):
         if not category or not category.is_welfare:
             return jsonify({'error': 'Subcategory does not belong to a welfare category'}), 404
 
+        managed_dept_ids = _get_hr_managed_dept_ids()
+        if managed_dept_ids is not None and category.department_id not in managed_dept_ids:
+            return jsonify({'error': 'Access denied: department not in your managed departments'}), 403
+
         data = request.get_json()
         if 'budget' in data:
             budget_val = data['budget']
@@ -270,6 +291,7 @@ def get_hr_departments():
 
     try:
         year_id = request.args.get('year_id', type=int)
+        managed_dept_ids = _get_hr_managed_dept_ids()
         query = Department.query
         if year_id:
             query = query.filter_by(year_id=year_id)
@@ -277,6 +299,8 @@ def get_hr_departments():
             current_year = BudgetYear.query.filter_by(is_current=True).first()
             if current_year:
                 query = query.filter_by(year_id=current_year.id)
+        if managed_dept_ids is not None:
+            query = query.filter(Department.id.in_(managed_dept_ids))
 
         departments = query.order_by(Department.name).all()
 
@@ -306,6 +330,10 @@ def create_welfare_category():
         department = Department.query.get(int(data['department_id']))
         if not department:
             return jsonify({'error': 'Department not found'}), 404
+
+        managed_dept_ids = _get_hr_managed_dept_ids()
+        if managed_dept_ids is not None and department.id not in managed_dept_ids:
+            return jsonify({'error': 'Access denied: department not in your managed departments'}), 403
 
         budget_val = data.get('budget')
         if budget_val == '' or budget_val is None:
@@ -353,6 +381,10 @@ def update_welfare_category(category_id):
         category = Category.query.get(category_id)
         if not category or not category.is_welfare:
             return jsonify({'error': 'Welfare category not found'}), 404
+
+        managed_dept_ids = _get_hr_managed_dept_ids()
+        if managed_dept_ids is not None and category.department_id not in managed_dept_ids:
+            return jsonify({'error': 'Access denied: department not in your managed departments'}), 403
 
         data = request.get_json()
 
@@ -402,6 +434,10 @@ def delete_welfare_category(category_id):
         if not category or not category.is_welfare:
             return jsonify({'error': 'Welfare category not found'}), 404
 
+        managed_dept_ids = _get_hr_managed_dept_ids()
+        if managed_dept_ids is not None and category.department_id not in managed_dept_ids:
+            return jsonify({'error': 'Access denied: department not in your managed departments'}), 403
+
         # Check if any subcategory has expenses
         for sub in category.subcategories:
             if sub.expenses:
@@ -440,6 +476,10 @@ def create_welfare_subcategory():
         category = Category.query.get(int(data['category_id']))
         if not category or not category.is_welfare:
             return jsonify({'error': 'Welfare category not found'}), 404
+
+        managed_dept_ids = _get_hr_managed_dept_ids()
+        if managed_dept_ids is not None and category.department_id not in managed_dept_ids:
+            return jsonify({'error': 'Access denied: department not in your managed departments'}), 403
 
         budget_val = data.get('budget')
         if budget_val == '' or budget_val is None:
@@ -489,6 +529,10 @@ def update_welfare_subcategory(subcategory_id):
         category = Category.query.get(subcategory.category_id)
         if not category or not category.is_welfare:
             return jsonify({'error': 'Subcategory does not belong to a welfare category'}), 404
+
+        managed_dept_ids = _get_hr_managed_dept_ids()
+        if managed_dept_ids is not None and category.department_id not in managed_dept_ids:
+            return jsonify({'error': 'Access denied: department not in your managed departments'}), 403
 
         data = request.get_json()
 
@@ -540,6 +584,10 @@ def delete_welfare_subcategory(subcategory_id):
         category = Category.query.get(subcategory.category_id)
         if not category or not category.is_welfare:
             return jsonify({'error': 'Subcategory does not belong to a welfare category'}), 404
+
+        managed_dept_ids = _get_hr_managed_dept_ids()
+        if managed_dept_ids is not None and category.department_id not in managed_dept_ids:
+            return jsonify({'error': 'Access denied: department not in your managed departments'}), 403
 
         if subcategory.expenses:
             return jsonify({
