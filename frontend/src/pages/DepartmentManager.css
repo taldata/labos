@@ -189,8 +189,15 @@
 }
 
 @keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.5; }
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.5;
+  }
 }
 
 .stat-value.neutral {
@@ -881,6 +888,29 @@
   display: inline-flex;
   align-items: center;
   gap: 0.25rem;
+}
+
+.sub-stat-item.actionable {
+  cursor: pointer;
+  padding: 0.2rem 0.4rem;
+  margin: -0.2rem -0.4rem;
+  border-radius: 0.25rem;
+  transition: all 0.2s ease;
+}
+
+.sub-stat-item.actionable:hover {
+  background-color: #f1f5f9;
+}
+
+.sub-stat-item.actionable .sub-spent {
+  color: #3b82f6;
+  text-decoration: underline;
+  text-decoration-style: dotted;
+  text-underline-offset: 3px;
+}
+
+.sub-stat-item.actionable:hover .sub-spent {
+  color: #2563eb;
 }
 
 .sub-stat-label {

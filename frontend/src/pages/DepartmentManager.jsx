@@ -356,38 +356,38 @@ const DepartmentManager = ({ user, setUser }) => {
 
                                             {/* Budget Overview - only for fully managed departments */}
                                             {!isCrossDept && (
-                                            <div className="manager-budget-overview">
-                                                <div className="manager-budget-stats">
-                                                    <div className="manager-stat">
-                                                        <span className="manager-stat-label">תקציב</span>
-                                                        <span className="manager-stat-value">
-                                                            {dept.budget.toLocaleString()} {getCurrencyLabel(dept.currency)}
-                                                        </span>
+                                                <div className="manager-budget-overview">
+                                                    <div className="manager-budget-stats">
+                                                        <div className="manager-stat">
+                                                            <span className="manager-stat-label">תקציב</span>
+                                                            <span className="manager-stat-value">
+                                                                {dept.budget.toLocaleString()} {getCurrencyLabel(dept.currency)}
+                                                            </span>
+                                                        </div>
+                                                        <div className="manager-stat">
+                                                            <span className="manager-stat-label">הוצאות</span>
+                                                            <span className="manager-stat-value spent">
+                                                                {(dept.spent || 0).toLocaleString()} {getCurrencyLabel(dept.currency)}
+                                                            </span>
+                                                        </div>
+                                                        <div className="manager-stat">
+                                                            <span className="manager-stat-label">יתרה</span>
+                                                            <span className={`manager-stat-value ${isOverBudget ? 'negative' : 'positive'}`}>
+                                                                {remaining.toLocaleString()} {getCurrencyLabel(dept.currency)}
+                                                            </span>
+                                                        </div>
                                                     </div>
-                                                    <div className="manager-stat">
-                                                        <span className="manager-stat-label">הוצאות</span>
-                                                        <span className="manager-stat-value spent">
-                                                            {(dept.spent || 0).toLocaleString()} {getCurrencyLabel(dept.currency)}
-                                                        </span>
-                                                    </div>
-                                                    <div className="manager-stat">
-                                                        <span className="manager-stat-label">יתרה</span>
-                                                        <span className={`manager-stat-value ${isOverBudget ? 'negative' : 'positive'}`}>
-                                                            {remaining.toLocaleString()} {getCurrencyLabel(dept.currency)}
-                                                        </span>
-                                                    </div>
-                                                </div>
 
-                                                <div className="manager-progress-container">
-                                                    <div className={`manager-progress-bar ${isOverBudget ? 'over-budget' : isWarning ? 'warning' : ''}`}>
-                                                        <div
-                                                            className="manager-progress-fill"
-                                                            style={{ width: `${Math.min(usagePercent, 100)}%` }}
-                                                        ></div>
+                                                    <div className="manager-progress-container">
+                                                        <div className={`manager-progress-bar ${isOverBudget ? 'over-budget' : isWarning ? 'warning' : ''}`}>
+                                                            <div
+                                                                className="manager-progress-fill"
+                                                                style={{ width: `${Math.min(usagePercent, 100)}%` }}
+                                                            ></div>
+                                                        </div>
+                                                        <span className="manager-progress-text">{usagePercent.toFixed(0)}% נוצל</span>
                                                     </div>
-                                                    <span className="manager-progress-text">{usagePercent.toFixed(0)}% נוצל</span>
                                                 </div>
-                                            </div>
                                             )}
 
                                             {/* Categories */}
@@ -462,7 +462,11 @@ const DepartmentManager = ({ user, setUser }) => {
                                                                                                 <span className="sub-budget" dir="ltr">{sub.budget.toLocaleString()}</span>
                                                                                             </span>
                                                                                             <span className="sub-separator">|</span>
-                                                                                            <span className="sub-stat-item">
+                                                                                            <span
+                                                                                                className="sub-stat-item actionable"
+                                                                                                onClick={() => navigate(`/admin/expense-history?subcategory_id=${sub.id}`)}
+                                                                                                title="צפה בהוצאות"
+                                                                                            >
                                                                                                 <span className="sub-stat-label">הוצאות:</span>
                                                                                                 <span className="sub-spent" dir="ltr">{(sub.spent || 0).toLocaleString()}</span>
                                                                                             </span>
@@ -706,7 +710,7 @@ const DepartmentManager = ({ user, setUser }) => {
                                                                                 className="stat-item actionable"
                                                                                 onClick={(e) => {
                                                                                     e.stopPropagation();
-                                                                                    navigate(`/admin/expense-history?category_id=${cat.id}`);
+                                                                                    navigate(`/admin/expense-history?subcategory_id=${sub.id}`);
                                                                                 }}
                                                                                 title="לחץ לצפייה בפירוט ההוצאות"
                                                                             >
