@@ -123,8 +123,14 @@ function SubmitExpense({ user, setUser }) {
     name: '',
     email: '',
     phone: '',
+    address: '',
     tax_id: '',
-    address: ''
+    bank_name: '',
+    bank_account_number: '',
+    bank_branch: '',
+    bank_swift: '',
+    iban: '',
+    notes: ''
   })
 
   useEffect(() => {
@@ -485,8 +491,14 @@ function SubmitExpense({ user, setUser }) {
         name: '',
         email: '',
         phone: '',
+        address: '',
         tax_id: '',
-        address: ''
+        bank_name: '',
+        bank_account_number: '',
+        bank_branch: '',
+        bank_swift: '',
+        iban: '',
+        notes: ''
       })
     } else {
       // Normal selection
@@ -865,9 +877,10 @@ function SubmitExpense({ user, setUser }) {
         submitText="Create Supplier"
         cancelText="Cancel"
         loading={newSupplierLoading}
-        size="medium"
+        size="large"
       >
         <div className="new-supplier-form">
+          <h4><i className="fas fa-info-circle"></i> Basic Information</h4>
           <Input
             type="text"
             label="Supplier Name"
@@ -900,6 +913,15 @@ function SubmitExpense({ user, setUser }) {
 
           <Input
             type="text"
+            label="Address"
+            name="address"
+            value={newSupplierData.address}
+            onChange={handleNewSupplierInputChange}
+            placeholder="Supplier address"
+          />
+
+          <Input
+            type="text"
             label="Tax ID / Business Number"
             name="tax_id"
             value={newSupplierData.tax_id}
@@ -907,13 +929,65 @@ function SubmitExpense({ user, setUser }) {
             placeholder="Tax ID or business number"
           />
 
+          <h4><i className="fas fa-university"></i> Bank Details</h4>
+          <div className="form-row">
+            <Input
+              type="text"
+              label="Bank Name"
+              name="bank_name"
+              value={newSupplierData.bank_name}
+              onChange={handleNewSupplierInputChange}
+              placeholder="Bank name"
+            />
+
+            <Input
+              type="text"
+              label="Branch"
+              name="bank_branch"
+              value={newSupplierData.bank_branch}
+              onChange={handleNewSupplierInputChange}
+              placeholder="Branch number"
+            />
+          </div>
+
+          <div className="form-row">
+            <Input
+              type="text"
+              label="Account Number"
+              name="bank_account_number"
+              value={newSupplierData.bank_account_number}
+              onChange={handleNewSupplierInputChange}
+              placeholder="Account number"
+            />
+
+            <Input
+              type="text"
+              label="SWIFT Code"
+              name="bank_swift"
+              value={newSupplierData.bank_swift}
+              onChange={handleNewSupplierInputChange}
+              placeholder="SWIFT/BIC code"
+            />
+          </div>
+
           <Input
             type="text"
-            label="Address"
-            name="address"
-            value={newSupplierData.address}
+            label="IBAN"
+            name="iban"
+            value={newSupplierData.iban}
             onChange={handleNewSupplierInputChange}
-            placeholder="Supplier address"
+            placeholder="International Bank Account Number"
+            maxLength={34}
+          />
+
+          <h4><i className="fas fa-sticky-note"></i> Additional Information</h4>
+          <Textarea
+            label="Notes"
+            name="notes"
+            value={newSupplierData.notes}
+            onChange={handleNewSupplierInputChange}
+            rows={2}
+            placeholder="Additional notes..."
           />
         </div>
       </Modal.Form>

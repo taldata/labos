@@ -135,6 +135,7 @@ class Supplier(db.Model):
     bank_account_number = db.Column(db.String(50))
     bank_branch = db.Column(db.String(100))
     bank_swift = db.Column(db.String(50))
+    iban = db.Column(db.String(34))
     notes = db.Column(db.Text)
     status = db.Column(db.String(20), default='active')
     created_at = db.Column(db.DateTime, default=datetime.utcnow)

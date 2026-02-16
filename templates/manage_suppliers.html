@@ -69,6 +69,9 @@
                 {% if supplier.bank_account_number %}
                 <p><i class="fas fa-money-check"></i> Account: {{ supplier.bank_account_number }}</p>
                 {% endif %}
+                {% if supplier.iban %}
+                <p><i class="fas fa-money-check-alt"></i> IBAN: {{ supplier.iban }}</p>
+                {% endif %}
             </div>
             <div class="supplier-footer">
                 <button class="button secondary" onclick="openEditSupplierModal({{ supplier.id }})">
@@ -125,6 +128,10 @@
                 <div class="form-group">
                     <label for="bank_swift">SWIFT Code</label>
                     <input type="text" id="bank_swift" name="bank_swift" class="form-control">
+                </div>
+                <div class="form-group">
+                    <label for="iban">IBAN</label>
+                    <input type="text" id="iban" name="iban" class="form-control" maxlength="34">
                 </div>
                 <div class="form-group">
                     <label for="notes">Notes</label>
@@ -430,6 +437,7 @@ function openEditSupplierModal(supplierId) {
             document.getElementById('bank_account_number').value = data.bank_account_number || '';
             document.getElementById('bank_branch').value = data.bank_branch || '';
             document.getElementById('bank_swift').value = data.bank_swift || '';
+            document.getElementById('iban').value = data.iban || '';
             document.getElementById('notes').value = data.notes || '';
             document.getElementById('status').value = data.status;
             

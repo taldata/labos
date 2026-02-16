@@ -203,6 +203,7 @@
         </div>
         <div class="modal-body">
             <form id="addSupplierForm" onsubmit="submitSupplier(event)">
+                <h4><i class="fas fa-info-circle"></i> Basic Information</h4>
                 <div class="form-group">
                     <label for="supplier_name">Supplier Name *</label>
                     <input type="text" name="name" id="supplier_name" required class="form-control">
@@ -216,8 +217,38 @@
                     <input type="tel" name="phone" id="supplier_phone" class="form-control">
                 </div>
                 <div class="form-group">
+                    <label for="supplier_address">Address</label>
+                    <textarea name="address" id="supplier_address" class="form-control" rows="2"></textarea>
+                </div>
+                <div class="form-group">
                     <label for="supplier_tax_id">Tax ID</label>
                     <input type="text" name="tax_id" id="supplier_tax_id" class="form-control">
+                </div>
+                <h4><i class="fas fa-university"></i> Bank Details</h4>
+                <div class="form-group">
+                    <label for="supplier_bank_name">Bank Name</label>
+                    <input type="text" name="bank_name" id="supplier_bank_name" class="form-control">
+                </div>
+                <div class="form-group">
+                    <label for="supplier_bank_account_number">Account Number</label>
+                    <input type="text" name="bank_account_number" id="supplier_bank_account_number" class="form-control">
+                </div>
+                <div class="form-group">
+                    <label for="supplier_bank_branch">Branch</label>
+                    <input type="text" name="bank_branch" id="supplier_bank_branch" class="form-control">
+                </div>
+                <div class="form-group">
+                    <label for="supplier_bank_swift">SWIFT Code</label>
+                    <input type="text" name="bank_swift" id="supplier_bank_swift" class="form-control">
+                </div>
+                <div class="form-group">
+                    <label for="supplier_iban">IBAN</label>
+                    <input type="text" name="iban" id="supplier_iban" class="form-control" maxlength="34">
+                </div>
+                <h4><i class="fas fa-sticky-note"></i> Additional Information</h4>
+                <div class="form-group">
+                    <label for="supplier_notes">Notes</label>
+                    <textarea name="notes" id="supplier_notes" class="form-control" rows="2"></textarea>
                 </div>
                 <div class="form-actions">
                     <button type="submit" class="button primary">

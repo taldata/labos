@@ -732,6 +732,12 @@ def create_supplier_quick():
             phone=data.get('phone'),
             address=data.get('address'),
             tax_id=data.get('tax_id'),
+            bank_name=data.get('bank_name'),
+            bank_account_number=data.get('bank_account_number'),
+            bank_branch=data.get('bank_branch'),
+            bank_swift=data.get('bank_swift'),
+            iban=data.get('iban'),
+            notes=data.get('notes'),
             status='active'
         )
         
