@@ -7,6 +7,8 @@ import logger from '../../utils/logger'
 import ExpenseStats from './components/ExpenseStats'
 import ExpenseFilters from './components/ExpenseFilters'
 import ExpenseList from './components/ExpenseList'
+import ExpenseEditModal from '../../components/ExpenseEditModal'
+import useExpenseFormOptions from '../../hooks/useExpenseFormOptions'
 import './styles.css'
 
 // ============================================================================
@@ -58,6 +60,11 @@ function MyExpenses({ user, setUser }) {
   // Delete State
   const [deleteModalOpen, setDeleteModalOpen] = useState(false)
   const [expenseToDelete, setExpenseToDelete] = useState(null)
+
+  // Edit State
+  const [editModalOpen, setEditModalOpen] = useState(false)
+  const [selectedExpense, setSelectedExpense] = useState(null)
+  const { subcategories, suppliers, creditCards, fetchOptions } = useExpenseFormOptions()
 
   // Misc State
   const [newExpenseId, setNewExpenseId] = useState(location.state?.newExpenseId || null)
@@ -146,6 +153,7 @@ function MyExpenses({ user, setUser }) {
   useEffect(() => {
     isMountedRef.current = true
     fetchCategories()
+    fetchOptions()
     return () => {
       isMountedRef.current = false
     }
@@ -189,7 +197,8 @@ function MyExpenses({ user, setUser }) {
   }
 
   const handleEditClick = (expense) => {
-    navigate(user?.is_admin ? '/admin/expense-history' : '/manager/expense-history')
+    setSelectedExpense(expense)
+    setEditModalOpen(true)
   }
 
   const handleDeleteClick = (e, expense) => {
@@ -314,6 +323,17 @@ function MyExpenses({ user, setUser }) {
           </Button>
         </div>
       </Modal>
+
+      <ExpenseEditModal
+        isOpen={editModalOpen}
+        onClose={() => setEditModalOpen(false)}
+        expense={selectedExpense}
+        onSuccess={fetchExpenses}
+        subcategories={subcategories}
+        suppliers={suppliers}
+        creditCards={creditCards}
+        isManagerView={true} // Hide admin fields like status/payment
+      />
     </div>
   )
 }
