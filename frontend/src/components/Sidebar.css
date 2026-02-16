@@ -249,18 +249,18 @@
   overflow: hidden;
 }
 
-.user-name {
+.sidebar .user-name {
   font-weight: 600;
   font-size: 0.9rem;
-  color: white;
+  color: white !important;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-.user-role {
+.sidebar .user-role {
   font-size: 0.75rem;
-  color: white;
+  color: rgba(255, 255, 255, 0.7) !important;
 }
 
 .logout-btn {
