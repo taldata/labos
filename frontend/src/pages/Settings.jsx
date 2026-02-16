@@ -121,12 +121,15 @@ function Settings({ user, setUser }) {
   }
 
   const getRoleBadges = () => {
-    const badges = []
-    if (user?.is_admin) badges.push(<Badge key="admin" variant="danger" size="small">Administrator</Badge>)
-    if (user?.is_manager) badges.push(<Badge key="manager" variant="warning" size="small">Manager</Badge>)
-    if (user?.is_accounting) badges.push(<Badge key="accounting" variant="info" size="small">Accounting</Badge>)
-    if (badges.length === 0) badges.push(<Badge key="employee" variant="default" size="small">Employee</Badge>)
-    return badges
+    const roleConfig = {
+      admin: { variant: 'danger', label: 'Administrator' },
+      manager: { variant: 'warning', label: 'Manager' },
+      accounting: { variant: 'info', label: 'Accounting' },
+      hr: { variant: 'info', label: 'HR' },
+      user: { variant: 'default', label: 'Employee' }
+    }
+    const config = roleConfig[user?.role] || roleConfig.user
+    return [<Badge key="role" variant={config.variant} size="small">{config.label}</Badge>]
   }
 
   return (

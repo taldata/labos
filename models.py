@@ -1,5 +1,6 @@
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import UserMixin
+from sqlalchemy.ext.hybrid import hybrid_property
 from datetime import datetime
 
 db = SQLAlchemy()
@@ -63,10 +64,7 @@ class User(UserMixin, db.Model):
     password = db.Column(db.String(120), nullable=True)
     first_name = db.Column(db.String(100), nullable=True)
     last_name = db.Column(db.String(100), nullable=True)
-    is_manager = db.Column(db.Boolean, default=False)
-    is_admin = db.Column(db.Boolean, default=False)
-    is_accounting = db.Column(db.Boolean, default=False)
-    is_hr = db.Column(db.Boolean, default=False)
+    role = db.Column(db.String(20), default='user', nullable=False)
     profile_pic = db.Column(db.String(255), nullable=True)
     status = db.Column(db.String(20), default='active')  # active, inactive, pending
     # Version preference for parallel frontend versions
@@ -90,12 +88,76 @@ class User(UserMixin, db.Model):
                                        primaryjoin='User.id==Expense.user_id',
                                        backref='submitter',
                                        lazy=True)
-    
+
     # Relationship for expenses where user is the manager
     handled_expenses = db.relationship('Expense',
                                      primaryjoin='User.id==Expense.manager_id',
                                      backref='handler',
                                      lazy=True)
+
+    # --- Role hybrid properties (backward-compatible read/write access) ---
+
+    VALID_ROLES = ('user', 'admin', 'manager', 'accounting', 'hr')
+
+    @hybrid_property
+    def is_admin(self):
+        return self.role == 'admin'
+
+    @is_admin.expression
+    def is_admin(cls):
+        return cls.role == 'admin'
+
+    @is_admin.setter
+    def is_admin(self, value):
+        if value:
+            self.role = 'admin'
+        elif self.role == 'admin':
+            self.role = 'user'
+
+    @hybrid_property
+    def is_manager(self):
+        return self.role == 'manager'
+
+    @is_manager.expression
+    def is_manager(cls):
+        return cls.role == 'manager'
+
+    @is_manager.setter
+    def is_manager(self, value):
+        if value:
+            self.role = 'manager'
+        elif self.role == 'manager':
+            self.role = 'user'
+
+    @hybrid_property
+    def is_accounting(self):
+        return self.role == 'accounting'
+
+    @is_accounting.expression
+    def is_accounting(cls):
+        return cls.role == 'accounting'
+
+    @is_accounting.setter
+    def is_accounting(self, value):
+        if value:
+            self.role = 'accounting'
+        elif self.role == 'accounting':
+            self.role = 'user'
+
+    @hybrid_property
+    def is_hr(self):
+        return self.role == 'hr'
+
+    @is_hr.expression
+    def is_hr(cls):
+        return cls.role == 'hr'
+
+    @is_hr.setter
+    def is_hr(self, value):
+        if value:
+            self.role = 'hr'
+        elif self.role == 'hr':
+            self.role = 'user'
 
     def get_monthly_expenses(self, year, month):
         """Get total approved expenses for a specific month"""

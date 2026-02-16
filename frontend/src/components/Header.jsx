@@ -58,10 +58,8 @@ function Header({ user, setUser, currentPage = 'dashboard' }) {
   }
 
   const getRoleBadge = () => {
-    if (user?.is_admin) return '👑 Admin'
-    if (user?.is_manager) return '👔 Manager'
-    if (user?.is_accounting) return '📊 Accounting'
-    return '👤 Employee'
+    const labels = { admin: '👑 Admin', manager: '👔 Manager', accounting: '📊 Accounting', hr: '🏥 HR' }
+    return labels[user?.role] || '👤 Employee'
   }
 
   const handleNavigation = (path) => {

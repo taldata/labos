@@ -36,19 +36,21 @@
                                     <td>{{ user.username }}</td>
                                     <td>{{ user.email }}</td>
                                     <td>
-                                        {% if user.is_admin %}
+                                        {% if user.role == 'admin' %}
                                         <span class="badge bg-danger">Admin</span>
-                                        {% elif user.is_manager %}
+                                        {% elif user.role == 'manager' %}
                                         <span class="badge bg-warning">Manager</span>
-                                        {% elif user.is_accounting %}
+                                        {% elif user.role == 'accounting' %}
                                         <span class="badge bg-success">Accounting</span>
+                                        {% elif user.role == 'hr' %}
+                                        <span class="badge bg-success">HR</span>
                                         {% else %}
                                         <span class="badge bg-info">Employee</span>
                                         {% endif %}
                                     </td>
                                     <td>{{ user.home_department.name if user.home_department else 'None' }}</td>
                                     <td>
-                                        {% if user.is_manager %}
+                                        {% if user.role == 'manager' %}
                                         <ul class="managed-departments-list">
                                             {% for dept in user.managed_departments %}
                                             <li>{{ dept.name }}</li>
@@ -79,7 +81,7 @@
                                             <i class="fas fa-trash-alt"></i>
                                         </button>
                                         <button onclick="resetPassword({{ user.id }})" class="action-btn reset"
-                                            title="Reset Password" {% if user.is_admin %}disabled{% endif %}>
+                                            title="Reset Password" {% if user.role == 'admin' %}disabled{% endif %}>
                                             <i class="fas fa-key"></i>
                                         </button>
                                         {% endif %}
@@ -93,17 +95,14 @@
                                     <td>
                                         <input type="email" class="form-control" name="email" value="{{ user.email }}">
                                     </td>
-                                    {% if not (user.is_admin and user.id == current_user.id) %}
+                                    {% if not (user.role == 'admin' and user.id == current_user.id) %}
                                     <td>
                                         <select class="form-control" name="role" onchange="toggleManagedDepts(this)">
-                                            <option value="user" {% if not user.is_admin and not user.is_manager and not
-                                                user.is_accounting %}selected{% endif %}>Employee</option>
-                                            <option value="manager" {% if user.is_manager %}selected{% endif %}>Manager
-                                            </option>
-                                            <option value="accounting" {% if user.is_accounting %}selected{% endif %}>
-                                                Accounting</option>
-                                            <option value="admin" {% if user.is_admin %}selected{% endif %}>Admin
-                                            </option>
+                                            <option value="user" {% if user.role == 'user' %}selected{% endif %}>Employee</option>
+                                            <option value="manager" {% if user.role == 'manager' %}selected{% endif %}>Manager</option>
+                                            <option value="accounting" {% if user.role == 'accounting' %}selected{% endif %}>Accounting</option>
+                                            <option value="hr" {% if user.role == 'hr' %}selected{% endif %}>HR</option>
+                                            <option value="admin" {% if user.role == 'admin' %}selected{% endif %}>Admin</option>
                                         </select>
                                         <small class="help-text text-muted">Each user can have only one role</small>
                                     </td>
@@ -130,7 +129,7 @@
                                     </td>
                                     {% endif %}
                                     <td>
-                                        <div class="managed-depts-container" {% if not user.is_manager
+                                        <div class="managed-depts-container" {% if user.role != 'manager'
                                             %}style="display: none;" {% endif %}>
                                             <select class="form-control" name="managed_departments" multiple>
                                                 {% for dept in departments %}
