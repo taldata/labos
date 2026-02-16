@@ -1,7 +1,7 @@
 """Add manager_categories table for cross-department category access
 
 Revision ID: b2c3d4e5f6g7
-Revises: a1b2c3d4e5f6
+Revises: f831eb5c8b3a
 Create Date: 2026-02-05
 
 """
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
 revision = 'b2c3d4e5f6g7'
-down_revision = 'a1b2c3d4e5f6'
+down_revision = 'f831eb5c8b3a'
 branch_labels = None
 depends_on = None
 
