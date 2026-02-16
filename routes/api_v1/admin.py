@@ -1216,9 +1216,7 @@ def manager_list_expenses():
             query = query.filter(Expense.status == status)
 
         if department_id:
-            # Only allow filtering to departments the manager manages
-            if department_id in managed_dept_ids:
-                query = query.filter(Category.department_id == department_id)
+            query = query.filter(Category.department_id == department_id)
 
         if user_id:
             query = query.filter(Expense.user_id == user_id)
