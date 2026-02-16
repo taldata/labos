@@ -100,14 +100,19 @@
   display: flex;
   flex-direction: column;
   gap: 0.125rem;
+  min-width: 0;
+  overflow: hidden;
 }
 
 .summary-value {
-  font-size: 1.5rem;
+  font-size: 1.15rem;
   font-weight: 700;
   color: #1e293b;
   line-height: 1.2;
   font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .summary-value--negative {
