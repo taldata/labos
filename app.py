@@ -2696,6 +2696,7 @@ def export_accounting_excel():
             'Bank Account': expense.supplier.bank_account_number if expense.supplier else '-',
             'Bank Branch': expense.supplier.bank_branch if expense.supplier else '-',
             'Bank SWIFT': expense.supplier.bank_swift if expense.supplier else '-',
+            'IBAN': expense.supplier.iban if expense.supplier else '-',
             'Supplier Notes': expense.supplier.notes if expense.supplier else '-',
             'Supplier Status': expense.supplier.status if expense.supplier else '-',
             'Date of Invoice': expense.invoice_date.strftime('%d/%m/%Y') if expense.invoice_date else '-',
