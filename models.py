@@ -137,7 +137,7 @@ class Supplier(db.Model):
     bank_swift = db.Column(db.String(50))
     iban = db.Column(db.String(34))
     notes = db.Column(db.Text)
-    status = db.Column(db.String(20), default='active')
+    status = db.Column(db.String(20), default='active', server_default='active')
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     expenses = db.relationship('Expense', backref='supplier', lazy=True)

@@ -337,8 +337,10 @@ def get_expense_filter_options():
             }
             cat_list.append(cat_data)
 
-        # 4. Suppliers (active only)
-        suppliers = Supplier.query.filter_by(status='active').all()
+        # 4. Suppliers (active or NULL status)
+        suppliers = Supplier.query.filter(
+            or_(Supplier.status == 'active', Supplier.status.is_(None))
+        ).all()
         supplier_list = [{
             'id': sup.id,
             'name': sup.name,

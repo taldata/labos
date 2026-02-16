@@ -743,7 +743,9 @@ def get_subcategories():
 def get_suppliers():
     """Get all active suppliers"""
     try:
-        suppliers = Supplier.query.filter_by(status='active').all()
+        suppliers = Supplier.query.filter(
+            or_(Supplier.status == 'active', Supplier.status.is_(None))
+        ).all()
         supplier_list = [{
             'id': sup.id,
             'name': sup.name,
