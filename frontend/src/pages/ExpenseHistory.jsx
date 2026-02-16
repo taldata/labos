@@ -524,10 +524,10 @@ function ExpenseHistoryFilters({
               onChange={handleFilterChange}
             >
               <option value="">All Methods</option>
-              <option value="credit_card">Credit Card</option>
+              <option value="credit">Credit Card</option>
               <option value="bank_transfer">Bank Transfer</option>
-              <option value="cash">Cash</option>
               <option value="standing_order">Standing Order</option>
+              <option value="check">Check</option>
             </Select>
           </div>
 
@@ -1166,71 +1166,72 @@ function ExpenseEditModal({ isOpen, onClose, expense, onSuccess, subcategories, 
 
         {/* Status & Payment - admin only */}
         {!isManagerView && (
-        <div className="eh-edit-form__section">
-          <h4 className="eh-edit-form__section-title">
-            <i className="fas fa-check-circle" /> Status & Payment
-          </h4>
-          <div className="eh-edit-form__row">
-            <Select
-              label="Status"
-              name="status"
-              value={formData.status}
-              onChange={(e) => handleInputChange('status', e.target.value)}
-            >
-              <option value="pending">Pending</option>
-              <option value="approved">Approved</option>
-              <option value="rejected">Rejected</option>
-            </Select>
-            <Select
-              label="Payment Status"
-              name="payment_status"
-              value={formData.payment_status}
-              onChange={(e) => handleInputChange('payment_status', e.target.value)}
-            >
-              <option value="">Not Set</option>
-              <option value="pending_attention">Pending Attention</option>
-              <option value="pending_payment">Pending Payment</option>
-              <option value="paid">Paid</option>
-            </Select>
-          </div>
-          {formData.status === 'rejected' && (
-            <Input
-              label="Rejection Reason"
-              name="rejection_reason"
-              value={formData.rejection_reason}
-              onChange={(e) => handleInputChange('rejection_reason', e.target.value)}
-              placeholder="Enter reason for rejection..."
-            />
-          )}
-          <div className="eh-edit-form__row">
-            <Select
-              label="Payment Method"
-              name="payment_method"
-              value={formData.payment_method}
-              onChange={(e) => handleInputChange('payment_method', e.target.value)}
-            >
-              <option value="">Select Method</option>
-              <option value="credit">Credit Card</option>
-              <option value="transfer">Bank Transfer</option>
-              <option value="standing_order">Standing Order</option>
-            </Select>
-            {formData.payment_method === 'credit' && (
+          <div className="eh-edit-form__section">
+            <h4 className="eh-edit-form__section-title">
+              <i className="fas fa-check-circle" /> Status & Payment
+            </h4>
+            <div className="eh-edit-form__row">
               <Select
-                label="Credit Card"
-                name="credit_card_id"
-                value={formData.credit_card_id}
-                onChange={(e) => handleInputChange('credit_card_id', e.target.value)}
+                label="Status"
+                name="status"
+                value={formData.status}
+                onChange={(e) => handleInputChange('status', e.target.value)}
               >
-                <option value="">Select Card</option>
-                {creditCards.map(card => (
-                  <option key={card.id} value={card.id}>
-                    {card.name} (*{card.last_four_digits})
-                  </option>
-                ))}
+                <option value="pending">Pending</option>
+                <option value="approved">Approved</option>
+                <option value="rejected">Rejected</option>
               </Select>
+              <Select
+                label="Payment Status"
+                name="payment_status"
+                value={formData.payment_status}
+                onChange={(e) => handleInputChange('payment_status', e.target.value)}
+              >
+                <option value="">Not Set</option>
+                <option value="pending_attention">Pending Attention</option>
+                <option value="pending_payment">Pending Payment</option>
+                <option value="paid">Paid</option>
+              </Select>
+            </div>
+            {formData.status === 'rejected' && (
+              <Input
+                label="Rejection Reason"
+                name="rejection_reason"
+                value={formData.rejection_reason}
+                onChange={(e) => handleInputChange('rejection_reason', e.target.value)}
+                placeholder="Enter reason for rejection..."
+              />
             )}
+            <div className="eh-edit-form__row">
+              <Select
+                label="Payment Method"
+                name="payment_method"
+                value={formData.payment_method}
+                onChange={(e) => handleInputChange('payment_method', e.target.value)}
+              >
+                <option value="">Select Method</option>
+                <option value="credit">Credit Card</option>
+                <option value="bank_transfer">Bank Transfer</option>
+                <option value="standing_order">Standing Order</option>
+                <option value="check">Check</option>
+              </Select>
+              {formData.payment_method === 'credit' && (
+                <Select
+                  label="Credit Card"
+                  name="credit_card_id"
+                  value={formData.credit_card_id}
+                  onChange={(e) => handleInputChange('credit_card_id', e.target.value)}
+                >
+                  <option value="">Select Card</option>
+                  {creditCards.map(card => (
+                    <option key={card.id} value={card.id}>
+                      {card.name} (*{card.last_four_digits})
+                    </option>
+                  ))}
+                </Select>
+              )}
+            </div>
           </div>
-        </div>
         )}
 
         {/* Supplier & Date */}

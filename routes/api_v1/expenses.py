@@ -1138,6 +1138,10 @@ def submit_expense():
             expense.amount_ils = expense.amount
             expense.exchange_rate = 1.0
 
+        # Set payment_status to 'Pending attention' for bank transfer payment method
+        if data.get('payment_method') in ('transfer', 'bank_transfer'):
+            expense.payment_status = 'pending_attention'
+
         # Auto-mark credit card and standing order payments as paid for auto-approved expenses
         if (data.get('payment_method') in ['credit', 'standing_order']) and expense.status == 'approved':
             expense.is_paid = True
@@ -1418,7 +1422,10 @@ def export_expenses():
             expenses = [exp for exp in expenses if exp.supplier_id and exp.supplier_id == int(supplier_id)]
 
         if payment_method != 'all' and payment_method:
-            expenses = [exp for exp in expenses if exp.payment_method == payment_method]
+            if payment_method in ('transfer', 'bank_transfer'):
+                expenses = [exp for exp in expenses if exp.payment_method in ('transfer', 'bank_transfer')]
+            else:
+                expenses = [exp for exp in expenses if exp.payment_method == payment_method]
 
         # Apply date range filters (React version)
         if start_date:

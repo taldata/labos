@@ -1236,7 +1236,10 @@ def manager_list_expenses():
             query = query.filter(Expense.supplier_id == supplier_id)
 
         if payment_method:
-            query = query.filter(Expense.payment_method == payment_method)
+            if payment_method in ('transfer', 'bank_transfer'):
+                query = query.filter(Expense.payment_method.in_(['transfer', 'bank_transfer']))
+            else:
+                query = query.filter(Expense.payment_method == payment_method)
 
         if start_date:
             try:
@@ -1416,7 +1419,10 @@ def admin_list_expenses():
             query = query.filter(Expense.supplier_id == supplier_id)
 
         if payment_method:
-            query = query.filter(Expense.payment_method == payment_method)
+            if payment_method in ('transfer', 'bank_transfer'):
+                query = query.filter(Expense.payment_method.in_(['transfer', 'bank_transfer']))
+            else:
+                query = query.filter(Expense.payment_method == payment_method)
 
         if start_date:
             try:
@@ -2173,9 +2179,12 @@ def get_accounting_expenses():
         if payment_due_date != 'all':
             query = query.filter(Expense.payment_due_date == payment_due_date)
 
-        # Payment method filter
+        # Payment method filter - handle both legacy 'transfer' and new 'bank_transfer' values
         if payment_method != 'all':
-            query = query.filter(Expense.payment_method == payment_method)
+            if payment_method in ('transfer', 'bank_transfer'):
+                query = query.filter(Expense.payment_method.in_(['transfer', 'bank_transfer']))
+            else:
+                query = query.filter(Expense.payment_method == payment_method)
 
         # Payment status filter
         if payment_status == 'paid':

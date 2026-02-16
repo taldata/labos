@@ -256,7 +256,9 @@ function ExpenseDetails({ user, setUser }) {
               )}
               <div className="detail-row">
                 <span className="detail-label">Payment Method:</span>
-                <span className="detail-value">{expense.payment_method || '-'}</span>
+                <span className="detail-value">{
+                  { credit: 'Credit Card', transfer: 'Bank Transfer', bank_transfer: 'Bank Transfer', standing_order: 'Standing Order', check: 'Check' }[expense.payment_method] || expense.payment_method || '-'
+                }</span>
               </div>
               {expense.credit_card && (
                 <div className="detail-row">

@@ -434,7 +434,7 @@ def submit_expense():
         )
         
         # Set payment_status to 'Pending attention' for 'Transfer' payment method
-        if payment_method == 'transfer':
+        if payment_method in ('transfer', 'bank_transfer'):
             expense.payment_status = 'pending_attention'
         
         # Auto-mark credit card and standing order payments as paid
@@ -1108,9 +1108,12 @@ def expense_history():
             expenses = [expense for expense in expenses if 
                         expense.supplier_id and expense.supplier_id == int(supplier_id)]
         
-        # Filter by payment method (transfer or credit)
+        # Filter by payment method (transfer or credit) - handle both legacy 'transfer' and new 'bank_transfer'
         if payment_method != 'all':
-            expenses = [expense for expense in expenses if expense.payment_method == payment_method]
+            if payment_method in ('transfer', 'bank_transfer'):
+                expenses = [expense for expense in expenses if expense.payment_method in ('transfer', 'bank_transfer')]
+            else:
+                expenses = [expense for expense in expenses if expense.payment_method == payment_method]
     
     # Generate month options for dropdowns
     current_year = datetime.now().year
@@ -3042,9 +3045,12 @@ def accounting_dashboard():
     if payment_due_date_filter != 'all':
         query = query.filter(Expense.payment_due_date == payment_due_date_filter)
     
-    # Apply payment method filter
+    # Apply payment method filter - handle both legacy 'transfer' and new 'bank_transfer'
     if payment_method_filter != 'all':
-        query = query.filter(Expense.payment_method == payment_method_filter)
+        if payment_method_filter in ('transfer', 'bank_transfer'):
+            query = query.filter(Expense.payment_method.in_(['transfer', 'bank_transfer']))
+        else:
+            query = query.filter(Expense.payment_method == payment_method_filter)
     
     # Apply payment status filter
     if payment_status_filter == 'paid':
@@ -3107,7 +3113,14 @@ def mark_expense_paid(expense_id):
             subject = "Your Expense Has Been Paid"
             
             # Prepare payment method display text
-            payment_method_display = "Credit Card" if expense.payment_method == "credit" else "Bank Transfer"
+            payment_method_map = {
+                'credit': 'Credit Card',
+                'transfer': 'Bank Transfer',
+                'bank_transfer': 'Bank Transfer',
+                'standing_order': 'Standing Order',
+                'check': 'Check'
+            }
+            payment_method_display = payment_method_map.get(expense.payment_method, expense.payment_method or 'Unknown')
             
             # Send the notification email
             send_email(

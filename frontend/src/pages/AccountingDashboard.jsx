@@ -38,7 +38,9 @@ const formatPaymentMethod = (method) => {
   const map = {
     credit: 'Credit Card',
     transfer: 'Bank Transfer',
-    standing_order: 'Standing Order'
+    bank_transfer: 'Bank Transfer',
+    standing_order: 'Standing Order',
+    check: 'Check'
   }
   return map[method] || method || '-'
 }
@@ -147,8 +149,9 @@ function AccountingFilters({ filters, onChange, onClear, monthOptions }) {
             <Select label="Payment Method" name="payment_method" value={filters.payment_method} onChange={handleChange}>
               <option value="all">All Methods</option>
               <option value="credit">Credit Card</option>
-              <option value="transfer">Bank Transfer</option>
+              <option value="bank_transfer">Bank Transfer</option>
               <option value="standing_order">Standing Order</option>
+              <option value="check">Check</option>
             </Select>
             <Select label="Payment Status" name="payment_status" value={filters.payment_status} onChange={handleChange}>
               <option value="all">All Statuses</option>
