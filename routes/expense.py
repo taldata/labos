@@ -105,6 +105,7 @@ def get_supplier(supplier_id):
         'bank_account_number': supplier.bank_account_number,
         'bank_branch': supplier.bank_branch,
         'bank_swift': supplier.bank_swift,
+        'iban': supplier.iban,
         'notes': supplier.notes,
         'status': supplier.status
     }

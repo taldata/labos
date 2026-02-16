@@ -475,6 +475,7 @@
                             <th>Account Number</th>
                             <th>Bank Branch</th>
                             <th>SWIFT</th>
+                            <th>IBAN</th>
                             <th>Notes</th>
                             <th>Email</th>
                             <th>Phone</th>
@@ -574,6 +575,7 @@
                             <td>{{ expense.supplier.bank_account_number if expense.supplier else '-' }}</td>
                             <td>{{ expense.supplier.bank_branch if expense.supplier else '-' }}</td>
                             <td>{{ expense.supplier.bank_swift if expense.supplier else '-' }}</td>
+                            <td>{{ expense.supplier.iban if expense.supplier else '-' }}</td>
                             <td>{{ expense.supplier.notes if expense.supplier else '-' }}</td>
                             <td>{{ expense.supplier.email if expense.supplier else '-' }}</td>
                             <td>{{ expense.supplier.phone if expense.supplier else '-' }}</td>
