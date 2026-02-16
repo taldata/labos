@@ -383,10 +383,16 @@ def submit_expense():
                 # Create new supplier
                 supplier = Supplier(
                     name=request.form['supplier_name'],
+                    email=request.form.get('email'),
+                    phone=request.form.get('phone'),
+                    address=request.form.get('address'),
+                    tax_id=request.form.get('tax_id'),
                     bank_name=request.form.get('bank_name'),
                     bank_account_number=request.form.get('bank_account_number'),
                     bank_branch=request.form.get('bank_branch'),
-                    bank_swift=request.form.get('bank_swift')
+                    bank_swift=request.form.get('bank_swift'),
+                    iban=request.form.get('iban'),
+                    notes=request.form.get('notes')
                 )
                 db.session.add(supplier)
                 db.session.commit()
@@ -3208,14 +3214,28 @@ def add_supplier():
             name = request.form['name']
             email = request.form.get('email')
             phone = request.form.get('phone')
+            address = request.form.get('address')
             tax_id = request.form.get('tax_id')
-            
+            bank_name = request.form.get('bank_name')
+            bank_account_number = request.form.get('bank_account_number')
+            bank_branch = request.form.get('bank_branch')
+            bank_swift = request.form.get('bank_swift')
+            iban = request.form.get('iban')
+            notes = request.form.get('notes')
+
             # Create new supplier
             supplier = Supplier(
                 name=name,
                 email=email,
                 phone=phone,
+                address=address,
                 tax_id=tax_id,
+                bank_name=bank_name,
+                bank_account_number=bank_account_number,
+                bank_branch=bank_branch,
+                bank_swift=bank_swift,
+                iban=iban,
+                notes=notes,
                 status='active'
             )
             db.session.add(supplier)
@@ -3267,6 +3287,7 @@ def get_supplier(supplier_id):
         'bank_account_number': supplier.bank_account_number,
         'bank_branch': supplier.bank_branch,
         'bank_swift': supplier.bank_swift,
+        'iban': supplier.iban,
         'notes': supplier.notes,
         'status': supplier.status
     })
@@ -3286,6 +3307,7 @@ def edit_supplier(supplier_id):
         supplier.bank_account_number = request.form.get('bank_account_number')
         supplier.bank_branch = request.form.get('bank_branch')
         supplier.bank_swift = request.form.get('bank_swift')
+        supplier.iban = request.form.get('iban')
         supplier.notes = request.form.get('notes')
         supplier.status = request.form.get('status', 'active')
         supplier.updated_at = datetime.utcnow()

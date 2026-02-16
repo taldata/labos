@@ -883,6 +883,7 @@ def get_all_suppliers():
             'bank_account_number': s.bank_account_number,
             'bank_branch': s.bank_branch,
             'bank_swift': s.bank_swift,
+            'iban': s.iban,
             'notes': s.notes,
             'status': s.status,
             'expense_count': int(expense_count)
@@ -918,6 +919,7 @@ def create_supplier():
             bank_account_number=data.get('bank_account_number'),
             bank_branch=data.get('bank_branch'),
             bank_swift=data.get('bank_swift'),
+            iban=data.get('iban'),
             notes=data.get('notes'),
             status=data.get('status', 'active')
         )
@@ -970,6 +972,8 @@ def update_supplier(supplier_id):
             supplier.bank_branch = data['bank_branch']
         if 'bank_swift' in data:
             supplier.bank_swift = data['bank_swift']
+        if 'iban' in data:
+            supplier.iban = data['iban']
         if 'notes' in data:
             supplier.notes = data['notes']
         if 'status' in data:

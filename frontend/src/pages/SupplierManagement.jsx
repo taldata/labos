@@ -30,6 +30,7 @@ function SupplierManagement({ user, setUser }) {
     bank_account_number: '',
     bank_branch: '',
     bank_swift: '',
+    iban: '',
     notes: '',
     status: 'active'
   })
@@ -103,6 +104,7 @@ function SupplierManagement({ user, setUser }) {
         bank_account_number: supplier.bank_account_number || '',
         bank_branch: supplier.bank_branch || '',
         bank_swift: supplier.bank_swift || '',
+        iban: supplier.iban || '',
         notes: supplier.notes || '',
         status: supplier.status || 'active'
       })
@@ -117,6 +119,7 @@ function SupplierManagement({ user, setUser }) {
         bank_account_number: '',
         bank_branch: '',
         bank_swift: '',
+        iban: '',
         notes: '',
         status: 'active'
       })
@@ -375,6 +378,18 @@ function SupplierManagement({ user, setUser }) {
                           <span>{supplier.bank_branch}</span>
                         </div>
                       )}
+                      {supplier.bank_swift && (
+                        <div className="detail-row">
+                          <label>SWIFT</label>
+                          <span>{supplier.bank_swift}</span>
+                        </div>
+                      )}
+                      {supplier.iban && (
+                        <div className="detail-row">
+                          <label>IBAN</label>
+                          <span>{supplier.iban}</span>
+                        </div>
+                      )}
                       {supplier.notes && (
                         <div className="detail-row">
                           <label>Notes</label>
@@ -490,6 +505,16 @@ function SupplierManagement({ user, setUser }) {
                 placeholder="SWIFT/BIC code"
               />
             </div>
+
+            <Input
+              label="IBAN"
+              type="text"
+              name="iban"
+              value={formData.iban}
+              onChange={handleInputChange}
+              placeholder="International Bank Account Number"
+              maxLength={34}
+            />
           </div>
 
           <div className="form-section">
