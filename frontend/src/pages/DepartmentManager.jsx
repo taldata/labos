@@ -512,6 +512,12 @@ const DepartmentManager = ({ user, setUser }) => {
         );
     }
 
+    // Calculate summary totals
+    const totalBudget = structure.reduce((sum, d) => sum + (d.budget || 0), 0);
+    const totalSpent = structure.reduce((sum, d) => sum + (d.spent || 0), 0);
+    const totalRemaining = totalBudget - totalSpent;
+    const overallUsage = totalBudget > 0 ? Math.min((totalSpent / totalBudget) * 100, 100) : 0;
+
     // Admin View - Full management interface
     return (
         <div className="department-manager-container">
@@ -524,14 +530,13 @@ const DepartmentManager = ({ user, setUser }) => {
             ) : (
                 <main className="department-manager">
                     <PageHeader
-                        title="Organization Structure"
-                        subtitle="Manage departments, categories, and budgets"
+                        title="מבנה ארגוני"
+                        subtitle="ניהול מחלקות, קטגוריות ותקציבים"
                         icon="fas fa-sitemap"
                         variant="purple"
                         actions={
-                            <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                            <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
                                 <div className="year-selector" style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                                    <label style={{ fontWeight: 500, color: 'rgba(255,255,255,0.9)' }}>שנת תקציב:</label>
                                     <Select
                                         value={selectedYear?.id || ''}
                                         onChange={(e) => {
@@ -555,207 +560,274 @@ const DepartmentManager = ({ user, setUser }) => {
                                     />
                                 </div>
                                 <Button variant="secondary" icon="fas fa-plus" onClick={() => openModal('department', 'create')}>
-                                    Add Department
+                                    הוסף מחלקה
                                 </Button>
                             </div>
                         }
                     />
 
+                    {/* Summary Dashboard */}
+                    <div className="org-summary">
+                        <div className="summary-card">
+                            <div className="summary-icon-wrap summary-icon--departments">
+                                <i className="fas fa-building"></i>
+                            </div>
+                            <div className="summary-data">
+                                <span className="summary-value">{structure.length}</span>
+                                <span className="summary-label">מחלקות</span>
+                            </div>
+                        </div>
+                        <div className="summary-card">
+                            <div className="summary-icon-wrap summary-icon--budget">
+                                <i className="fas fa-wallet"></i>
+                            </div>
+                            <div className="summary-data">
+                                <span className="summary-value">{totalBudget.toLocaleString()}</span>
+                                <span className="summary-label">תקציב כולל</span>
+                            </div>
+                        </div>
+                        <div className="summary-card">
+                            <div className="summary-icon-wrap summary-icon--spent">
+                                <i className="fas fa-receipt"></i>
+                            </div>
+                            <div className="summary-data">
+                                <span className="summary-value">{totalSpent.toLocaleString()}</span>
+                                <span className="summary-label">סה״כ הוצאות</span>
+                            </div>
+                        </div>
+                        <div className="summary-card">
+                            <div className={`summary-icon-wrap ${totalRemaining >= 0 ? 'summary-icon--remaining' : 'summary-icon--over'}`}>
+                                <i className={`fas ${totalRemaining >= 0 ? 'fa-piggy-bank' : 'fa-exclamation-triangle'}`}></i>
+                            </div>
+                            <div className="summary-data">
+                                <span className={`summary-value ${totalRemaining < 0 ? 'summary-value--negative' : ''}`}>{totalRemaining.toLocaleString()}</span>
+                                <span className="summary-label">יתרה</span>
+                            </div>
+                        </div>
+                        <div className="summary-card summary-card--wide">
+                            <div className="summary-progress-wrap">
+                                <div className="summary-progress-header">
+                                    <span className="summary-progress-title">ניצול תקציב כולל</span>
+                                    <span className="summary-progress-pct">{overallUsage.toFixed(0)}%</span>
+                                </div>
+                                <div className="summary-progress-track">
+                                    <div
+                                        className={`summary-progress-fill ${overallUsage >= 100 ? 'over' : overallUsage >= 80 ? 'warning' : ''}`}
+                                        style={{ width: `${Math.min(overallUsage, 100)}%` }}
+                                    ></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                     {/* Search Bar */}
                     <div className="search-container">
                         <Input
                             type="text"
-                            placeholder="Search departments, categories, or subcategories..."
+                            placeholder="חיפוש מחלקות, קטגוריות או תת-קטגוריות..."
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                             icon="fas fa-search"
                         />
                     </div>
 
+                    {/* Department List */}
                     <div className="org-tree">
                         {filteredStructure.length === 0 && (
                             <div className="empty-state">
-                                {searchQuery
-                                    ? `No results found for "${searchQuery}"`
-                                    : 'No departments yet. Click "Add Department" to get started!'}
+                                <i className="fas fa-folder-open"></i>
+                                <h3>{searchQuery ? `לא נמצאו תוצאות עבור "${searchQuery}"` : 'אין מחלקות עדיין'}</h3>
+                                <p>{searchQuery ? 'נסה לחפש מונח אחר' : 'לחץ על "הוסף מחלקה" כדי להתחיל'}</p>
                             </div>
                         )}
-                        {filteredStructure.map(dept => (
-                            <div key={dept.id} className="dept-card" ref={getItemRef(dept.id)}>
-                                <div className="dept-header" onClick={() => toggleDept(dept.id)}>
-                                    <div className="dept-info">
-                                        <i className={`fas fa-chevron-down expand-icon ${expandedDepts[dept.id] ? 'expanded' : ''}`}></i>
-                                        <div className="dept-icon">🏢</div>
-                                        <span className="dept-name">{dept.name}</span>
-                                        <div className="stats-container">
-                                            <div className="stat-item">
-                                                <span className="stat-label">תקציב</span>
-                                                <span className="stat-value">
-                                                    {dept.budget.toLocaleString()}
-                                                    <span className="stat-currency">{getCurrencyLabel(dept.currency)}</span>
-                                                </span>
+                        {filteredStructure.map(dept => {
+                            const deptRemaining = dept.budget - (dept.spent || 0);
+                            const deptUsage = getBudgetUsage(dept.spent || 0, dept.budget);
+                            const isOverBudget = deptRemaining < 0;
+                            const isExpanded = expandedDepts[dept.id];
+
+                            return (
+                                <div key={dept.id} className={`dept-card ${isExpanded ? 'dept-card--expanded' : ''} ${isOverBudget ? 'dept-card--over' : ''}`} ref={getItemRef(dept.id)}>
+                                    {/* Department Header */}
+                                    <div className="dept-header" onClick={() => toggleDept(dept.id)}>
+                                        <div className="dept-header-main">
+                                            <button className="dept-expand-btn" type="button">
+                                                <i className={`fas fa-chevron-down ${isExpanded ? 'rotated' : ''}`}></i>
+                                            </button>
+                                            <div className="dept-name-group">
+                                                <h3 className="dept-name">{dept.name}</h3>
+                                                <span className="dept-meta">{dept.categories.length} קטגוריות</span>
+                                            </div>
+                                        </div>
+                                        <div className="dept-header-stats">
+                                            <div className="dept-stat">
+                                                <span className="dept-stat-label">תקציב</span>
+                                                <span className="dept-stat-value">{dept.budget.toLocaleString()} <small>{getCurrencyLabel(dept.currency)}</small></span>
                                             </div>
                                             <div
-                                                className="stat-item actionable"
+                                                className="dept-stat dept-stat--clickable"
                                                 onClick={(e) => {
                                                     e.stopPropagation();
                                                     navigate(`/admin/expense-history?department_id=${dept.id}`);
                                                 }}
                                                 title="לחץ לצפייה בפירוט ההוצאות"
                                             >
-                                                <span className="stat-label">הוצאות</span>
-                                                <span className="stat-value">
-                                                    {(dept.spent || 0).toLocaleString()}
-                                                    <span className="stat-currency">{getCurrencyLabel(dept.currency)}</span>
-                                                </span>
+                                                <span className="dept-stat-label">הוצאות</span>
+                                                <span className="dept-stat-value dept-stat-value--spent">{(dept.spent || 0).toLocaleString()} <small>{getCurrencyLabel(dept.currency)}</small></span>
                                             </div>
-                                            <div className="stat-item">
-                                                <span className="stat-label">יתרה</span>
-                                                <span className={`stat-value ${(dept.budget - (dept.spent || 0)) > 0 ? 'positive' : (dept.budget - (dept.spent || 0)) < 0 ? 'negative over-budget' : ''}`}>
-                                                    {(dept.budget - (dept.spent || 0)) < 0 && <i className="fas fa-exclamation-triangle over-budget-icon" title="חריגה מתקציב!"></i>}
-                                                    {(dept.budget - (dept.spent || 0)).toLocaleString()}
-                                                    <span className="stat-currency">{getCurrencyLabel(dept.currency)}</span>
+                                            <div className="dept-stat">
+                                                <span className="dept-stat-label">יתרה</span>
+                                                <span className={`dept-stat-value ${isOverBudget ? 'dept-stat-value--negative' : 'dept-stat-value--positive'}`}>
+                                                    {isOverBudget && <i className="fas fa-exclamation-circle"></i>}
+                                                    {deptRemaining.toLocaleString()} <small>{getCurrencyLabel(dept.currency)}</small>
                                                 </span>
                                             </div>
                                         </div>
-                                    </div>
-                                    <div className="actions" onClick={e => e.stopPropagation()}>
-                                        <Button variant="ghost" size="small" icon="fas fa-edit" onClick={() => openModal('department', 'edit', dept)} title="Edit Department" />
-                                        <Button variant="ghost" size="small" icon="fas fa-plus-circle" onClick={() => openModal('category', 'create', null, dept.id)} title="Add Category" />
-                                        <Button variant="ghost" size="small" icon="fas fa-trash" onClick={() => handleDelete('department', dept.id)} title="Delete Department" className="btn-delete" />
-                                    </div>
-                                </div>
-
-                                {expandedDepts[dept.id] && (
-                                    <div className="dept-content">
-                                        {/* Department Budget Progress */}
-                                        <div className="budget-progress">
-                                            <div className="budget-progress-label">
-                                                <span>Budget Usage</span>
-                                                <span>{dept.spent?.toLocaleString() || 0} / {dept.budget.toLocaleString()} {getCurrencyLabel(dept.currency)}</span>
-                                            </div>
-                                            <div className="budget-progress-bar">
-                                                <div
-                                                    className="budget-progress-fill"
-                                                    style={{ width: `${getBudgetUsage(dept.spent || 0, dept.budget)}%` }}
-                                                ></div>
-                                            </div>
+                                        <div className="dept-header-actions" onClick={e => e.stopPropagation()}>
+                                            <Button variant="ghost" size="small" icon="fas fa-pen" onClick={() => openModal('department', 'edit', dept)} title="ערוך מחלקה" />
+                                            <Button variant="ghost" size="small" icon="fas fa-plus" onClick={() => openModal('category', 'create', null, dept.id)} title="הוסף קטגוריה" />
+                                            <Button variant="ghost" size="small" icon="fas fa-trash-alt" onClick={() => handleDelete('department', dept.id)} title="מחק מחלקה" className="btn-delete" />
                                         </div>
+                                    </div>
 
-                                        <div className="category-list">
-                                            {dept.categories.length === 0 && <div className="empty-state">No categories yet. Click the + button above to add one!</div>}
-                                            {dept.categories.map(cat => (
-                                                <div key={cat.id} className="category-item">
-                                                    <div className="category-header" onClick={() => toggleCat(cat.id)}>
-                                                        <div className="dept-info">
-                                                            <i className={`fas fa-chevron-right expand-icon ${expandedCats[cat.id] ? 'expanded' : ''}`}></i>
-                                                            <div className="category-icon">📁</div>
-                                                            <span className="category-name">{cat.name}{cat.is_welfare && <span style={{ marginLeft: '0.5rem', color: '#10b981', fontSize: '0.75rem' }}><i className="fas fa-heart"></i></span>}</span>
-                                                            <div className="stats-container">
-                                                                <div className="stat-item">
-                                                                    <span className="stat-label">תקציב</span>
-                                                                    <span className="stat-value">
-                                                                        {cat.budget.toLocaleString()}
-                                                                        <span className="stat-currency">{getCurrencyLabel(dept.currency)}</span>
-                                                                    </span>
-                                                                </div>
-                                                                <div
-                                                                    className="stat-item actionable"
-                                                                    onClick={(e) => {
-                                                                        e.stopPropagation();
-                                                                        navigate(`/admin/expense-history?category_id=${cat.id}`);
-                                                                    }}
-                                                                    title="לחץ לצפייה בפירוט ההוצאות"
-                                                                >
-                                                                    <span className="stat-label">הוצאות</span>
-                                                                    <span className="stat-value">
-                                                                        {(cat.spent || 0).toLocaleString()}
-                                                                        <span className="stat-currency">{getCurrencyLabel(dept.currency)}</span>
-                                                                    </span>
-                                                                </div>
-                                                                <div className="stat-item">
-                                                                    <span className="stat-label">יתרה</span>
-                                                                    <span className={`stat-value ${(cat.budget - (cat.spent || 0)) > 0 ? 'positive' : (cat.budget - (cat.spent || 0)) < 0 ? 'negative over-budget' : ''}`}>
-                                                                        {(cat.budget - (cat.spent || 0)) < 0 && <i className="fas fa-exclamation-triangle over-budget-icon" title="חריגה מתקציב!"></i>}
-                                                                        {(cat.budget - (cat.spent || 0)).toLocaleString()}
-                                                                        <span className="stat-currency">{getCurrencyLabel(dept.currency)}</span>
-                                                                    </span>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                        <div className="actions" onClick={e => e.stopPropagation()}>
-                                                            <Button variant="ghost" size="small" icon="fas fa-edit" onClick={() => openModal('category', 'edit', cat)} title="Edit Category" />
-                                                            <Button variant="ghost" size="small" icon="fas fa-plus-circle" onClick={() => openModal('subcategory', 'create', null, cat.id)} title="Add Subcategory" />
-                                                            <Button variant="ghost" size="small" icon="fas fa-trash" onClick={() => handleDelete('category', cat.id)} title="Delete Category" className="btn-delete" />
-                                                        </div>
-                                                    </div>
+                                    {/* Progress Bar - Always visible */}
+                                    <div className="dept-progress-row">
+                                        <div className="dept-progress-track">
+                                            <div
+                                                className={`dept-progress-fill ${isOverBudget ? 'over' : deptUsage >= 80 ? 'warning' : ''}`}
+                                                style={{ width: `${Math.min(deptUsage, 100)}%` }}
+                                            ></div>
+                                        </div>
+                                        <span className="dept-progress-pct">{deptUsage.toFixed(0)}%</span>
+                                    </div>
 
-                                                    {expandedCats[cat.id] && (
-                                                        <div className="subcategory-list">
-                                                            {cat.subcategories.length === 0 && <div className="empty-state">No subcategories yet. Click the + button above to add one!</div>}
-                                                            {cat.subcategories.map(sub => (
-                                                                <div key={sub.id} className="subcategory-item">
-                                                                    <div className="dept-info">
-                                                                        <div className="subcategory-icon">📄</div>
-                                                                        <span className="subcategory-name">{sub.name}</span>
-                                                                        <div className="stats-container">
-                                                                            <div className="stat-item">
-                                                                                <span className="stat-label">תקציב</span>
-                                                                                <span className="stat-value">
-                                                                                    {sub.budget.toLocaleString()}
-                                                                                    <span className="stat-currency">{getCurrencyLabel(dept.currency)}</span>
-                                                                                </span>
-                                                                            </div>
+                                    {/* Expanded Content - Categories */}
+                                    {isExpanded && (
+                                        <div className="dept-body">
+                                            {dept.categories.length === 0 ? (
+                                                <div className="empty-state empty-state--compact">
+                                                    <i className="fas fa-folder-plus"></i>
+                                                    <p>אין קטגוריות עדיין. לחץ על <strong>+</strong> כדי להוסיף</p>
+                                                </div>
+                                            ) : (
+                                                <div className="cat-list">
+                                                    {dept.categories.map(cat => {
+                                                        const catRemaining = cat.budget - (cat.spent || 0);
+                                                        const catUsage = getBudgetUsage(cat.spent || 0, cat.budget);
+                                                        const catOver = catRemaining < 0;
+                                                        const catExpanded = expandedCats[cat.id];
+
+                                                        return (
+                                                            <div key={cat.id} className={`cat-card ${catExpanded ? 'cat-card--expanded' : ''}`}>
+                                                                <div className="cat-header" onClick={() => toggleCat(cat.id)}>
+                                                                    <div className="cat-header-main">
+                                                                        <i className={`fas fa-chevron-left cat-expand-icon ${catExpanded ? 'rotated' : ''}`}></i>
+                                                                        <span className="cat-name">
+                                                                            {cat.name}
+                                                                            {cat.is_welfare && <i className="fas fa-heart cat-welfare-icon" title="קטגוריית רווחה"></i>}
+                                                                        </span>
+                                                                    </div>
+                                                                    <div className="cat-header-stats">
+                                                                        <span className="cat-chip">
+                                                                            <span className="cat-chip-label">תקציב</span>
+                                                                            <strong>{cat.budget.toLocaleString()}</strong>
+                                                                        </span>
+                                                                        <span
+                                                                            className="cat-chip cat-chip--clickable"
+                                                                            onClick={(e) => {
+                                                                                e.stopPropagation();
+                                                                                navigate(`/admin/expense-history?category_id=${cat.id}`);
+                                                                            }}
+                                                                            title="לחץ לצפייה בפירוט ההוצאות"
+                                                                        >
+                                                                            <span className="cat-chip-label">הוצאות</span>
+                                                                            <strong>{(cat.spent || 0).toLocaleString()}</strong>
+                                                                        </span>
+                                                                        <span className={`cat-chip ${catOver ? 'cat-chip--negative' : 'cat-chip--positive'}`}>
+                                                                            <span className="cat-chip-label">יתרה</span>
+                                                                            <strong>{catRemaining.toLocaleString()}</strong>
+                                                                        </span>
+                                                                    </div>
+                                                                    <div className="cat-progress-inline">
+                                                                        <div className="cat-progress-track">
                                                                             <div
-                                                                                className="stat-item actionable"
-                                                                                onClick={(e) => {
-                                                                                    e.stopPropagation();
-                                                                                    navigate(`/admin/expense-history?subcategory_id=${sub.id}`);
-                                                                                }}
-                                                                                title="לחץ לצפייה בפירוט ההוצאות"
-                                                                            >
-                                                                                <span className="stat-label">הוצאות</span>
-                                                                                <span className="stat-value">
-                                                                                    {(sub.spent || 0).toLocaleString()}
-                                                                                    <span className="stat-currency">{getCurrencyLabel(dept.currency)}</span>
-                                                                                </span>
-                                                                            </div>
-                                                                            <div className="stat-item">
-                                                                                <span className="stat-label">יתרה</span>
-                                                                                <span className={`stat-value ${(sub.budget - (sub.spent || 0)) > 0 ? 'positive' : (sub.budget - (sub.spent || 0)) < 0 ? 'negative over-budget' : ''}`}>
-                                                                                    {(sub.budget - (sub.spent || 0)) < 0 && <i className="fas fa-exclamation-triangle over-budget-icon" title="חריגה מתקציב!"></i>}
-                                                                                    {(sub.budget - (sub.spent || 0)).toLocaleString()}
-                                                                                    <span className="stat-currency">{getCurrencyLabel(dept.currency)}</span>
-                                                                                </span>
-                                                                            </div>
+                                                                                className={`cat-progress-fill ${catOver ? 'over' : catUsage >= 80 ? 'warning' : ''}`}
+                                                                                style={{ width: `${Math.min(catUsage, 100)}%` }}
+                                                                            ></div>
                                                                         </div>
                                                                     </div>
-                                                                    <div className="actions">
-                                                                        <Button variant="ghost" size="small" icon="fas fa-edit" onClick={() => openModal('subcategory', 'edit', sub)} title="Edit Subcategory" />
-                                                                        <Button variant="ghost" size="small" icon="fas fa-trash" onClick={() => handleDelete('subcategory', sub.id)} title="Delete Subcategory" className="btn-delete" />
+                                                                    <div className="cat-actions" onClick={e => e.stopPropagation()}>
+                                                                        <Button variant="ghost" size="small" icon="fas fa-pen" onClick={() => openModal('category', 'edit', cat)} title="ערוך קטגוריה" />
+                                                                        <Button variant="ghost" size="small" icon="fas fa-plus" onClick={() => openModal('subcategory', 'create', null, cat.id)} title="הוסף תת-קטגוריה" />
+                                                                        <Button variant="ghost" size="small" icon="fas fa-trash-alt" onClick={() => handleDelete('category', cat.id)} title="מחק קטגוריה" className="btn-delete" />
                                                                     </div>
                                                                 </div>
-                                                            ))}
-                                                        </div>
-                                                    )}
+
+                                                                {/* Subcategories */}
+                                                                {catExpanded && (
+                                                                    <div className="sub-list">
+                                                                        {cat.subcategories.length === 0 ? (
+                                                                            <div className="empty-state empty-state--compact">
+                                                                                <p>אין תת-קטגוריות. לחץ על <strong>+</strong> כדי להוסיף</p>
+                                                                            </div>
+                                                                        ) : (
+                                                                            cat.subcategories.map(sub => {
+                                                                                const subRemaining = sub.budget - (sub.spent || 0);
+                                                                                const subOver = subRemaining < 0;
+                                                                                return (
+                                                                                    <div key={sub.id} className="sub-item">
+                                                                                        <div className="sub-item-main">
+                                                                                            <i className="fas fa-file-alt sub-icon"></i>
+                                                                                            <span className="sub-name">{sub.name}</span>
+                                                                                        </div>
+                                                                                        <div className="sub-item-stats">
+                                                                                            <span className="sub-chip">
+                                                                                                <span className="sub-chip-label">תקציב</span>
+                                                                                                <strong>{sub.budget.toLocaleString()}</strong>
+                                                                                            </span>
+                                                                                            <span
+                                                                                                className="sub-chip sub-chip--clickable"
+                                                                                                onClick={() => navigate(`/admin/expense-history?subcategory_id=${sub.id}`)}
+                                                                                                title="לחץ לצפייה בפירוט ההוצאות"
+                                                                                            >
+                                                                                                <span className="sub-chip-label">הוצאות</span>
+                                                                                                <strong>{(sub.spent || 0).toLocaleString()}</strong>
+                                                                                            </span>
+                                                                                            <span className={`sub-chip ${subOver ? 'sub-chip--negative' : 'sub-chip--positive'}`}>
+                                                                                                <span className="sub-chip-label">יתרה</span>
+                                                                                                <strong>{subRemaining.toLocaleString()}</strong>
+                                                                                            </span>
+                                                                                        </div>
+                                                                                        <div className="sub-actions">
+                                                                                            <Button variant="ghost" size="small" icon="fas fa-pen" onClick={() => openModal('subcategory', 'edit', sub)} title="ערוך תת-קטגוריה" />
+                                                                                            <Button variant="ghost" size="small" icon="fas fa-trash-alt" onClick={() => handleDelete('subcategory', sub.id)} title="מחק תת-קטגוריה" className="btn-delete" />
+                                                                                        </div>
+                                                                                    </div>
+                                                                                );
+                                                                            })
+                                                                        )}
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        );
+                                                    })}
                                                 </div>
-                                            ))}
+                                            )}
                                         </div>
-                                    </div>
-                                )}
-                            </div>
-                        ))}
+                                    )}
+                                </div>
+                            );
+                        })}
                     </div>
 
                     <Modal
                         isOpen={modalOpen}
                         onClose={closeModal}
-                        title={modalType === 'year' ? 'הוסף שנת תקציב' : `${modalMode === 'create' ? 'Add' : 'Edit'} ${modalType ? modalType.charAt(0).toUpperCase() + modalType.slice(1) : ''}`}
+                        title={modalType === 'year' ? 'הוסף שנת תקציב' : `${modalMode === 'create' ? 'הוסף' : 'ערוך'} ${modalType === 'department' ? 'מחלקה' : modalType === 'category' ? 'קטגוריה' : 'תת-קטגוריה'}`}
                         size="medium"
                     >
                         <form onSubmit={handleSubmit} className="modal-form">
                             {modalType === 'year' ? (
-                                // Year form
                                 <Input
                                     label="שנה"
                                     icon="fas fa-calendar"
@@ -770,10 +842,9 @@ const DepartmentManager = ({ user, setUser }) => {
                                     max="2100"
                                 />
                             ) : (
-                                // Standard form for department/category/subcategory
                                 <>
                                     <Input
-                                        label="Name"
+                                        label="שם"
                                         icon="fas fa-tag"
                                         type="text"
                                         name="name"
@@ -781,11 +852,11 @@ const DepartmentManager = ({ user, setUser }) => {
                                         onChange={handleInputChange}
                                         required
                                         autoFocus
-                                        placeholder={`Enter ${modalType} name`}
+                                        placeholder={`הזן שם ${modalType === 'department' ? 'מחלקה' : modalType === 'category' ? 'קטגוריה' : 'תת-קטגוריה'}`}
                                     />
 
                                     <Input
-                                        label="Budget"
+                                        label="תקציב"
                                         icon="fas fa-wallet"
                                         type="number"
                                         name="budget"
@@ -793,20 +864,20 @@ const DepartmentManager = ({ user, setUser }) => {
                                         onChange={handleInputChange}
                                         min="0"
                                         step="0.01"
-                                        placeholder="Enter budget amount"
+                                        placeholder="הזן סכום תקציב"
                                     />
 
                                     {modalType === 'department' && (
                                         <Select
-                                            label="Currency"
+                                            label="מטבע"
                                             icon="fas fa-dollar-sign"
                                             name="currency"
                                             value={formData.currency}
                                             onChange={handleInputChange}
                                         >
-                                            <option value="ILS">₪ ILS (Israeli Shekel)</option>
-                                            <option value="USD">$ USD (US Dollar)</option>
-                                            <option value="EUR">€ EUR (Euro)</option>
+                                            <option value="ILS">₪ שקל ישראלי</option>
+                                            <option value="USD">$ דולר אמריקאי</option>
+                                            <option value="EUR">€ אירו</option>
                                         </Select>
                                     )}
 
@@ -819,15 +890,15 @@ const DepartmentManager = ({ user, setUser }) => {
                                                 onChange={handleInputChange}
                                             />
                                             <i className="fas fa-heart" style={{ color: '#10b981' }}></i>
-                                            <span>Welfare Category</span>
+                                            <span>קטגוריית רווחה</span>
                                         </label>
                                     )}
                                 </>
                             )}
 
                             <div className="modal-actions">
-                                <Button type="button" variant="secondary" onClick={closeModal}>Cancel</Button>
-                                <Button type="submit" variant="primary">Save</Button>
+                                <Button type="button" variant="secondary" onClick={closeModal}>ביטול</Button>
+                                <Button type="submit" variant="primary">שמור</Button>
                             </div>
                         </form>
                     </Modal>
