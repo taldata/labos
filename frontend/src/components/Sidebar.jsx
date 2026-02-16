@@ -46,6 +46,8 @@ function Sidebar({ user, setUser, isOpen, onToggle }) {
     { path: '/submit-expense', icon: 'fa-plus-circle', label: 'New Expense', highlight: true },
   ]
 
+  const managedDepartments = user?.managed_departments || []
+
   const managerItems = [
     // Approvals tab hidden - all expenses are auto-approved
     { path: '/admin/departments', icon: 'fa-sitemap', label: 'My Departments' },
@@ -115,6 +117,21 @@ function Sidebar({ user, setUser, isOpen, onToggle }) {
           {(user?.is_manager && !user?.is_admin) && (
             <div className="nav-section">
               {isOpen && <div className="nav-section-title">Management</div>}
+              {managedDepartments.length > 0 && (
+                <div className="dept-list">
+                  {managedDepartments.map(dept => (
+                    <button
+                      key={dept.id}
+                      className="nav-item dept-item"
+                      onClick={() => navigate('/admin/departments')}
+                      title={!isOpen ? dept.name : ''}
+                    >
+                      <i className="fas fa-building"></i>
+                      {isOpen && <span>{dept.name}</span>}
+                    </button>
+                  ))}
+                </div>
+              )}
               {managerItems.map(item => (
                 <button
                   key={item.path}
