@@ -16,11 +16,19 @@ depends_on = None
 
 
 def upgrade():
-    with op.batch_alter_table('user', schema=None) as batch_op:
-        batch_op.add_column(sa.Column('is_hr', sa.Boolean(), nullable=True, server_default='0'))
+    from sqlalchemy import inspect
+    conn = op.get_bind()
+    inspector = inspect(conn)
 
-    with op.batch_alter_table('category', schema=None) as batch_op:
-        batch_op.add_column(sa.Column('is_welfare', sa.Boolean(), nullable=True, server_default='0'))
+    user_columns = [c['name'] for c in inspector.get_columns('user')]
+    if 'is_hr' not in user_columns:
+        with op.batch_alter_table('user', schema=None) as batch_op:
+            batch_op.add_column(sa.Column('is_hr', sa.Boolean(), nullable=True, server_default='0'))
+
+    category_columns = [c['name'] for c in inspector.get_columns('category')]
+    if 'is_welfare' not in category_columns:
+        with op.batch_alter_table('category', schema=None) as batch_op:
+            batch_op.add_column(sa.Column('is_welfare', sa.Boolean(), nullable=True, server_default='0'))
 
 
 def downgrade():
