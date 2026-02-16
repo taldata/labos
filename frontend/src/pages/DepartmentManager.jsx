@@ -416,17 +416,17 @@ const DepartmentManager = ({ user, setUser }) => {
                                                                     <div className="manager-category-stats">
                                                                         <span className="cat-stat-item">
                                                                             <span className="cat-stat-label">Budget:</span>
-                                                                            <span className="cat-budget" dir="ltr">{cat.budget.toLocaleString()}</span>
+                                                                            <span className="cat-budget">{cat.budget.toLocaleString()}</span>
                                                                         </span>
                                                                         <span className="cat-separator">|</span>
                                                                         <span className="cat-stat-item">
                                                                             <span className="cat-stat-label">Expenses:</span>
-                                                                            <span className="cat-spent" dir="ltr">{(cat.spent || 0).toLocaleString()}</span>
+                                                                            <span className="cat-spent">{(cat.spent || 0).toLocaleString()}</span>
                                                                         </span>
                                                                         <span className="cat-separator">|</span>
                                                                         <span className="cat-stat-item">
                                                                             <span className="cat-stat-label">Remaining:</span>
-                                                                            <span className={`cat-remaining ${catRemaining < 0 ? 'negative' : 'positive'}`} dir="ltr">
+                                                                            <span className={`cat-remaining ${catRemaining < 0 ? 'negative' : 'positive'}`}>
                                                                                 {catRemaining < 0 ? `${Math.abs(catRemaining).toLocaleString()}-` : catRemaining.toLocaleString()}
                                                                             </span>
                                                                         </span>
@@ -452,7 +452,7 @@ const DepartmentManager = ({ user, setUser }) => {
                                                                                         <span className="sub-stats">
                                                                                             <span className="sub-stat-item">
                                                                                                 <span className="sub-stat-label">Budget:</span>
-                                                                                                <span className="sub-budget" dir="ltr">{sub.budget.toLocaleString()}</span>
+                                                                                                <span className="sub-budget">{sub.budget.toLocaleString()}</span>
                                                                                             </span>
                                                                                             <span className="sub-separator">|</span>
                                                                                             <span
@@ -461,12 +461,12 @@ const DepartmentManager = ({ user, setUser }) => {
                                                                                                 title="View expenses"
                                                                                             >
                                                                                                 <span className="sub-stat-label">Expenses:</span>
-                                                                                                <span className="sub-spent" dir="ltr">{(sub.spent || 0).toLocaleString()}</span>
+                                                                                                <span className="sub-spent">{(sub.spent || 0).toLocaleString()}</span>
                                                                                             </span>
                                                                                             <span className="sub-separator">|</span>
                                                                                             <span className="sub-stat-item">
                                                                                                 <span className="sub-stat-label">Remaining:</span>
-                                                                                                <span className={`sub-remaining ${subRemaining < 0 ? 'negative' : 'positive'}`} dir="ltr">
+                                                                                                <span className={`sub-remaining ${subRemaining < 0 ? 'negative' : 'positive'}`}>
                                                                                                     {subRemaining < 0 ? `${Math.abs(subRemaining).toLocaleString()}-` : subRemaining.toLocaleString()}
                                                                                                 </span>
                                                                                             </span>
