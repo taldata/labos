@@ -159,6 +159,30 @@
   text-align: center;
 }
 
+/* Department list items */
+.dept-list {
+  margin-bottom: 0.25rem;
+}
+
+.dept-item {
+  font-size: 0.85rem !important;
+  padding: 0.5rem 0.75rem !important;
+  color: rgba(255, 255, 255, 0.85) !important;
+  background: rgba(102, 126, 234, 0.1) !important;
+  border-left: 3px solid #667eea !important;
+  border-radius: 0 10px 10px 0 !important;
+}
+
+.dept-item:hover {
+  background: rgba(102, 126, 234, 0.2) !important;
+  color: white !important;
+}
+
+.dept-item i {
+  font-size: 0.9rem !important;
+  color: #667eea;
+}
+
 .nav-badge {
   margin-right: auto;
   background: #ef4444;
