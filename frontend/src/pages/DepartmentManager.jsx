@@ -414,7 +414,7 @@ const DepartmentManager = ({ user, setUser }) => {
                                                                         </span>
                                                                         <span
                                                                             className="manager-category-expenses-link"
-                                                                            onClick={() => navigate(`/admin/expense-history?category_id=${cat.id}`)}
+                                                                            onClick={() => navigate(`/manager/expense-history?category_id=${cat.id}`)}
                                                                             title="צפה בהוצאות"
                                                                         >
                                                                             <i className="fas fa-external-link-alt"></i>
@@ -464,7 +464,7 @@ const DepartmentManager = ({ user, setUser }) => {
                                                                                             <span className="sub-separator">|</span>
                                                                                             <span
                                                                                                 className="sub-stat-item actionable"
-                                                                                                onClick={() => navigate(`/admin/expense-history?subcategory_id=${sub.id}`)}
+                                                                                                onClick={() => navigate(`/manager/expense-history?subcategory_id=${sub.id}`)}
                                                                                                 title="צפה בהוצאות"
                                                                                             >
                                                                                                 <span className="sub-stat-label">הוצאות:</span>
@@ -496,7 +496,7 @@ const DepartmentManager = ({ user, setUser }) => {
                                                     variant="ghost"
                                                     size="small"
                                                     icon="fas fa-list"
-                                                    onClick={() => navigate(`/admin/expense-history?department_id=${dept.id}`)}
+                                                    onClick={() => navigate(`/manager/expense-history?department_id=${dept.id}`)}
                                                 >
                                                     צפה בכל ההוצאות
                                                 </Button>
