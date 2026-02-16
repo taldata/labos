@@ -575,7 +575,7 @@ const DepartmentManager = ({ user, setUser }) => {
                                 <i className="fas fa-wallet"></i>
                             </div>
                             <div className="summary-data">
-                                <span className="summary-value">{totalBudget.toLocaleString()}</span>
+                                <span className="summary-value">{Math.round(totalBudget).toLocaleString()}</span>
                                 <span className="summary-label">Total Budget</span>
                             </div>
                         </div>
@@ -584,7 +584,7 @@ const DepartmentManager = ({ user, setUser }) => {
                                 <i className="fas fa-receipt"></i>
                             </div>
                             <div className="summary-data">
-                                <span className="summary-value">{totalSpent.toLocaleString()}</span>
+                                <span className="summary-value">{Math.round(totalSpent).toLocaleString()}</span>
                                 <span className="summary-label">Total Expenses</span>
                             </div>
                         </div>
@@ -593,7 +593,7 @@ const DepartmentManager = ({ user, setUser }) => {
                                 <i className={`fas ${totalRemaining >= 0 ? 'fa-piggy-bank' : 'fa-exclamation-triangle'}`}></i>
                             </div>
                             <div className="summary-data">
-                                <span className={`summary-value ${totalRemaining < 0 ? 'summary-value--negative' : ''}`}>{totalRemaining.toLocaleString()}</span>
+                                <span className={`summary-value ${totalRemaining < 0 ? 'summary-value--negative' : ''}`}>{Math.round(totalRemaining).toLocaleString()}</span>
                                 <span className="summary-label">Remaining</span>
                             </div>
                         </div>
