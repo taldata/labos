@@ -252,6 +252,7 @@
 .user-name {
   font-weight: 600;
   font-size: 0.9rem;
+  color: white;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;

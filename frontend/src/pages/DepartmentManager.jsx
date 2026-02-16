@@ -190,7 +190,7 @@ const DepartmentManager = ({ user, setUser }) => {
                 url = '/api/v1/organization/years';
                 data = { year: parseInt(formData.year), name: formData.year.toString() };
                 await api.post(url, data);
-                success('שנת תקציב נוצרה בהצלחה');
+                success('Budget year created successfully');
                 await fetchYears();
                 closeModal();
                 return;
@@ -280,7 +280,7 @@ const DepartmentManager = ({ user, setUser }) => {
     };
 
     const getCurrencyLabel = (currency) => {
-        return currency === 'ILS' ? 'ש״ח' : currency;
+        return currency === 'ILS' ? 'ILS' : currency;
     };
 
     if (!isAdmin && !isManager) {
@@ -299,13 +299,13 @@ const DepartmentManager = ({ user, setUser }) => {
                 ) : (
                     <main className="department-manager">
                         <PageHeader
-                            title="המחלקות שלי"
-                            subtitle="סקירת תקציבים וקטגוריות"
+                            title="My Departments"
+                            subtitle="Budget & category overview"
                             icon="fas fa-building"
                             variant="purple"
                             actions={
                                 <div className="year-selector" style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                                    <label style={{ fontWeight: 500, color: 'rgba(255,255,255,0.9)' }}>שנה:</label>
+                                    <label style={{ fontWeight: 500, color: 'rgba(255,255,255,0.9)' }}>Year:</label>
                                     <Select
                                         value={selectedYear?.id || ''}
                                         onChange={(e) => {
@@ -328,8 +328,8 @@ const DepartmentManager = ({ user, setUser }) => {
                             <Card className="empty-card">
                                 <div className="empty-state-manager">
                                     <i className="fas fa-folder-open"></i>
-                                    <h3>אין מחלקות משויכות</h3>
-                                    <p>פנה למנהל המערכת לשיוך מחלקות</p>
+                                    <h3>No departments assigned</h3>
+                                    <p>Contact your system administrator to assign departments</p>
                                 </div>
                             </Card>
                         ) : (
@@ -351,47 +351,47 @@ const DepartmentManager = ({ user, setUser }) => {
 
                                             {/* Budget Overview */}
                                             <div className="manager-budget-overview">
-                                                    <div className="manager-budget-stats">
-                                                        <div className="manager-stat">
-                                                            <span className="manager-stat-label">תקציב</span>
-                                                            <span className="manager-stat-value">
-                                                                {dept.budget.toLocaleString()} {getCurrencyLabel(dept.currency)}
-                                                            </span>
-                                                        </div>
-                                                        <div className="manager-stat">
-                                                            <span className="manager-stat-label">הוצאות</span>
-                                                            <span className="manager-stat-value spent">
-                                                                {(dept.spent || 0).toLocaleString()} {getCurrencyLabel(dept.currency)}
-                                                            </span>
-                                                        </div>
-                                                        <div className="manager-stat">
-                                                            <span className="manager-stat-label">יתרה</span>
-                                                            <span className={`manager-stat-value ${isOverBudget ? 'negative' : 'positive'}`}>
-                                                                {remaining.toLocaleString()} {getCurrencyLabel(dept.currency)}
-                                                            </span>
-                                                        </div>
+                                                <div className="manager-budget-stats">
+                                                    <div className="manager-stat">
+                                                        <span className="manager-stat-label">Budget</span>
+                                                        <span className="manager-stat-value">
+                                                            {dept.budget.toLocaleString()} {getCurrencyLabel(dept.currency)}
+                                                        </span>
                                                     </div>
-
-                                                    <div className="manager-progress-container">
-                                                        <div className={`manager-progress-bar ${isOverBudget ? 'over-budget' : isWarning ? 'warning' : ''}`}>
-                                                            <div
-                                                                className="manager-progress-fill"
-                                                                style={{ width: `${Math.min(usagePercent, 100)}%` }}
-                                                            ></div>
-                                                        </div>
-                                                        <span className="manager-progress-text">{usagePercent.toFixed(0)}% נוצל</span>
+                                                    <div className="manager-stat">
+                                                        <span className="manager-stat-label">Expenses</span>
+                                                        <span className="manager-stat-value spent">
+                                                            {(dept.spent || 0).toLocaleString()} {getCurrencyLabel(dept.currency)}
+                                                        </span>
+                                                    </div>
+                                                    <div className="manager-stat">
+                                                        <span className="manager-stat-label">Remaining</span>
+                                                        <span className={`manager-stat-value ${isOverBudget ? 'negative' : 'positive'}`}>
+                                                            {remaining.toLocaleString()} {getCurrencyLabel(dept.currency)}
+                                                        </span>
                                                     </div>
                                                 </div>
+
+                                                <div className="manager-progress-container">
+                                                    <div className={`manager-progress-bar ${isOverBudget ? 'over-budget' : isWarning ? 'warning' : ''}`}>
+                                                        <div
+                                                            className="manager-progress-fill"
+                                                            style={{ width: `${Math.min(usagePercent, 100)}%` }}
+                                                        ></div>
+                                                    </div>
+                                                    <span className="manager-progress-text">{usagePercent.toFixed(0)}% used</span>
+                                                </div>
+                                            </div>
 
                                             {/* Categories */}
                                             <div className="manager-categories">
                                                 <h3 className="manager-section-title">
                                                     <i className="fas fa-folder"></i>
-                                                    קטגוריות ({dept.categories.length})
+                                                    Categories ({dept.categories.length})
                                                 </h3>
 
                                                 {dept.categories.length === 0 ? (
-                                                    <p className="no-categories">אין קטגוריות במחלקה זו</p>
+                                                    <p className="no-categories">No categories in this department</p>
                                                 ) : (
                                                     <div className="manager-categories-list">
                                                         {dept.categories.map(cat => {
@@ -408,24 +408,24 @@ const DepartmentManager = ({ user, setUser }) => {
                                                                         <span
                                                                             className="manager-category-expenses-link"
                                                                             onClick={() => navigate(`/manager/expense-history?category_id=${cat.id}`)}
-                                                                            title="צפה בהוצאות"
+                                                                            title="View expenses"
                                                                         >
                                                                             <i className="fas fa-external-link-alt"></i>
                                                                         </span>
                                                                     </div>
                                                                     <div className="manager-category-stats">
                                                                         <span className="cat-stat-item">
-                                                                            <span className="cat-stat-label">תקציב:</span>
+                                                                            <span className="cat-stat-label">Budget:</span>
                                                                             <span className="cat-budget" dir="ltr">{cat.budget.toLocaleString()}</span>
                                                                         </span>
                                                                         <span className="cat-separator">|</span>
                                                                         <span className="cat-stat-item">
-                                                                            <span className="cat-stat-label">הוצאות:</span>
+                                                                            <span className="cat-stat-label">Expenses:</span>
                                                                             <span className="cat-spent" dir="ltr">{(cat.spent || 0).toLocaleString()}</span>
                                                                         </span>
                                                                         <span className="cat-separator">|</span>
                                                                         <span className="cat-stat-item">
-                                                                            <span className="cat-stat-label">יתרה:</span>
+                                                                            <span className="cat-stat-label">Remaining:</span>
                                                                             <span className={`cat-remaining ${catRemaining < 0 ? 'negative' : 'positive'}`} dir="ltr">
                                                                                 {catRemaining < 0 ? `${Math.abs(catRemaining).toLocaleString()}-` : catRemaining.toLocaleString()}
                                                                             </span>
@@ -451,21 +451,21 @@ const DepartmentManager = ({ user, setUser }) => {
                                                                                         </span>
                                                                                         <span className="sub-stats">
                                                                                             <span className="sub-stat-item">
-                                                                                                <span className="sub-stat-label">תקציב:</span>
+                                                                                                <span className="sub-stat-label">Budget:</span>
                                                                                                 <span className="sub-budget" dir="ltr">{sub.budget.toLocaleString()}</span>
                                                                                             </span>
                                                                                             <span className="sub-separator">|</span>
                                                                                             <span
                                                                                                 className="sub-stat-item actionable"
                                                                                                 onClick={() => navigate(`/manager/expense-history?subcategory_id=${sub.id}`)}
-                                                                                                title="צפה בהוצאות"
+                                                                                                title="View expenses"
                                                                                             >
-                                                                                                <span className="sub-stat-label">הוצאות:</span>
+                                                                                                <span className="sub-stat-label">Expenses:</span>
                                                                                                 <span className="sub-spent" dir="ltr">{(sub.spent || 0).toLocaleString()}</span>
                                                                                             </span>
                                                                                             <span className="sub-separator">|</span>
                                                                                             <span className="sub-stat-item">
-                                                                                                <span className="sub-stat-label">יתרה:</span>
+                                                                                                <span className="sub-stat-label">Remaining:</span>
                                                                                                 <span className={`sub-remaining ${subRemaining < 0 ? 'negative' : 'positive'}`} dir="ltr">
                                                                                                     {subRemaining < 0 ? `${Math.abs(subRemaining).toLocaleString()}-` : subRemaining.toLocaleString()}
                                                                                                 </span>
@@ -491,7 +491,7 @@ const DepartmentManager = ({ user, setUser }) => {
                                                     icon="fas fa-list"
                                                     onClick={() => navigate(`/manager/expense-history?department_id=${dept.id}`)}
                                                 >
-                                                    צפה בכל ההוצאות
+                                                    View All Expenses
                                                 </Button>
                                             </div>
                                         </Card>
@@ -523,8 +523,8 @@ const DepartmentManager = ({ user, setUser }) => {
             ) : (
                 <main className="department-manager">
                     <PageHeader
-                        title="מבנה ארגוני"
-                        subtitle="ניהול מחלקות, קטגוריות ותקציבים"
+                        title="Organization Structure"
+                        subtitle="Manage departments, categories & budgets"
                         icon="fas fa-sitemap"
                         variant="purple"
                         actions={
@@ -540,7 +540,7 @@ const DepartmentManager = ({ user, setUser }) => {
                                     >
                                         {years.map(y => (
                                             <option key={y.id} value={y.id}>
-                                                {y.name} {y.is_current ? '(נוכחית)' : ''}
+                                                {y.name} {y.is_current ? '(Current)' : ''}
                                             </option>
                                         ))}
                                     </Select>
@@ -549,11 +549,11 @@ const DepartmentManager = ({ user, setUser }) => {
                                         size="small"
                                         icon="fas fa-calendar-plus"
                                         onClick={() => openModal('year', 'create')}
-                                        title="הוסף שנה חדשה"
+                                        title="Add new year"
                                     />
                                 </div>
                                 <Button variant="secondary" icon="fas fa-plus" onClick={() => openModal('department', 'create')}>
-                                    הוסף מחלקה
+                                    Add Department
                                 </Button>
                             </div>
                         }
@@ -567,7 +567,7 @@ const DepartmentManager = ({ user, setUser }) => {
                             </div>
                             <div className="summary-data">
                                 <span className="summary-value">{structure.length}</span>
-                                <span className="summary-label">מחלקות</span>
+                                <span className="summary-label">Departments</span>
                             </div>
                         </div>
                         <div className="summary-card">
@@ -576,7 +576,7 @@ const DepartmentManager = ({ user, setUser }) => {
                             </div>
                             <div className="summary-data">
                                 <span className="summary-value">{totalBudget.toLocaleString()}</span>
-                                <span className="summary-label">תקציב כולל</span>
+                                <span className="summary-label">Total Budget</span>
                             </div>
                         </div>
                         <div className="summary-card">
@@ -585,7 +585,7 @@ const DepartmentManager = ({ user, setUser }) => {
                             </div>
                             <div className="summary-data">
                                 <span className="summary-value">{totalSpent.toLocaleString()}</span>
-                                <span className="summary-label">סה״כ הוצאות</span>
+                                <span className="summary-label">Total Expenses</span>
                             </div>
                         </div>
                         <div className="summary-card">
@@ -594,13 +594,13 @@ const DepartmentManager = ({ user, setUser }) => {
                             </div>
                             <div className="summary-data">
                                 <span className={`summary-value ${totalRemaining < 0 ? 'summary-value--negative' : ''}`}>{totalRemaining.toLocaleString()}</span>
-                                <span className="summary-label">יתרה</span>
+                                <span className="summary-label">Remaining</span>
                             </div>
                         </div>
                         <div className="summary-card summary-card--wide">
                             <div className="summary-progress-wrap">
                                 <div className="summary-progress-header">
-                                    <span className="summary-progress-title">ניצול תקציב כולל</span>
+                                    <span className="summary-progress-title">Overall Budget Usage</span>
                                     <span className="summary-progress-pct">{overallUsage.toFixed(0)}%</span>
                                 </div>
                                 <div className="summary-progress-track">
@@ -617,7 +617,7 @@ const DepartmentManager = ({ user, setUser }) => {
                     <div className="search-container">
                         <Input
                             type="text"
-                            placeholder="חיפוש מחלקות, קטגוריות או תת-קטגוריות..."
+                            placeholder="Search departments, categories or subcategories..."
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                             icon="fas fa-search"
@@ -629,8 +629,8 @@ const DepartmentManager = ({ user, setUser }) => {
                         {filteredStructure.length === 0 && (
                             <div className="empty-state">
                                 <i className="fas fa-folder-open"></i>
-                                <h3>{searchQuery ? `לא נמצאו תוצאות עבור "${searchQuery}"` : 'אין מחלקות עדיין'}</h3>
-                                <p>{searchQuery ? 'נסה לחפש מונח אחר' : 'לחץ על "הוסף מחלקה" כדי להתחיל'}</p>
+                                <h3>{searchQuery ? `No results found for "${searchQuery}"` : 'No departments yet'}</h3>
+                                <p>{searchQuery ? 'Try a different search term' : 'Click "Add Department" to get started'}</p>
                             </div>
                         )}
                         {filteredStructure.map(dept => {
@@ -649,12 +649,12 @@ const DepartmentManager = ({ user, setUser }) => {
                                             </button>
                                             <div className="dept-name-group">
                                                 <h3 className="dept-name">{dept.name}</h3>
-                                                <span className="dept-meta">{dept.categories.length} קטגוריות</span>
+                                                <span className="dept-meta">{dept.categories.length} categories</span>
                                             </div>
                                         </div>
                                         <div className="dept-header-stats">
                                             <div className="dept-stat">
-                                                <span className="dept-stat-label">תקציב</span>
+                                                <span className="dept-stat-label">Budget</span>
                                                 <span className="dept-stat-value">{dept.budget.toLocaleString()} <small>{getCurrencyLabel(dept.currency)}</small></span>
                                             </div>
                                             <div
@@ -663,13 +663,13 @@ const DepartmentManager = ({ user, setUser }) => {
                                                     e.stopPropagation();
                                                     navigate(`/admin/expense-history?department_id=${dept.id}`);
                                                 }}
-                                                title="לחץ לצפייה בפירוט ההוצאות"
+                                                title="Click to view expense details"
                                             >
-                                                <span className="dept-stat-label">הוצאות</span>
+                                                <span className="dept-stat-label">Expenses</span>
                                                 <span className="dept-stat-value dept-stat-value--spent">{(dept.spent || 0).toLocaleString()} <small>{getCurrencyLabel(dept.currency)}</small></span>
                                             </div>
                                             <div className="dept-stat">
-                                                <span className="dept-stat-label">יתרה</span>
+                                                <span className="dept-stat-label">Remaining</span>
                                                 <span className={`dept-stat-value ${isOverBudget ? 'dept-stat-value--negative' : 'dept-stat-value--positive'}`}>
                                                     {isOverBudget && <i className="fas fa-exclamation-circle"></i>}
                                                     {deptRemaining.toLocaleString()} <small>{getCurrencyLabel(dept.currency)}</small>
@@ -677,9 +677,9 @@ const DepartmentManager = ({ user, setUser }) => {
                                             </div>
                                         </div>
                                         <div className="dept-header-actions" onClick={e => e.stopPropagation()}>
-                                            <Button variant="ghost" size="small" icon="fas fa-pen" onClick={() => openModal('department', 'edit', dept)} title="ערוך מחלקה" />
-                                            <Button variant="ghost" size="small" icon="fas fa-plus" onClick={() => openModal('category', 'create', null, dept.id)} title="הוסף קטגוריה" />
-                                            <Button variant="ghost" size="small" icon="fas fa-trash-alt" onClick={() => handleDelete('department', dept.id)} title="מחק מחלקה" className="btn-delete" />
+                                            <Button variant="ghost" size="small" icon="fas fa-pen" onClick={() => openModal('department', 'edit', dept)} title="Edit department" />
+                                            <Button variant="ghost" size="small" icon="fas fa-plus" onClick={() => openModal('category', 'create', null, dept.id)} title="Add category" />
+                                            <Button variant="ghost" size="small" icon="fas fa-trash-alt" onClick={() => handleDelete('department', dept.id)} title="Delete department" className="btn-delete" />
                                         </div>
                                     </div>
 
@@ -700,7 +700,7 @@ const DepartmentManager = ({ user, setUser }) => {
                                             {dept.categories.length === 0 ? (
                                                 <div className="empty-state empty-state--compact">
                                                     <i className="fas fa-folder-plus"></i>
-                                                    <p>אין קטגוריות עדיין. לחץ על <strong>+</strong> כדי להוסיף</p>
+                                                    <p>No categories yet. Click <strong>+</strong> to add one</p>
                                                 </div>
                                             ) : (
                                                 <div className="cat-list">
@@ -717,12 +717,12 @@ const DepartmentManager = ({ user, setUser }) => {
                                                                         <i className={`fas fa-chevron-left cat-expand-icon ${catExpanded ? 'rotated' : ''}`}></i>
                                                                         <span className="cat-name">
                                                                             {cat.name}
-                                                                            {cat.is_welfare && <i className="fas fa-heart cat-welfare-icon" title="קטגוריית רווחה"></i>}
+                                                                            {cat.is_welfare && <i className="fas fa-heart cat-welfare-icon" title="Welfare category"></i>}
                                                                         </span>
                                                                     </div>
                                                                     <div className="cat-header-stats">
                                                                         <span className="cat-chip">
-                                                                            <span className="cat-chip-label">תקציב</span>
+                                                                            <span className="cat-chip-label">Budget</span>
                                                                             <strong>{cat.budget.toLocaleString()}</strong>
                                                                         </span>
                                                                         <span
@@ -731,13 +731,13 @@ const DepartmentManager = ({ user, setUser }) => {
                                                                                 e.stopPropagation();
                                                                                 navigate(`/admin/expense-history?category_id=${cat.id}`);
                                                                             }}
-                                                                            title="לחץ לצפייה בפירוט ההוצאות"
+                                                                            title="Click to view expense details"
                                                                         >
-                                                                            <span className="cat-chip-label">הוצאות</span>
+                                                                            <span className="cat-chip-label">Expenses</span>
                                                                             <strong>{(cat.spent || 0).toLocaleString()}</strong>
                                                                         </span>
                                                                         <span className={`cat-chip ${catOver ? 'cat-chip--negative' : 'cat-chip--positive'}`}>
-                                                                            <span className="cat-chip-label">יתרה</span>
+                                                                            <span className="cat-chip-label">Remaining</span>
                                                                             <strong>{catRemaining.toLocaleString()}</strong>
                                                                         </span>
                                                                     </div>
@@ -750,9 +750,9 @@ const DepartmentManager = ({ user, setUser }) => {
                                                                         </div>
                                                                     </div>
                                                                     <div className="cat-actions" onClick={e => e.stopPropagation()}>
-                                                                        <Button variant="ghost" size="small" icon="fas fa-pen" onClick={() => openModal('category', 'edit', cat)} title="ערוך קטגוריה" />
-                                                                        <Button variant="ghost" size="small" icon="fas fa-plus" onClick={() => openModal('subcategory', 'create', null, cat.id)} title="הוסף תת-קטגוריה" />
-                                                                        <Button variant="ghost" size="small" icon="fas fa-trash-alt" onClick={() => handleDelete('category', cat.id)} title="מחק קטגוריה" className="btn-delete" />
+                                                                        <Button variant="ghost" size="small" icon="fas fa-pen" onClick={() => openModal('category', 'edit', cat)} title="Edit category" />
+                                                                        <Button variant="ghost" size="small" icon="fas fa-plus" onClick={() => openModal('subcategory', 'create', null, cat.id)} title="Add subcategory" />
+                                                                        <Button variant="ghost" size="small" icon="fas fa-trash-alt" onClick={() => handleDelete('category', cat.id)} title="Delete category" className="btn-delete" />
                                                                     </div>
                                                                 </div>
 
@@ -761,7 +761,7 @@ const DepartmentManager = ({ user, setUser }) => {
                                                                     <div className="sub-list">
                                                                         {cat.subcategories.length === 0 ? (
                                                                             <div className="empty-state empty-state--compact">
-                                                                                <p>אין תת-קטגוריות. לחץ על <strong>+</strong> כדי להוסיף</p>
+                                                                                <p>No subcategories. Click <strong>+</strong> to add one</p>
                                                                             </div>
                                                                         ) : (
                                                                             cat.subcategories.map(sub => {
@@ -775,25 +775,25 @@ const DepartmentManager = ({ user, setUser }) => {
                                                                                         </div>
                                                                                         <div className="sub-item-stats">
                                                                                             <span className="sub-chip">
-                                                                                                <span className="sub-chip-label">תקציב</span>
+                                                                                                <span className="sub-chip-label">Budget</span>
                                                                                                 <strong>{sub.budget.toLocaleString()}</strong>
                                                                                             </span>
                                                                                             <span
                                                                                                 className="sub-chip sub-chip--clickable"
                                                                                                 onClick={() => navigate(`/admin/expense-history?subcategory_id=${sub.id}`)}
-                                                                                                title="לחץ לצפייה בפירוט ההוצאות"
+                                                                                                title="Click to view expense details"
                                                                                             >
-                                                                                                <span className="sub-chip-label">הוצאות</span>
+                                                                                                <span className="sub-chip-label">Expenses</span>
                                                                                                 <strong>{(sub.spent || 0).toLocaleString()}</strong>
                                                                                             </span>
                                                                                             <span className={`sub-chip ${subOver ? 'sub-chip--negative' : 'sub-chip--positive'}`}>
-                                                                                                <span className="sub-chip-label">יתרה</span>
+                                                                                                <span className="sub-chip-label">Remaining</span>
                                                                                                 <strong>{subRemaining.toLocaleString()}</strong>
                                                                                             </span>
                                                                                         </div>
                                                                                         <div className="sub-actions">
-                                                                                            <Button variant="ghost" size="small" icon="fas fa-pen" onClick={() => openModal('subcategory', 'edit', sub)} title="ערוך תת-קטגוריה" />
-                                                                                            <Button variant="ghost" size="small" icon="fas fa-trash-alt" onClick={() => handleDelete('subcategory', sub.id)} title="מחק תת-קטגוריה" className="btn-delete" />
+                                                                                            <Button variant="ghost" size="small" icon="fas fa-pen" onClick={() => openModal('subcategory', 'edit', sub)} title="Edit subcategory" />
+                                                                                            <Button variant="ghost" size="small" icon="fas fa-trash-alt" onClick={() => handleDelete('subcategory', sub.id)} title="Delete subcategory" className="btn-delete" />
                                                                                         </div>
                                                                                     </div>
                                                                                 );
@@ -816,13 +816,13 @@ const DepartmentManager = ({ user, setUser }) => {
                     <Modal
                         isOpen={modalOpen}
                         onClose={closeModal}
-                        title={modalType === 'year' ? 'הוסף שנת תקציב' : `${modalMode === 'create' ? 'הוסף' : 'ערוך'} ${modalType === 'department' ? 'מחלקה' : modalType === 'category' ? 'קטגוריה' : 'תת-קטגוריה'}`}
+                        title={modalType === 'year' ? 'Add Budget Year' : `${modalMode === 'create' ? 'Add' : 'Edit'} ${modalType === 'department' ? 'Department' : modalType === 'category' ? 'Category' : 'Subcategory'}`}
                         size="medium"
                     >
                         <form onSubmit={handleSubmit} className="modal-form">
                             {modalType === 'year' ? (
                                 <Input
-                                    label="שנה"
+                                    label="Year"
                                     icon="fas fa-calendar"
                                     type="number"
                                     name="year"
@@ -830,14 +830,14 @@ const DepartmentManager = ({ user, setUser }) => {
                                     onChange={handleInputChange}
                                     required
                                     autoFocus
-                                    placeholder="הזן שנה (למשל 2026)"
+                                    placeholder="Enter year (e.g. 2026)"
                                     min="2020"
                                     max="2100"
                                 />
                             ) : (
                                 <>
                                     <Input
-                                        label="שם"
+                                        label="Name"
                                         icon="fas fa-tag"
                                         type="text"
                                         name="name"
@@ -845,11 +845,11 @@ const DepartmentManager = ({ user, setUser }) => {
                                         onChange={handleInputChange}
                                         required
                                         autoFocus
-                                        placeholder={`הזן שם ${modalType === 'department' ? 'מחלקה' : modalType === 'category' ? 'קטגוריה' : 'תת-קטגוריה'}`}
+                                        placeholder={`Enter ${modalType === 'department' ? 'department' : modalType === 'category' ? 'category' : 'subcategory'} name`}
                                     />
 
                                     <Input
-                                        label="תקציב"
+                                        label="Budget"
                                         icon="fas fa-wallet"
                                         type="number"
                                         name="budget"
@@ -857,20 +857,20 @@ const DepartmentManager = ({ user, setUser }) => {
                                         onChange={handleInputChange}
                                         min="0"
                                         step="0.01"
-                                        placeholder="הזן סכום תקציב"
+                                        placeholder="Enter budget amount"
                                     />
 
                                     {modalType === 'department' && (
                                         <Select
-                                            label="מטבע"
+                                            label="Currency"
                                             icon="fas fa-dollar-sign"
                                             name="currency"
                                             value={formData.currency}
                                             onChange={handleInputChange}
                                         >
-                                            <option value="ILS">₪ שקל ישראלי</option>
-                                            <option value="USD">$ דולר אמריקאי</option>
-                                            <option value="EUR">€ אירו</option>
+                                            <option value="ILS">₪ Israeli Shekel</option>
+                                            <option value="USD">$ US Dollar</option>
+                                            <option value="EUR">€ Euro</option>
                                         </Select>
                                     )}
 
@@ -883,15 +883,15 @@ const DepartmentManager = ({ user, setUser }) => {
                                                 onChange={handleInputChange}
                                             />
                                             <i className="fas fa-heart" style={{ color: '#10b981' }}></i>
-                                            <span>קטגוריית רווחה</span>
+                                            <span>Welfare Category</span>
                                         </label>
                                     )}
                                 </>
                             )}
 
                             <div className="modal-actions">
-                                <Button type="button" variant="secondary" onClick={closeModal}>ביטול</Button>
-                                <Button type="submit" variant="primary">שמור</Button>
+                                <Button type="button" variant="secondary" onClick={closeModal}>Cancel</Button>
+                                <Button type="submit" variant="primary">Save</Button>
                             </div>
                         </form>
                     </Modal>
