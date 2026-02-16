@@ -1212,7 +1212,8 @@ def manager_list_expenses():
                 Category.department_id == current_user.department_id
             ))
 
-        # Left join Supplier for search functionality
+        # Join User and Supplier for search and display
+        query = query.join(User, Expense.user_id == User.id)
         query = query.outerjoin(Supplier, Expense.supplier_id == Supplier.id)
 
         # Apply filters

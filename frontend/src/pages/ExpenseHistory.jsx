@@ -169,7 +169,15 @@ function useExpenseData(filters, currentPage, isManagerView = false) {
           setManagedDepartments(data.managed_departments)
         }
       } else {
-        setError('Failed to load expenses')
+        let errorMsg = 'Failed to load expenses'
+        try {
+          const data = await response.json()
+          if (data.error) errorMsg = data.error
+        } catch (_) {
+          // Response body might not be JSON
+        }
+        setError(errorMsg)
+        logger.error('Failed to load expenses', { status: response.status, error: errorMsg })
       }
     } catch (err) {
       setError('An error occurred while fetching expenses')
@@ -1424,7 +1432,7 @@ function ExpenseHistory({ user, isManagerView = false }) {
     optionsHook.fetchFilterOptions()
   }, [])
 
-  // Fetch expenses when debounced filters or page change
+  // Fetch expenses when fetch function changes (due to filters/page) or user loads
   useEffect(() => {
     const hasAccess = isManagerView
       ? (user?.is_manager || user?.is_admin)
@@ -1433,7 +1441,7 @@ function ExpenseHistory({ user, isManagerView = false }) {
     if (hasAccess) {
       dataHook.fetchExpenses()
     }
-  }, [currentPage, filterHook.debouncedFilters])
+  }, [dataHook.fetchExpenses, user, isManagerView])
 
   // Reset page when debounced filters change
   useEffect(() => {
