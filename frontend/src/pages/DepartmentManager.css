@@ -1003,20 +1003,6 @@
   margin: 0;
 }
 
-/* Cross-Department Card */
-.cross-dept-card .manager-dept-header {
-  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
-}
-
-.cross-dept-badge {
-  font-size: 0.75rem;
-  background: rgba(255, 255, 255, 0.25);
-  padding: 0.25rem 0.75rem;
-  border-radius: 1rem;
-  font-weight: 500;
-  white-space: nowrap;
-}
-
 /* Budget Overview */
 .manager-budget-overview {
   padding: 1.5rem 2rem;

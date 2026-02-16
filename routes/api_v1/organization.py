@@ -208,17 +208,14 @@ def get_organization_structure():
             if current_year:
                 query = query.filter_by(year_id=current_year.id)
         
-        # For managers (non-admins), filter to managed departments + cross-dept categories
-        cross_dept_category_ids = []
+        # For managers (non-admins), filter to only their managed departments
+        # (cross-department categories are accessible via expense submission, not here)
         if current_user.is_manager and not current_user.is_admin:
             managed_depts = list(current_user.managed_departments)
             managed_dept_ids = [d.id for d in managed_depts]
             managed_dept_names = [d.name for d in managed_depts]
 
-            # Get cross-department category IDs
-            cross_dept_category_ids = [c.id for c in current_user.managed_categories]
-
-            logging.info(f"Manager {current_user.username} (id={current_user.id}): managed_dept_ids={managed_dept_ids}, managed_dept_names={managed_dept_names}, department_id={current_user.department_id}, cross_dept_categories={cross_dept_category_ids}")
+            logging.info(f"Manager {current_user.username} (id={current_user.id}): managed_dept_ids={managed_dept_ids}, managed_dept_names={managed_dept_names}, department_id={current_user.department_id}")
 
             # Also include the manager's home department as a fallback
             if current_user.department_id:
@@ -229,31 +226,19 @@ def get_organization_structure():
                 if home_dept and home_dept.name not in managed_dept_names:
                     managed_dept_names.append(home_dept.name)
 
-            # Get department IDs that contain cross-dept categories
-            cross_dept_ids_from_cats = []
-            if cross_dept_category_ids:
-                cross_cats = Category.query.filter(Category.id.in_(cross_dept_category_ids)).all()
-                cross_dept_ids_from_cats = list(set(c.department_id for c in cross_cats))
-                # Also include cross-dept names for cross-year support
-                cross_depts = Department.query.filter(Department.id.in_(cross_dept_ids_from_cats)).all()
-                for cd in cross_depts:
-                    if cd.name not in managed_dept_names:
-                        managed_dept_names.append(cd.name)
-
-            if managed_dept_ids or managed_dept_names or cross_dept_ids_from_cats:
+            if managed_dept_ids or managed_dept_names:
                 # Build filter conditions
                 conditions = []
-                all_dept_ids = list(set(managed_dept_ids + cross_dept_ids_from_cats))
-                if all_dept_ids:
-                    conditions.append(Department.id.in_(all_dept_ids))
+                if managed_dept_ids:
+                    conditions.append(Department.id.in_(managed_dept_ids))
                 if managed_dept_names:
                     conditions.append(Department.name.in_(managed_dept_names))
 
                 # Filter by name OR id to support both same-year and cross-year access
                 query = query.filter(or_(*conditions))
             else:
-                # Manager has no assigned departments or categories - return empty
-                logging.warning(f"Manager {current_user.username} has no assigned departments or categories")
+                # Manager has no assigned departments - return empty
+                logging.warning(f"Manager {current_user.username} has no assigned departments")
                 return jsonify({'structure': [], 'view_only': True}), 200
 
         departments = query.order_by(Department.name).all()
@@ -330,48 +315,20 @@ def get_organization_structure():
                 subcats_by_cat[sub.category_id] = []
             subcats_by_cat[sub.category_id].append(sub)
 
-        # Determine which cross-dept category names apply (for cross-year support)
-        cross_dept_cat_names = set()
-        if cross_dept_category_ids:
-            cross_cats_objs = Category.query.filter(Category.id.in_(cross_dept_category_ids)).all()
-            cross_dept_cat_names = set(c.name for c in cross_cats_objs)
-
         # Build structure using pre-calculated spending data and in-memory maps
-        # For managers, determine which departments are fully managed vs cross-dept only
-        fully_managed_dept_ids = set()
-        fully_managed_dept_names = set()
-        if current_user.is_manager and not current_user.is_admin:
-            fully_managed_dept_ids = set(d.id for d in current_user.managed_departments)
-            if current_user.department_id:
-                fully_managed_dept_ids.add(current_user.department_id)
-            fully_managed_dept_names = set(d.name for d in current_user.managed_departments)
-            if current_user.department_id:
-                home_dept = Department.query.get(current_user.department_id)
-                if home_dept:
-                    fully_managed_dept_names.add(home_dept.name)
-
         structure = []
         for dept in departments:
-            # Determine if this is a fully managed department or cross-dept only
-            is_fully_managed = True
-            if current_user.is_manager and not current_user.is_admin:
-                is_fully_managed = dept.id in fully_managed_dept_ids or dept.name in fully_managed_dept_names
-
             dept_data = {
                 'id': dept.id,
                 'name': dept.name,
                 'budget': dept.budget,
                 'spent': dept_spending.get(dept.id, 0.0),
                 'currency': dept.currency,
-                'is_fully_managed': is_fully_managed,
+                'is_fully_managed': True,
                 'categories': []
             }
 
             for cat in cats_by_dept.get(dept.id, []):
-                # For cross-dept-only departments, only show the assigned categories
-                if not is_fully_managed and cat.id not in cross_dept_category_ids and cat.name not in cross_dept_cat_names:
-                    continue
-
                 cat_data = {
                     'id': cat.id,
                     'name': cat.name,
@@ -379,7 +336,7 @@ def get_organization_structure():
                     'spent': cat_spending.get(cat.id, 0.0),
                     'is_welfare': cat.is_welfare,
                     'department_id': cat.department_id,
-                    'is_cross_department': not is_fully_managed,
+                    'is_cross_department': False,
                     'subcategories': []
                 }
 
@@ -395,9 +352,7 @@ def get_organization_structure():
 
                 dept_data['categories'].append(cat_data)
 
-            # Only include the department if it has categories to show
-            if is_fully_managed or dept_data['categories']:
-                structure.append(dept_data)
+            structure.append(dept_data)
 
         # Include view_only flag for managers and HR users (non-admins)
         response_data = {'structure': structure}
