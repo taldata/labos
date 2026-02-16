@@ -623,15 +623,60 @@ def get_categories():
             # Get the user's department in the target budget year
             user_dept = Department.query.get(current_user.department_id)
             if user_dept and target_year:
-                # Find matching department in target year by name
+                # Find matching home department in target year by name
                 target_year_dept = Department.query.filter_by(
                     name=user_dept.name,
                     year_id=target_year.id
                 ).first()
-                if target_year_dept:
-                    categories = base_query.filter(Category.department_id == target_year_dept.id).order_by(Category.name).all()
+
+                if current_user.is_manager:
+                    # Managers: include home dept + managed depts + managed categories
+                    accessible_dept_ids = set()
+                    if target_year_dept:
+                        accessible_dept_ids.add(target_year_dept.id)
+
+                    # Resolve managed departments to target budget year by name
+                    for managed_dept in current_user.managed_departments:
+                        dept_in_target_year = Department.query.filter_by(
+                            name=managed_dept.name,
+                            year_id=target_year.id
+                        ).first()
+                        if dept_in_target_year:
+                            accessible_dept_ids.add(dept_in_target_year.id)
+
+                    # Resolve directly managed categories to target budget year
+                    direct_cat_ids = set()
+                    for managed_cat in current_user.managed_categories:
+                        if managed_cat.department:
+                            dept_in_target_year = Department.query.filter_by(
+                                name=managed_cat.department.name,
+                                year_id=target_year.id
+                            ).first()
+                            if dept_in_target_year:
+                                cat = Category.query.filter_by(
+                                    name=managed_cat.name,
+                                    department_id=dept_in_target_year.id
+                                ).first()
+                                if cat:
+                                    direct_cat_ids.add(cat.id)
+
+                    # Build combined filter
+                    conditions = []
+                    if accessible_dept_ids:
+                        conditions.append(Category.department_id.in_(list(accessible_dept_ids)))
+                    if direct_cat_ids:
+                        conditions.append(Category.id.in_(list(direct_cat_ids)))
+
+                    if conditions:
+                        categories = base_query.filter(or_(*conditions)).order_by(Department.name, Category.name).all()
+                    else:
+                        categories = []
                 else:
-                    categories = base_query.filter(Category.department_id == current_user.department_id).order_by(Category.name).all()
+                    # Non-manager: home department only
+                    if target_year_dept:
+                        categories = base_query.filter(Category.department_id == target_year_dept.id).order_by(Category.name).all()
+                    else:
+                        categories = base_query.filter(Category.department_id == current_user.department_id).order_by(Category.name).all()
             else:
                 categories = base_query.filter(Category.department_id == current_user.department_id).order_by(Category.name).all()
         else:

@@ -174,7 +174,17 @@ function SubmitExpense({ user, setUser }) {
       })
       if (catRes.ok) {
         const data = await catRes.json()
-        setCategories(data.categories)
+        const cats = data.categories
+        // If categories span multiple departments, prefix with department name
+        const deptNames = new Set(cats.map(c => c.department_name))
+        if (deptNames.size > 1) {
+          cats.forEach(c => {
+            if (c.department_name) {
+              c.name = `${c.department_name} - ${c.name}`
+            }
+          })
+        }
+        setCategories(cats)
         // Clear subcategory selection when budget year changes
         setSubcategories([])
         setSelectedCategory('')
