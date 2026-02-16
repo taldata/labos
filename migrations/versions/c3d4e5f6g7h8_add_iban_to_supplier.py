@@ -1,7 +1,7 @@
 """Add IBAN field to supplier
 
 Revision ID: c3d4e5f6g7h8
-Revises: b2c3d4e5f6g7
+Revises: d4e5f6g7h8i9
 Create Date: 2026-02-16
 
 """
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
 revision = 'c3d4e5f6g7h8'
-down_revision = 'b2c3d4e5f6g7'
+down_revision = 'd4e5f6g7h8i9'
 branch_labels = None
 depends_on = None
 
