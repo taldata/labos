@@ -22,6 +22,7 @@ import msal
 import requests
 from dateutil.relativedelta import relativedelta
 from sqlalchemy import or_
+import time
 
 # Configure logging
 logging.basicConfig(
@@ -77,23 +78,26 @@ with app.app_context():
     else:
         logging.info(f"Connecting to database: {db_uri}")
 
-    try:
-        # Verify connection and engine type
-        from sqlalchemy import text
-        engine_name = db.engine.name
-        logging.info(f"Database engine: {engine_name}")
-        
-        # Test the connection
-        db.session.execute(text('SELECT 1'))
-        logging.info("Database connection verified successfully.")
-        
-        db.create_all()  # Only create tables if they don't exist
-    except Exception as e:
-        logging.error(f"CRITICAL: Failed to connect to database: {str(e)}")
-        # In development, we might want to continue to see other errors, 
-        # but in production this should probably be fatal.
-        if os.getenv('FLASK_ENV') != 'development':
-            raise
+    # Retry database connection on startup (handles brief DB unavailability during deploys)
+    from sqlalchemy import text
+    max_retries = 5
+    for attempt in range(1, max_retries + 1):
+        try:
+            engine_name = db.engine.name
+            logging.info(f"Database engine: {engine_name}")
+            db.session.execute(text('SELECT 1'))
+            logging.info("Database connection verified successfully.")
+            db.create_all()
+            break
+        except Exception as e:
+            logging.warning(f"Database connection attempt {attempt}/{max_retries} failed: {e}")
+            db.session.rollback()
+            if attempt == max_retries:
+                logging.error(f"CRITICAL: Failed to connect to database after {max_retries} attempts")
+                if os.getenv('FLASK_ENV') != 'development':
+                    raise
+            else:
+                time.sleep(2 ** attempt)  # Exponential backoff: 2s, 4s, 8s, 16s, 32s
 
     try:
         # Create departments if they don't exist
@@ -153,6 +157,17 @@ def check_version_preference():
        (current_user.can_use_modern_version or current_user.is_admin) and \
        current_user.preferred_version == 'modern':
         return None
+
+@app.route('/health')
+def health_check():
+    """Health check endpoint for Render and monitoring services."""
+    try:
+        from sqlalchemy import text
+        db.session.execute(text('SELECT 1'))
+        return jsonify({'status': 'healthy', 'database': 'connected'}), 200
+    except Exception as e:
+        logging.error(f"Health check failed: {e}")
+        return jsonify({'status': 'unhealthy', 'database': 'disconnected'}), 503
 
 @app.route('/')
 def index():
