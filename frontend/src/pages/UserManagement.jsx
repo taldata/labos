@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Card, Button, Input, Select, TomSelectInput, Modal, Badge, Skeleton, useToast, PageHeader } from '../components/ui'
+import { Card, Button, Input, Select, TomSelectInput, Modal, Badge, useToast, PageHeader } from '../components/ui'
 import { useScrollToItem } from '../hooks/useScrollToItem'
 import { useColumnResize } from '../hooks/useColumnResize'
 import logger from '../utils/logger'
@@ -365,9 +365,8 @@ function UserManagement({ user, setUser }) {
 
         {/* Users Table */}
         {loading ? (
-          <div className="loading-container">
-            <Skeleton variant="title" width="40%" />
-            <Skeleton variant="text" count={8} />
+          <div className="content-loader">
+            <div className="spinner"></div>
           </div>
         ) : (
           <Card className="users-table-container">

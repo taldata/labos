@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { Card, Button, Input, Select, Modal, Skeleton, useToast, PageHeader } from '../components/ui';
+import { Card, Button, Input, Select, Modal, useToast, PageHeader } from '../components/ui';
 import { useScrollToItem } from '../hooks/useScrollToItem';
 import './DepartmentManager.css';
 
@@ -292,9 +292,8 @@ const DepartmentManager = ({ user, setUser }) => {
         return (
             <div className="department-manager-container manager-view">
                 {loading ? (
-                    <div className="loading-container">
-                        <Skeleton variant="title" width="40%" />
-                        <Skeleton variant="text" count={3} />
+                    <div className="content-loader">
+                        <div className="spinner"></div>
                     </div>
                 ) : (
                     <main className="department-manager">
@@ -516,9 +515,8 @@ const DepartmentManager = ({ user, setUser }) => {
         <div className="department-manager-container">
 
             {loading ? (
-                <div className="loading-container">
-                    <Skeleton variant="title" width="40%" />
-                    <Skeleton variant="text" count={5} />
+                <div className="content-loader">
+                    <div className="spinner"></div>
                 </div>
             ) : (
                 <main className="department-manager">

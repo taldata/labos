@@ -61,6 +61,22 @@ code {
   }
 }
 
+/* In-page loading spinner (for content areas, not full page) */
+.content-loader {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem;
+  gap: 1rem;
+}
+
+.content-loader .spinner {
+  width: 32px;
+  height: 32px;
+  border-width: 3px;
+}
+
 /* Highlight animation for newly created items */
 @keyframes highlight-pulse {
   0% {

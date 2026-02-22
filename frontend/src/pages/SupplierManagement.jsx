@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Card, Button, Input, Select, Textarea, Modal, Badge, Skeleton, useToast, PageHeader } from '../components/ui'
+import { Card, Button, Input, Select, Textarea, Modal, Badge, useToast, PageHeader } from '../components/ui'
 import { useScrollToItem } from '../hooks/useScrollToItem'
 import './SupplierManagement.css'
 
@@ -280,9 +280,8 @@ function SupplierManagement({ user, setUser }) {
 
         {/* Suppliers List */}
         {loading ? (
-          <div className="loading-container">
-            <Skeleton variant="title" width="40%" />
-            <Skeleton variant="text" count={6} />
+          <div className="content-loader">
+            <div className="spinner"></div>
           </div>
         ) : (
           <div className="suppliers-grid">

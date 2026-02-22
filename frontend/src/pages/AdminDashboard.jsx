@@ -4,7 +4,7 @@ import {
   LineChart, Line, BarChart, Bar, PieChart, Pie, Cell,
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
 } from 'recharts'
-import { Card, Select, Skeleton, Input, Button, PageHeader } from '../components/ui'
+import { Card, Select, Input, Button, PageHeader } from '../components/ui'
 import logger from '../utils/logger'
 import './AdminDashboard.css'
 
@@ -239,14 +239,8 @@ function AdminDashboard({ user, setUser }) {
 
 
         {loading ? (
-          <div className="loading-state">
-            <Skeleton variant="title" width="50%" />
-            <div className="stats-grid">
-              <Card><Card.Body><Skeleton variant="text" count={3} /></Card.Body></Card>
-              <Card><Card.Body><Skeleton variant="text" count={3} /></Card.Body></Card>
-              <Card><Card.Body><Skeleton variant="text" count={3} /></Card.Body></Card>
-              <Card><Card.Body><Skeleton variant="text" count={3} /></Card.Body></Card>
-            </div>
+          <div className="content-loader">
+            <div className="spinner"></div>
           </div>
         ) : stats ? (
           <>
