@@ -93,20 +93,33 @@ class DocumentProcessor:
         if amount_field is None:
             return None
 
-        # CurrencyValue objects have a 'symbol' or 'code' attribute
+        symbol = getattr(amount_field, 'symbol', None)
         currency_code = getattr(amount_field, 'code', None)
+
+        # Check for unambiguous currency symbols first — these take precedence
+        # over the code because Azure Form Recognizer sometimes returns an
+        # incorrect currency code (e.g. 'USD') for ILS invoices while
+        # correctly identifying the ₪ symbol.
+        if symbol:
+            unambiguous_symbols = {
+                '₪': 'ILS',
+                '\u20aa': 'ILS',  # Unicode shekel sign
+                '€': 'EUR',
+                '\u20ac': 'EUR',  # Unicode euro sign
+            }
+            if symbol in unambiguous_symbols:
+                return unambiguous_symbols[symbol]
+
+        # For ambiguous symbols (like $), prefer the currency code from Azure
         if currency_code:
             return currency_code.upper()
 
-        symbol = getattr(amount_field, 'symbol', None)
+        # Fall back to symbol mapping for remaining cases
         if symbol:
-            symbol_map = {
+            fallback_map = {
                 '$': 'USD',
-                '₪': 'ILS',
-                '\u20aa': 'ILS',  # Unicode shekel sign
-                '\u20ac': 'EUR',  # Euro sign
             }
-            return symbol_map.get(symbol, None)
+            return fallback_map.get(symbol, None)
 
         return None
     

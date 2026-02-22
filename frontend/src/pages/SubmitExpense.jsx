@@ -640,7 +640,7 @@ function SubmitExpense({ user, setUser }) {
               {showOcrSuccess && ocrData && !ocrProcessing && !ocrDataLoading && (
                 <div className="ocr-result" style={{ marginTop: '1rem', padding: '1rem', backgroundColor: '#e8f5e9', borderRadius: '8px' }}>
                   <i className="fas fa-check-circle" style={{ color: '#4caf50', marginRight: '0.5rem' }}></i>
-                  <span>Data extracted successfully: Amount {ocrData.amount} ₪</span>
+                  <span>Data extracted successfully: Amount {ocrData.amount} {ocrData.currency === 'USD' ? '$' : ocrData.currency === 'EUR' ? '€' : '₪'}</span>
                 </div>
               )}
             </Card.Body>
