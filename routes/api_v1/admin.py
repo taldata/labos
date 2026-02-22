@@ -3,7 +3,7 @@ from flask_login import login_required, current_user
 from models import Expense, Department, Category, Subcategory, User, Supplier, CreditCard, BudgetYear, db
 from services.manager_access import get_manager_access, build_category_access_filter, has_category_access
 from sqlalchemy import func, and_, or_
-from sqlalchemy.orm import joinedload
+from sqlalchemy.orm import joinedload, subqueryload
 from datetime import datetime, timedelta
 from dateutil.relativedelta import relativedelta
 from werkzeug.security import generate_password_hash
@@ -562,7 +562,11 @@ def get_all_users():
         search = request.args.get('search', '').strip()
 
         # Base query with eager loading to avoid N+1 queries
-        query = User.query.options(joinedload(User.home_department))
+        query = User.query.options(
+            joinedload(User.home_department),
+            subqueryload(User.managed_departments),
+            subqueryload(User.managed_categories).joinedload(Category.department)
+        )
 
         # Apply filters
         if status != 'all':
@@ -594,16 +598,15 @@ def get_all_users():
                 )
             )
 
-        users = query.order_by(User.id.desc()).all()  # Newest first
+        users = query.order_by(User.id.desc()).all()
 
         users_data = []
         for user in users:
-            # Get managed departments info
+            # Build managed data in a single pass (relationships already eager-loaded)
             managed_depts = [
                 {'id': d.id, 'name': d.name, 'year_id': d.year_id}
                 for d in user.managed_departments
             ]
-            # Get managed categories info (cross-department)
             managed_cats = [
                 {'id': c.id, 'name': c.name, 'department_id': c.department_id,
                  'department_name': c.department.name if c.department else None}
@@ -624,9 +627,9 @@ def get_all_users():
                 'department_id': user.department_id,
                 'department_name': user.home_department.name if user.home_department else None,
                 'managed_departments': managed_depts,
-                'managed_department_ids': [d.id for d in user.managed_departments],
+                'managed_department_ids': [d['id'] for d in managed_depts],
                 'managed_categories': managed_cats,
-                'managed_category_ids': [c.id for c in user.managed_categories]
+                'managed_category_ids': [c['id'] for c in managed_cats]
             })
 
         return jsonify({'users': users_data}), 200
@@ -822,8 +825,11 @@ def delete_user(user_id):
         if user.id == current_user.id:
             return jsonify({'error': 'Cannot delete your own account'}), 400
         
-        # Check if user has expenses
-        if user.submitted_expenses:
+        # Check if user has expenses (use exists() to avoid loading all expenses)
+        has_expenses = db.session.query(
+            Expense.query.filter(Expense.user_id == user.id).exists()
+        ).scalar()
+        if has_expenses:
             # Soft delete - just deactivate
             user.status = 'inactive'
             db.session.commit()
