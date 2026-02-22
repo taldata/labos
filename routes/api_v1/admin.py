@@ -424,7 +424,11 @@ def get_manager_expense_filter_options():
             dept_ids_from_cats = list(set(c.department_id for c in cross_cats))
         all_dept_ids = list(set(managed_dept_ids + dept_ids_from_cats))
 
-        departments = Department.query.filter(Department.id.in_(all_dept_ids)).all() if all_dept_ids else []
+        dept_query = Department.query.filter(Department.id.in_(all_dept_ids))
+        if current_year:
+            dept_query = dept_query.filter(Department.year_id == current_year.id)
+            
+        departments = dept_query.all() if all_dept_ids else []
         dept_list = [{
             'id': dept.id,
             'name': dept.name,
@@ -454,12 +458,14 @@ def get_manager_expense_filter_options():
         } for user in users]
 
         # 3. Categories with subcategories - from managed departments + cross-dept categories
-        cat_query = Category.query.options(
+        cat_query = Category.query.join(Department).options(
             joinedload(Category.subcategories),
             joinedload(Category.department)
         )
         if cat_access_filter is not None:
             cat_query = cat_query.filter(cat_access_filter)
+        if current_year:
+            cat_query = cat_query.filter(Department.year_id == current_year.id)
         # HR users: exclude welfare categories from other departments (handled via HR dashboard)
         if current_user.is_hr and not current_user.is_admin:
             cat_query = cat_query.filter(or_(
@@ -504,9 +510,11 @@ def get_manager_expense_filter_options():
         } for card in cards]
 
         # 6. Subcategories flat list - from managed departments + cross-dept categories
-        subcat_query = Subcategory.query.join(Category)
+        subcat_query = Subcategory.query.join(Category).join(Department)
         if cat_access_filter is not None:
             subcat_query = subcat_query.filter(cat_access_filter)
+        if current_year:
+            subcat_query = subcat_query.filter(Department.year_id == current_year.id)
         # HR users: exclude welfare subcategories from other departments (handled via HR dashboard)
         if current_user.is_hr and not current_user.is_admin:
             subcat_query = subcat_query.filter(or_(
