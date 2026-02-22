@@ -52,7 +52,7 @@ function MyExpenses({ user, setUser }) {
     search: searchParams.get('search') || '',
     start_date: convertToDisplayDate(searchParams.get('start_date') || ''),
     end_date: convertToDisplayDate(searchParams.get('end_date') || ''),
-    sort_by: searchParams.get('sort_by') || 'date',
+    sort_by: searchParams.get('sort_by') || 'id',
     sort_order: searchParams.get('sort_order') || 'desc'
   }))
   const [showFilters, setShowFilters] = useState(false)
@@ -169,7 +169,7 @@ function MyExpenses({ user, setUser }) {
     const params = new URLSearchParams()
     if (currentPage > 1) params.set('page', currentPage)
     Object.entries(filters).forEach(([key, value]) => {
-      if (value && value !== '' && !(key === 'sort_by' && value === 'date') && !(key === 'sort_order' && value === 'desc')) {
+      if (value && value !== '' && !(key === 'sort_by' && value === 'id') && !(key === 'sort_order' && value === 'desc')) {
         if ((key === 'start_date' || key === 'end_date') && value) {
           const isoDate = convertToISODate(value)
           if (isoDate) params.set(key, isoDate)
@@ -189,7 +189,7 @@ function MyExpenses({ user, setUser }) {
       search: '',
       start_date: '',
       end_date: '',
-      sort_by: 'date',
+      sort_by: 'id',
       sort_order: 'desc'
     })
     setCurrentPage(1)

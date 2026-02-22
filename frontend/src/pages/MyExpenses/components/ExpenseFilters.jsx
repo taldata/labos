@@ -110,6 +110,7 @@ const ExpenseFilters = ({
                value={filters.sort_by}
                onChange={handleChange}
             >
+               <option value="id">Recently Added</option>
                <option value="date">Date</option>
                <option value="amount">Amount</option>
                <option value="status">Status</option>

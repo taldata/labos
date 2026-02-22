@@ -8,6 +8,8 @@ from datetime import datetime, timedelta
 from werkzeug.utils import secure_filename
 from . import api_v1
 from services.exchange_rate import get_exchange_rate
+from utils.email_sender import send_email
+from templates.email_templates import EXPENSE_REQUEST_CONFIRMATION_TEMPLATE, NEW_REQUEST_MANAGER_NOTIFICATION_TEMPLATE
 import logging
 import os
 
@@ -1181,6 +1183,83 @@ def submit_expense():
         db.session.commit()
 
         logging.info(f"Expense {expense.id} submitted by {current_user.username}")
+
+        # Reload relationships for email template
+        db.session.refresh(expense)
+
+        # Send confirmation email to the submitting employee
+        try:
+            send_email(
+                subject="Confirmation: Your Request Has Been Successfully Registered",
+                recipient=current_user.email,
+                template=EXPENSE_REQUEST_CONFIRMATION_TEMPLATE,
+                submitter=current_user,
+                expense=expense
+            )
+        except Exception as e:
+            logging.error(f"Failed to send confirmation email: {str(e)}")
+            # Continue even if email fails
+
+        # Send email notification to managers if expense is pending approval
+        if expense.status == 'pending':
+            try:
+                managers = User.query.filter_by(is_manager=True).all()
+                for manager in managers:
+                    send_email(
+                        subject="New Request Awaiting Your Attention",
+                        recipient=manager.email,
+                        template=NEW_REQUEST_MANAGER_NOTIFICATION_TEMPLATE,
+                        manager=manager,
+                        expense=expense
+                    )
+            except Exception as e:
+                logging.error(f"Failed to send manager notification: {str(e)}")
+                # Continue even if email fails
+
+        # Send email with attachments to accounting system if invoice or receipt exists
+        try:
+            attachments = []
+            if expense.invoice_filename:
+                invoice_path = os.path.join(upload_folder, expense.invoice_filename)
+                if os.path.exists(invoice_path):
+                    attachments.append(invoice_path)
+            if expense.receipt_filename:
+                receipt_path = os.path.join(upload_folder, expense.receipt_filename)
+                if os.path.exists(receipt_path):
+                    attachments.append(receipt_path)
+
+            if attachments:
+                accounting_template = """
+                <html>
+                <body>
+                    <h2>New Expense Submitted</h2>
+                    <p><strong>Employee:</strong> {{ submitter.username }} ({{ submitter.email }})</p>
+                    <p><strong>Amount:</strong> {{ expense.currency }} {{ expense.amount }}</p>
+                    <p><strong>Description:</strong> {{ expense.description }}</p>
+                    <p><strong>Date:</strong> {{ expense.date.strftime('%Y-%m-%d %H:%M') }}</p>
+                    <p><strong>Status:</strong> {{ expense.status }}</p>
+                    {% if expense.invoice_filename %}
+                    <p><strong>Invoice:</strong> {{ expense.invoice_filename }}</p>
+                    {% endif %}
+                    {% if expense.receipt_filename %}
+                    <p><strong>Receipt:</strong> {{ expense.receipt_filename }}</p>
+                    {% endif %}
+                    <p>Please find the attached documents.</p>
+                </body>
+                </html>
+                """
+                send_email(
+                    subject=f"New Expense Submitted - {current_user.username} - {expense.amount} {expense.currency}",
+                    recipient="cost+513545509@costapp-invoice.co.il",
+                    template=accounting_template,
+                    attachments=attachments,
+                    submitter=current_user,
+                    expense=expense
+                )
+                logging.info(f"Sent expense email with {len(attachments)} attachment(s) to accounting")
+        except Exception as e:
+            logging.error(f"Failed to send expense email with attachments: {str(e)}")
+            # Continue even if email fails
 
         return jsonify({
             'message': 'Expense submitted successfully',
