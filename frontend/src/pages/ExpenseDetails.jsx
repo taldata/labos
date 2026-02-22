@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { Card, Button, Badge, Modal, Skeleton, Textarea, useToast, FilePreviewButton } from '../components/ui'
+import ExpenseEditModal from '../components/ExpenseEditModal'
 import BudgetImpactWidget from '../components/BudgetImpactWidget'
 import logger from '../utils/logger'
 import './ExpenseDetails.css'
@@ -15,10 +16,32 @@ function ExpenseDetails({ user, setUser }) {
   const [modalAction, setModalAction] = useState(null)
   const [rejectionReason, setRejectionReason] = useState('')
   const [processing, setProcessing] = useState(false)
+  const [editModalOpen, setEditModalOpen] = useState(false)
+  const [editOptions, setEditOptions] = useState({ subcategories: [], suppliers: [], creditCards: [] })
 
   useEffect(() => {
     fetchExpenseDetails()
   }, [id])
+
+  const openEditModal = async () => {
+    try {
+      const endpoint = user?.is_admin
+        ? '/api/v1/admin/expense-filter-options'
+        : '/api/v1/manager/expense-filter-options'
+      const res = await fetch(endpoint, { credentials: 'include' })
+      if (res.ok) {
+        const data = await res.json()
+        setEditOptions({
+          subcategories: data.subcategories || [],
+          suppliers: data.suppliers || [],
+          creditCards: data.credit_cards || []
+        })
+      }
+    } catch (err) {
+      logger.error('Failed to fetch edit options', { error: err.message })
+    }
+    setEditModalOpen(true)
+  }
 
   const fetchExpenseDetails = async () => {
     try {
@@ -446,7 +469,7 @@ function ExpenseDetails({ user, setUser }) {
                 <Button
                   variant="primary"
                   icon="fas fa-edit"
-                  onClick={() => navigate(user?.is_admin ? '/admin/expense-history' : '/manager/expense-history')}
+                  onClick={openEditModal}
                 >
                   Edit Expense
                 </Button>
@@ -556,6 +579,17 @@ function ExpenseDetails({ user, setUser }) {
           </div>
         </div>
       </Modal>
+
+      <ExpenseEditModal
+        isOpen={editModalOpen}
+        onClose={() => setEditModalOpen(false)}
+        expense={expense}
+        onSuccess={fetchExpenseDetails}
+        subcategories={editOptions.subcategories}
+        suppliers={editOptions.suppliers}
+        creditCards={editOptions.creditCards}
+        isManagerView={!user?.is_admin}
+      />
     </div>
   )
 }
