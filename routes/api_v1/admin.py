@@ -561,11 +561,6 @@ def get_all_users():
         role = request.args.get('role')
         search = request.args.get('search', '').strip()
 
-        # Pagination parameters
-        page = request.args.get('page', 1, type=int)
-        per_page = request.args.get('per_page', 50, type=int)
-        per_page = min(per_page, 100)  # Cap at 100
-
         # Base query with eager loading to avoid N+1 queries
         query = User.query.options(
             joinedload(User.home_department),
@@ -603,11 +598,7 @@ def get_all_users():
                 )
             )
 
-        # Get total count before pagination
-        total = query.order_by(None).count()
-
-        # Apply pagination
-        users = query.order_by(User.id.desc()).offset((page - 1) * per_page).limit(per_page).all()
+        users = query.order_by(User.id.desc()).all()
 
         users_data = []
         for user in users:
@@ -641,13 +632,7 @@ def get_all_users():
                 'managed_category_ids': [c['id'] for c in managed_cats]
             })
 
-        return jsonify({
-            'users': users_data,
-            'total': total,
-            'page': page,
-            'per_page': per_page,
-            'total_pages': (total + per_page - 1) // per_page
-        }), 200
+        return jsonify({'users': users_data}), 200
 
     except Exception as e:
         logging.error(f"Error getting users: {str(e)}", exc_info=True)

@@ -21,12 +21,6 @@ function UserManagement({ user, setUser }) {
   const [departments, setDepartments] = useState([])
   const [newUserId, setNewUserId] = useState(null)
 
-  // Pagination
-  const [currentPage, setCurrentPage] = useState(1)
-  const [totalPages, setTotalPages] = useState(1)
-  const [totalUsers, setTotalUsers] = useState(0)
-  const perPage = 50
-
   // Filters
   const [searchQuery, setSearchQuery] = useState('')
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('')
@@ -70,18 +64,13 @@ function UserManagement({ user, setUser }) {
     fetchDepartments()
   }, [])
 
-  // Reset to page 1 when filters change
-  useEffect(() => {
-    setCurrentPage(1)
-  }, [statusFilter, roleFilter, departmentFilter, debouncedSearchQuery])
-
   useEffect(() => {
     if (!user?.is_admin) {
       navigate('/dashboard')
       return
     }
     fetchUsers()
-  }, [statusFilter, roleFilter, departmentFilter, debouncedSearchQuery, currentPage])
+  }, [statusFilter, roleFilter, departmentFilter, debouncedSearchQuery])
 
   const fetchDepartments = async () => {
     try {
@@ -107,8 +96,6 @@ function UserManagement({ user, setUser }) {
       if (roleFilter !== 'all') params.append('role', roleFilter)
       if (departmentFilter !== 'all') params.append('department_id', departmentFilter)
       if (debouncedSearchQuery) params.append('search', debouncedSearchQuery)
-      params.append('page', currentPage)
-      params.append('per_page', perPage)
 
       // Fetch users
       const usersRes = await fetch(`/api/v1/admin/users?${params.toString()}`, {
@@ -117,8 +104,6 @@ function UserManagement({ user, setUser }) {
       if (usersRes.ok) {
         const data = await usersRes.json()
         setUsers(data.users)
-        setTotalPages(data.total_pages || 1)
-        setTotalUsers(data.total || 0)
       }
     } catch (err) {
       showError('Failed to load users')
@@ -325,7 +310,6 @@ function UserManagement({ user, setUser }) {
                     setStatusFilter('all')
                     setRoleFilter('all')
                     setDepartmentFilter('all')
-                    setCurrentPage(1)
                   }}
                 >
                   <i className="fas fa-times"></i> Clear Filters
@@ -481,28 +465,7 @@ function UserManagement({ user, setUser }) {
               </tbody>
             </table>
             <div className="table-footer">
-              <span>{totalUsers} user(s) found</span>
-              {totalPages > 1 && (
-                <div className="pagination-controls">
-                  <Button
-                    variant="ghost"
-                    size="small"
-                    disabled={currentPage <= 1}
-                    onClick={() => setCurrentPage(p => p - 1)}
-                  >
-                    <i className="fas fa-chevron-left"></i> Previous
-                  </Button>
-                  <span className="page-info">Page {currentPage} of {totalPages}</span>
-                  <Button
-                    variant="ghost"
-                    size="small"
-                    disabled={currentPage >= totalPages}
-                    onClick={() => setCurrentPage(p => p + 1)}
-                  >
-                    Next <i className="fas fa-chevron-right"></i>
-                  </Button>
-                </div>
-              )}
+              <span>{users.length} user(s) found</span>
             </div>
           </Card>
         )}
