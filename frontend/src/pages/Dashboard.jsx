@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Card, Badge, Skeleton, Button } from '../components/ui'
+import { Card, Badge, Button } from '../components/ui'
 import logger from '../utils/logger'
 import './Dashboard.css'
 
@@ -123,20 +123,8 @@ function Dashboard({ user, setUser }) {
         </div>
 
         {loading ? (
-          <div className="actions-grid">
-            {[1, 2, 3, 4].map(i => (
-              <Card key={i} className="action-card">
-                <Card.Body>
-                  <div className="stat-card-loading">
-                    <Skeleton variant="avatar" width="48px" height="48px" borderRadius="0.75rem" />
-                    <div style={{ flex: 1 }}>
-                      <Skeleton variant="text" width="60%" height="0.875rem" />
-                      <Skeleton variant="title" width="40%" height="1.75rem" />
-                    </div>
-                  </div>
-                </Card.Body>
-              </Card>
-            ))}
+          <div className="content-loader">
+            <div className="spinner"></div>
           </div>
         ) : (
           <>

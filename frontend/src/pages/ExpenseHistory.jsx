@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useColumnResize } from '../hooks/useColumnResize'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { Card, Button, Badge, Input, Select, TomSelectInput, Skeleton, EmptyState, Modal, useToast, FilePreviewButton, PageHeader, DateRangeFilter } from '../components/ui'
+import { Card, Button, Badge, Input, Select, TomSelectInput, EmptyState, Modal, useToast, FilePreviewButton, PageHeader, DateRangeFilter } from '../components/ui'
 import MoveExpenseToYearModal from '../components/MoveExpenseToYearModal'
 import ExpenseEditModal from '../components/ExpenseEditModal'
 import useFilterOptions from '../hooks/useFilterOptions'
@@ -703,8 +703,8 @@ function ExpenseTable({ expenses, loading, error, hasActiveFilters, onView, onEd
 
   if (loading) {
     return (
-      <div className="eh-loading">
-        <Skeleton.Table rows={8} columns={11} />
+      <div className="eh-loading content-loader">
+        <div className="spinner"></div>
       </div>
     )
   }

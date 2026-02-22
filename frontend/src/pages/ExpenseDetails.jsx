@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { Card, Button, Badge, Modal, Skeleton, Textarea, useToast, FilePreviewButton } from '../components/ui'
+import { Card, Button, Badge, Modal, Textarea, useToast, FilePreviewButton } from '../components/ui'
 import ExpenseEditModal from '../components/ExpenseEditModal'
 import BudgetImpactWidget from '../components/BudgetImpactWidget'
 import logger from '../utils/logger'
@@ -168,13 +168,8 @@ function ExpenseDetails({ user, setUser }) {
   if (loading) {
     return (
       <div className="expense-details-container">
-        <div className="expense-details-content">
-          <Card>
-            <Card.Body>
-              <Skeleton variant="title" width="60%" />
-              <Skeleton variant="text" count={8} />
-            </Card.Body>
-          </Card>
+        <div className="expense-details-content content-loader">
+          <div className="spinner"></div>
         </div>
       </div>
     )

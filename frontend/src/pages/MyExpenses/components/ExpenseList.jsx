@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Button, Badge, Skeleton, EmptyState, FilePreviewButton } from '../../../components/ui';
+import { Button, Badge, EmptyState, FilePreviewButton } from '../../../components/ui';
 import { useColumnResize } from '../../../hooks/useColumnResize';
 
 const ME_DEFAULT_WIDTHS = { date: 110, submitDate: 110, description: 220, category: 150, amount: 120, status: 100, files: 130, actions: 100 };
@@ -36,8 +36,8 @@ const ExpenseList = ({
 
   if (loading) {
     return (
-      <div className="me-list-card" style={{ padding: '2rem' }}>
-        <Skeleton.Table rows={5} columns={6} />
+      <div className="me-list-card content-loader">
+        <div className="spinner"></div>
       </div>
     );
   }

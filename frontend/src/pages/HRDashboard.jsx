@@ -4,7 +4,7 @@ import {
   BarChart, Bar,
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
 } from 'recharts'
-import { Card, Select, Skeleton, Button, Input, Modal, PageHeader, useToast } from '../components/ui'
+import { Card, Select, Button, Input, Modal, PageHeader, useToast } from '../components/ui'
 import logger from '../utils/logger'
 import './HRDashboard.css'
 
@@ -525,13 +525,8 @@ function HRDashboard({ user }) {
       </Card>
 
       {loading ? (
-        <div className="hr-loading">
-          <div className="hr-stats-grid">
-            {[1,2,3,4].map(i => (
-              <Card key={i}><Card.Body><Skeleton height="80px" /></Card.Body></Card>
-            ))}
-          </div>
-          <Card><Card.Body><Skeleton height="350px" /></Card.Body></Card>
+        <div className="content-loader">
+          <div className="spinner"></div>
         </div>
       ) : (
         <>

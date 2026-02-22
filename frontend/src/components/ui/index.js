@@ -6,7 +6,6 @@ export { default as Input, Select, SearchableSelect, TomSelectInput, Textarea } 
 export { default as FileUpload } from './FileUpload';
 export { default as FilePreviewModal, FilePreviewButton } from './FilePreviewModal';
 export { default as EmptyState } from './EmptyState';
-export { default as Skeleton } from './Skeleton';
 export { default as Toast, ToastProvider, useToast } from './Toast';
 export { default as Modal } from './Modal';
 export { default as PageHeader } from '../PageHeader';

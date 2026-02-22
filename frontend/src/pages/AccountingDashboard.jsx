@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { Card, Button, Badge, Input, Select, Skeleton, EmptyState, useToast, FilePreviewButton, PageHeader } from '../components/ui'
+import { Card, Button, Badge, Input, Select, EmptyState, useToast, FilePreviewButton, PageHeader } from '../components/ui'
 import logger from '../utils/logger'
 import './AccountingDashboard.css'
 
@@ -657,11 +657,9 @@ function AccountingDashboard({ user }) {
 
         <div className="acct-expenses-list">
           {loading ? (
-            <Card>
-              <Card.Body>
-                <Skeleton variant="text" count={8} />
-              </Card.Body>
-            </Card>
+            <div className="content-loader">
+              <div className="spinner"></div>
+            </div>
           ) : expenses.length === 0 ? (
             <EmptyState
               icon="fas fa-receipt"

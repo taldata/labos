@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Card, Button, Input, Select, Modal, Badge, Skeleton, useToast, PageHeader } from '../components/ui'
+import { Card, Button, Input, Select, Modal, Badge, useToast, PageHeader } from '../components/ui'
 import { useScrollToItem } from '../hooks/useScrollToItem'
 import './CreditCardManagement.css'
 
@@ -227,10 +227,8 @@ function CreditCardManagement({ user, setUser }) {
 
         {/* Cards Grid */}
         {loading ? (
-          <div className="cards-grid">
-            <Card><Card.Body><Skeleton variant="text" count={5} /></Card.Body></Card>
-            <Card><Card.Body><Skeleton variant="text" count={5} /></Card.Body></Card>
-            <Card><Card.Body><Skeleton variant="text" count={5} /></Card.Body></Card>
+          <div className="content-loader">
+            <div className="spinner"></div>
           </div>
         ) : (
           <div className="cards-grid">
