@@ -82,10 +82,10 @@ class DocumentProcessor:
 
     def _extract_currency(self, amount_field):
         """
-        Extract currency code from a CurrencyValue field.
+        Extract currency code from a DocumentField field.
 
         Args:
-            amount_field: Field value from Form Recognizer (may be CurrencyValue)
+            amount_field: DocumentField from Form Recognizer
 
         Returns:
             str or None: Currency code (e.g., 'USD', 'ILS', 'EUR')
@@ -93,20 +93,30 @@ class DocumentProcessor:
         if amount_field is None:
             return None
 
-        symbol = getattr(amount_field, 'symbol', None)
-        currency_code = getattr(amount_field, 'code', None)
+        currency_val = amount_field.value
+        if currency_val is None:
+            return None
 
-        # Check for unambiguous currency symbols first — these take precedence
-        # over the code because Azure Form Recognizer sometimes returns an
-        # incorrect currency code (e.g. 'USD') for ILS invoices while
-        # correctly identifying the ₪ symbol.
+        symbol = getattr(currency_val, 'symbol', None)
+        currency_code = getattr(currency_val, 'code', None)
+        content = getattr(amount_field, 'content', '')
+
+        unambiguous_symbols = {
+            '₪': 'ILS',
+            '\u20aa': 'ILS',  # Unicode shekel sign
+            '€': 'EUR',
+            '\u20ac': 'EUR',  # Unicode euro sign
+            '£': 'GBP',
+        }
+
+        # Check raw content first for unambiguous symbols to override incorrect Azure code
+        if content:
+            for sym, code in unambiguous_symbols.items():
+                if sym in content:
+                    return code
+
+        # Check for unambiguous currency symbols next
         if symbol:
-            unambiguous_symbols = {
-                '₪': 'ILS',
-                '\u20aa': 'ILS',  # Unicode shekel sign
-                '€': 'EUR',
-                '\u20ac': 'EUR',  # Unicode euro sign
-            }
             if symbol in unambiguous_symbols:
                 return unambiguous_symbols[symbol]
 
@@ -120,6 +130,10 @@ class DocumentProcessor:
                 '$': 'USD',
             }
             return fallback_map.get(symbol, None)
+
+        # Check content for $
+        if content and '$' in content:
+            return 'USD'
 
         return None
     
@@ -203,8 +217,8 @@ class DocumentProcessor:
                         amount_value = self._extract_amount(amount_field.value if amount_field else None)
                         logging.info(f"DocumentProcessor: Amount field ({fields['amount']}): {amount_value}")
 
-                        # Extract currency from CurrencyValue
-                        currency_value = self._extract_currency(amount_field.value if amount_field else None)
+                        # Extract currency from DocumentField
+                        currency_value = self._extract_currency(amount_field if amount_field else None)
                         logging.info(f"DocumentProcessor: Currency: {currency_value}")
 
                         # If we found either date or amount, return the results
