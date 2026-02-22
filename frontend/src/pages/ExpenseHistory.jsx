@@ -42,7 +42,7 @@ function useExpenseFilters() {
     search: searchParams.get('search') || '',
     start_date: convertToDisplayDate(searchParams.get('start_date') || ''),
     end_date: convertToDisplayDate(searchParams.get('end_date') || ''),
-    sort_by: searchParams.get('sort_by') || 'date',
+    sort_by: searchParams.get('sort_by') || 'id',
     sort_order: searchParams.get('sort_order') || 'desc'
   }), [searchParams])
 
@@ -62,7 +62,7 @@ function useExpenseFilters() {
   useEffect(() => {
     const params = new URLSearchParams()
     Object.entries(debouncedFilters).forEach(([key, value]) => {
-      if (value && value !== '' && !(key === 'sort_by' && value === 'date') && !(key === 'sort_order' && value === 'desc')) {
+      if (value && value !== '' && !(key === 'sort_by' && value === 'id') && !(key === 'sort_order' && value === 'desc')) {
         // Convert display dates to ISO for URL
         if ((key === 'start_date' || key === 'end_date') && value) {
           const isoDate = convertToISODate(value)
@@ -91,7 +91,7 @@ function useExpenseFilters() {
       search: '',
       start_date: '',
       end_date: '',
-      sort_by: 'date',
+      sort_by: 'id',
       sort_order: 'desc'
     }
     setFilters(clearedFilters)
@@ -458,6 +458,7 @@ function ExpenseHistoryFilters({
               value={filters.sort_by}
               onChange={handleFilterChange}
             >
+              <option value="id">Recently Added</option>
               <option value="date">Date</option>
               <option value="amount">Amount</option>
               <option value="status">Status</option>
