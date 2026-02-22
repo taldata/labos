@@ -18,7 +18,7 @@
   justify-content: space-between;
   align-items: center;
   margin-bottom: 2.5rem;
-  animation: slideInDown 0.6s ease-out;
+  animation: slideInDown 0.3s ease-out;
 }
 
 .page-header-section h1 {
@@ -116,7 +116,7 @@
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: 1.5rem;
   margin-bottom: 2.5rem;
-  animation: fadeIn 0.8s ease-out;
+  animation: fadeIn 0.3s ease-out;
 }
 
 /* Enhanced Stat Cards */
@@ -170,19 +170,19 @@
 
 /* Staggered Animation */
 .stat-card:nth-child(1) {
-  animation: fadeInUp 0.6s ease-out 0.1s both;
+  animation: fadeInUp 0.4s ease-out 0.1s both;
 }
 
 .stat-card:nth-child(2) {
-  animation: fadeInUp 0.6s ease-out 0.2s both;
+  animation: fadeInUp 0.4s ease-out 0.2s both;
 }
 
 .stat-card:nth-child(3) {
-  animation: fadeInUp 0.6s ease-out 0.3s both;
+  animation: fadeInUp 0.4s ease-out 0.3s both;
 }
 
 .stat-card:nth-child(4) {
-  animation: fadeInUp 0.6s ease-out 0.4s both;
+  animation: fadeInUp 0.4s ease-out 0.4s both;
 }
 
 .stat-card .card-body {
@@ -244,7 +244,7 @@
       rgba(255, 255, 255, 0.2) 50%,
       transparent 100%);
   transform: rotate(30deg);
-  animation: shimmer 3s infinite;
+  animation: shimmer 1.5s infinite;
 }
 
 @keyframes shimmer {
@@ -286,7 +286,7 @@
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
   gap: 1.5rem;
-  animation: fadeIn 1s ease-out;
+  animation: fadeIn 0.3s ease-out;
 }
 
 /* Enhanced Chart Cards */

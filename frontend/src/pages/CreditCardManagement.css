@@ -18,7 +18,7 @@
   justify-content: space-between;
   align-items: center;
   margin-bottom: 2.5rem;
-  animation: slideInDown 0.6s ease-out;
+  animation: slideInDown 0.3s ease-out;
 }
 
 .page-header-section h1 {
@@ -62,7 +62,7 @@
   border-radius: 16px !important;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03) !important;
   margin-bottom: 2rem;
-  animation: fadeIn 0.8s ease-out;
+  animation: fadeIn 0.3s ease-out;
   align-items: flex-start !important;
 }
 
@@ -133,7 +133,7 @@
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
   gap: 2rem;
-  animation: fadeIn 1s ease-out;
+  animation: fadeIn 0.3s ease-out;
 }
 
 /* Credit Card Item - Premium Styling */

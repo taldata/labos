@@ -6,7 +6,7 @@
   max-width: 1400px;
   margin: 0 auto;
   padding: 2rem;
-  animation: dm-fadeIn 0.4s ease-out;
+  animation: dm-fadeIn 0.3s ease-out;
 }
 
 @keyframes dm-fadeIn {
@@ -475,7 +475,7 @@
   right: 0;
   bottom: 0;
   background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
-  animation: dm-shimmer 2.5s infinite;
+  animation: dm-shimmer 1.5s infinite;
 }
 
 @keyframes dm-shimmer {

@@ -81,7 +81,7 @@
   box-shadow:
     0 10px 40px rgba(102, 126, 234, 0.3),
     0 4px 12px rgba(118, 75, 162, 0.2);
-  animation: welcomeFadeIn 0.6s ease-out;
+  animation: welcomeFadeIn 0.3s ease-out;
 }
 
 @keyframes welcomeFadeIn {
