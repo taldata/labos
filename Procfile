@@ -1,1 +1,1 @@
-web: poetry run gunicorn --workers 4 --threads 2 --worker-class gthread app:app
+web: poetry run gunicorn --workers 2 --threads 4 --worker-class gthread --timeout 120 --graceful-timeout 30 --keep-alive 5 --max-requests 1000 --max-requests-jitter 50 --worker-tmp-dir /dev/shm --preload --access-logfile - --error-logfile - app:app

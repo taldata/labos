@@ -42,6 +42,15 @@ class Config:
         SQLALCHEMY_DATABASE_URI = f"postgresql://{db_user}:{db_pass}@{db_host}:{db_port}/{db_name}"
     
     SQLALCHEMY_TRACK_MODIFICATIONS = False
+
+    # Connection pool settings for deployment stability
+    SQLALCHEMY_ENGINE_OPTIONS = {
+        'pool_pre_ping': True,       # Verify connections before use, discard stale ones
+        'pool_recycle': 300,          # Recycle connections every 5 minutes
+        'pool_size': 5,              # Base pool size per worker
+        'max_overflow': 10,          # Allow up to 10 extra connections under load
+        'pool_timeout': 30,          # Wait up to 30s for a connection from pool
+    }
     
     # Upload configuration
     if os.getenv('RENDER') == 'true':

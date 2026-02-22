@@ -4,7 +4,8 @@ services:
     env: python
     buildCommand: poetry install --no-root && cd frontend && npm ci && npm run build && rm -rf node_modules
     preDeployCommand: poetry run flask db upgrade
-    startCommand: poetry run gunicorn --workers 4 --threads 2 --worker-class gthread --timeout 120 --keep-alive 5 --max-requests 1000 --max-requests-jitter 50 app:app
+    startCommand: poetry run gunicorn --workers 2 --threads 4 --worker-class gthread --timeout 120 --graceful-timeout 30 --keep-alive 5 --max-requests 1000 --max-requests-jitter 50 --worker-tmp-dir /dev/shm --preload --access-logfile - --error-logfile - app:app
+    healthCheckPath: /health
     envVars:
       - key: PYTHON_VERSION
         value: 3.13.1
