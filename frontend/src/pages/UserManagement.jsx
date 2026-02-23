@@ -74,7 +74,7 @@ function UserManagement({ user, setUser }) {
 
   const fetchDepartments = async () => {
     try {
-      const deptRes = await fetch('/api/v1/organization/structure', {
+      const deptRes = await fetch('/api/v1/organization/structure?all_years=true', {
         credentials: 'include'
       })
       if (deptRes.ok) {
