@@ -198,9 +198,13 @@ def get_organization_structure():
 
         # Filter by year if provided
         year_id = request.args.get('year_id', type=int)
+        all_years = request.args.get('all_years', '').lower() == 'true'
 
         query = Department.query
-        if year_id:
+        if all_years:
+            # Skip year filtering - return departments from all years
+            pass
+        elif year_id:
             query = query.filter_by(year_id=year_id)
         else:
             # Default to current year or all if no current year set
