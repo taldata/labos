@@ -17,6 +17,7 @@ class BudgetYear(db.Model):
 
 class Department(db.Model):
     __tablename__ = 'department'
+    __table_args__ = (db.UniqueConstraint('name', 'year_id', name='uq_department_name_year'),)
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
     budget = db.Column(db.Float, default=0.0)
