@@ -1,6 +1,6 @@
 from flask import jsonify, request
 from flask_login import login_required, current_user
-from models import db, Department, Category, Subcategory, Expense, BudgetYear
+from models import db, Department, Category, Subcategory, Expense, BudgetYear, User, manager_departments
 from services.manager_access import get_manager_access, build_category_access_filter
 from sqlalchemy import func, case, or_
 from . import api_v1
@@ -143,8 +143,19 @@ def copy_structure_from_year(year_id, source_id):
         
         # Get source departments
         source_depts = Department.query.filter_by(year_id=source_id).all()
-        
+
+        # Track source dept ID -> new dept ID for manager assignment copying
+        dept_id_map = {}
+        skipped_depts = []
+
         for src_dept in source_depts:
+            # Skip if department with same name already exists in target year
+            existing = Department.query.filter_by(name=src_dept.name, year_id=year_id).first()
+            if existing:
+                dept_id_map[src_dept.id] = existing.id
+                skipped_depts.append(src_dept.name)
+                continue
+
             # Create new department
             new_dept = Department(
                 name=src_dept.name,
@@ -154,7 +165,8 @@ def copy_structure_from_year(year_id, source_id):
             )
             db.session.add(new_dept)
             db.session.flush()  # Get the new dept ID
-            
+            dept_id_map[src_dept.id] = new_dept.id
+
             # Copy categories
             for src_cat in src_dept.categories:
                 new_cat = Category(
@@ -165,7 +177,7 @@ def copy_structure_from_year(year_id, source_id):
                 )
                 db.session.add(new_cat)
                 db.session.flush()
-                
+
                 # Copy subcategories
                 for src_sub in src_cat.subcategories:
                     new_sub = Subcategory(
@@ -174,18 +186,131 @@ def copy_structure_from_year(year_id, source_id):
                         category_id=new_cat.id
                     )
                     db.session.add(new_sub)
-        
+
+        # Copy manager-department assignments to new year's departments
+        managers_copied = 0
+        for src_dept_id, new_dept_id in dept_id_map.items():
+            if src_dept_id == new_dept_id:
+                continue  # Skip already-existing departments
+            # Get managers of source department
+            src_managers = db.session.query(manager_departments.c.user_id).filter(
+                manager_departments.c.department_id == src_dept_id
+            ).all()
+            for (user_id,) in src_managers:
+                # Check if assignment already exists
+                exists = db.session.query(manager_departments).filter(
+                    manager_departments.c.user_id == user_id,
+                    manager_departments.c.department_id == new_dept_id
+                ).first()
+                if not exists:
+                    db.session.execute(manager_departments.insert().values(
+                        user_id=user_id, department_id=new_dept_id
+                    ))
+                    managers_copied += 1
+
+        # Optionally migrate user department assignments to the new year
+        migrate_users = request.get_json() and request.get_json().get('migrate_users', False)
+        users_migrated = 0
+        if migrate_users:
+            users_with_dept = User.query.filter(User.department_id.isnot(None)).all()
+            for user in users_with_dept:
+                if user.department_id in dept_id_map:
+                    new_dept_id = dept_id_map[user.department_id]
+                    if new_dept_id != user.department_id:
+                        user.department_id = new_dept_id
+                        users_migrated += 1
+                else:
+                    # User's department wasn't in source year - try matching by name
+                    old_dept = Department.query.get(user.department_id)
+                    if old_dept:
+                        target_dept = Department.query.filter_by(
+                            name=old_dept.name, year_id=year_id
+                        ).first()
+                        if target_dept and target_dept.id != user.department_id:
+                            user.department_id = target_dept.id
+                            users_migrated += 1
+
         db.session.commit()
-        
-        logging.info(f"Structure copied from year {source_id} to {year_id} by {current_user.username}")
-        
+
+        logging.info(f"Structure copied from year {source_id} to {year_id} by {current_user.username}. "
+                     f"Managers copied: {managers_copied}, Users migrated: {users_migrated}, "
+                     f"Skipped existing depts: {skipped_depts}")
+
+        msg = f'Structure copied successfully from {source_year.name} to {target_year.name}'
+        if skipped_depts:
+            msg += f'. Skipped {len(skipped_depts)} existing department(s): {", ".join(skipped_depts)}'
+        if managers_copied:
+            msg += f'. {managers_copied} manager assignment(s) copied.'
+        if users_migrated:
+            msg += f' {users_migrated} user(s) migrated to new year.'
+
         return jsonify({
-            'message': f'Structure copied successfully from {source_year.name} to {target_year.name}'
+            'message': msg
         }), 200
     except Exception as e:
         db.session.rollback()
         logging.error(f"Error copying structure: {str(e)}")
         return jsonify({'error': 'Failed to copy structure'}), 500
+
+
+@api_v1.route('/organization/years/<int:year_id>/migrate-users', methods=['POST'])
+@login_required
+def migrate_users_to_year(year_id):
+    """Migrate user department assignments to a target budget year.
+
+    For each user with a department_id, find the matching department (by name)
+    in the target year and update the user's department_id.
+    """
+    try:
+        if not current_user.is_admin:
+            return jsonify({'error': 'Not authorized'}), 403
+
+        target_year = BudgetYear.query.get(year_id)
+        if not target_year:
+            return jsonify({'error': 'Budget year not found'}), 404
+
+        # Get all departments in the target year, indexed by name
+        target_depts = Department.query.filter_by(year_id=year_id).all()
+        target_dept_by_name = {d.name: d for d in target_depts}
+
+        users_migrated = 0
+        users_skipped = []
+        users_with_dept = User.query.filter(User.department_id.isnot(None)).all()
+
+        for user in users_with_dept:
+            current_dept = Department.query.get(user.department_id)
+            if not current_dept:
+                continue
+            # Already pointing to a department in the target year
+            if current_dept.year_id == year_id:
+                continue
+            # Find matching department by name in target year
+            target_dept = target_dept_by_name.get(current_dept.name)
+            if target_dept:
+                user.department_id = target_dept.id
+                users_migrated += 1
+            else:
+                users_skipped.append({
+                    'user': user.username,
+                    'department': current_dept.name
+                })
+
+        db.session.commit()
+
+        logging.info(f"User migration to year {year_id}: {users_migrated} migrated, "
+                     f"{len(users_skipped)} skipped by {current_user.username}")
+
+        return jsonify({
+            'message': f'{users_migrated} user(s) migrated to {target_year.name}',
+            'migrated': users_migrated,
+            'skipped': users_skipped
+        }), 200
+
+    except Exception as e:
+        db.session.rollback()
+        logging.error(f"Error migrating users to year {year_id}: {str(e)}")
+        return jsonify({'error': 'Failed to migrate users'}), 500
+
 
 @api_v1.route('/organization/structure', methods=['GET'])
 @login_required
@@ -388,6 +513,11 @@ def create_department():
         if not year_id:
             current_year = BudgetYear.query.filter_by(is_current=True).first()
             year_id = current_year.id if current_year else None
+
+        # Check for duplicate department name within the same year
+        existing = Department.query.filter_by(name=data['name'], year_id=year_id).first()
+        if existing:
+            return jsonify({'error': f'Department "{data["name"]}" already exists for this budget year'}), 400
 
         budget_val = data.get('budget')
         if budget_val == '' or budget_val is None:

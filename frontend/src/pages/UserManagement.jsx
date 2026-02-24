@@ -79,7 +79,20 @@ function UserManagement({ user, setUser }) {
       })
       if (deptRes.ok) {
         const data = await deptRes.json()
-        setDepartments(data.structure)
+        // Deduplicate departments by name (same department exists in multiple budget years)
+        const seen = new Map()
+        for (const dept of data.structure) {
+          if (!seen.has(dept.name)) {
+            seen.set(dept.name, dept)
+          } else {
+            // Keep the one with the higher id (most recent year)
+            const existing = seen.get(dept.name)
+            if (dept.id > existing.id) {
+              seen.set(dept.name, dept)
+            }
+          }
+        }
+        setDepartments(Array.from(seen.values()))
       }
     } catch (err) {
       logger.error('Failed to load departments', { error: err.message })
