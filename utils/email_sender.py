@@ -37,7 +37,6 @@ SMTP_PASSWORD = os.getenv('SMTP_PASSWORD')
 FROM_EMAIL_ADDRESS = os.getenv('FROM_EMAIL', 'expenses-app@labos.com')  # Verified sender email in Mailgun
 FROM_NAME = os.getenv('FROM_NAME', 'LabOS Expenses App')  # Friendly sender name
 ACCOUNTING_EMAIL = "cost+513545509@costapp-invoice.co.il"
-ACCOUNTING_CC_EMAIL = "sabag.tal@gmail.com"
 
 def send_email_smtp(to_email, subject, html_content, attachments=None, cc_emails=None):
     """Send email using SMTP (Mailgun).
@@ -172,10 +171,6 @@ def send_email(subject, recipient, template, attachments=None, cc=None, **kwargs
             cc_list = [cc]
         else:
             cc_list = list(cc)
-
-        if recipient and recipient.lower() == ACCOUNTING_EMAIL.lower():
-            if ACCOUNTING_CC_EMAIL not in cc_list:
-                cc_list.append(ACCOUNTING_CC_EMAIL)
 
         # Create Jinja2 environment for proper template rendering
         from jinja2 import Environment, select_autoescape
