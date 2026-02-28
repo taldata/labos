@@ -6,10 +6,10 @@ import { useColumnResize } from '../hooks/useColumnResize'
 import logger from '../utils/logger'
 import './UserManagement.css'
 
-const UM_DEFAULT_WIDTHS = { user: 240, email: 220, department: 160, roles: 160, status: 110, modern: 90, actions: 110 }
+const UM_DEFAULT_WIDTHS = { user: 240, email: 220, department: 160, role: 130, status: 110, modern: 90, actions: 110 }
 const UM_COLUMNS = [
   ['user', 'User'], ['email', 'Email'], ['department', 'Department'],
-  ['roles', 'Roles'], ['status', 'Status'], ['modern', 'Modern UI'], ['actions', 'Actions']
+  ['role', 'Role'], ['status', 'Status'], ['modern', 'Modern UI'], ['actions', 'Actions']
 ]
 
 function UserManagement({ user, setUser }) {
@@ -37,10 +37,7 @@ function UserManagement({ user, setUser }) {
     email: '',
     first_name: '',
     last_name: '',
-    is_admin: false,
-    is_manager: false,
-    is_accounting: false,
-    is_hr: false,
+    role: 'user',
     status: 'active',
     can_use_modern_version: true,
     department_id: '',
@@ -145,10 +142,7 @@ function UserManagement({ user, setUser }) {
         email: userToEdit.email,
         first_name: userToEdit.first_name || '',
         last_name: userToEdit.last_name || '',
-        is_admin: userToEdit.is_admin,
-        is_manager: userToEdit.is_manager,
-        is_accounting: userToEdit.is_accounting,
-        is_hr: userToEdit.is_hr || false,
+        role: userToEdit.role || 'user',
         status: userToEdit.status,
         can_use_modern_version: userToEdit.can_use_modern_version,
         department_id: userToEdit.department_id || '',
@@ -161,10 +155,7 @@ function UserManagement({ user, setUser }) {
         email: '',
         first_name: '',
         last_name: '',
-        is_admin: false,
-        is_manager: false,
-        is_accounting: false,
-        is_hr: false,
+        role: 'user',
         status: 'active',
         can_use_modern_version: true,
         department_id: '',
@@ -265,14 +256,17 @@ function UserManagement({ user, setUser }) {
     }
   }
 
-  const getRoleBadges = (u) => {
-    const badges = []
-    if (u.is_admin) badges.push(<Badge key="admin" variant="warning">Admin</Badge>)
-    if (u.is_manager) badges.push(<Badge key="manager" variant="info">Manager</Badge>)
-    if (u.is_accounting) badges.push(<Badge key="accounting" variant="success">Accounting</Badge>)
-    if (u.is_hr) badges.push(<Badge key="hr" variant="success">HR</Badge>)
-    if (badges.length === 0) badges.push(<Badge key="employee" variant="default">Employee</Badge>)
-    return badges
+  const getRoleBadge = (u) => {
+    const role = u.role || 'user'
+    const roleConfig = {
+      admin: { variant: 'warning', label: 'Admin' },
+      manager: { variant: 'info', label: 'Manager' },
+      accounting: { variant: 'success', label: 'Accounting' },
+      hr: { variant: 'success', label: 'HR' },
+      user: { variant: 'default', label: 'Employee' }
+    }
+    const config = roleConfig[role] || roleConfig.user
+    return <Badge variant={config.variant}>{config.label}</Badge>
   }
 
   const getStatusVariant = (status) => {
@@ -430,19 +424,19 @@ function UserManagement({ user, setUser }) {
                       <td>
                         <div className="dept-info">
                           {u.department_name || <span className="no-dept">No department</span>}
-                          {u.is_manager && u.managed_departments && u.managed_departments.length > 0 && (
+                          {u.role === 'manager' && u.managed_departments && u.managed_departments.length > 0 && (
                             <div className="managed-depts-info" title={`Manages: ${u.managed_departments.map(d => d.name).join(', ')}`}>
                               <i className="fas fa-building"></i> {u.managed_departments.length} managed
                             </div>
                           )}
-                          {u.is_manager && u.managed_categories && u.managed_categories.length > 0 && (
+                          {u.role === 'manager' && u.managed_categories && u.managed_categories.length > 0 && (
                             <div className="managed-depts-info cross-dept" title={`Cross-dept categories: ${u.managed_categories.map(c => `${c.name} (${c.department_name})`).join(', ')}`}>
                               <i className="fas fa-folder-plus"></i> {u.managed_categories.length} extra categories
                             </div>
                           )}
                         </div>
                       </td>
-                      <td><div className="roles-cell">{getRoleBadges(u)}</div></td>
+                      <td><div className="roles-cell">{getRoleBadge(u)}</div></td>
                       <td><Badge variant={getStatusVariant(u.status)}>{u.status}</Badge></td>
                       <td>
                         {u.can_use_modern_version ? (
@@ -562,45 +556,22 @@ function UserManagement({ user, setUser }) {
             <option value="pending">Pending</option>
           </Select>
 
+          <Select
+            label="Role"
+            icon="fas fa-shield-alt"
+            name="role"
+            value={formData.role}
+            onChange={handleInputChange}
+          >
+            <option value="user">Employee</option>
+            <option value="manager">Manager</option>
+            <option value="accounting">Accounting</option>
+            <option value="hr">HR</option>
+            <option value="admin">Administrator</option>
+          </Select>
+
           <div className="form-group checkbox-group">
-            <label className="section-label"><i className="fas fa-shield-alt"></i> Permissions</label>
             <div className="checkbox-row">
-              <label className="checkbox-label">
-                <input
-                  type="checkbox"
-                  name="is_admin"
-                  checked={formData.is_admin}
-                  onChange={handleInputChange}
-                />
-                <span>Administrator</span>
-              </label>
-              <label className="checkbox-label">
-                <input
-                  type="checkbox"
-                  name="is_manager"
-                  checked={formData.is_manager}
-                  onChange={handleInputChange}
-                />
-                <span>Manager</span>
-              </label>
-              <label className="checkbox-label">
-                <input
-                  type="checkbox"
-                  name="is_accounting"
-                  checked={formData.is_accounting}
-                  onChange={handleInputChange}
-                />
-                <span>Accounting</span>
-              </label>
-              <label className="checkbox-label">
-                <input
-                  type="checkbox"
-                  name="is_hr"
-                  checked={formData.is_hr}
-                  onChange={handleInputChange}
-                />
-                <span>HR</span>
-              </label>
               <label className="checkbox-label">
                 <input
                   type="checkbox"
@@ -614,7 +585,7 @@ function UserManagement({ user, setUser }) {
           </div>
 
           {/* Managed Departments - only shown for managers */}
-          {formData.is_manager && (
+          {formData.role === 'manager' && (
             <div className="form-group">
               <label className="section-label">
                 <i className="fas fa-building"></i> Managed Departments
@@ -656,7 +627,7 @@ function UserManagement({ user, setUser }) {
           )}
 
           {/* Cross-Department Categories - shown for managers, only departments not fully managed */}
-          {formData.is_manager && (() => {
+          {formData.role === 'manager' && (() => {
             const unmanagedDepts = departments.filter(d =>
               !formData.managed_department_ids.includes(d.id) &&
               d.categories && d.categories.length > 0

@@ -614,7 +614,7 @@ def submit_expense():
             # Send email notification to managers only if expense pending approval
             if expense.status == 'pending':
                 try:
-                    managers = User.query.filter_by(is_manager=True).all()
+                    managers = User.query.filter(User.role == 'manager').all()
                     for manager in managers:
                         send_email(
                             subject="New Request Awaiting Your Attention",
@@ -1473,32 +1473,17 @@ def add_user():
             return redirect(url_for('manage_users'))
         
         
-        # Create new user - ensure only one role is set
+        # Create new user with a single role
+        if role not in User.VALID_ROLES:
+            role = 'user'
         new_user = User(
             username=username,
             email=email,
             password=password,
             department_id=department_id if department_id else None,
-            is_manager=(role == 'manager'),
-            is_admin=(role == 'admin'),
-            is_accounting=(role == 'accounting'),
+            role=role,
             status=status
         )
-        
-        # Explicitly ensure only one role is True
-        if role == 'manager':
-            new_user.is_admin = False
-            new_user.is_accounting = False
-        elif role == 'admin':
-            new_user.is_manager = False
-            new_user.is_accounting = False
-        elif role == 'accounting':
-            new_user.is_manager = False
-            new_user.is_admin = False
-        else:  # regular user
-            new_user.is_manager = False
-            new_user.is_admin = False
-            new_user.is_accounting = False
         
         # If user is a manager, assign managed departments
         if role == 'manager' and managed_department_ids:
@@ -2348,11 +2333,15 @@ def manage_users():
         query = query.filter(User.department_id == department_filter)
     
     if role_filter == 'admin':
-        query = query.filter(User.is_admin == True)
+        query = query.filter(User.role == 'admin')
     elif role_filter == 'manager':
-        query = query.filter(User.is_manager == True)
+        query = query.filter(User.role == 'manager')
+    elif role_filter == 'accounting':
+        query = query.filter(User.role == 'accounting')
+    elif role_filter == 'hr':
+        query = query.filter(User.role == 'hr')
     elif role_filter == 'employee':
-        query = query.filter(User.is_admin == False, User.is_manager == False)
+        query = query.filter(User.role == 'user')
     
     # Get users and departments
     users = query.order_by(User.username).all()
@@ -2376,6 +2365,7 @@ def get_user_info(user_id):
         'id': user.id,
         'username': user.username,
         'email': user.email,
+        'role': user.role,
         'is_manager': user.is_manager,
         'is_admin': user.is_admin,
         'department_id': user.department_id,
@@ -2393,7 +2383,7 @@ def edit_user(user_id):
         user = User.query.get_or_404(user_id)
         
         # Check if user is editing their own admin account
-        is_self_admin = user.id == current_user.id and user.is_admin
+        is_self_admin = user.id == current_user.id and user.role == 'admin'
         
         # Update basic info
         user.username = request.form.get('username', user.username)
@@ -2413,23 +2403,10 @@ def edit_user(user_id):
         if is_self_admin and role != 'admin':
             return jsonify({'error': 'Admin users cannot change their role to non-admin'}), 400
             
-        # Ensure only one role is set at a time
-        if role == 'admin':
-            user.is_admin = True
-            user.is_manager = False
-            user.is_accounting = False
-        elif role == 'manager':
-            user.is_admin = False
-            user.is_manager = True
-            user.is_accounting = False
-        elif role == 'accounting':
-            user.is_admin = False
-            user.is_manager = False
-            user.is_accounting = True
-        else:  # regular user
-            user.is_admin = False
-            user.is_manager = False
-            user.is_accounting = False
+        # Set role (single role enforcement)
+        if role not in User.VALID_ROLES:
+            role = 'user'
+        user.role = role
         
         # Update managed departments if user is a manager
         if role == 'manager':

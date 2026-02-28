@@ -202,7 +202,7 @@ function Sidebar({ user, setUser, isOpen, onToggle }) {
               <div className="user-info">
                 <div className="user-name">{user?.first_name} {user?.last_name}</div>
                 <div className="user-role">
-                  {user?.is_admin ? 'Admin' : user?.is_hr ? 'HR' : user?.is_manager ? 'Manager' : 'Employee'}
+                  {{ admin: 'Admin', manager: 'Manager', hr: 'HR', accounting: 'Accounting' }[user?.role] || 'Employee'}
                 </div>
               </div>
             )}

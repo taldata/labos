@@ -305,6 +305,7 @@ def get_expense_filter_options():
             'email': user.email,
             'department': user.home_department.name if user.home_department else None,
             'department_id': user.department_id,
+            'role': user.role,
             'is_admin': user.is_admin,
             'is_manager': user.is_manager,
             'is_accounting': user.is_accounting,
@@ -451,6 +452,7 @@ def get_manager_expense_filter_options():
             'email': user.email,
             'department': user.home_department.name if user.home_department else None,
             'department_id': user.department_id,
+            'role': user.role,
             'is_admin': user.is_admin,
             'is_manager': user.is_manager,
             'is_accounting': user.is_accounting,
@@ -575,16 +577,10 @@ def get_all_users():
         if department_id:
             query = query.filter(User.department_id == int(department_id))
 
-        if role == 'admin':
-            query = query.filter(User.is_admin == True)
-        elif role == 'manager':
-            query = query.filter(User.is_manager == True)
-        elif role == 'accounting':
-            query = query.filter(User.is_accounting == True)
-        elif role == 'hr':
-            query = query.filter(User.is_hr == True)
+        if role in ('admin', 'manager', 'accounting', 'hr'):
+            query = query.filter(User.role == role)
         elif role == 'employee':
-            query = query.filter(User.is_admin == False, User.is_manager == False, User.is_accounting == False, User.is_hr == False)
+            query = query.filter(User.role == 'user')
 
         # Apply search filter in SQL instead of in-memory
         if search:
@@ -618,6 +614,7 @@ def get_all_users():
                 'email': user.email,
                 'first_name': user.first_name,
                 'last_name': user.last_name,
+                'role': user.role,
                 'is_admin': user.is_admin,
                 'is_manager': user.is_manager,
                 'is_accounting': user.is_accounting,
@@ -657,16 +654,28 @@ def create_user():
         if User.query.filter_by(username=data['username']).first():
             return jsonify({'error': 'Username already exists'}), 400
         
-        # Create user
+        # Determine role - accept explicit 'role' field, or derive from boolean flags for backward compat
+        role = data.get('role', 'user')
+        if role not in User.VALID_ROLES:
+            # Backward compat: derive role from boolean flags
+            if data.get('is_admin'):
+                role = 'admin'
+            elif data.get('is_manager'):
+                role = 'manager'
+            elif data.get('is_accounting'):
+                role = 'accounting'
+            elif data.get('is_hr'):
+                role = 'hr'
+            else:
+                role = 'user'
+
+        # Create user with single role
         user = User(
             username=data['username'],
             email=data['email'],
             first_name=data.get('first_name', ''),
             last_name=data.get('last_name', ''),
-            is_admin=data.get('is_admin', False),
-            is_manager=data.get('is_manager', False),
-            is_accounting=data.get('is_accounting', False),
-            is_hr=data.get('is_hr', False),
+            role=role,
             status=data.get('status', 'active'),
             can_use_modern_version=data.get('can_use_modern_version', True),
             department_id=data.get('department_id')
@@ -680,7 +689,7 @@ def create_user():
         db.session.flush()  # Get the user ID before committing
         
         # Handle managed departments for managers
-        if user.is_manager and data.get('managed_department_ids'):
+        if user.role == 'manager' and data.get('managed_department_ids'):
             managed_depts = Department.query.filter(
                 Department.id.in_(data['managed_department_ids'])
             ).all()
@@ -688,7 +697,7 @@ def create_user():
             logging.info(f"Assigned managed departments to {user.username}: {[d.name for d in managed_depts]}")
 
         # Handle managed categories (cross-department) for managers
-        if user.is_manager and data.get('managed_category_ids'):
+        if user.role == 'manager' and data.get('managed_category_ids'):
             managed_cats = Category.query.filter(
                 Category.id.in_(data['managed_category_ids'])
             ).all()
@@ -707,6 +716,7 @@ def create_user():
                 'email': user.email,
                 'first_name': user.first_name,
                 'last_name': user.last_name,
+                'role': user.role,
                 'managed_department_ids': [d.id for d in user.managed_departments],
                 'managed_category_ids': [c.id for c in user.managed_categories]
             }
@@ -739,14 +749,25 @@ def update_user(user_id):
             user.first_name = data['first_name']
         if 'last_name' in data:
             user.last_name = data['last_name']
-        if 'is_admin' in data:
-            user.is_admin = data['is_admin']
-        if 'is_manager' in data:
-            user.is_manager = data['is_manager']
-        if 'is_accounting' in data:
-            user.is_accounting = data['is_accounting']
-        if 'is_hr' in data:
-            user.is_hr = data['is_hr']
+
+        # Update role - accept explicit 'role' field, or derive from boolean flags for backward compat
+        if 'role' in data:
+            new_role = data['role']
+            if new_role in User.VALID_ROLES:
+                user.role = new_role
+        elif any(k in data for k in ('is_admin', 'is_manager', 'is_accounting', 'is_hr')):
+            # Backward compat: derive role from boolean flags
+            if data.get('is_admin'):
+                user.role = 'admin'
+            elif data.get('is_manager'):
+                user.role = 'manager'
+            elif data.get('is_accounting'):
+                user.role = 'accounting'
+            elif data.get('is_hr'):
+                user.role = 'hr'
+            else:
+                user.role = 'user'
+
         if 'status' in data:
             user.status = data['status']
         if 'can_use_modern_version' in data:
@@ -755,10 +776,10 @@ def update_user(user_id):
             user.department_id = data['department_id'] if data['department_id'] else None
         if data.get('password'):
             user.password = generate_password_hash(data['password'])
-        
+
         # Handle managed departments for managers
         if 'managed_department_ids' in data:
-            if user.is_manager and data['managed_department_ids']:
+            if user.role == 'manager' and data['managed_department_ids']:
                 managed_depts = Department.query.filter(
                     Department.id.in_(data['managed_department_ids'])
                 ).all()
@@ -770,7 +791,7 @@ def update_user(user_id):
 
         # Handle managed categories (cross-department) for managers
         if 'managed_category_ids' in data:
-            if user.is_manager and data['managed_category_ids']:
+            if user.role == 'manager' and data['managed_category_ids']:
                 managed_cats = Category.query.filter(
                     Category.id.in_(data['managed_category_ids'])
                 ).all()
@@ -791,6 +812,7 @@ def update_user(user_id):
                 'email': user.email,
                 'first_name': user.first_name,
                 'last_name': user.last_name,
+                'role': user.role,
                 'is_admin': user.is_admin,
                 'is_manager': user.is_manager,
                 'is_accounting': user.is_accounting,

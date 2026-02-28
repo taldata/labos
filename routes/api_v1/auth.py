@@ -51,6 +51,7 @@ def get_current_user():
                 'email': current_user.email,
                 'first_name': current_user.first_name,
                 'last_name': current_user.last_name,
+                'role': current_user.role,
                 'is_manager': current_user.is_manager,
                 'is_admin': current_user.is_admin,
                 'is_accounting': current_user.is_accounting,
@@ -122,6 +123,7 @@ def login():
                 'email': user.email,
                 'first_name': user.first_name,
                 'last_name': user.last_name,
+                'role': user.role,
                 'is_manager': user.is_manager,
                 'is_admin': user.is_admin,
                 'is_accounting': user.is_accounting,
@@ -155,7 +157,7 @@ def create_test_user():
             # Update existing user
             test_user.password = 'test123'
             test_user.status = 'active'
-            test_user.is_admin = True
+            test_user.role = 'admin'
             test_user.can_use_modern_version = True
             db.session.commit()
             return jsonify({
@@ -164,16 +166,14 @@ def create_test_user():
                 'password': 'test123'
             }), 200
 
-        # Create new test user
+        # Create new test user with single role (admin)
         test_user = User(
             username='testuser',
             email='testuser@test.com',
             password='test123',
             first_name='Test',
             last_name='User',
-            is_admin=True,
-            is_manager=True,
-            is_accounting=True,
+            role='admin',
             can_use_modern_version=True,
             status='active'
         )
