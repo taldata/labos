@@ -8,14 +8,6 @@ import os
 from . import api_v1
 from config import Config
 
-def get_modern_ui_url(path=''):
-    """Get the correct modern UI URL based on environment"""
-    if os.getenv('FLASK_ENV') == 'development':
-        return f'http://localhost:3000/{path}'
-    else:
-        # In production, serve from Flask route
-        return f'/modern/{path}'
-
 def _build_msal_app(cache=None):
     return msal.ConfidentialClientApplication(
         Config.AZURE_AD_CLIENT_ID,
@@ -28,22 +20,20 @@ def _build_msal_app(cache=None):
 def get_current_user():
     """Get current authenticated user"""
     if current_user.is_authenticated:
-        # Get managed department info for managers (including names for cross-year matching)
         managed_departments_info = []
         if current_user.is_manager:
             managed_departments_info = [
                 {'id': d.id, 'name': d.name, 'year_id': d.year_id}
                 for d in current_user.managed_departments
             ]
-        
-        # Get home department name if exists
+
         home_department_name = None
         if current_user.department_id:
             from models import Department
             home_dept = Department.query.get(current_user.department_id)
             if home_dept:
                 home_department_name = home_dept.name
-        
+
         return jsonify({
             'user': {
                 'id': current_user.id,
@@ -55,8 +45,6 @@ def get_current_user():
                 'is_admin': current_user.is_admin,
                 'is_accounting': current_user.is_accounting,
                 'is_hr': current_user.is_hr,
-                'can_use_modern_version': current_user.can_use_modern_version,
-                'preferred_version': current_user.preferred_version,
                 'department_id': current_user.department_id,
                 'home_department_name': home_department_name,
                 'profile_pic': current_user.profile_pic,
@@ -78,42 +66,30 @@ def login():
         username = data['username']
         password = data['password']
 
-        # DEV MODE: Allow "dev" password for any user in development
         is_dev_mode = os.getenv('FLASK_ENV') == 'development' or os.getenv('DEV_MODE') == 'true'
         dev_password_used = is_dev_mode and password == 'dev'
 
-        # Find user by username
         user = User.query.filter_by(username=username).first()
 
         if not user:
             logging.warning(f"Login attempt for non-existent user: {username}")
             return jsonify({'error': 'Invalid username or password'}), 401
 
-        # Check password (in production, use proper password hashing)
-        # In dev mode, allow "dev" as a universal password
         if not dev_password_used and user.password != password:
             logging.warning(f"Failed login attempt for user: {username}")
             return jsonify({'error': 'Invalid username or password'}), 401
 
-        # Check if user is active
         if user.status != 'active':
             logging.warning(f"Login attempt for inactive user: {username}")
             return jsonify({'error': 'Account is inactive. Please contact administrator.'}), 403
 
-        # Check if user has access to modern version (admins always have access)
-        if not user.can_use_modern_version and not user.is_admin:
-            logging.warning(f"User {username} does not have access to modern version")
-            return jsonify({'error': 'You do not have access to the modern UI. Please contact your administrator.'}), 403
-
-        # Log the user in
         login_user(user)
         logging.info(f"User {username} logged in successfully via username/password")
 
-        # Get managed department IDs for managers
         managed_department_ids = []
         if user.is_manager:
             managed_department_ids = [d.id for d in user.managed_departments]
-        
+
         return jsonify({
             'message': 'Login successful',
             'user': {
@@ -126,8 +102,6 @@ def login():
                 'is_admin': user.is_admin,
                 'is_accounting': user.is_accounting,
                 'is_hr': user.is_hr,
-                'can_use_modern_version': user.can_use_modern_version,
-                'preferred_version': user.preferred_version,
                 'department_id': user.department_id,
                 'managed_department_ids': managed_department_ids
             }
@@ -142,21 +116,16 @@ def create_test_user():
     """Create a test user for development (only works in dev mode)"""
     is_dev_mode = os.getenv('FLASK_ENV') == 'development' or os.getenv('DEV_MODE') == 'true'
 
-    # Always allow in dev for convenience
     if not is_dev_mode:
-        # Check if we're on localhost
         if 'localhost' not in request.host and '127.0.0.1' not in request.host:
             return jsonify({'error': 'This endpoint is only available in development mode'}), 403
 
     try:
-        # Check if test user already exists
         test_user = User.query.filter_by(username='testuser').first()
         if test_user:
-            # Update existing user
             test_user.password = 'test123'
             test_user.status = 'active'
             test_user.is_admin = True
-            test_user.can_use_modern_version = True
             db.session.commit()
             return jsonify({
                 'message': 'Test user updated',
@@ -164,7 +133,6 @@ def create_test_user():
                 'password': 'test123'
             }), 200
 
-        # Create new test user
         test_user = User(
             username='testuser',
             email='testuser@test.com',
@@ -174,7 +142,6 @@ def create_test_user():
             is_admin=True,
             is_manager=True,
             is_accounting=True,
-            can_use_modern_version=True,
             status='active'
         )
         db.session.add(test_user)
@@ -195,12 +162,9 @@ def create_test_user():
 def login_azure():
     """Initiate Azure AD login flow"""
     try:
-        # Use the legacy redirect URI (/auth/callback) to satisfy Azure AD requirements
-        # without adding new URLs to the Azure portal.
         redirect_uri = url_for('auth_callback', _external=True, _scheme='https')
-        logging.info(f"API Azure Login - Redirecting to legacy callback: {redirect_uri}")
+        logging.info(f"API Azure Login - Redirect URI: {redirect_uri}")
 
-        # Initialize MSAL flow
         msal_app = _build_msal_app()
         flow = msal_app.initiate_auth_code_flow(
             scopes=['https://graph.microsoft.com/User.Read'],
@@ -209,7 +173,6 @@ def login_azure():
         logging.info(f"MSAL Flow initiated for API")
 
         session["flow"] = flow
-        session["modern_ui_login"] = True  # Flag to redirect to modern UI after login
 
         return redirect(flow["auth_uri"])
 
@@ -222,7 +185,7 @@ def auth_callback():
     """Azure AD callback endpoint"""
     if not session.get("flow"):
         logging.error("No flow found in session")
-        return redirect(get_modern_ui_url('login?error=no_flow'))
+        return redirect('/login?error=no_flow')
 
     try:
         logging.info(f"API Auth callback received. Args: {request.args}")
@@ -237,9 +200,8 @@ def auth_callback():
         if "error" in result:
             error_msg = result.get('error_description', 'Unknown error')
             logging.error(f"Error during login: {error_msg}")
-            return redirect(get_modern_ui_url(f'login?error={error_msg}'))
+            return redirect(f'/login?error={error_msg}')
 
-        # Get user info from Microsoft Graph
         graph_response = requests.get(
             'https://graph.microsoft.com/v1.0/me',
             headers={'Authorization': f"Bearer {result['access_token']}"}
@@ -248,12 +210,11 @@ def auth_callback():
 
         if not graph_response.ok:
             logging.error(f"Graph API error: {graph_response.text}")
-            return redirect(get_modern_ui_url('login?error=graph_api_failed'))
+            return redirect('/login?error=graph_api_failed')
 
         graph_data = graph_response.json()
         logging.info("User info retrieved from Graph API")
 
-        # Find or create user based on email
         email = graph_data.get('mail')
         if not email:
             email = graph_data.get('userPrincipalName')
@@ -261,13 +222,12 @@ def auth_callback():
 
         if not email:
             logging.error(f"No email found in graph data: {graph_data}")
-            return redirect(get_modern_ui_url('login?error=no_email'))
+            return redirect('/login?error=no_email')
 
         user = User.query.filter_by(email=email).first()
 
         if not user:
             logging.info(f"Creating new user for email: {email}")
-            # Get department (default to first department if exists)
             from models import Department
             default_dept = Department.query.first()
 
@@ -277,47 +237,32 @@ def auth_callback():
                 first_name=graph_data.get('givenName', ''),
                 last_name=graph_data.get('surname', ''),
                 department_id=default_dept.id if default_dept else None,
-                status='active',
-                can_use_modern_version=False,  # Admin must grant access
-                preferred_version='legacy'
+                status='active'
             )
             db.session.add(user)
             db.session.commit()
             logging.info(f"New user created: {user.username}")
         else:
-            # Update user info from Azure AD
             user.first_name = graph_data.get('givenName', user.first_name)
             user.last_name = graph_data.get('surname', user.last_name)
 
-            # Try to fetch profile photo
             try:
+                from flask import current_app as app
                 photo_response = requests.get(
                     'https://graph.microsoft.com/v1.0/me/photos/96x96/$value',
                     headers={'Authorization': f"Bearer {result['access_token']}"}
                 )
                 if photo_response.ok:
-                    # Create profiles directory if not exists
-                    # Assuming we want to save it in frontend/public for React serving during dev
-                    # In production we might want a different strategy, but let's stick to plan
-                    # We need to find where frontend/public is relative to app root
-                    
-                    # NOTE: In deployed environment, we might not have write access to frontend build dir
-                    # But for now let's save to UPLOAD_FOLDER or a specific static folder served by Flask
-                    # Then frontend checks that URL. 
-                    # Let's save to 'static/profiles' which Flask serves automatically
-                    
                     profiles_dir = os.path.join(app.root_path, 'static', 'profiles')
                     if not os.path.exists(profiles_dir):
                         os.makedirs(profiles_dir)
-                    
+
                     filename = f"{user.id}.jpg"
                     filepath = os.path.join(profiles_dir, filename)
-                    
+
                     with open(filepath, 'wb') as f:
                         f.write(photo_response.content)
-                    
-                    # Update user profile pic path - relative to Flask static serving
-                    # Frontend can load from /static/profiles/ID.jpg
+
                     user.profile_pic = f"/static/profiles/{filename}"
                     logging.info(f"Updated profile picture for user {user.username}")
                 else:
@@ -328,28 +273,18 @@ def auth_callback():
             db.session.commit()
             logging.info(f"Existing user updated: {user.username}")
 
-        # Check if user has access to modern version (admins always have access)
-        if not user.can_use_modern_version and not user.is_admin:
-            logging.warning(f"User {user.email} does not have access to modern version")
-            # Redirect to legacy version with message
-            login_user(user)
-            return redirect('/?error=modern_access_denied')
-
-        # Check if user is active
         if user.status == 'inactive':
             logging.warning(f"User {user.email} is inactive")
-            return redirect(get_modern_ui_url('login?error=account_inactive'))
+            return redirect('/login?error=account_inactive')
 
-        # Log the user in
         login_user(user)
         logging.info(f"User {user.username} logged in successfully")
 
-        # Redirect to modern UI dashboard
-        return redirect(get_modern_ui_url('dashboard'))
+        return redirect('/dashboard')
 
     except Exception as e:
         logging.error(f"Error in auth callback: {str(e)}", exc_info=True)
-        return redirect(get_modern_ui_url('login?error=callback_failed'))
+        return redirect('/login?error=callback_failed')
 
 @api_v1.route('/auth/logout', methods=['POST'])
 @login_required
@@ -365,70 +300,22 @@ def logout():
         logging.error(f"Error during logout: {str(e)}")
         return jsonify({'error': 'Logout failed'}), 500
 
-@api_v1.route('/auth/switch-to-modern', methods=['GET'])
-@login_required
-def switch_to_modern():
-    """Redirect logged-in user to modern UI"""
-    try:
-        # Admins always have access to modern UI
-        if not current_user.can_use_modern_version and not current_user.is_admin:
-            return redirect('/?error=modern_access_denied')
-
-        # Update preference
-        current_user.preferred_version = 'modern'
-        db.session.commit()
-
-        logging.info(f"User {current_user.username} switching to modern UI")
-
-        # Redirect to modern UI dashboard
-        return redirect(get_modern_ui_url('dashboard'))
-
-    except Exception as e:
-        logging.error(f"Error switching to modern UI: {str(e)}")
-        return redirect('/?error=switch_failed')
-
-@api_v1.route('/auth/set-version-preference', methods=['POST'])
-@login_required
-def set_version_preference():
-    """Set user's preferred version (legacy or modern)"""
-    try:
-        data = request.get_json()
-        version = data.get('version')
-
-        if version not in ['legacy', 'modern']:
-            return jsonify({'error': 'Invalid version'}), 400
-
-        # Admins always have access to modern version
-        if version == 'modern' and not current_user.can_use_modern_version and not current_user.is_admin:
-            return jsonify({'error': 'You do not have access to the modern version'}), 403
-
-        current_user.preferred_version = version
-        db.session.commit()
-
-        logging.info(f"User {current_user.username} set version preference to {version}")
-        return jsonify({'message': 'Version preference updated', 'version': version}), 200
-
-    except Exception as e:
-        logging.error(f"Error setting version preference: {str(e)}")
-        return jsonify({'error': 'Failed to update version preference'}), 500
-
-
 @api_v1.route('/auth/profile', methods=['PUT'])
 @login_required
 def update_profile():
     """Update current user's profile"""
     try:
         data = request.get_json()
-        
+
         if 'first_name' in data:
             current_user.first_name = data['first_name']
         if 'last_name' in data:
             current_user.last_name = data['last_name']
         if 'email' in data:
             current_user.email = data['email']
-        
+
         db.session.commit()
-        
+
         logging.info(f"User {current_user.username} updated their profile")
         return jsonify({
             'message': 'Profile updated successfully',
@@ -440,7 +327,7 @@ def update_profile():
                 'last_name': current_user.last_name
             }
         }), 200
-        
+
     except Exception as e:
         db.session.rollback()
         logging.error(f"Error updating profile: {str(e)}")
@@ -456,29 +343,25 @@ def change_password():
         current_password = data.get('current_password')
         new_password = data.get('new_password')
         confirm_password = data.get('confirm_password')
-        
+
         if not all([current_password, new_password, confirm_password]):
             return jsonify({'error': 'All password fields are required'}), 400
-        
-        # Verify current password
+
         if current_user.password != current_password:
             return jsonify({'error': 'Current password is incorrect'}), 400
-        
-        # Verify new password matches confirmation
+
         if new_password != confirm_password:
             return jsonify({'error': 'New passwords do not match'}), 400
-        
-        # Validate password length
+
         if len(new_password) < 6:
             return jsonify({'error': 'Password must be at least 6 characters'}), 400
-        
-        # Update password
+
         current_user.password = new_password
         db.session.commit()
-        
+
         logging.info(f"User {current_user.username} changed their password")
         return jsonify({'message': 'Password changed successfully'}), 200
-        
+
     except Exception as e:
         db.session.rollback()
         logging.error(f"Error changing password: {str(e)}")

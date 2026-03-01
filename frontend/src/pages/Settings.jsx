@@ -24,7 +24,6 @@ function Settings({ user, setUser }) {
   const [passwordLoading, setPasswordLoading] = useState(false)
 
   // Version preference
-  const [versionLoading, setVersionLoading] = useState(false)
 
   const handleProfileChange = (e) => {
     const { name, value } = e.target
@@ -99,25 +98,6 @@ function Settings({ user, setUser }) {
     }
   }
 
-  const switchToLegacy = async () => {
-    setVersionLoading(true)
-    try {
-      const response = await fetch('/api/v1/auth/set-version-preference', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ version: 'legacy' })
-      })
-      if (response.ok) {
-        window.location.href = '/'
-      } else {
-        showError('Failed to switch version')
-        setVersionLoading(false)
-      }
-    } catch (err) {
-      showError('Failed to switch version')
-      setVersionLoading(false)
-    }
   }
 
   const getRoleBadges = () => {
@@ -271,21 +251,6 @@ function Settings({ user, setUser }) {
               </div>
             </Card.Header>
             <Card.Body>
-              <div className="preference-item">
-                <div className="preference-info">
-                  <h4>User Interface Version</h4>
-                  <p>You are currently using the <strong>Modern UI</strong></p>
-                </div>
-                <Button
-                  variant="secondary"
-                  icon="fas fa-exchange-alt"
-                  onClick={switchToLegacy}
-                  loading={versionLoading}
-                >
-                  Switch to Legacy
-                </Button>
-              </div>
-
               <div className="preference-item">
                 <div className="preference-info">
                   <h4>Department</h4>

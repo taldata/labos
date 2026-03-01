@@ -70,9 +70,9 @@ class User(UserMixin, db.Model):
     is_hr = db.Column(db.Boolean, default=False)
     profile_pic = db.Column(db.String(255), nullable=True)
     status = db.Column(db.String(20), default='active')  # active, inactive, pending
-    # Version preference for parallel frontend versions
-    can_use_modern_version = db.Column(db.Boolean, default=False)  # Admin grants access
-    preferred_version = db.Column(db.String(20), default='legacy')  # 'legacy' or 'modern'
+    # Deprecated: kept for DB compatibility, no longer used in application logic
+    can_use_modern_version = db.Column(db.Boolean, default=False)
+    preferred_version = db.Column(db.String(20), default='legacy')
     department_id = db.Column(db.Integer, db.ForeignKey('department.id'))
     home_department = db.relationship('Department', 
                                     foreign_keys=[department_id],

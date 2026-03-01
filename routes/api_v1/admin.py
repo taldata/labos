@@ -623,7 +623,6 @@ def get_all_users():
                 'is_accounting': user.is_accounting,
                 'is_hr': user.is_hr,
                 'status': user.status,
-                'can_use_modern_version': user.can_use_modern_version,
                 'department_id': user.department_id,
                 'department_name': user.home_department.name if user.home_department else None,
                 'managed_departments': managed_depts,
@@ -668,7 +667,6 @@ def create_user():
             is_accounting=data.get('is_accounting', False),
             is_hr=data.get('is_hr', False),
             status=data.get('status', 'active'),
-            can_use_modern_version=data.get('can_use_modern_version', True),
             department_id=data.get('department_id')
         )
         
@@ -749,8 +747,6 @@ def update_user(user_id):
             user.is_hr = data['is_hr']
         if 'status' in data:
             user.status = data['status']
-        if 'can_use_modern_version' in data:
-            user.can_use_modern_version = data['can_use_modern_version']
         if 'department_id' in data:
             user.department_id = data['department_id'] if data['department_id'] else None
         if data.get('password'):
@@ -796,7 +792,6 @@ def update_user(user_id):
                 'is_accounting': user.is_accounting,
                 'is_hr': user.is_hr,
                 'status': user.status,
-                'can_use_modern_version': user.can_use_modern_version,
                 'department_id': user.department_id,
                 'managed_department_ids': [d.id for d in user.managed_departments],
                 'managed_category_ids': [c.id for c in user.managed_categories]

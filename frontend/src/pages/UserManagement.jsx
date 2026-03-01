@@ -9,7 +9,7 @@ import './UserManagement.css'
 const UM_DEFAULT_WIDTHS = { user: 240, email: 220, department: 160, roles: 160, status: 110, modern: 90, actions: 110 }
 const UM_COLUMNS = [
   ['user', 'User'], ['email', 'Email'], ['department', 'Department'],
-  ['roles', 'Roles'], ['status', 'Status'], ['modern', 'Modern UI'], ['actions', 'Actions']
+  ['roles', 'Roles'], ['status', 'Status'], ['actions', 'Actions']
 ]
 
 function UserManagement({ user, setUser }) {
@@ -42,7 +42,6 @@ function UserManagement({ user, setUser }) {
     is_accounting: false,
     is_hr: false,
     status: 'active',
-    can_use_modern_version: true,
     department_id: '',
     managed_department_ids: [],
     managed_category_ids: []
@@ -150,7 +149,6 @@ function UserManagement({ user, setUser }) {
         is_accounting: userToEdit.is_accounting,
         is_hr: userToEdit.is_hr || false,
         status: userToEdit.status,
-        can_use_modern_version: userToEdit.can_use_modern_version,
         department_id: userToEdit.department_id || '',
         managed_department_ids: userToEdit.managed_department_ids || [],
         managed_category_ids: userToEdit.managed_category_ids || []
@@ -166,7 +164,6 @@ function UserManagement({ user, setUser }) {
         is_accounting: false,
         is_hr: false,
         status: 'active',
-        can_use_modern_version: true,
         department_id: '',
         managed_department_ids: [],
         managed_category_ids: []
@@ -445,13 +442,6 @@ function UserManagement({ user, setUser }) {
                       <td><div className="roles-cell">{getRoleBadges(u)}</div></td>
                       <td><Badge variant={getStatusVariant(u.status)}>{u.status}</Badge></td>
                       <td>
-                        {u.can_use_modern_version ? (
-                          <span className="modern-enabled"><i className="fas fa-check-circle"></i></span>
-                        ) : (
-                          <span className="modern-disabled"><i className="fas fa-times-circle"></i></span>
-                        )}
-                      </td>
-                      <td>
                         <div className="actions-cell">
                           <Button
                             variant="ghost"
@@ -600,15 +590,6 @@ function UserManagement({ user, setUser }) {
                   onChange={handleInputChange}
                 />
                 <span>HR</span>
-              </label>
-              <label className="checkbox-label">
-                <input
-                  type="checkbox"
-                  name="can_use_modern_version"
-                  checked={formData.can_use_modern_version}
-                  onChange={handleInputChange}
-                />
-                <span>Modern UI Access</span>
               </label>
             </div>
           </div>

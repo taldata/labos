@@ -21,23 +21,6 @@ function Sidebar({ user, setUser, isOpen, onToggle }) {
     }
   }
 
-  const switchToLegacy = async () => {
-    try {
-      await fetch('/api/v1/auth/set-version-preference', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        credentials: 'include',
-        body: JSON.stringify({ version: 'legacy' })
-      })
-      window.location.href = '/'
-    } catch (error) {
-      logger.error('Failed to switch version', { error: error.message })
-      window.location.href = '/'
-    }
-  }
-
   const isActive = (path) => location.pathname === path
 
   const navItems = [
@@ -207,14 +190,6 @@ function Sidebar({ user, setUser, isOpen, onToggle }) {
               </div>
             )}
           </div>
-          <button
-            className="nav-item"
-            onClick={switchToLegacy}
-            title={!isOpen ? 'Switch to Legacy UI' : ''}
-          >
-            <i className="fas fa-exchange-alt"></i>
-            {isOpen && <span>Switch to Legacy</span>}
-          </button>
           <button
             className="nav-item logout-btn"
             onClick={handleLogout}
