@@ -42,18 +42,6 @@
   transform: scale(1.02);
 }
 
-.version-badge {
-  background: rgba(255, 255, 255, 0.25);
-  padding: 0.35rem 0.85rem;
-  border-radius: 20px;
-  font-size: 0.7rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
-
 .header-nav {
   display: flex;
   gap: 0.75rem;

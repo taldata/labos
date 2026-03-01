@@ -90,7 +90,7 @@ class ErrorBoundary extends Component {
                 </Button>
                 <Button
                   variant="secondary"
-                  onClick={() => window.location.href = '/modern/dashboard'}
+                  onClick={() => window.location.href = '/dashboard'}
                 >
                   Go to Dashboard
                 </Button>

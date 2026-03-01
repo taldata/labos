@@ -40,23 +40,6 @@ function Header({ user, setUser, currentPage = 'dashboard' }) {
     }
   }
 
-  const switchToLegacy = async () => {
-    try {
-      await fetch('/api/v1/auth/set-version-preference', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        credentials: 'include',
-        body: JSON.stringify({ version: 'legacy' })
-      })
-      window.location.href = '/'
-    } catch (error) {
-      logger.error('Failed to switch version', { error: error.message })
-      window.location.href = '/'
-    }
-  }
-
   const getRoleBadge = () => {
     if (user?.is_admin) return '👑 Admin'
     if (user?.is_manager) return '👔 Manager'
@@ -86,7 +69,6 @@ function Header({ user, setUser, currentPage = 'dashboard' }) {
             className="logo-image"
             onClick={() => navigate('/dashboard')}
           />
-          <span className="version-badge">Modern UI</span>
         </div>
         {currentPage !== 'dashboard' && (
           <nav className="header-nav">
@@ -247,10 +229,6 @@ function Header({ user, setUser, currentPage = 'dashboard' }) {
               <button className="dropdown-item" onClick={() => { navigate('/settings'); setShowUserMenu(false); }}>
                 <i className="fas fa-user-cog"></i> Profile & Settings
               </button>
-              <button className="dropdown-item" onClick={() => { switchToLegacy(); setShowUserMenu(false); }}>
-                <i className="fas fa-exchange-alt"></i> Switch to Legacy UI
-              </button>
-              <div className="dropdown-divider"></div>
               <button className="dropdown-item danger" onClick={handleLogout}>
                 <i className="fas fa-sign-out-alt"></i> Logout
               </button>

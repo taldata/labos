@@ -1,14 +1,10 @@
-# Production Deployment Guide - Modern UI
+# Production Deployment Guide
 
-This guide explains how to deploy the modern React frontend in production.
+This guide explains how to deploy the application in production.
 
-## Problem
+## Architecture
 
-In production, the React frontend needs to be built and served as static files by Flask, not as a separate Vite dev server. The modern UI is now served at `/modern/*` routes.
-
-## Solution
-
-The React app is built and served from Flask at the `/modern/` route. This allows both legacy and modern UIs to run on the same domain.
+The React frontend is built and served as static files by Flask. All routes are served from the root path `/`.
 
 ## Deployment Steps
 
@@ -52,34 +48,27 @@ This creates a `frontend/dist/` directory with the production build.
    gunicorn app:app
    ```
 
-The Flask app will automatically serve the built React app from `/modern/*` routes.
+Flask serves the built React app for all non-API routes.
 
 ### 3. Verify Deployment
 
-- Legacy UI: `https://your-domain.com/`
-- Modern UI: `https://your-domain.com/modern/dashboard`
+- App: `https://your-domain.com/dashboard`
 - API: `https://your-domain.com/api/v1`
+- Health: `https://your-domain.com/health`
 
 ## How It Works
 
-1. **Development**: React runs on `http://localhost:3000` (Vite dev server)
-2. **Production**: React is built and served by Flask at `/modern/*`
+1. **Development**: React runs on `http://localhost:3000` (Vite dev server), Flask API on `http://localhost:5001`
+2. **Production**: React is built and served by Flask from the root path
 
 ### Flask Routes
 
-- `/modern/` - Serves the React app
-- `/modern/<path>` - Handles React Router client-side routes
+- `/<path>` - Serves the React app (catch-all)
+- `/api/v1/*` - REST API endpoints
+- `/api/expense/*` - OCR processing endpoints
+- `/download/*` - File downloads
+- `/health` - Health check
 - Static assets are served from `frontend/dist/`
-
-### Environment Detection
-
-The app automatically detects the environment:
-- **Development** (`FLASK_ENV=development`): Redirects to `localhost:3000`
-- **Production**: Serves from `/modern/` route
-
-## User Access
-
-Users with `can_use_modern_version = True` will be automatically redirected to `/modern/dashboard` when they log in (if their `preferred_version = 'modern'`).
 
 ## Troubleshooting
 
@@ -90,7 +79,7 @@ Run the build command:
 cd frontend && npm run build
 ```
 
-### Modern UI shows blank page
+### UI shows blank page
 
 1. Check that `frontend/dist/index.html` exists
 2. Check browser console for errors
@@ -98,17 +87,15 @@ cd frontend && npm run build
 
 ### Assets not loading
 
-Ensure the build was done with the correct base path (`/modern/` in `vite.config.js`).
+Ensure the build was done with `base: '/'` in `vite.config.js`.
 
 ## Build Configuration
 
 The `vite.config.js` is configured with:
-- `base: '/modern/'` - All assets are served from `/modern/`
+- `base: '/'` - All assets are served from the root
 - `build.outDir: 'dist'` - Build output directory
 
 ## Notes
 
 - The React app uses relative API paths (`/api/v1/*`), so they work in both dev and production
 - CORS is configured to allow requests from the same origin in production
-- The modern UI is only accessible to users with `can_use_modern_version = True`
-

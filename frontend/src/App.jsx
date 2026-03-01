@@ -80,7 +80,7 @@ function App() {
   return (
     <ErrorBoundary>
       <ToastProvider>
-        <Router basename="/modern">
+        <Router basename="/">
           <Suspense fallback={<PageLoader />}>
             <Routes>
               <Route path="/login" element={<Login setUser={setUser} />} />

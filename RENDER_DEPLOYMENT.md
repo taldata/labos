@@ -1,6 +1,6 @@
 # Render.com Deployment Guide
 
-This guide explains how to deploy the Labos Expense Management System to Render.com with the modern React frontend.
+This guide explains how to deploy the Labos Expense Management System to Render.com.
 
 ## Prerequisites
 
@@ -45,18 +45,10 @@ poetry run gunicorn app:app
 python -m gunicorn app:app
 ```
 
-Since Render detects Poetry when `pyproject.toml` exists, use the Poetry command.
-
 **Alternative options** (if the above doesn't work):
 
 ```bash
 gunicorn app:app
-```
-
-Or if using Poetry:
-
-```bash
-poetry run gunicorn app:app
 ```
 
 ### 2a. Using requirements.txt (Recommended)
@@ -94,19 +86,17 @@ Make sure these are set in Render:
 2. Commit the `frontend/dist/` folder to git
 3. Deploy normally
 
-⚠️ **Note:** If you choose Option B, make sure `frontend/dist/` is NOT in `.gitignore`
-
 ### 5. Verify Deployment
 
 After deployment, check:
 
-- Legacy UI: `https://your-app.onrender.com/`
-- Modern UI: `https://your-app.onrender.com/modern/dashboard`
+- App: `https://your-app.onrender.com/dashboard`
 - API: `https://your-app.onrender.com/api/v1`
+- Health: `https://your-app.onrender.com/health`
 
 ## Troubleshooting
 
-### "Modern UI Not Available" Error
+### Blank Page or 503
 
 This means `frontend/dist/` doesn't exist. Solutions:
 
@@ -123,7 +113,7 @@ Common issues:
 
 1. **Node.js version**: Render might need a specific Node version
    - Add `package.json` with `"engines": { "node": ">=18" }` in frontend folder
-   
+
 2. **Missing dependencies**: Ensure `package.json` is in `frontend/` folder
 
 3. **Build timeout**: Large builds might timeout
@@ -132,17 +122,9 @@ Common issues:
 
 ### Assets Not Loading
 
-1. Check that `vite.config.js` has `base: '/modern/'`
+1. Check that `vite.config.js` has `base: '/'`
 2. Verify assets are in `frontend/dist/assets/`
 3. Check browser console for 404 errors
-
-## Build Optimization
-
-The current build creates a large bundle (~639 KB). To optimize:
-
-1. **Code Splitting**: Use dynamic imports in React
-2. **Tree Shaking**: Remove unused dependencies
-3. **Compression**: Enable gzip in Render settings
 
 ## Quick Deploy Checklist
 
@@ -152,16 +134,13 @@ The current build creates a large bundle (~639 KB). To optimize:
 - [ ] Database connected
 - [ ] Build completes successfully (check logs)
 - [ ] `frontend/dist/` folder exists after build
-- [ ] Modern UI accessible at `/modern/dashboard`
+- [ ] App accessible at `/dashboard`
 
 ## Post-Deployment
 
 1. **Test Login**: Verify Azure AD SSO works
-2. **Test Modern UI**: Access `/modern/dashboard` as a user with access
+2. **Test App**: Access `/dashboard` after login
 3. **Check API**: Verify `/api/v1/auth/me` returns user data
 4. **Monitor Logs**: Watch for any errors in Render logs
 
 ---
-
-**Need Help?** Check the main [PRODUCTION_DEPLOYMENT.md](PRODUCTION_DEPLOYMENT.md) guide for more details.
-

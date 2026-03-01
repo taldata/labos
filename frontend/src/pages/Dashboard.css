@@ -29,15 +29,6 @@
   margin: 0;
 }
 
-.version-badge {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  padding: 0.25rem 0.75rem;
-  border-radius: 1rem;
-  font-size: 0.75rem;
-  font-weight: 600;
-}
-
 .header-right {
   display: flex;
   align-items: center;
