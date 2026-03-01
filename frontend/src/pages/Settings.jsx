@@ -98,8 +98,6 @@ function Settings({ user, setUser }) {
     }
   }
 
-  }
-
   const getRoleBadges = () => {
     const badges = []
     if (user?.is_admin) badges.push(<Badge key="admin" variant="danger" size="small">Administrator</Badge>)
