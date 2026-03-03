@@ -20,6 +20,9 @@ class Config:
     AZURE_AD_REDIRECT_PATH = '/auth/callback'  # This will be the callback endpoint
     AZURE_AD_SCOPES = ['https://graph.microsoft.com/User.Read']  # Only use the Graph API scope
     
+    # Application URL for email links
+    APP_URL = os.getenv('APP_URL', 'https://labos-expense-management.onrender.com')
+
     # Flask configuration
     SESSION_TYPE = 'filesystem'
     PREFERRED_URL_SCHEME = 'https'  # Changed from 'http' to 'https'

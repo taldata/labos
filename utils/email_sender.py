@@ -172,13 +172,18 @@ def send_email(subject, recipient, template, attachments=None, cc=None, **kwargs
         else:
             cc_list = list(cc)
 
+        # Inject app_url into template variables if not already provided
+        if 'app_url' not in kwargs:
+            from flask import current_app
+            kwargs['app_url'] = current_app.config.get('APP_URL', 'https://labos-expense-management.onrender.com')
+
         # Create Jinja2 environment for proper template rendering
         from jinja2 import Environment, select_autoescape
         env = Environment(autoescape=select_autoescape(['html', 'xml']))
-        
+
         # Convert the template string to a Jinja2 template
         template_obj = env.from_string(template)
-        
+
         # Render the template with kwargs
         html_content = template_obj.render(**kwargs)
         
