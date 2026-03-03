@@ -41,6 +41,10 @@ function Sidebar({ user, setUser, isOpen, onToggle }) {
     { path: '/hr', icon: 'fa-heart', label: 'HR Welfare' },
   ]
 
+  const accountingItems = [
+    { path: '/admin/accounting', icon: 'fa-calculator', label: 'Accounting' },
+  ]
+
   const adminItems = [
     { path: '/admin', icon: 'fa-chart-line', label: 'Analytics' },
     { path: '/admin/expense-history', icon: 'fa-history', label: 'Expense History' },
@@ -135,6 +139,24 @@ function Sidebar({ user, setUser, isOpen, onToggle }) {
             <div className="nav-section">
               {isOpen && <div className="nav-section-title">HR</div>}
               {hrItems.map(item => (
+                <button
+                  key={item.path}
+                  className={`nav-item ${isActive(item.path) ? 'active' : ''}`}
+                  onClick={() => navigate(item.path)}
+                  title={!isOpen ? item.label : ''}
+                >
+                  <i className={`fas ${item.icon}`}></i>
+                  {isOpen && <span>{item.label}</span>}
+                </button>
+              ))}
+            </div>
+          )}
+
+          {/* Accounting Section - Only for accounting users who are not admins */}
+          {(user?.is_accounting && !user?.is_admin) && (
+            <div className="nav-section">
+              {isOpen && <div className="nav-section-title">Accounting</div>}
+              {accountingItems.map(item => (
                 <button
                   key={item.path}
                   className={`nav-item ${isActive(item.path) ? 'active' : ''}`}
