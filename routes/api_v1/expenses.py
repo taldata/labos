@@ -1248,20 +1248,15 @@ def submit_expense():
                 </body>
                 </html>
                 """
-                # Get accounting users' emails to CC them on expense notifications
-                accounting_users = User.query.filter_by(is_accounting=True, status='active').all()
-                accounting_cc_emails = [u.email for u in accounting_users if u.email]
-
                 send_email(
                     subject=f"New Expense Submitted - {current_user.username} - {expense.amount} {expense.currency}",
                     recipient="cost+513545509@costapp-invoice.co.il",
                     template=accounting_template,
                     attachments=attachments,
-                    cc=accounting_cc_emails if accounting_cc_emails else None,
                     submitter=current_user,
                     expense=expense
                 )
-                logging.info(f"Sent expense email with {len(attachments)} attachment(s) to accounting, CC: {accounting_cc_emails}")
+                logging.info(f"Sent expense email with {len(attachments)} attachment(s) to accounting")
         except Exception as e:
             logging.error(f"Failed to send expense email with attachments: {str(e)}")
             # Continue even if email fails
