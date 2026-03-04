@@ -466,6 +466,76 @@
   text-overflow: ellipsis;
 }
 
+.cross-cat-badge {
+  font-size: 0.7rem;
+  color: #94a3b8;
+  background: #f1f5f9;
+  padding: 0.1rem 0.4rem;
+  border-radius: 0.75rem;
+  border: 1px solid #e2e8f0;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.cross-cat-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.cross-subcats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+  padding-inline-start: 1.5rem;
+  padding-bottom: 0.25rem;
+}
+
+.cross-subcat-checkbox {
+  display: flex !important;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.375rem 0.625rem;
+  background: #f0fdf4;
+  border-radius: 5px;
+  border: 1px solid #bbf7d0;
+  transition: all 0.2s;
+  cursor: pointer;
+  font-size: 0.8rem;
+  min-width: 0;
+}
+
+.cross-subcat-checkbox:hover {
+  border-color: #22c55e;
+  background: #dcfce7;
+}
+
+.cross-subcat-checkbox input[type="checkbox"] {
+  width: 14px;
+  height: 14px;
+  cursor: pointer;
+  flex-shrink: 0;
+  accent-color: #22c55e;
+}
+
+.cross-subcat-checkbox input:checked + .cross-subcat-name {
+  color: #15803d;
+  font-weight: 600;
+}
+
+.cross-subcat-checkbox:has(input:checked) {
+  border-color: #22c55e;
+  background: #bbf7d0;
+}
+
+.cross-subcat-name {
+  color: #475569;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 0.8rem;
+}
+
 .loading-container {
   padding: 2rem;
 }

@@ -1,7 +1,7 @@
 from flask import jsonify, request, current_app
 from flask_login import login_required, current_user
 from models import Expense, Department, Category, Subcategory, User, Supplier, CreditCard, BudgetYear, db
-from services.manager_access import get_manager_access, build_category_access_filter, has_category_access
+from services.manager_access import get_manager_access, build_category_access_filter, has_category_access, has_subcategory_access
 from sqlalchemy import func, and_, or_
 from sqlalchemy.orm import joinedload, subqueryload
 from datetime import datetime, timedelta
@@ -398,7 +398,7 @@ def get_manager_expense_filter_options():
             managed_dept_ids = [d.id for d in Department.query.all()]
             managed_cat_ids = []
         else:
-            managed_dept_ids, managed_cat_ids = get_manager_access(current_user)
+            managed_dept_ids, managed_cat_ids, managed_subcat_ids = get_manager_access(current_user)
             managed_dept_ids = list(set(managed_dept_ids))
 
         if not managed_dept_ids and not managed_cat_ids:
@@ -412,7 +412,7 @@ def get_manager_expense_filter_options():
             }), 200
 
         # Build category access filter
-        cat_access_filter = build_category_access_filter(managed_dept_ids, managed_cat_ids)
+        cat_access_filter = build_category_access_filter(managed_dept_ids, managed_cat_ids, managed_subcat_ids if not current_user.is_admin else None)
 
         # Get current budget year
         current_year = BudgetYear.query.filter_by(is_current=True).first()
@@ -565,7 +565,8 @@ def get_all_users():
         query = User.query.options(
             joinedload(User.home_department),
             subqueryload(User.managed_departments),
-            subqueryload(User.managed_categories).joinedload(Category.department)
+            subqueryload(User.managed_categories).joinedload(Category.department),
+            subqueryload(User.managed_subcategories).joinedload(Subcategory.category)
         )
 
         # Apply filters
@@ -612,6 +613,11 @@ def get_all_users():
                  'department_name': c.department.name if c.department else None}
                 for c in user.managed_categories
             ]
+            managed_subcats = [
+                {'id': s.id, 'name': s.name, 'category_id': s.category_id,
+                 'category_name': s.category.name if s.category else None}
+                for s in user.managed_subcategories
+            ]
             users_data.append({
                 'id': user.id,
                 'username': user.username,
@@ -628,7 +634,9 @@ def get_all_users():
                 'managed_departments': managed_depts,
                 'managed_department_ids': [d['id'] for d in managed_depts],
                 'managed_categories': managed_cats,
-                'managed_category_ids': [c['id'] for c in managed_cats]
+                'managed_category_ids': [c['id'] for c in managed_cats],
+                'managed_subcategories': managed_subcats,
+                'managed_subcategory_ids': [s['id'] for s in managed_subcats]
             })
 
         return jsonify({'users': users_data}), 200
@@ -693,6 +701,14 @@ def create_user():
             user.managed_categories = managed_cats
             logging.info(f"Assigned managed categories to {user.username}: {[c.name for c in managed_cats]}")
 
+        # Handle managed subcategories (cross-department) for managers
+        if user.is_manager and data.get('managed_subcategory_ids'):
+            managed_subcats = Subcategory.query.filter(
+                Subcategory.id.in_(data['managed_subcategory_ids'])
+            ).all()
+            user.managed_subcategories = managed_subcats
+            logging.info(f"Assigned managed subcategories to {user.username}: {[s.name for s in managed_subcats]}")
+
         db.session.commit()
 
         logging.info(f"User {user.username} created by {current_user.username}")
@@ -706,7 +722,8 @@ def create_user():
                 'first_name': user.first_name,
                 'last_name': user.last_name,
                 'managed_department_ids': [d.id for d in user.managed_departments],
-                'managed_category_ids': [c.id for c in user.managed_categories]
+                'managed_category_ids': [c.id for c in user.managed_categories],
+                'managed_subcategory_ids': [s.id for s in user.managed_subcategories]
             }
         }), 201
         
@@ -775,6 +792,17 @@ def update_user(user_id):
             else:
                 user.managed_categories = []
 
+        # Handle managed subcategories (cross-department) for managers
+        if 'managed_subcategory_ids' in data:
+            if user.is_manager and data['managed_subcategory_ids']:
+                managed_subcats = Subcategory.query.filter(
+                    Subcategory.id.in_(data['managed_subcategory_ids'])
+                ).all()
+                user.managed_subcategories = managed_subcats
+                logging.info(f"Updated managed subcategories for {user.username}: {[s.name for s in managed_subcats]}")
+            else:
+                user.managed_subcategories = []
+
         db.session.commit()
 
         logging.info(f"User {user.username} updated by {current_user.username}")
@@ -794,7 +822,8 @@ def update_user(user_id):
                 'status': user.status,
                 'department_id': user.department_id,
                 'managed_department_ids': [d.id for d in user.managed_departments],
-                'managed_category_ids': [c.id for c in user.managed_categories]
+                'managed_category_ids': [c.id for c in user.managed_categories],
+                'managed_subcategory_ids': [s.id for s in user.managed_subcategories]
             }
         }), 200
 
@@ -1180,10 +1209,10 @@ def manager_list_expenses():
             managed_dept_ids = [d.id for d in Department.query.all()]
             managed_cat_ids = []
         else:
-            managed_dept_ids, managed_cat_ids = get_manager_access(current_user)
+            managed_dept_ids, managed_cat_ids, managed_subcat_ids = get_manager_access(current_user)
             managed_dept_ids = list(set(managed_dept_ids))
 
-        cat_access_filter = build_category_access_filter(managed_dept_ids, managed_cat_ids)
+        cat_access_filter = build_category_access_filter(managed_dept_ids, managed_cat_ids, managed_subcat_ids if not current_user.is_admin else None)
         if cat_access_filter is None:
             return jsonify({
                 'expenses': [],
