@@ -56,6 +56,12 @@ manager_categories = db.Table('manager_categories',
     db.Column('category_id', db.Integer, db.ForeignKey('category.id'), primary_key=True)
 )
 
+# Manager-Subcategory association table (for cross-department subcategory access)
+manager_subcategories = db.Table('manager_subcategories',
+    db.Column('user_id', db.Integer, db.ForeignKey('user.id'), primary_key=True),
+    db.Column('subcategory_id', db.Integer, db.ForeignKey('subcategory.id'), primary_key=True)
+)
+
 class User(UserMixin, db.Model):
     __tablename__ = 'user'
     id = db.Column(db.Integer, primary_key=True)
@@ -85,6 +91,10 @@ class User(UserMixin, db.Model):
     managed_categories = db.relationship('Category',
                                        secondary=manager_categories,
                                        backref=db.backref('category_managers', lazy='dynamic'))
+    # Cross-department subcategory access
+    managed_subcategories = db.relationship('Subcategory',
+                                          secondary=manager_subcategories,
+                                          backref=db.backref('subcategory_managers', lazy='dynamic'))
     
     # Relationship for expenses where user is the submitter
     submitted_expenses = db.relationship('Expense',

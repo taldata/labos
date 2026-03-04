@@ -44,7 +44,8 @@ function UserManagement({ user, setUser }) {
     status: 'active',
     department_id: '',
     managed_department_ids: [],
-    managed_category_ids: []
+    managed_category_ids: [],
+    managed_subcategory_ids: []
   })
   const [formError, setFormError] = useState('')
 
@@ -151,7 +152,8 @@ function UserManagement({ user, setUser }) {
         status: userToEdit.status,
         department_id: userToEdit.department_id || '',
         managed_department_ids: userToEdit.managed_department_ids || [],
-        managed_category_ids: userToEdit.managed_category_ids || []
+        managed_category_ids: userToEdit.managed_category_ids || [],
+        managed_subcategory_ids: userToEdit.managed_subcategory_ids || []
       })
     } else {
       setFormData({
@@ -166,7 +168,8 @@ function UserManagement({ user, setUser }) {
         status: 'active',
         department_id: '',
         managed_department_ids: [],
-        managed_category_ids: []
+        managed_category_ids: [],
+        managed_subcategory_ids: []
       })
     }
     setModalOpen(true)
@@ -437,6 +440,11 @@ function UserManagement({ user, setUser }) {
                               <i className="fas fa-folder-plus"></i> {u.managed_categories.length} extra categories
                             </div>
                           )}
+                          {u.is_manager && u.managed_subcategories && u.managed_subcategories.length > 0 && (
+                            <div className="managed-depts-info cross-dept" title={`Cross-dept subcategories: ${u.managed_subcategories.map(s => `${s.name} (${s.category_name})`).join(', ')}`}>
+                              <i className="fas fa-folder-open"></i> {u.managed_subcategories.length} extra subcategories
+                            </div>
+                          )}
                         </div>
                       </td>
                       <td><div className="roles-cell">{getRoleBadges(u)}</div></td>
@@ -613,15 +621,20 @@ function UserManagement({ user, setUser }) {
                           const newManagedDeptIds = checked
                             ? [...prev.managed_department_ids, dept.id]
                             : prev.managed_department_ids.filter(id => id !== dept.id)
-                          // When adding a department, remove its categories from cross-dept list
+                          // When adding a department, remove its categories and subcategories from cross-dept list
                           const deptCatIds = (dept.categories || []).map(c => c.id)
+                          const deptSubcatIds = (dept.categories || []).flatMap(c => (c.subcategories || []).map(s => s.id))
                           const newManagedCatIds = checked
                             ? prev.managed_category_ids.filter(id => !deptCatIds.includes(id))
                             : prev.managed_category_ids
+                          const newManagedSubcatIds = checked
+                            ? prev.managed_subcategory_ids.filter(id => !deptSubcatIds.includes(id))
+                            : prev.managed_subcategory_ids
                           return {
                             ...prev,
                             managed_department_ids: newManagedDeptIds,
-                            managed_category_ids: newManagedCatIds
+                            managed_category_ids: newManagedCatIds,
+                            managed_subcategory_ids: newManagedSubcatIds
                           }
                         })
                       }}
@@ -636,7 +649,7 @@ function UserManagement({ user, setUser }) {
             </div>
           )}
 
-          {/* Cross-Department Categories - shown for managers, only departments not fully managed */}
+          {/* Cross-Department Categories & Subcategories - shown for managers, only departments not fully managed */}
           {formData.is_manager && (() => {
             const unmanagedDepts = departments.filter(d =>
               !formData.managed_department_ids.includes(d.id) &&
@@ -649,39 +662,80 @@ function UserManagement({ user, setUser }) {
                   <i className="fas fa-folder-plus"></i> Additional Categories from Other Departments
                 </label>
                 <p className="field-hint">
-                  Grant access to specific categories from departments this manager doesn't fully manage
+                  Grant access to specific categories or subcategories from departments this manager doesn't fully manage
                 </p>
                 <div className="cross-dept-categories-list">
                   {unmanagedDepts.map(dept => {
-                    const selectedCount = dept.categories.filter(c => formData.managed_category_ids.includes(c.id)).length
+                    const selectedCatCount = dept.categories.filter(c => formData.managed_category_ids.includes(c.id)).length
+                    const selectedSubcatCount = dept.categories.reduce((acc, c) =>
+                      acc + (c.subcategories || []).filter(s => formData.managed_subcategory_ids.includes(s.id)).length, 0)
+                    const totalSelected = selectedCatCount + selectedSubcatCount
                     return (
                       <div key={dept.id} className="cross-dept-group">
                         <div className="cross-dept-name">
                           <i className="fas fa-building"></i>
                           <span>{dept.name}</span>
                           <span className="cross-dept-count">
-                            {selectedCount > 0 ? `${selectedCount} selected` : `${dept.categories.length} categories`}
+                            {totalSelected > 0 ? `${totalSelected} selected` : `${dept.categories.length} categories`}
                           </span>
                         </div>
                         <div className="cross-dept-cats">
-                          {dept.categories.map(cat => (
-                            <label key={cat.id} className="checkbox-label cross-cat-checkbox">
-                              <input
-                                type="checkbox"
-                                checked={formData.managed_category_ids.includes(cat.id)}
-                                onChange={(e) => {
-                                  const checked = e.target.checked
-                                  setFormData(prev => ({
-                                    ...prev,
-                                    managed_category_ids: checked
-                                      ? [...prev.managed_category_ids, cat.id]
-                                      : prev.managed_category_ids.filter(id => id !== cat.id)
-                                  }))
-                                }}
-                              />
-                              <span className="cross-cat-name">{cat.name}</span>
-                            </label>
-                          ))}
+                          {dept.categories.map(cat => {
+                            const isCatSelected = formData.managed_category_ids.includes(cat.id)
+                            const hasSubcategories = cat.subcategories && cat.subcategories.length > 0
+                            return (
+                              <div key={cat.id} className="cross-cat-group">
+                                <label className="checkbox-label cross-cat-checkbox">
+                                  <input
+                                    type="checkbox"
+                                    checked={isCatSelected}
+                                    onChange={(e) => {
+                                      const checked = e.target.checked
+                                      setFormData(prev => {
+                                        // When selecting a full category, remove its subcategories from the subcategory list
+                                        const catSubIds = (cat.subcategories || []).map(s => s.id)
+                                        const newSubcatIds = checked
+                                          ? prev.managed_subcategory_ids.filter(id => !catSubIds.includes(id))
+                                          : prev.managed_subcategory_ids
+                                        return {
+                                          ...prev,
+                                          managed_category_ids: checked
+                                            ? [...prev.managed_category_ids, cat.id]
+                                            : prev.managed_category_ids.filter(id => id !== cat.id),
+                                          managed_subcategory_ids: newSubcatIds
+                                        }
+                                      })
+                                    }}
+                                  />
+                                  <span className="cross-cat-name">{cat.name}</span>
+                                  {hasSubcategories && <span className="cross-cat-badge">{cat.subcategories.length} sub</span>}
+                                </label>
+                                {/* Show subcategories when the category is NOT fully selected */}
+                                {hasSubcategories && !isCatSelected && (
+                                  <div className="cross-subcats">
+                                    {cat.subcategories.map(sub => (
+                                      <label key={sub.id} className="checkbox-label cross-subcat-checkbox">
+                                        <input
+                                          type="checkbox"
+                                          checked={formData.managed_subcategory_ids.includes(sub.id)}
+                                          onChange={(e) => {
+                                            const checked = e.target.checked
+                                            setFormData(prev => ({
+                                              ...prev,
+                                              managed_subcategory_ids: checked
+                                                ? [...prev.managed_subcategory_ids, sub.id]
+                                                : prev.managed_subcategory_ids.filter(id => id !== sub.id)
+                                            }))
+                                          }}
+                                        />
+                                        <span className="cross-subcat-name">{sub.name}</span>
+                                      </label>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                            )
+                          })}
                         </div>
                       </div>
                     )

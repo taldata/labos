@@ -92,8 +92,8 @@ def get_recent_expenses():
                 .all()
         elif current_user.is_manager:
             # Managers see expenses from managed departments + cross-dept categories
-            managed_dept_ids, managed_cat_ids = get_manager_access(current_user)
-            cat_access_filter = build_category_access_filter(managed_dept_ids, managed_cat_ids)
+            managed_dept_ids, managed_cat_ids, managed_subcat_ids = get_manager_access(current_user)
+            cat_access_filter = build_category_access_filter(managed_dept_ids, managed_cat_ids, managed_subcat_ids)
 
             if cat_access_filter is not None:
                 recent_query = Expense.query.join(Subcategory, Expense.subcategory_id == Subcategory.id)\
@@ -173,8 +173,8 @@ def get_pending_count():
             count = Expense.query.filter_by(status='pending').count()
         else:
             # Managers see expenses from managed departments + cross-dept categories
-            managed_dept_ids, managed_cat_ids = get_manager_access(current_user)
-            cat_access_filter = build_category_access_filter(managed_dept_ids, managed_cat_ids)
+            managed_dept_ids, managed_cat_ids, managed_subcat_ids = get_manager_access(current_user)
+            cat_access_filter = build_category_access_filter(managed_dept_ids, managed_cat_ids, managed_subcat_ids)
 
             if cat_access_filter is not None:
                 count_query = Expense.query.join(Subcategory, Expense.subcategory_id == Subcategory.id)\
@@ -222,8 +222,8 @@ def get_pending_approvals():
                 .all()
         else:
             # Managers see expenses from managed departments + cross-dept categories
-            managed_dept_ids, managed_cat_ids = get_manager_access(current_user)
-            cat_access_filter = build_category_access_filter(managed_dept_ids, managed_cat_ids)
+            managed_dept_ids, managed_cat_ids, managed_subcat_ids = get_manager_access(current_user)
+            cat_access_filter = build_category_access_filter(managed_dept_ids, managed_cat_ids, managed_subcat_ids)
             if cat_access_filter is not None:
                 pending_query = base_query.join(Subcategory, Expense.subcategory_id == Subcategory.id)\
                     .join(Category, Subcategory.category_id == Category.id)\
@@ -657,6 +657,21 @@ def get_categories():
                             if dept_in_target_year:
                                 cat = Category.query.filter_by(
                                     name=managed_cat.name,
+                                    department_id=dept_in_target_year.id
+                                ).first()
+                                if cat:
+                                    direct_cat_ids.add(cat.id)
+
+                    # Resolve directly managed subcategories to target budget year
+                    for managed_sub in current_user.managed_subcategories:
+                        if managed_sub.category and managed_sub.category.department:
+                            dept_in_target_year = Department.query.filter_by(
+                                name=managed_sub.category.department.name,
+                                year_id=target_year.id
+                            ).first()
+                            if dept_in_target_year:
+                                cat = Category.query.filter_by(
+                                    name=managed_sub.category.name,
                                     department_id=dept_in_target_year.id
                                 ).first()
                                 if cat:
@@ -1333,8 +1348,8 @@ def get_expense_report():
             query = Expense.query
         elif current_user.is_manager:
             # Managers see expenses from managed departments + cross-dept categories
-            managed_dept_ids, managed_cat_ids = get_manager_access(current_user)
-            cat_access_filter = build_category_access_filter(managed_dept_ids, managed_cat_ids)
+            managed_dept_ids, managed_cat_ids, managed_subcat_ids = get_manager_access(current_user)
+            cat_access_filter = build_category_access_filter(managed_dept_ids, managed_cat_ids, managed_subcat_ids)
             if cat_access_filter is not None:
                 query = Expense.query.join(Subcategory, Expense.subcategory_id == Subcategory.id)\
                     .join(Category, Subcategory.category_id == Category.id)\
@@ -1460,8 +1475,8 @@ def export_expenses():
         if current_user.is_admin:
             expenses = Expense.query.order_by(Expense.id.desc()).all()
         elif current_user.is_manager:
-            managed_dept_ids, managed_cat_ids = get_manager_access(current_user)
-            cat_access_filter = build_category_access_filter(managed_dept_ids, managed_cat_ids)
+            managed_dept_ids, managed_cat_ids, managed_subcat_ids = get_manager_access(current_user)
+            cat_access_filter = build_category_access_filter(managed_dept_ids, managed_cat_ids, managed_subcat_ids)
             if cat_access_filter is not None:
                 export_query = db.session.query(Expense).join(Subcategory, Expense.subcategory_id == Subcategory.id)\
                     .join(Category, Subcategory.category_id == Category.id)\
