@@ -13,6 +13,27 @@ from templates.email_templates import EXPENSE_REQUEST_CONFIRMATION_TEMPLATE, NEW
 import logging
 import os
 
+
+def _filter_subcategories_for_user(subcategories, user, access=None):
+    """Filter subcategories based on user permissions.
+    Admin/non-manager users see everything. Managers see only permitted subcategories."""
+    if user.is_admin or not user.is_manager:
+        return subcategories
+    if access is None:
+        access = get_manager_access(user)
+    managed_dept_ids, managed_cat_ids, managed_subcat_ids = access
+    filtered = []
+    for sub in subcategories:
+        dept_id = sub.category.department_id if sub.category else None
+        if dept_id and dept_id in managed_dept_ids:
+            filtered.append(sub)
+        elif sub.category_id in managed_cat_ids:
+            filtered.append(sub)
+        elif sub.id in managed_subcat_ids:
+            filtered.append(sub)
+    return filtered
+
+
 @api_v1.route('/expenses/summary', methods=['GET'])
 @login_required
 def get_expense_summary():
@@ -699,6 +720,9 @@ def get_categories():
         else:
             categories = base_query.order_by(Department.name, Category.name).all()
 
+        # Pre-compute access once for subcategory filtering
+        access = get_manager_access(current_user) if current_user.is_manager and include_subcategories else None
+
         cat_list = []
         for cat in categories:
             cat_data = {
@@ -709,12 +733,13 @@ def get_categories():
                 'department_name': cat.department.name if cat.department else None
             }
             if include_subcategories:
+                filtered_subs = _filter_subcategories_for_user(list(cat.subcategories), current_user, access=access)
                 cat_data['subcategories'] = [{
                     'id': sub.id,
                     'name': sub.name,
                     'budget': sub.budget,
                     'category_id': sub.category_id
-                } for sub in cat.subcategories]
+                } for sub in filtered_subs]
             cat_list.append(cat_data)
 
         return jsonify({'categories': cat_list}), 200
@@ -740,6 +765,8 @@ def get_subcategories():
                 ).all()
             else:
                 subcategories = Subcategory.query.all()
+
+        subcategories = _filter_subcategories_for_user(subcategories, current_user)
 
         subcat_list = [{
             'id': sub.id,
