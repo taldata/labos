@@ -768,14 +768,19 @@ def process_document():
 @app.route('/<path:path>')
 def serve_react(path=''):
     """Serve the React app for all non-API routes"""
-    # Skip paths handled by other routes (API, static, download, etc.)
+    # Redirect old /modern/* URLs to new /* URLs after React migration (9f46044)
+    if path.startswith('modern/') or path == 'modern':
+        new_path = path[7:] if path.startswith('modern/') else ''
+        return redirect(f'/{new_path}', code=301)
+
+    # Return 404 for backend paths that didn't match any registered route
     if path.startswith('api/') or path.startswith('static/') or \
        path.startswith('auth/') or path.startswith('download/') or \
        path.startswith('uploads/') or path == 'health' or \
        path.startswith('mark_expense_') or path.startswith('unmark_expense_') or \
        path.startswith('export_') or path.startswith('admin/users/'):
-        # Let Flask handle these with their specific route handlers
-        return app.send_static_file('404.html') if os.path.exists(os.path.join(app.static_folder, '404.html')) else ('Not Found', 404)
+        logging.warning(f"Unmatched backend path reached catch-all: /{path}")
+        return jsonify({'error': 'Not Found'}), 404
 
     frontend_dist = os.path.join(app.config.get('BASE_DIR', os.path.dirname(os.path.abspath(__file__))), 'frontend', 'dist')
 
