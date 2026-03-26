@@ -54,7 +54,8 @@ def send_email_smtp(to_email, subject, html_content, attachments=None, cc_emails
         logger.info(f"Attempting to send email via SMTP to {to_email} using server {SMTP_SERVER}:{SMTP_PORT}")
 
         # Build MIME email
-        msg = MIMEMultipart('alternative')
+        # Use 'mixed' when attachments are present, 'alternative' for HTML-only
+        msg = MIMEMultipart('mixed' if attachments else 'alternative')
         msg['Subject'] = subject
         msg['From'] = f"{FROM_NAME} <{FROM_EMAIL_ADDRESS}>"
 

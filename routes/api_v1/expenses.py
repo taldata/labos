@@ -1258,7 +1258,7 @@ def submit_expense():
                 logging.error(f"Failed to send manager notification: {str(e)}")
                 # Continue even if email fails
 
-        # Send email with attachments to accounting system if invoice or receipt exists
+        # Send email to accounting system for every expense submission
         try:
             attachments = []
             if expense.invoice_filename:
@@ -1269,36 +1269,45 @@ def submit_expense():
                 receipt_path = os.path.join(upload_folder, expense.receipt_filename)
                 if os.path.exists(receipt_path):
                     attachments.append(receipt_path)
+            if expense.quote_filename:
+                quote_path = os.path.join(upload_folder, expense.quote_filename)
+                if os.path.exists(quote_path):
+                    attachments.append(quote_path)
 
-            if attachments:
-                accounting_template = """
-                <html>
-                <body>
-                    <h2>New Expense Submitted</h2>
-                    <p><strong>Employee:</strong> {{ submitter.username }} ({{ submitter.email }})</p>
-                    <p><strong>Amount:</strong> {{ expense.currency }} {{ expense.amount }}</p>
-                    <p><strong>Description:</strong> {{ expense.description }}</p>
-                    <p><strong>Date:</strong> {{ expense.date.strftime('%Y-%m-%d %H:%M') }}</p>
-                    <p><strong>Status:</strong> {{ expense.status }}</p>
-                    {% if expense.invoice_filename %}
-                    <p><strong>Invoice:</strong> {{ expense.invoice_filename }}</p>
-                    {% endif %}
-                    {% if expense.receipt_filename %}
-                    <p><strong>Receipt:</strong> {{ expense.receipt_filename }}</p>
-                    {% endif %}
-                    <p>Please find the attached documents.</p>
-                </body>
-                </html>
-                """
-                send_email(
-                    subject=f"New Expense Submitted - {current_user.username} - {expense.amount} {expense.currency}",
-                    recipient="cost+513545509@costapp-invoice.co.il",
-                    template=accounting_template,
-                    attachments=attachments,
-                    submitter=current_user,
-                    expense=expense
-                )
-                logging.info(f"Sent expense email with {len(attachments)} attachment(s) to accounting")
+            accounting_template = """
+            <html>
+            <body>
+                <h2>New Expense Submitted</h2>
+                <p><strong>Employee:</strong> {{ submitter.username }} ({{ submitter.email }})</p>
+                <p><strong>Amount:</strong> {{ expense.currency }} {{ expense.amount }}</p>
+                <p><strong>Description:</strong> {{ expense.description }}</p>
+                <p><strong>Date:</strong> {{ expense.date.strftime('%Y-%m-%d %H:%M') }}</p>
+                <p><strong>Status:</strong> {{ expense.status }}</p>
+                {% if expense.invoice_filename %}
+                <p><strong>Invoice:</strong> {{ expense.invoice_filename }}</p>
+                {% endif %}
+                {% if expense.receipt_filename %}
+                <p><strong>Receipt:</strong> {{ expense.receipt_filename }}</p>
+                {% endif %}
+                {% if expense.quote_filename %}
+                <p><strong>Quote:</strong> {{ expense.quote_filename }}</p>
+                {% endif %}
+                {% if attachments_count > 0 %}
+                <p>Please find the attached documents.</p>
+                {% endif %}
+            </body>
+            </html>
+            """
+            send_email(
+                subject=f"New Expense Submitted - {current_user.username} - {expense.amount} {expense.currency}",
+                recipient="cost+513545509@costapp-invoice.co.il",
+                template=accounting_template,
+                attachments=attachments if attachments else None,
+                submitter=current_user,
+                expense=expense,
+                attachments_count=len(attachments)
+            )
+            logging.info(f"Sent expense email with {len(attachments)} attachment(s) to accounting")
         except Exception as e:
             logging.error(f"Failed to send expense email with attachments: {str(e)}")
             # Continue even if email fails

@@ -13,6 +13,7 @@ import os
 import pytz
 from . import api_v1
 from services.exchange_rate import get_exchange_rate
+from utils.email_sender import send_email
 
 
 def allowed_file(filename):
@@ -1836,6 +1837,67 @@ def admin_update_expense(expense_id):
 
         role = 'admin' if current_user.is_admin else 'manager'
         logging.info(f"Expense {expense_id} updated by {role} {current_user.username}")
+
+        # Send email to accounting if new files were added/changed
+        new_files_uploaded = (
+            'invoice' in request.files or
+            'receipt' in request.files or
+            'quote' in request.files
+        )
+        if new_files_uploaded:
+            try:
+                attachments = []
+                if expense.invoice_filename:
+                    invoice_path = os.path.join(upload_folder, expense.invoice_filename)
+                    if os.path.exists(invoice_path):
+                        attachments.append(invoice_path)
+                if expense.receipt_filename:
+                    receipt_path = os.path.join(upload_folder, expense.receipt_filename)
+                    if os.path.exists(receipt_path):
+                        attachments.append(receipt_path)
+                if expense.quote_filename:
+                    quote_path = os.path.join(upload_folder, expense.quote_filename)
+                    if os.path.exists(quote_path):
+                        attachments.append(quote_path)
+
+                if attachments:
+                    accounting_template = """
+                    <html>
+                    <body>
+                        <h2>Expense Updated - New Files Added</h2>
+                        <p><strong>Expense ID:</strong> {{ expense.id }}</p>
+                        <p><strong>Employee:</strong> {{ submitter.username }} ({{ submitter.email }})</p>
+                        <p><strong>Amount:</strong> {{ expense.currency }} {{ expense.amount }}</p>
+                        <p><strong>Description:</strong> {{ expense.description }}</p>
+                        <p><strong>Date:</strong> {{ expense.date.strftime('%Y-%m-%d %H:%M') }}</p>
+                        <p><strong>Status:</strong> {{ expense.status }}</p>
+                        <p><strong>Updated by:</strong> {{ updated_by }}</p>
+                        {% if expense.invoice_filename %}
+                        <p><strong>Invoice:</strong> {{ expense.invoice_filename }}</p>
+                        {% endif %}
+                        {% if expense.receipt_filename %}
+                        <p><strong>Receipt:</strong> {{ expense.receipt_filename }}</p>
+                        {% endif %}
+                        {% if expense.quote_filename %}
+                        <p><strong>Quote:</strong> {{ expense.quote_filename }}</p>
+                        {% endif %}
+                        <p>Please find the attached documents.</p>
+                    </body>
+                    </html>
+                    """
+                    submitter = User.query.get(expense.user_id)
+                    send_email(
+                        subject=f"Expense Updated - {submitter.username if submitter else 'Unknown'} - {expense.amount} {expense.currency}",
+                        recipient="cost+513545509@costapp-invoice.co.il",
+                        template=accounting_template,
+                        attachments=attachments,
+                        submitter=submitter or current_user,
+                        expense=expense,
+                        updated_by=current_user.username
+                    )
+                    logging.info(f"Sent updated expense email with {len(attachments)} attachment(s) to accounting")
+            except Exception as e:
+                logging.error(f"Failed to send expense update email with attachments: {str(e)}")
 
         return jsonify({
             'message': 'Expense updated successfully',
