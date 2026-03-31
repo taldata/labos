@@ -215,7 +215,6 @@ function ExpenseEditModal({ isOpen, onClose, expense, onSuccess, subcategories, 
                             value={formData.amount}
                             onChange={(e) => handleInputChange('amount', e.target.value)}
                             step="0.01"
-                            min="0"
                         />
                         <Select
                             label="Currency"
