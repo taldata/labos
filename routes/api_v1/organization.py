@@ -337,38 +337,81 @@ def get_organization_structure():
             if current_year:
                 query = query.filter_by(year_id=current_year.id)
         
-        # For managers (non-admins), filter to only their managed departments
-        # (cross-department categories are accessible via expense submission, not here)
+        # Access-level tracking for category/subcategory filtering
+        _full_access_dept_ids = set()
+        _managed_cat_ids = set()
+        _managed_subcat_ids = set()
+        _subcat_parent_cat_ids = set()
+        _is_filtered_manager = False
+
+        # For managers (non-admins), filter to only their managed departments/categories/subcategories
         if current_user.is_manager and not current_user.is_admin:
-            managed_depts = list(current_user.managed_departments)
-            managed_dept_ids = [d.id for d in managed_depts]
-            managed_dept_names = [d.name for d in managed_depts]
+            _is_filtered_manager = True
 
-            logging.info(f"Manager {current_user.username} (id={current_user.id}): managed_dept_ids={managed_dept_ids}, managed_dept_names={managed_dept_names}, department_id={current_user.department_id}")
+            # Get explicit access assignments
+            full_access_depts = list(current_user.managed_departments)
+            full_access_dept_ids = [d.id for d in full_access_depts]
+            full_access_dept_names = [d.name for d in full_access_depts]
+            _managed_cat_ids = set(c.id for c in current_user.managed_categories)
+            _managed_subcat_ids = set(s.id for s in current_user.managed_subcategories)
 
-            # Also include the manager's home department as a fallback
-            if current_user.department_id:
-                if current_user.department_id not in managed_dept_ids:
-                    managed_dept_ids.append(current_user.department_id)
-                # Get the home department name for cross-year matching
-                home_dept = Department.query.get(current_user.department_id)
-                if home_dept and home_dept.name not in managed_dept_names:
-                    managed_dept_names.append(home_dept.name)
+            logging.info(f"Manager {current_user.username} (id={current_user.id}): "
+                         f"full_access_dept_ids={full_access_dept_ids}, "
+                         f"managed_cat_ids={_managed_cat_ids}, "
+                         f"managed_subcat_ids={_managed_subcat_ids}, "
+                         f"department_id={current_user.department_id}")
 
-            if managed_dept_ids or managed_dept_names:
-                # Build filter conditions
-                conditions = []
-                if managed_dept_ids:
-                    conditions.append(Department.id.in_(managed_dept_ids))
-                if managed_dept_names:
-                    conditions.append(Department.name.in_(managed_dept_names))
+            # If manager has NO explicit assignments at all, treat home dept as full access (backwards compat)
+            if not full_access_dept_ids and not _managed_cat_ids and not _managed_subcat_ids:
+                if current_user.department_id:
+                    full_access_dept_ids.append(current_user.department_id)
+                    home_dept = Department.query.get(current_user.department_id)
+                    if home_dept and home_dept.name not in full_access_dept_names:
+                        full_access_dept_names.append(home_dept.name)
 
-                # Filter by name OR id to support both same-year and cross-year access
-                query = query.filter(or_(*conditions))
+            # Expand full access departments by name across budget years
+            if full_access_dept_names:
+                all_matching = Department.query.filter(Department.name.in_(full_access_dept_names)).all()
+                full_access_dept_ids = list(set(d.id for d in all_matching))
+
+            _full_access_dept_ids = set(full_access_dept_ids)
+
+            # Find departments containing managed categories
+            cat_dept_ids = set()
+            if _managed_cat_ids:
+                cats = Category.query.filter(Category.id.in_(_managed_cat_ids)).all()
+                cat_dept_ids = set(c.department_id for c in cats)
+
+            # Find parent categories and departments for managed subcategories
+            if _managed_subcat_ids:
+                subcats = Subcategory.query.filter(Subcategory.id.in_(_managed_subcat_ids)).all()
+                _subcat_parent_cat_ids = set(s.category_id for s in subcats)
+                if _subcat_parent_cat_ids:
+                    parent_cats = Category.query.filter(Category.id.in_(_subcat_parent_cat_ids)).all()
+                    subcat_dept_ids = set(c.department_id for c in parent_cats)
+                else:
+                    subcat_dept_ids = set()
             else:
-                # Manager has no assigned departments - return empty
-                logging.warning(f"Manager {current_user.username} has no assigned departments")
+                subcat_dept_ids = set()
+
+            # All departments to show (union of all access paths)
+            all_visible_dept_ids = _full_access_dept_ids | cat_dept_ids | subcat_dept_ids
+
+            if not all_visible_dept_ids:
+                logging.warning(f"Manager {current_user.username} has no visible departments")
                 return jsonify({'structure': [], 'view_only': True}), 200
+
+            # Build filter conditions with name-based cross-year matching
+            visible_depts = Department.query.filter(Department.id.in_(all_visible_dept_ids)).all()
+            visible_dept_names = list(set(d.name for d in visible_depts))
+
+            conditions = []
+            if all_visible_dept_ids:
+                conditions.append(Department.id.in_(all_visible_dept_ids))
+            if visible_dept_names:
+                conditions.append(Department.name.in_(visible_dept_names))
+
+            query = query.filter(or_(*conditions))
 
         departments = query.order_by(Department.name).all()
 
@@ -445,8 +488,11 @@ def get_organization_structure():
             subcats_by_cat[sub.category_id].append(sub)
 
         # Build structure using pre-calculated spending data and in-memory maps
+        # For managers with category/subcategory-level access, filter accordingly
         structure = []
         for dept in departments:
+            dept_full_access = not _is_filtered_manager or dept.id in _full_access_dept_ids
+
             dept_data = {
                 'id': dept.id,
                 'name': dept.name,
@@ -458,6 +504,11 @@ def get_organization_structure():
             }
 
             for cat in cats_by_dept.get(dept.id, []):
+                # Filter: skip categories the manager can't access
+                if _is_filtered_manager and not dept_full_access:
+                    if cat.id not in _managed_cat_ids and cat.id not in _subcat_parent_cat_ids:
+                        continue
+
                 cat_data = {
                     'id': cat.id,
                     'name': cat.name,
@@ -469,7 +520,15 @@ def get_organization_structure():
                     'subcategories': []
                 }
 
+                # Check if manager has full access to this category's contents
+                cat_full_access = dept_full_access or cat.id in _managed_cat_ids
+
                 for sub in subcats_by_cat.get(cat.id, []):
+                    # Filter: skip subcategories the manager can't access
+                    if _is_filtered_manager and not cat_full_access:
+                        if sub.id not in _managed_subcat_ids:
+                            continue
+
                     sub_data = {
                         'id': sub.id,
                         'name': sub.name,

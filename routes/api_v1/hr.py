@@ -1,6 +1,7 @@
 from flask import jsonify, request
 from flask_login import login_required, current_user
 from models import db, Department, Category, Subcategory, Expense, BudgetYear
+from services.manager_access import get_manager_access
 from sqlalchemy import func
 from . import api_v1
 import logging
@@ -38,6 +39,25 @@ def get_welfare_overview():
         departments = dept_query.order_by(Department.name).all()
         dept_ids = [d.id for d in departments]
 
+        # Determine access filtering for non-admin HR users
+        _full_access_dept_ids = set()
+        _managed_cat_ids = set()
+        _managed_subcat_ids = set()
+        _subcat_parent_cat_ids = set()
+        _is_filtered = False
+
+        if not current_user.is_admin:
+            managed_dept_ids, managed_cat_ids, managed_subcat_ids = get_manager_access(current_user)
+            # Only apply filtering if the user has specific category/subcategory assignments
+            if managed_cat_ids or managed_subcat_ids:
+                _is_filtered = True
+                _full_access_dept_ids = set(managed_dept_ids)
+                _managed_cat_ids = set(managed_cat_ids)
+                _managed_subcat_ids = set(managed_subcat_ids)
+                if _managed_subcat_ids:
+                    subcats = Subcategory.query.filter(Subcategory.id.in_(_managed_subcat_ids)).all()
+                    _subcat_parent_cat_ids = set(s.category_id for s in subcats)
+
         if not dept_ids:
             return jsonify({
                 'summary': {
@@ -57,6 +77,15 @@ def get_welfare_overview():
             Category.department_id.in_(dept_ids),
             Category.is_welfare == True
         ).all()
+
+        # Filter welfare categories by access level
+        if _is_filtered:
+            welfare_categories = [
+                c for c in welfare_categories
+                if c.department_id in _full_access_dept_ids
+                or c.id in _managed_cat_ids
+                or c.id in _subcat_parent_cat_ids
+            ]
 
         welfare_cat_ids = [c.id for c in welfare_categories]
 
@@ -122,8 +151,18 @@ def get_welfare_overview():
                 total_spent += spent
 
                 # Build subcategory data
+                # Check if manager has full access to this category's contents
+                cat_full_access = (not _is_filtered
+                                   or wcat.department_id in _full_access_dept_ids
+                                   or wcat.id in _managed_cat_ids)
+
                 subcats_data = []
                 for sub in wcat.subcategories:
+                    # Filter: skip subcategories the user can't access
+                    if _is_filtered and not cat_full_access:
+                        if sub.id not in _managed_subcat_ids:
+                            continue
+
                     sub_spent = subcat_spending.get(sub.id, 0.0)
                     sub_remaining = sub.budget - sub_spent
                     subcats_data.append({
