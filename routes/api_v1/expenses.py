@@ -14,18 +14,51 @@ import logging
 import os
 
 
+def _compute_subcategory_filter_access(user):
+    """Compute targeted-access sets for filtering subcategories visible to a manager.
+
+    Returns (full_access_dept_ids, managed_cat_ids, managed_subcat_ids).
+
+    When a manager has any explicit category/subcategory assignment, the home
+    department is NOT auto-granted full access. This keeps a team lead assigned
+    to a single welfare subcategory (e.g. their own team) from seeing every
+    sibling subcategory (other teams) when the welfare category lives inside
+    their home department.
+    """
+    full_access_dept_ids = set(d.id for d in user.managed_departments)
+    managed_cat_ids = set(c.id for c in user.managed_categories)
+    managed_subcat_ids = set(s.id for s in user.managed_subcategories)
+
+    # Backwards compat: a manager with no explicit assignments at all retains
+    # full access to their home department.
+    if not full_access_dept_ids and not managed_cat_ids and not managed_subcat_ids:
+        if user.department_id:
+            full_access_dept_ids.add(user.department_id)
+
+    # Expand full-access departments by name across budget years so access
+    # granted in one year carries over to matching departments in other years.
+    if full_access_dept_ids:
+        assigned = Department.query.filter(Department.id.in_(full_access_dept_ids)).all()
+        names = list({d.name for d in assigned})
+        if names:
+            all_matching = Department.query.filter(Department.name.in_(names)).all()
+            full_access_dept_ids = set(d.id for d in all_matching)
+
+    return full_access_dept_ids, managed_cat_ids, managed_subcat_ids
+
+
 def _filter_subcategories_for_user(subcategories, user, access=None):
     """Filter subcategories based on user permissions.
     Admin/non-manager users see everything. Managers see only permitted subcategories."""
     if user.is_admin or not user.is_manager:
         return subcategories
     if access is None:
-        access = get_manager_access(user)
-    managed_dept_ids, managed_cat_ids, managed_subcat_ids = access
+        access = _compute_subcategory_filter_access(user)
+    full_access_dept_ids, managed_cat_ids, managed_subcat_ids = access
     filtered = []
     for sub in subcategories:
         dept_id = sub.category.department_id if sub.category else None
-        if dept_id and dept_id in managed_dept_ids:
+        if dept_id and dept_id in full_access_dept_ids:
             filtered.append(sub)
         elif sub.category_id in managed_cat_ids:
             filtered.append(sub)
@@ -721,7 +754,7 @@ def get_categories():
             categories = base_query.order_by(Department.name, Category.name).all()
 
         # Pre-compute access once for subcategory filtering
-        access = get_manager_access(current_user) if current_user.is_manager and include_subcategories else None
+        access = _compute_subcategory_filter_access(current_user) if current_user.is_manager and include_subcategories else None
 
         cat_list = []
         for cat in categories:
