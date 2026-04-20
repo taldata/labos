@@ -6,9 +6,18 @@ from models import Category, Department, Subcategory
 def get_manager_access(user):
     """Get the department IDs, category IDs, and subcategory IDs a manager has access to.
 
-    Includes all departments with matching names across all budget years,
-    so that a manager assigned to "Engineering" in year 2025 also gets
-    access to "Engineering" in 2026 (and any other year).
+    When a manager has explicit managed_categories or managed_subcategories,
+    the home department is NOT auto-granted as a full-access department —
+    access is scoped to the targeted assignments. Managers without targeted
+    cat/subcat assignments keep backwards-compatible home-department access.
+
+    Without this distinction, a DBA team lead assigned only to their team's
+    welfare subcategory would still see every sibling team's subcategories
+    (and expenses) whenever the welfare category lived in the home department.
+
+    Full-access departments are expanded by name across all budget years,
+    so a manager assigned to "Engineering" in 2025 also has access to
+    "Engineering" in 2026 (and any other year).
 
     Returns:
         tuple: (managed_dept_ids, managed_category_ids, managed_subcategory_ids)
@@ -16,7 +25,11 @@ def get_manager_access(user):
     managed_dept_ids = [d.id for d in user.managed_departments]
     managed_cat_ids = [c.id for c in user.managed_categories]
     managed_subcat_ids = [s.id for s in user.managed_subcategories]
-    if user.department_id and user.department_id not in managed_dept_ids:
+
+    has_targeted_assignment = bool(managed_cat_ids or managed_subcat_ids)
+    if (not has_targeted_assignment
+            and user.department_id
+            and user.department_id not in managed_dept_ids):
         managed_dept_ids.append(user.department_id)
 
     # Expand to include all departments with matching names across all budget years.
@@ -24,17 +37,10 @@ def get_manager_access(user):
     # but departments sharing a name across years should be treated as the same entity.
     if managed_dept_ids:
         assigned_depts = Department.query.filter(Department.id.in_(managed_dept_ids)).all()
-        managed_names = list(set(d.name for d in assigned_depts))
-
-        # Also include the home department name
-        if user.department_id:
-            home_dept = Department.query.get(user.department_id)
-            if home_dept and home_dept.name not in managed_names:
-                managed_names.append(home_dept.name)
-
+        managed_names = list({d.name for d in assigned_depts})
         if managed_names:
             all_matching = Department.query.filter(Department.name.in_(managed_names)).all()
-            managed_dept_ids = list(set(d.id for d in all_matching))
+            managed_dept_ids = list({d.id for d in all_matching})
 
     return managed_dept_ids, managed_cat_ids, managed_subcat_ids
 
