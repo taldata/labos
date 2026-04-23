@@ -2,10 +2,11 @@ from flask import jsonify, request
 from flask_login import login_required, current_user
 from models import db, Department, Category, Subcategory, Expense, BudgetYear, User, manager_departments
 from services.manager_access import get_manager_access, build_category_access_filter
+from services.exchange_rate import get_exchange_rate
 from sqlalchemy import func, case, or_
 from . import api_v1
 import logging
-from datetime import datetime
+from datetime import datetime, date
 
 # --- Budget Years ---
 
@@ -487,17 +488,35 @@ def get_organization_structure():
                 subcats_by_cat[sub.category_id] = []
             subcats_by_cat[sub.category_id].append(sub)
 
+        # Spent totals were summed as ILS via coalesce(amount_ils, amount).
+        # Convert them back to each department's budget currency so the
+        # displayed "Expenses" value matches the budget's currency label.
+        today = date.today()
+        _rate_cache = {}
+
+        def _ils_rate(currency):
+            if not currency or currency == 'ILS':
+                return 1.0
+            if currency not in _rate_cache:
+                try:
+                    _rate_cache[currency] = get_exchange_rate(currency, today) or 1.0
+                except Exception as exc:
+                    logging.warning(f"Failed to get exchange rate for {currency}: {exc}")
+                    _rate_cache[currency] = 1.0
+            return _rate_cache[currency] or 1.0
+
         # Build structure using pre-calculated spending data and in-memory maps
         # For managers with category/subcategory-level access, filter accordingly
         structure = []
         for dept in departments:
             dept_full_access = not _is_filtered_manager or dept.id in _full_access_dept_ids
+            rate = _ils_rate(dept.currency)
 
             dept_data = {
                 'id': dept.id,
                 'name': dept.name,
                 'budget': dept.budget,
-                'spent': dept_spending.get(dept.id, 0.0),
+                'spent': dept_spending.get(dept.id, 0.0) / rate,
                 'currency': dept.currency,
                 'is_fully_managed': True,
                 'categories': []
@@ -513,7 +532,7 @@ def get_organization_structure():
                     'id': cat.id,
                     'name': cat.name,
                     'budget': cat.budget,
-                    'spent': cat_spending.get(cat.id, 0.0),
+                    'spent': cat_spending.get(cat.id, 0.0) / rate,
                     'is_welfare': cat.is_welfare,
                     'department_id': cat.department_id,
                     'is_cross_department': False,
@@ -533,7 +552,7 @@ def get_organization_structure():
                         'id': sub.id,
                         'name': sub.name,
                         'budget': sub.budget,
-                        'spent': subcat_spending.get(sub.id, 0.0),
+                        'spent': subcat_spending.get(sub.id, 0.0) / rate,
                         'category_id': sub.category_id
                     }
                     cat_data['subcategories'].append(sub_data)
