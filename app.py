@@ -15,8 +15,10 @@ from io import BytesIO
 import pandas as pd
 from models import db, Department, Category, Subcategory, User, Supplier, Expense, CreditCard, BudgetYear
 from services.exchange_rate import get_exchange_rate
+from services.grow_webhook import handle_grow_webhook
 import msal
 import requests
+import resend
 import time
 
 # Configure logging
@@ -33,6 +35,8 @@ Config.init_app(app)
 # Initialize extensions
 db.init_app(app)
 migrate = Migrate(app, db)
+
+resend.api_key = os.environ.get('RESEND_API_KEY')
 
 # Initialize CORS for frontend
 cors_origins = ["http://localhost:3000", "https://localhost:3000"]
@@ -132,6 +136,18 @@ def health_check():
     except Exception as e:
         logging.error(f"Health check failed: {e}")
         return jsonify({'status': 'unhealthy', 'database': 'disconnected'}), 503
+
+# --- Grow payment webhook (mali workshop post-payment emails) ---
+
+@app.route('/api/grow-webhook', methods=['POST'])
+def grow_webhook():
+    status, sent = handle_grow_webhook(
+        body=request.get_json(silent=True),
+        webhook_key=os.environ.get('GROW_WEBHOOK_KEY'),
+        mail_from=os.environ.get('MAIL_FROM'),
+        notify_to=os.environ.get('SALE_NOTIFY_TO'),
+    )
+    return jsonify({'sent': sent}), status
 
 # --- Azure AD Authentication ---
 
