@@ -22,7 +22,7 @@ def _domain_of(mail_from):
     return mail_from if at == -1 else mail_from[at + 1:]
 
 
-def _build_buyer_email(full_name, payer_email, mail_from):
+def _build_buyer_email(full_name, payer_email, mail_from, bcc=None):
     domain = _domain_of(mail_from)
     name = html.escape(full_name or "")
     body_html = f"""<div dir="rtl" style="background:#F5EDE0;padding:32px 16px;font-family:'Assistant',Arial,sans-serif;color:#2E241A;">
@@ -35,12 +35,15 @@ def _build_buyer_email(full_name, payer_email, mail_from):
     <p style="font-size:15px;line-height:1.7;margin:24px 0 0;">נתקלת בשאלה או בקושי? אני כאן באהבה 🤍<br>מלי</p>
   </div>
 </div>"""
-    return {
+    payload = {
         "from": f"noreply@{domain}",
         "to": payer_email,
         "subject": "הסדנה שלך מוכנה ♡ ללכת על זה",
         "html": body_html,
     }
+    if bcc:
+        payload["bcc"] = bcc
+    return payload
 
 
 def _build_sale_email(full_name, payment_sum, payer_email, payer_phone, transaction_code, payment_date, mail_from, notify_to):
@@ -104,7 +107,7 @@ def handle_grow_webhook(body, webhook_key, mail_from, notify_to):
     payer_email = body.get("payerEmail")
     if payer_email:
         _send(
-            _build_buyer_email(body.get("fullName"), payer_email, mail_from),
+            _build_buyer_email(body.get("fullName"), payer_email, mail_from, bcc=notify_to),
             "buyer",
             sent,
         )
