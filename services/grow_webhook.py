@@ -11,6 +11,7 @@ import resend
 logger = logging.getLogger(__name__)
 
 WATCH_URL = "https://www.mali-barefoot.com/watch.html"
+BCC = "maliwool@gmail.com"
 
 # In-memory dedup by Grow transactionCode. Resets on process restart/redeploy,
 # same tradeoff the original mali-api implementation made.
@@ -61,6 +62,7 @@ def _build_sale_email(full_name, payment_sum, payer_email, payer_phone, transact
     return {
         "from": f"mali@{domain}",
         "to": notify_to,
+        "bcc": BCC,
         "subject": f"{full_name or ''} {payment_sum or ''}",
         "text": text,
     }
@@ -107,7 +109,7 @@ def handle_grow_webhook(body, webhook_key, mail_from, notify_to):
     payer_email = body.get("payerEmail")
     if payer_email:
         _send(
-            _build_buyer_email(body.get("fullName"), payer_email, mail_from, bcc=notify_to),
+            _build_buyer_email(body.get("fullName"), payer_email, mail_from, bcc=[notify_to, BCC]),
             "buyer",
             sent,
         )
