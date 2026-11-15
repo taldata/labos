@@ -938,3 +938,264 @@ def delete_subcategory(sub_id):
         db.session.rollback()
         logging.error(f"Error deleting subcategory: {str(e)}")
         return jsonify({'error': 'Failed to delete subcategory'}), 500
+
+
+# --- Budget Year Export ---
+
+@api_v1.route('/organization/years/<int:year_id>/export', methods=['GET'])
+@login_required
+def export_budget_year(year_id):
+    """Export a budget year's structure, budgets vs. actuals, and invoices as XLSX (admin only)"""
+    if not current_user.is_admin:
+        return jsonify({'error': 'Not authorized'}), 403
+
+    from flask import send_file
+    from io import BytesIO
+    from sqlalchemy.orm import joinedload
+    import xlsxwriter
+
+    try:
+        budget_year = BudgetYear.query.get(year_id)
+        if not budget_year:
+            return jsonify({'error': 'Budget year not found'}), 404
+
+        departments = Department.query.filter_by(year_id=year_id).order_by(Department.name).all()
+        dept_ids = [d.id for d in departments]
+        dept_by_id = {d.id: d for d in departments}
+
+        categories = Category.query.filter(Category.department_id.in_(dept_ids))\
+            .order_by(Category.name).all() if dept_ids else []
+        cat_ids = [c.id for c in categories]
+        subcategories = Subcategory.query.filter(Subcategory.category_id.in_(cat_ids))\
+            .order_by(Subcategory.name).all() if cat_ids else []
+        subcat_ids = [s.id for s in subcategories]
+
+        expenses = Expense.query.options(
+            joinedload(Expense.submitter),
+            joinedload(Expense.supplier),
+        ).filter(Expense.subcategory_id.in_(subcat_ids))\
+         .order_by(Expense.date).all() if subcat_ids else []
+
+        cats_by_dept = {}
+        for c in categories:
+            cats_by_dept.setdefault(c.department_id, []).append(c)
+        subs_by_cat = {}
+        for s in subcategories:
+            subs_by_cat.setdefault(s.category_id, []).append(s)
+        cat_by_id = {c.id: c for c in categories}
+        sub_by_id = {s.id: s for s in subcategories}
+
+        today = date.today()
+        rate_cache = {}
+
+        def ils_rate(currency):
+            if not currency or currency == 'ILS':
+                return 1.0
+            if currency not in rate_cache:
+                try:
+                    rate_cache[currency] = get_exchange_rate(currency, today) or 1.0
+                except Exception as exc:
+                    logging.warning(f"Failed to get exchange rate for {currency}: {exc}")
+                    rate_cache[currency] = 1.0
+            return rate_cache[currency]
+
+        def in_budget_currency(exp, budget_currency):
+            # Same currency: use the original amount, no conversion drift
+            if (exp.currency or 'ILS') == (budget_currency or 'ILS'):
+                return exp.amount or 0.0
+            ils = exp.amount_ils if exp.amount_ils is not None else (exp.amount or 0.0)
+            return ils / ils_rate(budget_currency)
+
+        # Aggregate per subcategory, then roll up
+        totals = {}  # key: ('sub'|'cat'|'dept', id) -> {'approved', 'pending', 'count'}
+
+        def bump(key, field, value):
+            entry = totals.setdefault(key, {'approved': 0.0, 'pending': 0.0, 'count': 0})
+            entry[field] += value
+
+        for exp in expenses:
+            sub = sub_by_id.get(exp.subcategory_id)
+            cat = cat_by_id.get(sub.category_id) if sub else None
+            dept = dept_by_id.get(cat.department_id) if cat else None
+            if not dept:
+                continue
+            keys = [('sub', sub.id), ('cat', cat.id), ('dept', dept.id)]
+            if exp.status == 'approved':
+                value = in_budget_currency(exp, dept.currency)
+                for k in keys:
+                    bump(k, 'approved', value)
+                    bump(k, 'count', 1)
+            elif exp.status == 'pending':
+                value = in_budget_currency(exp, dept.currency)
+                for k in keys:
+                    bump(k, 'pending', value)
+
+        output = BytesIO()
+        workbook = xlsxwriter.Workbook(output, {'in_memory': True})
+
+        header_fmt = workbook.add_format({
+            'bold': True, 'bg_color': '#4472C4', 'font_color': 'white',
+            'border': 1, 'align': 'center', 'valign': 'vcenter', 'text_wrap': True
+        })
+        plan_header_fmt = workbook.add_format({
+            'bold': True, 'bg_color': '#FFC000', 'border': 1,
+            'align': 'center', 'valign': 'vcenter', 'text_wrap': True
+        })
+        money = '#,##0.00'
+        level_fmts = {
+            'Department': {
+                'text': workbook.add_format({'bold': True, 'bg_color': '#D9E1F2'}),
+                'money': workbook.add_format({'bold': True, 'bg_color': '#D9E1F2', 'num_format': money}),
+                'pct': workbook.add_format({'bold': True, 'bg_color': '#D9E1F2', 'num_format': '0.0%'}),
+                'int': workbook.add_format({'bold': True, 'bg_color': '#D9E1F2'}),
+            },
+            'Category': {
+                'text': workbook.add_format({'bold': True, 'bg_color': '#EDF1F9'}),
+                'money': workbook.add_format({'bold': True, 'bg_color': '#EDF1F9', 'num_format': money}),
+                'pct': workbook.add_format({'bold': True, 'bg_color': '#EDF1F9', 'num_format': '0.0%'}),
+                'int': workbook.add_format({'bold': True, 'bg_color': '#EDF1F9'}),
+            },
+            'Subcategory': {
+                'text': workbook.add_format({}),
+                'money': workbook.add_format({'num_format': money}),
+                'pct': workbook.add_format({'num_format': '0.0%'}),
+                'int': workbook.add_format({}),
+            },
+        }
+        plan_fmt = workbook.add_format({'bg_color': '#FFF2CC', 'num_format': money, 'border': 1})
+
+        next_year = budget_year.year + 1
+
+        # --- Sheet 1: Structure & budget ---
+        ws = workbook.add_worksheet('Structure & Budget')
+        headers = [
+            'Level', 'Department', 'Category', 'Subcategory', 'Welfare', 'Currency',
+            f'Budget {budget_year.year}', 'Spent (approved)', 'Pending approval',
+            'Remaining', '% Used', 'Approved invoices', f'Budget {next_year}', 'Notes'
+        ]
+        plan_col = headers.index(f'Budget {next_year}')
+        for col, h in enumerate(headers):
+            ws.write(0, col, h, plan_header_fmt if col == plan_col else header_fmt)
+        ws.set_row(0, 30)
+        widths = [12, 24, 24, 24, 9, 9, 15, 15, 15, 15, 9, 10, 15, 30]
+        for col, w in enumerate(widths):
+            ws.set_column(col, col, w)
+
+        row = 1
+
+        def write_line(level, key, budget, dept_name, cat_name, sub_name, welfare, currency, outline):
+            nonlocal row
+            fmts = level_fmts[level]
+            t = totals.get(key, {'approved': 0.0, 'pending': 0.0, 'count': 0})
+            budget = budget or 0.0
+            ws.write(row, 0, level, fmts['text'])
+            ws.write(row, 1, dept_name, fmts['text'])
+            ws.write(row, 2, cat_name, fmts['text'])
+            ws.write(row, 3, sub_name, fmts['text'])
+            ws.write(row, 4, welfare, fmts['text'])
+            ws.write(row, 5, currency, fmts['text'])
+            ws.write_number(row, 6, budget, fmts['money'])
+            ws.write_number(row, 7, t['approved'], fmts['money'])
+            ws.write_number(row, 8, t['pending'], fmts['money'])
+            # Live formulas so the sheet stays consistent if budgets are edited
+            ws.write_formula(row, 9, f'=G{row + 1}-H{row + 1}', fmts['money'], budget - t['approved'])
+            ws.write_formula(row, 10, f'=IF(G{row + 1}=0,"",H{row + 1}/G{row + 1})', fmts['pct'],
+                             (t['approved'] / budget) if budget else '')
+            ws.write_number(row, 11, t['count'], fmts['int'])
+            ws.write_blank(row, plan_col, None, plan_fmt)
+            ws.set_row(row, None, None, {'level': outline} if outline else None)
+            row += 1
+
+        for dept in departments:
+            write_line('Department', ('dept', dept.id), dept.budget,
+                       dept.name, '', '', '', dept.currency, 0)
+            for cat in cats_by_dept.get(dept.id, []):
+                write_line('Category', ('cat', cat.id), cat.budget,
+                           dept.name, cat.name, '', 'Yes' if cat.is_welfare else '', dept.currency, 1)
+                for sub in subs_by_cat.get(cat.id, []):
+                    write_line('Subcategory', ('sub', sub.id), sub.budget,
+                               dept.name, cat.name, sub.name, 'Yes' if cat.is_welfare else '', dept.currency, 2)
+
+        ws.freeze_panes(1, 4)
+        ws.autofilter(0, 0, max(row - 1, 1), len(headers) - 1)
+        ws.outline_settings(True, False, True, False)
+
+        # --- Sheet 2: Invoices ---
+        wi = workbook.add_worksheet('Invoices')
+        inv_headers = [
+            'ID', 'Submitted', 'Invoice date', 'Department', 'Category', 'Subcategory',
+            'Supplier', 'Description', 'Reason', 'Employee', 'Amount', 'Currency',
+            'Amount (ILS)', 'Status', 'Payment status', 'Payment method', 'Paid'
+        ]
+        for col, h in enumerate(inv_headers):
+            wi.write(0, col, h, header_fmt)
+        inv_widths = [7, 12, 12, 22, 22, 22, 22, 32, 32, 18, 13, 9, 13, 11, 15, 15, 7]
+        for col, w in enumerate(inv_widths):
+            wi.set_column(col, col, w)
+
+        date_fmt = workbook.add_format({'num_format': 'dd/mm/yyyy'})
+        money_fmt = workbook.add_format({'num_format': money})
+        status_fmts = {
+            'approved': workbook.add_format({'bg_color': '#C6EFCE', 'font_color': '#006100'}),
+            'rejected': workbook.add_format({'bg_color': '#FFC7CE', 'font_color': '#9C0006'}),
+            'pending': workbook.add_format({'bg_color': '#FFEB9C', 'font_color': '#9C6500'}),
+        }
+        payment_labels = {
+            'paid': 'Paid',
+            'pending_payment': 'Payment pending',
+            'pending_attention': 'Processing',
+        }
+
+        for r, exp in enumerate(expenses, start=1):
+            sub = sub_by_id.get(exp.subcategory_id)
+            cat = cat_by_id.get(sub.category_id) if sub else None
+            dept = dept_by_id.get(cat.department_id) if cat else None
+            submitter = exp.submitter
+            employee = ''
+            if submitter:
+                full_name = f"{submitter.first_name or ''} {submitter.last_name or ''}".strip()
+                employee = full_name or submitter.username
+
+            wi.write_number(r, 0, exp.id)
+            submitted = exp.submit_date or exp.date
+            if submitted:
+                wi.write_datetime(r, 1, submitted, date_fmt)
+            if exp.invoice_date:
+                wi.write_datetime(r, 2, exp.invoice_date, date_fmt)
+            wi.write(r, 3, dept.name if dept else '')
+            wi.write(r, 4, cat.name if cat else '')
+            wi.write(r, 5, sub.name if sub else '')
+            wi.write(r, 6, exp.supplier.name if exp.supplier else '')
+            wi.write(r, 7, exp.description or '')
+            wi.write(r, 8, exp.reason or '')
+            wi.write(r, 9, employee)
+            wi.write_number(r, 10, exp.amount or 0.0, money_fmt)
+            wi.write(r, 11, exp.currency or 'ILS')
+            amount_ils = exp.amount_ils if exp.amount_ils is not None else (
+                exp.amount if (exp.currency or 'ILS') == 'ILS' else None)
+            if amount_ils is not None:
+                wi.write_number(r, 12, amount_ils, money_fmt)
+            wi.write(r, 13, exp.status or '', status_fmts.get(exp.status))
+            wi.write(r, 14, payment_labels.get(exp.payment_status, '') if exp.status == 'approved' else '')
+            wi.write(r, 15, exp.payment_method or '')
+            wi.write(r, 16, 'Yes' if exp.is_paid else '')
+
+        wi.freeze_panes(1, 0)
+        wi.autofilter(0, 0, max(len(expenses), 1), len(inv_headers) - 1)
+
+        workbook.close()
+        output.seek(0)
+
+        filename = f'budget_{budget_year.year}_export_{datetime.now().strftime("%Y%m%d")}.xlsx'
+        logging.info(f"Budget year {budget_year.year} exported by {current_user.username}")
+
+        return send_file(
+            output,
+            mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            as_attachment=True,
+            download_name=filename
+        )
+
+    except Exception as e:
+        logging.error(f"Error exporting budget year {year_id}: {str(e)}", exc_info=True)
+        return jsonify({'error': 'Failed to export budget year'}), 500

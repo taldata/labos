@@ -550,6 +550,15 @@ const DepartmentManager = ({ user, setUser }) => {
                                         title="Add new year"
                                     />
                                 </div>
+                                <Button
+                                    variant="secondary"
+                                    icon="fas fa-file-excel"
+                                    onClick={() => window.open(`/api/v1/organization/years/${selectedYear.id}/export`, '_blank')}
+                                    disabled={!selectedYear}
+                                    title="Export structure, budgets and invoices for the selected year"
+                                >
+                                    Export Excel
+                                </Button>
                                 <Button variant="secondary" icon="fas fa-plus" onClick={() => openModal('department', 'create')}>
                                     Add Department
                                 </Button>
