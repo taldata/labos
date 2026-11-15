@@ -29,8 +29,12 @@ class Config:
     _db_url = os.getenv('DATABASE_URL')
     if _db_url:
         # Standardize postgres scheme for SQLAlchemy 1.4+
+        # Pin the psycopg2 driver explicitly: SQLAlchemy 2.1 changed the default
+        # for plain postgresql:// URLs to psycopg (v3), which isn't installed.
         if _db_url.startswith('postgres://'):
-            _db_url = _db_url.replace('postgres://', 'postgresql://', 1)
+            _db_url = _db_url.replace('postgres://', 'postgresql+psycopg2://', 1)
+        elif _db_url.startswith('postgresql://'):
+            _db_url = _db_url.replace('postgresql://', 'postgresql+psycopg2://', 1)
         SQLALCHEMY_DATABASE_URI = _db_url
     else:
         # Construct from individual components if DATABASE_URL is missing
@@ -39,7 +43,7 @@ class Config:
         db_host = os.getenv('DB_HOST', 'localhost')
         db_port = os.getenv('DB_PORT', '5432')
         db_name = os.getenv('DB_NAME', 'expense_manager')
-        SQLALCHEMY_DATABASE_URI = f"postgresql://{db_user}:{db_pass}@{db_host}:{db_port}/{db_name}"
+        SQLALCHEMY_DATABASE_URI = f"postgresql+psycopg2://{db_user}:{db_pass}@{db_host}:{db_port}/{db_name}"
     
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
