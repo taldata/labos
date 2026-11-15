@@ -1245,8 +1245,9 @@ def parse_budget_import(file_storage):
     """Parse an edited budget export into a plan for a new budget year.
 
     Levels are inferred from which name columns are filled, so rows added by
-    hand don't need a correct "Level" value. Parent budgets are the sum of
-    their children; a parent's own value is only used when it has none.
+    hand don't need a correct "Level" value. Budgets are independent per level:
+    a parent row's own value is used as entered; when it is left blank, the
+    parent gets the sum of its children.
     """
     import re
     from io import BytesIO
@@ -1350,10 +1351,13 @@ def parse_budget_import(file_storage):
     if not departments:
         raise BudgetImportError('The file has no departments')
 
-    def check_parent(label, entered, entered_blank, children_total):
-        if not entered_blank and abs((entered or 0.0) - children_total) > 0.005:
+    def parent_budget(label, entered, entered_blank, children_total):
+        if entered_blank:
+            return children_total
+        if abs((entered or 0.0) - children_total) > 0.005:
             warnings.append(f'{label}: entered {entered:,.2f} but its children add up to '
-                            f'{children_total:,.2f}. The sum will be used.')
+                            f'{children_total:,.2f}. The entered value will be used.')
+        return entered or 0.0
 
     plan = []
     for dept in departments.values():
@@ -1362,8 +1366,8 @@ def parse_budget_import(file_storage):
         for cat in dept['categories'].values():
             subs = cat['subcategories']
             if subs:
-                cat_budget = float(sum(subs.values()))
-                check_parent(f'{dept["name"]} / {cat["name"]}', cat['own_budget'], cat['own_blank'], cat_budget)
+                cat_budget = parent_budget(f'{dept["name"]} / {cat["name"]}', cat['own_budget'],
+                                           cat['own_blank'], float(sum(subs.values())))
             else:
                 cat_budget = cat['own_budget'] or 0.0
                 if cat['own_blank']:
@@ -1373,8 +1377,8 @@ def parse_budget_import(file_storage):
                 'subcategories': [{'name': n, 'budget': b} for n, b in subs.items()],
             })
         if cats_plan:
-            dept_budget = float(sum(c['budget'] for c in cats_plan))
-            check_parent(dept['name'], dept['own_budget'], dept['own_blank'], dept_budget)
+            dept_budget = parent_budget(dept['name'], dept['own_budget'], dept['own_blank'],
+                                        float(sum(c['budget'] for c in cats_plan)))
         else:
             dept_budget = dept['own_budget'] or 0.0
             if dept['own_blank']:
