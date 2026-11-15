@@ -826,6 +826,78 @@
 }
 
 /* ============================================================================
+   Excel import preview
+   ============================================================================ */
+
+.import-preview {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.import-preview-summary {
+  color: var(--text-primary);
+  line-height: 1.5;
+}
+
+.import-messages {
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  font-size: 0.875rem;
+}
+
+.import-messages ul {
+  margin: 0.5rem 0 0 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.import-messages--error {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.import-messages--warning {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.import-preview-table-wrap {
+  max-height: 320px;
+  overflow: auto;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+}
+
+.import-preview-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.import-preview-table th,
+.import-preview-table td {
+  padding: 0.5rem 0.75rem;
+  text-align: start;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.import-preview-table th {
+  position: sticky;
+  top: 0;
+  background: var(--background);
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+
+.import-preview-table .num {
+  text-align: end;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* ============================================================================
    Responsive Design
    ============================================================================ */
 

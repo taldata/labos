@@ -214,3 +214,70 @@ class ExchangeRateCache(db.Model):
     date = db.Column(db.Date, nullable=False)
     rate_to_ils = db.Column(db.Float, nullable=False)
     __table_args__ = (db.UniqueConstraint('currency', 'date'),)
+
+
+# --- Budget roll-up ---------------------------------------------------------
+# A parent's budget is the sum of its children: category = sum of its
+# subcategories, department = sum of its categories. Parents without children
+# keep their manually entered budget. Enforced on every flush so all write
+# paths (admin, HR, imports, year copies) stay consistent.
+
+from sqlalchemy import event, inspect as _sa_inspect
+from sqlalchemy.orm import Session as _Session
+
+_ROLLUP_EPSILON = 0.005
+
+
+def _previous_value(obj, attr):
+    history = _sa_inspect(obj).attrs[attr].history
+    return history.deleted[0] if history.deleted else None
+
+
+@event.listens_for(_Session, 'after_flush')
+def _collect_budget_rollup_targets(session, flush_context):
+    cat_ids = session.info.setdefault('_rollup_cat_ids', set())
+    dept_ids = session.info.setdefault('_rollup_dept_ids', set())
+    deleted = set(session.deleted)
+
+    for obj in list(session.new) + list(session.dirty) + list(deleted):
+        if isinstance(obj, Subcategory):
+            cat_ids.update(i for i in (obj.category_id, _previous_value(obj, 'category_id')) if i)
+        elif isinstance(obj, Category):
+            if obj not in deleted and obj.id:
+                cat_ids.add(obj.id)
+            dept_ids.update(i for i in (obj.department_id, _previous_value(obj, 'department_id')) if i)
+        elif isinstance(obj, Department):
+            if obj not in deleted and obj.id:
+                dept_ids.add(obj.id)
+
+
+@event.listens_for(_Session, 'after_flush_postexec')
+def _apply_budget_rollup(session, flush_context):
+    cat_ids = session.info.pop('_rollup_cat_ids', set())
+    dept_ids = session.info.pop('_rollup_dept_ids', set())
+    if not cat_ids and not dept_ids:
+        return
+
+    # Values assigned here are flushed by the next pass of the commit loop;
+    # assignments only happen on a real change, so the loop terminates.
+    with session.no_autoflush:
+        for cat_id in cat_ids:
+            category = session.get(Category, cat_id)
+            if category is None:
+                continue
+            subs = session.query(Subcategory).filter(Subcategory.category_id == cat_id).all()
+            if subs:
+                total = float(sum(s.budget or 0.0 for s in subs))
+                if abs((category.budget or 0.0) - total) > _ROLLUP_EPSILON:
+                    category.budget = total
+            dept_ids.add(category.department_id)
+
+        for dept_id in dept_ids:
+            department = session.get(Department, dept_id)
+            if department is None:
+                continue
+            cats = session.query(Category).filter(Category.department_id == dept_id).all()
+            if cats:
+                total = float(sum(c.budget or 0.0 for c in cats))
+                if abs((department.budget or 0.0) - total) > _ROLLUP_EPSILON:
+                    department.budget = total

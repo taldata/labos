@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { Card, Button, Input, Select, Modal, useToast, PageHeader } from '../components/ui';
@@ -50,6 +50,12 @@ const DepartmentManager = ({ user, setUser }) => {
 
     // Auto-scroll and highlight for new items
     const [newDepartmentId, setNewDepartmentId] = useState(null);
+
+    // Excel import of a new budget year
+    const importInputRef = useRef(null);
+    const [importFile, setImportFile] = useState(null);
+    const [importPreview, setImportPreview] = useState(null);
+    const [importing, setImporting] = useState(false);
     const { getItemRef } = useScrollToItem(structure, newDepartmentId, () => setNewDepartmentId(null));
 
     // Check if user is admin or manager (managers get view-only access to their departments)
@@ -234,6 +240,52 @@ const DepartmentManager = ({ user, setUser }) => {
             closeModal();
         } catch (err) {
             showError(err.response?.data?.error || 'An error occurred');
+        }
+    };
+
+    const handleImportFileSelected = async (e) => {
+        const file = e.target.files?.[0];
+        e.target.value = '';
+        if (!file) return;
+
+        const formData = new FormData();
+        formData.append('file', file);
+        try {
+            setImporting(true);
+            const response = await api.post('/api/v1/organization/years/import', formData);
+            setImportFile(file);
+            setImportPreview(response.data.preview);
+        } catch (err) {
+            showError(err.response?.data?.error || 'Could not read the file');
+        } finally {
+            setImporting(false);
+        }
+    };
+
+    const closeImport = () => {
+        setImportFile(null);
+        setImportPreview(null);
+    };
+
+    const confirmImport = async () => {
+        const formData = new FormData();
+        formData.append('file', importFile);
+        formData.append('confirm', 'true');
+        try {
+            setImporting(true);
+            const response = await api.post('/api/v1/organization/years/import', formData);
+            success(response.data.message);
+            closeImport();
+            const yearsResponse = await api.get('/api/v1/organization/years');
+            const yearsData = yearsResponse.data.years || [];
+            setYears(yearsData);
+            const created = yearsData.find(y => y.id === response.data.year.id);
+            if (created) setSelectedYear(created);
+        } catch (err) {
+            if (err.response?.data?.preview) setImportPreview(err.response.data.preview);
+            showError(err.response?.data?.error || 'Failed to import budget year');
+        } finally {
+            setImporting(false);
         }
     };
 
@@ -510,6 +562,12 @@ const DepartmentManager = ({ user, setUser }) => {
     const totalRemaining = totalBudget - totalSpent;
     const overallUsage = totalBudget > 0 ? Math.min((totalSpent / totalBudget) * 100, 100) : 0;
 
+    // Parents with children have a budget equal to the sum of their children (enforced server-side)
+    const budgetIsRolledUp = modalMode === 'edit' && (
+        (modalType === 'department' && currentItem?.categories?.length > 0) ||
+        (modalType === 'category' && currentItem?.subcategories?.length > 0)
+    );
+
     // Admin View - Full management interface
     return (
         <div className="department-manager-container">
@@ -559,6 +617,22 @@ const DepartmentManager = ({ user, setUser }) => {
                                 >
                                     Export Excel
                                 </Button>
+                                <Button
+                                    variant="secondary"
+                                    icon="fas fa-file-import"
+                                    onClick={() => importInputRef.current?.click()}
+                                    loading={importing && !importPreview}
+                                    title="Create a new budget year from an edited Export Excel file"
+                                >
+                                    Import Excel
+                                </Button>
+                                <input
+                                    ref={importInputRef}
+                                    type="file"
+                                    accept=".xlsx"
+                                    onChange={handleImportFileSelected}
+                                    style={{ display: 'none' }}
+                                />
                                 <Button variant="secondary" icon="fas fa-plus" onClick={() => openModal('department', 'create')}>
                                     Add Department
                                 </Button>
@@ -865,6 +939,12 @@ const DepartmentManager = ({ user, setUser }) => {
                                         min="0"
                                         step="0.01"
                                         placeholder="Enter budget amount"
+                                        disabled={budgetIsRolledUp}
+                                        helperText={budgetIsRolledUp
+                                            ? `Calculated automatically as the sum of its ${modalType === 'department' ? 'categories' : 'subcategories'}`
+                                            : modalType !== 'department'
+                                                ? `The parent ${modalType === 'category' ? 'department' : 'category'} budget is recalculated as the sum of its children`
+                                                : undefined}
                                     />
 
                                     {modalType === 'department' && (
@@ -901,6 +981,79 @@ const DepartmentManager = ({ user, setUser }) => {
                                 <Button type="submit" variant="primary">Save</Button>
                             </div>
                         </form>
+                    </Modal>
+
+                    <Modal
+                        isOpen={!!importPreview}
+                        onClose={closeImport}
+                        title={importPreview ? `Import budget ${importPreview.target_year}` : ''}
+                        size="large"
+                    >
+                        {importPreview && (
+                            <div className="import-preview">
+                                <p className="import-preview-summary">
+                                    Creates budget year <strong>{importPreview.target_year}</strong> with{' '}
+                                    {importPreview.summary.departments} departments, {importPreview.summary.categories} categories
+                                    and {importPreview.summary.subcategories} subcategories.
+                                    {importPreview.source_year && ` Department managers are copied from ${importPreview.source_year}.`}
+                                </p>
+                                <p className="import-preview-summary">
+                                    Total budget:{' '}
+                                    {Object.entries(importPreview.summary.budget_by_currency)
+                                        .map(([cur, total]) => `${total.toLocaleString()} ${cur}`)
+                                        .join(' · ')}
+                                </p>
+
+                                {importPreview.errors.length > 0 && (
+                                    <div className="import-messages import-messages--error" role="alert">
+                                        <strong><i className="fas fa-exclamation-circle"></i> Fix these in the file and upload it again</strong>
+                                        <ul>{importPreview.errors.map((m, i) => <li key={i}>{m}</li>)}</ul>
+                                    </div>
+                                )}
+                                {importPreview.warnings.length > 0 && (
+                                    <div className="import-messages import-messages--warning">
+                                        <strong><i className="fas fa-exclamation-triangle"></i> Check before importing</strong>
+                                        <ul>{importPreview.warnings.map((m, i) => <li key={i}>{m}</li>)}</ul>
+                                    </div>
+                                )}
+
+                                <div className="import-preview-table-wrap">
+                                    <table className="import-preview-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Department</th>
+                                                <th>Categories</th>
+                                                <th>Subcategories</th>
+                                                <th className="num">Budget {importPreview.target_year}</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {importPreview.departments.map(d => (
+                                                <tr key={d.name}>
+                                                    <td>{d.name}</td>
+                                                    <td>{d.categories.length}</td>
+                                                    <td>{d.categories.reduce((n, c) => n + c.subcategories.length, 0)}</td>
+                                                    <td className="num">{d.budget.toLocaleString()} {d.currency}</td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+
+                                <div className="modal-actions">
+                                    <Button type="button" variant="secondary" onClick={closeImport}>Cancel</Button>
+                                    <Button
+                                        type="button"
+                                        variant="primary"
+                                        onClick={confirmImport}
+                                        loading={importing}
+                                        disabled={importPreview.errors.length > 0}
+                                    >
+                                        Create {importPreview.target_year}
+                                    </Button>
+                                </div>
+                            </div>
+                        )}
                     </Modal>
                 </main>
             )}
