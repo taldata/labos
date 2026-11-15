@@ -184,7 +184,6 @@ def get_welfare_overview():
                         'spent': round(spent, 2),
                         'remaining': round(remaining, 2),
                         'utilization_percent': round(utilization, 1),
-                        'has_subcategories': bool(wcat.subcategories),
                         'subcategories': subcats_data
                     }
                 })
@@ -227,9 +226,6 @@ def update_welfare_category_budget(category_id):
         category = Category.query.get(category_id)
         if not category or not category.is_welfare:
             return jsonify({'error': 'Welfare category not found'}), 404
-
-        if category.subcategories:
-            return jsonify({'error': 'This category budget is the sum of its subcategories. Edit the subcategory budgets instead.'}), 400
 
         data = request.get_json()
         if 'budget' in data:

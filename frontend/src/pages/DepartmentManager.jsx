@@ -562,12 +562,6 @@ const DepartmentManager = ({ user, setUser }) => {
     const totalRemaining = totalBudget - totalSpent;
     const overallUsage = totalBudget > 0 ? Math.min((totalSpent / totalBudget) * 100, 100) : 0;
 
-    // Parents with children have a budget equal to the sum of their children (enforced server-side)
-    const budgetIsRolledUp = modalMode === 'edit' && (
-        (modalType === 'department' && currentItem?.categories?.length > 0) ||
-        (modalType === 'category' && currentItem?.subcategories?.length > 0)
-    );
-
     // Admin View - Full management interface
     return (
         <div className="department-manager-container">
@@ -939,12 +933,6 @@ const DepartmentManager = ({ user, setUser }) => {
                                         min="0"
                                         step="0.01"
                                         placeholder="Enter budget amount"
-                                        disabled={budgetIsRolledUp}
-                                        helperText={budgetIsRolledUp
-                                            ? `Calculated automatically as the sum of its ${modalType === 'department' ? 'categories' : 'subcategories'}`
-                                            : modalType !== 'department'
-                                                ? `The parent ${modalType === 'category' ? 'department' : 'category'} budget is recalculated as the sum of its children`
-                                                : undefined}
                                     />
 
                                     {modalType === 'department' && (

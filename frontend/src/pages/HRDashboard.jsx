@@ -732,15 +732,13 @@ function HRDashboard({ user }) {
                             </td>
                             <td className="col-actions" onClick={e => e.stopPropagation()}>
                               <div className="hr-actions-group">
-                                {!wc.has_subcategories && (
-                                  <button
-                                    className="hr-action-btn"
-                                    onClick={() => startEdit('category', wc.id, wc.budget)}
-                                    title="Edit budget"
-                                  >
-                                    <i className="fas fa-coins"></i>
-                                  </button>
-                                )}
+                                <button
+                                  className="hr-action-btn"
+                                  onClick={() => startEdit('category', wc.id, wc.budget)}
+                                  title="Edit budget"
+                                >
+                                  <i className="fas fa-coins"></i>
+                                </button>
                                 <button
                                   className="hr-action-btn"
                                   onClick={() => openEditItem('category', wc)}
