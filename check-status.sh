@@ -60,7 +60,8 @@ command_exists npm && echo -e "${GREEN}✓${NC} npm installed ($(npm -v))" || ec
 echo ""
 echo -e "${YELLOW}2. Core Files${NC}"
 check_file "app.py" "Flask application"
-check_file "requirements.txt" "Python dependencies"
+check_file "pyproject.toml" "Python dependencies"
+check_file "poetry.lock" "Python lockfile"
 check_file "models.py" "Database models"
 check_file "dev.sh" "Development script"
 
