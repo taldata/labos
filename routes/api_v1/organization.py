@@ -1199,3 +1199,295 @@ def export_budget_year(year_id):
     except Exception as e:
         logging.error(f"Error exporting budget year {year_id}: {str(e)}", exc_info=True)
         return jsonify({'error': 'Failed to export budget year'}), 500
+
+
+# --- Budget Year Import ---
+
+IMPORT_SHEET_NAME = 'Structure & Budget'
+IMPORT_CURRENCIES = {'ILS', 'USD', 'EUR'}
+IMPORT_MAX_BYTES = 5 * 1024 * 1024
+
+
+class BudgetImportError(Exception):
+    pass
+
+
+def _cell_text(value):
+    if value is None:
+        return ''
+    if isinstance(value, float) and value.is_integer():
+        value = int(value)
+    return str(value).strip()
+
+
+def _parse_amount(value, where, errors):
+    """Return (amount, was_blank). Accepts numbers and strings like '1,200.50'."""
+    if value is None or (isinstance(value, str) and not value.strip()):
+        return 0.0, True
+    if isinstance(value, bool):
+        errors.append(f'{where}: invalid budget "{value}"')
+        return 0.0, False
+    if isinstance(value, (int, float)):
+        amount = float(value)
+    else:
+        try:
+            amount = float(str(value).replace(',', '').replace('₪', '').replace('$', '').replace('€', '').strip())
+        except ValueError:
+            errors.append(f'{where}: invalid budget "{value}"')
+            return 0.0, False
+    if amount < 0:
+        errors.append(f'{where}: budget cannot be negative ({amount:,.2f})')
+        return 0.0, False
+    return amount, False
+
+
+def parse_budget_import(file_storage):
+    """Parse an edited budget export into a plan for a new budget year.
+
+    Levels are inferred from which name columns are filled, so rows added by
+    hand don't need a correct "Level" value. Parent budgets are the sum of
+    their children; a parent's own value is only used when it has none.
+    """
+    import re
+    from io import BytesIO
+    import openpyxl
+
+    data = file_storage.read(IMPORT_MAX_BYTES + 1)
+    if len(data) > IMPORT_MAX_BYTES:
+        raise BudgetImportError('File is too large (max 5 MB)')
+    try:
+        workbook = openpyxl.load_workbook(BytesIO(data), read_only=True, data_only=True)
+    except Exception:
+        raise BudgetImportError('Could not read the file. Upload the .xlsx file created by Export Excel.')
+
+    try:
+        sheet = workbook[IMPORT_SHEET_NAME] if IMPORT_SHEET_NAME in workbook.sheetnames else workbook.worksheets[0]
+        rows = sheet.iter_rows(values_only=True)
+        header = [_cell_text(h) for h in (next(rows, None) or [])]
+
+        columns = {name: header.index(name) for name in
+                   ('Department', 'Category', 'Subcategory', 'Welfare', 'Currency') if name in header}
+        if 'Department' not in columns:
+            raise BudgetImportError(f'Missing "Department" column. Use the "{IMPORT_SHEET_NAME}" sheet from Export Excel.')
+
+        budget_columns = {}
+        for idx, name in enumerate(header):
+            match = re.fullmatch(r'Budget (\d{4})', name)
+            if match:
+                budget_columns[int(match.group(1))] = idx
+        if not budget_columns:
+            raise BudgetImportError('No "Budget <year>" column found')
+        target_year = max(budget_columns)
+        target_col = budget_columns[target_year]
+        source_years = [y for y in budget_columns if y < target_year]
+        source_year = max(source_years) if source_years else None
+
+        errors, warnings = [], []
+        departments = {}  # name -> plan dict, insertion-ordered
+        blank_leaves = 0
+
+        def get(row, key):
+            idx = columns.get(key)
+            return row[idx] if idx is not None and idx < len(row) else None
+
+        for row_num, row in enumerate(rows, start=2):
+            dept_name = _cell_text(get(row, 'Department'))
+            cat_name = _cell_text(get(row, 'Category'))
+            sub_name = _cell_text(get(row, 'Subcategory'))
+            if not (dept_name or cat_name or sub_name):
+                continue
+            where = f'Row {row_num}'
+            if not dept_name:
+                errors.append(f'{where}: missing department name')
+                continue
+            if sub_name and not cat_name:
+                errors.append(f'{where}: subcategory "{sub_name}" has no category')
+                continue
+
+            raw_budget = row[target_col] if target_col < len(row) else None
+            amount, blank = _parse_amount(raw_budget, where, errors)
+            currency = _cell_text(get(row, 'Currency')).upper()
+            welfare = _cell_text(get(row, 'Welfare')).lower() in ('yes', 'y', 'true', '1', 'כן')
+
+            dept = departments.setdefault(dept_name, {
+                'name': dept_name, 'currency': None, 'own_budget': None, 'own_blank': True, 'categories': {}
+            })
+            if currency:
+                if currency not in IMPORT_CURRENCIES:
+                    errors.append(f'{where}: unsupported currency "{currency}" (use ILS, USD or EUR)')
+                elif dept['currency'] and dept['currency'] != currency:
+                    errors.append(f'{where}: department "{dept_name}" has conflicting currencies '
+                                  f'({dept["currency"]} and {currency})')
+                else:
+                    dept['currency'] = currency
+
+            if not cat_name:
+                if dept['own_budget'] is not None:
+                    errors.append(f'{where}: department "{dept_name}" appears more than once')
+                dept['own_budget'], dept['own_blank'] = amount, blank
+                continue
+
+            cat = dept['categories'].setdefault(cat_name, {
+                'name': cat_name, 'is_welfare': False, 'own_budget': None, 'own_blank': True, 'subcategories': {}
+            })
+            cat['is_welfare'] = cat['is_welfare'] or welfare
+
+            if not sub_name:
+                if cat['own_budget'] is not None:
+                    errors.append(f'{where}: category "{dept_name} / {cat_name}" appears more than once')
+                cat['own_budget'], cat['own_blank'] = amount, blank
+                continue
+
+            if sub_name in cat['subcategories']:
+                errors.append(f'{where}: subcategory "{dept_name} / {cat_name} / {sub_name}" appears more than once')
+                continue
+            cat['subcategories'][sub_name] = amount
+            if blank:
+                blank_leaves += 1
+    finally:
+        workbook.close()
+
+    if not departments:
+        raise BudgetImportError('The file has no departments')
+
+    def check_parent(label, entered, entered_blank, children_total):
+        if not entered_blank and abs((entered or 0.0) - children_total) > 0.005:
+            warnings.append(f'{label}: entered {entered:,.2f} but its children add up to '
+                            f'{children_total:,.2f}. The sum will be used.')
+
+    plan = []
+    for dept in departments.values():
+        dept_currency = dept['currency'] or 'ILS'
+        cats_plan = []
+        for cat in dept['categories'].values():
+            subs = cat['subcategories']
+            if subs:
+                cat_budget = float(sum(subs.values()))
+                check_parent(f'{dept["name"]} / {cat["name"]}', cat['own_budget'], cat['own_blank'], cat_budget)
+            else:
+                cat_budget = cat['own_budget'] or 0.0
+                if cat['own_blank']:
+                    blank_leaves += 1
+            cats_plan.append({
+                'name': cat['name'], 'is_welfare': cat['is_welfare'], 'budget': cat_budget,
+                'subcategories': [{'name': n, 'budget': b} for n, b in subs.items()],
+            })
+        if cats_plan:
+            dept_budget = float(sum(c['budget'] for c in cats_plan))
+            check_parent(dept['name'], dept['own_budget'], dept['own_blank'], dept_budget)
+        else:
+            dept_budget = dept['own_budget'] or 0.0
+            if dept['own_blank']:
+                blank_leaves += 1
+        plan.append({'name': dept['name'], 'currency': dept_currency, 'budget': dept_budget, 'categories': cats_plan})
+
+    if blank_leaves:
+        warnings.append(f'{blank_leaves} item(s) have no {target_year} budget and will be created with 0.')
+
+    existing = BudgetYear.query.filter_by(year=target_year).first()
+    if existing and Department.query.filter_by(year_id=existing.id).count():
+        errors.append(f'Budget year {target_year} already has departments. '
+                      f'Import only creates a new year; delete its departments first or edit them in the app.')
+
+    totals_by_currency = {}
+    for d in plan:
+        totals_by_currency[d['currency']] = totals_by_currency.get(d['currency'], 0.0) + d['budget']
+
+    return {
+        'target_year': target_year,
+        'source_year': source_year,
+        'departments': plan,
+        'summary': {
+            'departments': len(plan),
+            'categories': sum(len(d['categories']) for d in plan),
+            'subcategories': sum(len(c['subcategories']) for d in plan for c in d['categories']),
+            'budget_by_currency': totals_by_currency,
+        },
+        'warnings': warnings,
+        'errors': errors,
+    }
+
+
+def apply_budget_import(plan):
+    """Create the budget year and its structure from a parsed plan. Caller commits."""
+    target_year = plan['target_year']
+    budget_year = BudgetYear.query.filter_by(year=target_year).first()
+    if not budget_year:
+        budget_year = BudgetYear(year=target_year, name=str(target_year), is_active=True, is_current=False)
+        db.session.add(budget_year)
+        db.session.flush()
+
+    source_depts = {}
+    if plan['source_year']:
+        source = BudgetYear.query.filter_by(year=plan['source_year']).first()
+        if source:
+            source_depts = {d.name: d.id for d in Department.query.filter_by(year_id=source.id).all()}
+
+    managers_copied = 0
+    for d in plan['departments']:
+        dept = Department(name=d['name'], budget=d['budget'], currency=d['currency'], year_id=budget_year.id)
+        db.session.add(dept)
+        db.session.flush()
+        for c in d['categories']:
+            cat = Category(name=c['name'], budget=c['budget'], is_welfare=c['is_welfare'], department_id=dept.id)
+            db.session.add(cat)
+            db.session.flush()
+            for s in c['subcategories']:
+                db.session.add(Subcategory(name=s['name'], budget=s['budget'], category_id=cat.id))
+
+        # Same as "copy structure": carry department managers over from the source year
+        src_id = source_depts.get(d['name'])
+        if src_id:
+            manager_ids = [uid for (uid,) in db.session.query(manager_departments.c.user_id)
+                           .filter(manager_departments.c.department_id == src_id).all()]
+            for uid in manager_ids:
+                db.session.execute(manager_departments.insert().values(user_id=uid, department_id=dept.id))
+                managers_copied += 1
+
+    return budget_year, managers_copied
+
+
+@api_v1.route('/organization/years/import', methods=['POST'])
+@login_required
+def import_budget_year():
+    """Create a new budget year from an edited Export Excel file (admin only).
+
+    Without confirm=true returns a preview; with confirm=true creates the year.
+    """
+    if not current_user.is_admin:
+        return jsonify({'error': 'Not authorized'}), 403
+
+    upload = request.files.get('file')
+    if not upload or not upload.filename:
+        return jsonify({'error': 'No file uploaded'}), 400
+    if not upload.filename.lower().endswith('.xlsx'):
+        return jsonify({'error': 'Upload an .xlsx file'}), 400
+
+    try:
+        plan = parse_budget_import(upload)
+    except BudgetImportError as e:
+        return jsonify({'error': str(e)}), 400
+    except Exception as e:
+        logging.error(f"Error parsing budget import: {str(e)}", exc_info=True)
+        return jsonify({'error': 'Could not read the file'}), 400
+
+    if request.form.get('confirm') != 'true':
+        return jsonify({'preview': plan}), 200
+
+    if plan['errors']:
+        return jsonify({'error': 'Fix the errors in the file before importing', 'preview': plan}), 400
+
+    try:
+        budget_year, managers_copied = apply_budget_import(plan)
+        db.session.commit()
+        logging.info(f"Budget year {budget_year.year} imported by {current_user.username}: "
+                     f"{plan['summary']}, managers copied: {managers_copied}")
+        return jsonify({
+            'message': f'Budget year {budget_year.year} created with {plan["summary"]["departments"]} departments',
+            'year': {'id': budget_year.id, 'year': budget_year.year, 'name': budget_year.name},
+            'managers_copied': managers_copied,
+        }), 201
+    except Exception as e:
+        db.session.rollback()
+        logging.error(f"Error applying budget import: {str(e)}", exc_info=True)
+        return jsonify({'error': 'Failed to import budget year'}), 500
