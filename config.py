@@ -88,8 +88,14 @@ class Config:
             # Handle error appropriately, maybe raise an exception
             return
 
-        os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
-        
+        try:
+            os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+        except OSError as e:
+            # Render's pre-deploy step (flask db upgrade) runs without the
+            # persistent disk mounted; don't let that crash app import.
+            logging.warning(f"Could not create UPLOAD_FOLDER {app.config['UPLOAD_FOLDER']}: {e}")
+            return
+
         # Validate upload folder was created successfully
         if not os.path.exists(app.config['UPLOAD_FOLDER']):
             logging.error(f"CRITICAL: Failed to create UPLOAD_FOLDER: {app.config['UPLOAD_FOLDER']}")
