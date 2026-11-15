@@ -8,7 +8,7 @@ services:
     healthCheckPath: /health
     envVars:
       - key: PYTHON_VERSION
-        value: 3.13.1
+        value: 3.13.18
       - key: POETRY_VERSION
         value: 2.3.0
       - key: NODE_VERSION

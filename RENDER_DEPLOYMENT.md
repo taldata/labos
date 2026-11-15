@@ -10,54 +10,22 @@ This guide explains how to deploy the Labos Expense Management System to Render.
 
 ## Deployment Steps
 
-### 1. Configure Build Command
+### 1. Dependencies
 
-In your Render service settings, set the **Build Command** to:
+Python dependencies are managed with Poetry: `pyproject.toml` plus the committed
+`poetry.lock`. The lockfile pins exact versions, so every deploy installs the same
+packages. After changing a dependency, run `poetry lock` and commit `poetry.lock`.
 
-```bash
-poetry install && cd frontend && npm install && npm run build
-```
+### 2. Build, pre-deploy and start commands
 
-This ensures:
-1. Poetry installs all Python dependencies (including gunicorn)
-2. npm installs frontend dependencies
-3. Frontend is built for production
+`render.yaml` is the source of truth. **Commands set in the Render dashboard override
+`render.yaml`**, so make sure the dashboard either matches these or is left empty:
 
-**Alternative** (if you prefer separate commands):
+- **Build:** `poetry install --no-root && cd frontend && npm ci && npm run build && rm -rf node_modules`
+- **Pre-deploy:** `poetry run flask db upgrade`
+- **Start:** `poetry run gunicorn --workers 2 --threads 4 --worker-class gthread --timeout 120 --graceful-timeout 30 --keep-alive 5 --max-requests 1000 --max-requests-jitter 50 --worker-tmp-dir /dev/shm --preload --access-logfile - --error-logfile - app:app`
 
-```bash
-cd frontend && npm install && npm run build
-```
-
-Note: Render should automatically run `poetry install` when it detects `pyproject.toml`, but including it explicitly ensures dependencies are installed.
-
-### 2. Configure Start Command
-
-**Recommended Start Command (if using Poetry):**
-
-```bash
-poetry run gunicorn app:app
-```
-
-**Alternative (if using pip/requirements.txt):**
-
-```bash
-python -m gunicorn app:app
-```
-
-**Alternative options** (if the above doesn't work):
-
-```bash
-gunicorn app:app
-```
-
-### 2a. Using requirements.txt (Recommended)
-
-This project uses `requirements.txt` for dependencies. To ensure Render uses pip instead of Poetry:
-
-1. **Make sure there's no `pyproject.toml` file** in the root directory
-2. Render will automatically detect `requirements.txt` and use `pip install -r requirements.txt`
-3. This is the simplest approach for this project
+A plain `poetry run gunicorn app:app` runs a single sync worker with a 30s timeout.
 
 ### 3. Environment Variables
 

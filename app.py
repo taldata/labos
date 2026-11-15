@@ -12,7 +12,6 @@ from flask_migrate import Migrate
 from flask_cors import CORS
 from config import Config
 from io import BytesIO
-import pandas as pd
 from models import db, Department, Category, Subcategory, User, Supplier, Expense, CreditCard, BudgetYear
 from services.exchange_rate import get_exchange_rate
 from services.grow_webhook import handle_grow_webhook
@@ -428,20 +427,24 @@ def export_accounting_excel():
             'External Accounting Entry Date': expense.external_accounting_entry_at.strftime('%d/%m/%Y %H:%M') if expense.external_accounting_entry_at else '-'
         })
 
-    df = pd.DataFrame(data)
+    import xlsxwriter
 
     output = BytesIO()
-    with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
-        df.to_excel(writer, sheet_name='Expenses', index=False)
-        worksheet = writer.sheets['Expenses']
-        for idx, col in enumerate(df.columns):
-            series = df[col]
-            max_len = max(
-                series.astype(str).map(len).max(),
-                len(str(series.name))
-            ) + 1
-            worksheet.set_column(idx, idx, max_len)
+    workbook = xlsxwriter.Workbook(output, {'in_memory': True})
+    worksheet = workbook.add_worksheet('Expenses')
+    header_format = workbook.add_format({'bold': True, 'border': 1, 'align': 'center'})
 
+    columns = list(data[0].keys()) if data else []
+    for col_idx, column in enumerate(columns):
+        worksheet.write(0, col_idx, column, header_format)
+        values = [row[column] for row in data]
+        for row_idx, value in enumerate(values, start=1):
+            if value is not None:
+                worksheet.write(row_idx, col_idx, value)
+        max_len = max([len(str(column))] + [len(str(v)) for v in values]) + 1
+        worksheet.set_column(col_idx, col_idx, max_len)
+
+    workbook.close()
     output.seek(0)
     return send_file(
         output,
